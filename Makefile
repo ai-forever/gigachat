@@ -54,6 +54,12 @@ test:
 	poetry run coverage run -m pytest -v
 	poetry run coverage report
 
+.PHONY: htmlcov  ## Open html coverage report
+htmlcov: test
+	poetry run coverage html
+	open htmlcov/index.html
+	#explorer "htmlcov\index.html" &
+
 .PHONY: all  ## Run the standard set of checks performed in CI
 all: lint mypy test
 

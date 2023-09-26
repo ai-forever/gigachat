@@ -1,0 +1,8 @@
+
+data: {"choices":[{"delta":{"content":"Конечно, у человечества всегда есть возможность развивать свои технологии и улучшать качество жизни. Важно помнить, что ИИ — это всего лишь инструмент, который мы можем использовать для достижения определенных целей. Главное — подходить к его использованию ответственно и с умом","role":"assistant"},"index":0}],"created":1695802242,"model":"GigaChat:v1.2.19.2","object":"chat.completion"}
+
+data: {"choices":[{"delta":{"content":"."},"index":0}],"created":1695802242,"model":"GigaChat:v1.2.19.2","object":"chat.completion"}
+
+data: {"choices":[{"delta":{"content":""},"finish_reason":"stop","index":0}],"created":1695802242,"model":"GigaChat:v1.2.19.2","object":"chat.completion"}
+
+data: [DONE]
