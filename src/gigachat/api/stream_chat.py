@@ -1,5 +1,5 @@
 from http import HTTPStatus
-from typing import Any, AsyncIterator, Dict, Iterator, Mapping, Optional
+from typing import Any, AsyncIterator, Dict, Iterator, Optional
 
 import httpx
 
@@ -9,18 +9,32 @@ from gigachat.models import Chat, ChatCompletionChunk
 EVENT_STREAM = "text/event-stream"
 
 
-def _get_kwargs(chat: Chat, headers: Optional[Mapping[str, str]]) -> Dict[str, Any]:
-    _headers = {
+def _get_kwargs(
+    *,
+    chat: Chat,
+    access_token: Optional[str] = None,
+    client_id: Optional[str] = None,
+    session_id: Optional[str] = None,
+    request_id: Optional[str] = None,
+) -> Dict[str, Any]:
+    headers = {
         "Accept": EVENT_STREAM,
         "Cache-Control": "no-store",
     }
-    _headers.update(headers or {})
+    if access_token:
+        headers["Authorization"] = f"Bearer {access_token}"
+    if client_id:
+        headers["X-Client-ID"] = client_id
+    if session_id:
+        headers["X-Session-ID"] = session_id
+    if request_id:
+        headers["X-Request-ID"] = request_id
 
     return {
         "method": "POST",
         "url": "/chat/completions",
         "json": {**chat.dict(exclude_none=True), **{"stream": True}},
-        "headers": _headers,
+        "headers": headers,
     }
 
 
@@ -50,8 +64,18 @@ def _check_response(response: httpx.Response) -> None:
         raise ResponseError(response.url, response.status_code, b"", response.headers)
 
 
-def sync(client: httpx.Client, chat: Chat, headers: Optional[Mapping[str, str]]) -> Iterator[ChatCompletionChunk]:
-    kwargs = _get_kwargs(chat, headers)
+def sync(
+    client: httpx.Client,
+    *,
+    chat: Chat,
+    access_token: Optional[str] = None,
+    client_id: Optional[str] = None,
+    session_id: Optional[str] = None,
+    request_id: Optional[str] = None,
+) -> Iterator[ChatCompletionChunk]:
+    kwargs = _get_kwargs(
+        chat=chat, access_token=access_token, client_id=client_id, session_id=session_id, request_id=request_id
+    )
     with client.stream(**kwargs) as response:
         _check_response(response)
         for line in response.iter_lines():
@@ -60,9 +84,17 @@ def sync(client: httpx.Client, chat: Chat, headers: Optional[Mapping[str, str]])
 
 
 async def asyncio(
-    client: httpx.AsyncClient, chat: Chat, headers: Optional[Mapping[str, str]]
+    client: httpx.AsyncClient,
+    *,
+    chat: Chat,
+    access_token: Optional[str] = None,
+    client_id: Optional[str] = None,
+    session_id: Optional[str] = None,
+    request_id: Optional[str] = None,
 ) -> AsyncIterator[ChatCompletionChunk]:
-    kwargs = _get_kwargs(chat, headers)
+    kwargs = _get_kwargs(
+        chat=chat, access_token=access_token, client_id=client_id, session_id=session_id, request_id=request_id
+    )
     async with client.stream(**kwargs) as response:
         _check_response(response)
         async for line in response.aiter_lines():

@@ -13,6 +13,7 @@ SCOPE = "GIGACHAT_API_CORP"
 
 class Settings(BaseSettings):
     base_url: str = BASE_URL
+    """Адрес относительно которого выполняются запросы"""
     auth_url: str = AUTH_URL
     credentials: Optional[str] = None
     scope: str = SCOPE
@@ -23,7 +24,7 @@ class Settings(BaseSettings):
     password: Optional[str] = None
 
     timeout: float = 30.0
-    verify_ssl: bool = True
+    verify_ssl_certs: bool = True
 
     use_auth: bool = True
     verbose: bool = False

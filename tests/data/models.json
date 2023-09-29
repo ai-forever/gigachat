@@ -1,0 +1,10 @@
+{
+  "data": [
+    {
+      "id": "GigaChat:v1.2.19.2",
+      "object": "model",
+      "owned_by": "salutedevices"
+    }
+  ],
+  "object": "list"
+}

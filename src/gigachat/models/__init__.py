@@ -6,7 +6,6 @@ from gigachat.models.choices import Choices
 from gigachat.models.choices_chunk import ChoicesChunk
 from gigachat.models.messages import Messages
 from gigachat.models.messages_chunk import MessagesChunk
-from gigachat.models.messages_res import MessagesRes
 from gigachat.models.messages_role import MessagesRole
 from gigachat.models.model import Model
 from gigachat.models.models import Models
@@ -22,7 +21,6 @@ __all__ = (
     "ChoicesChunk",
     "Messages",
     "MessagesChunk",
-    "MessagesRes",
     "MessagesRole",
     "Model",
     "Models",

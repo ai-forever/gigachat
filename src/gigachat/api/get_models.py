@@ -4,19 +4,20 @@ from typing import Any, Dict, Optional
 import httpx
 
 from gigachat.exceptions import AuthenticationError, ResponseError
-from gigachat.models import Token
+from gigachat.models import Models
 
 
 def _get_kwargs(
     *,
-    user: str,
-    password: str,
+    access_token: Optional[str] = None,
     client_id: Optional[str] = None,
     session_id: Optional[str] = None,
     request_id: Optional[str] = None,
 ) -> Dict[str, Any]:
     headers = {}
 
+    if access_token:
+        headers["Authorization"] = f"Bearer {access_token}"
     if client_id:
         headers["X-Client-ID"] = client_id
     if session_id:
@@ -25,16 +26,15 @@ def _get_kwargs(
         headers["X-Request-ID"] = request_id
 
     return {
-        "method": "POST",
-        "url": "/token",
-        "auth": (user, password),
+        "method": "GET",
+        "url": "/models",
         "headers": headers,
     }
 
 
-def _build_response(response: httpx.Response) -> Token:
+def _build_response(response: httpx.Response) -> Models:
     if response.status_code == HTTPStatus.OK:
-        return Token(**response.json())
+        return Models(**response.json())
     elif response.status_code == HTTPStatus.UNAUTHORIZED:
         raise AuthenticationError(response.url, response.status_code, response.content, response.headers)
     else:
@@ -44,15 +44,13 @@ def _build_response(response: httpx.Response) -> Token:
 def sync(
     client: httpx.Client,
     *,
-    user: str,
-    password: str,
+    access_token: Optional[str] = None,
     client_id: Optional[str] = None,
     session_id: Optional[str] = None,
     request_id: Optional[str] = None,
-) -> Token:
-    kwargs = _get_kwargs(
-        user=user, password=password, client_id=client_id, session_id=session_id, request_id=request_id
-    )
+) -> Models:
+    """Возвращает массив объектов с данными доступных моделей"""
+    kwargs = _get_kwargs(access_token=access_token, client_id=client_id, session_id=session_id, request_id=request_id)
     response = client.request(**kwargs)
     return _build_response(response)
 
@@ -60,14 +58,12 @@ def sync(
 async def asyncio(
     client: httpx.AsyncClient,
     *,
-    user: str,
-    password: str,
+    access_token: Optional[str] = None,
     client_id: Optional[str] = None,
     session_id: Optional[str] = None,
     request_id: Optional[str] = None,
-) -> Token:
-    kwargs = _get_kwargs(
-        user=user, password=password, client_id=client_id, session_id=session_id, request_id=request_id
-    )
+) -> Models:
+    """Возвращает массив объектов с данными доступных моделей"""
+    kwargs = _get_kwargs(access_token=access_token, client_id=client_id, session_id=session_id, request_id=request_id)
     response = await client.request(**kwargs)
     return _build_response(response)
