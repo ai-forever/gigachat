@@ -5,7 +5,7 @@ from gigachat.api import post_chat
 from gigachat.exceptions import AuthenticationError, ResponseError
 from gigachat.models import Chat, ChatCompletion
 
-from ...utils import get_json
+from ....utils import get_json
 
 BASE_URL = "http://testserver/api"
 MOCK_URL = f"{BASE_URL}/chat/completions"

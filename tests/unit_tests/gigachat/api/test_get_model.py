@@ -6,7 +6,7 @@ from gigachat.api import get_model
 from gigachat.exceptions import AuthenticationError, ResponseError
 from gigachat.models import Model
 
-from ...utils import get_json
+from ....utils import get_json
 
 BASE_URL = "http://testserver/api"
 MODEL_URL = f"{BASE_URL}/models/model"

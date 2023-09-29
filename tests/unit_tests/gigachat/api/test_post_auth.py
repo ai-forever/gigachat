@@ -5,7 +5,7 @@ from gigachat.api import post_auth
 from gigachat.exceptions import AuthenticationError, ResponseError
 from gigachat.models import AccessToken
 
-from ...utils import get_json
+from ....utils import get_json
 
 MOCK_URL = "http://testserver/foo"
 

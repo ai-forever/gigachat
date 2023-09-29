@@ -4,7 +4,7 @@ from gigachat.client import GigaChatAsyncClient, GigaChatSyncClient
 from gigachat.exceptions import AuthenticationError
 from gigachat.models import Chat, ChatCompletion, ChatCompletionChunk, Model, Models
 
-from ..utils import get_bytes, get_json
+from ...utils import get_bytes, get_json
 
 BASE_URL = "http://base_url"
 AUTH_URL = "http://auth_url"
@@ -92,17 +92,6 @@ def test_chat_authentication_error(httpx_mock):
             client.chat(CHAT)
 
 
-def test_chat_update_token(httpx_mock):
-    httpx_mock.add_response(url=CHAT_URL, status_code=401)
-    access_token = "access_token"
-
-    with GigaChatSyncClient(base_url=BASE_URL, access_token=access_token) as client:
-        assert client.token == access_token
-        with pytest.raises(AuthenticationError):
-            client.chat(CHAT)
-        assert client.token is None
-
-
 def test_chat_update_token_credentials(httpx_mock):
     httpx_mock.add_response(url=AUTH_URL, json=ACCESS_TOKEN)
     httpx_mock.add_response(url=CHAT_URL, status_code=401)
@@ -129,6 +118,46 @@ def test_chat_update_token_user_password(httpx_mock):
             client.chat(CHAT)
         assert client.token
         assert client.token != access_token
+
+
+def test_chat_update_token(httpx_mock):
+    httpx_mock.add_response(url=CHAT_URL, status_code=401)
+    access_token = "access_token"
+
+    with GigaChatSyncClient(base_url=BASE_URL, access_token=access_token) as client:
+        assert client.token == access_token
+        with pytest.raises(AuthenticationError):
+            client.chat(CHAT)
+        assert client.token is None
+
+
+def test_chat_update_token_success(httpx_mock):
+    httpx_mock.add_response(url=CHAT_URL, status_code=401)
+    httpx_mock.add_response(url=CHAT_URL, json=CHAT_COMPLETION)
+    httpx_mock.add_response(url=TOKEN_URL, json=TOKEN)
+    access_token = "access_token"
+
+    with GigaChatSyncClient(base_url=BASE_URL, access_token=access_token, user="user", password="password") as client:
+        assert client.token == access_token
+        response = client.chat(CHAT)
+
+    assert client.token
+    assert client.token != access_token
+    assert isinstance(response, ChatCompletion)
+
+
+def test_chat_update_token_error(httpx_mock):
+    httpx_mock.add_response(url=CHAT_URL, status_code=401)
+    httpx_mock.add_response(url=TOKEN_URL, json=TOKEN)
+    access_token = "access_token"
+
+    with GigaChatSyncClient(base_url=BASE_URL, access_token=access_token, user="user", password="password") as client:
+        assert client.token == access_token
+        with pytest.raises(AuthenticationError):
+            client.chat(CHAT)
+
+    assert client.token
+    assert client.token != access_token
 
 
 def test_stream(httpx_mock):
@@ -163,7 +192,24 @@ def test_stream_authentication_error(httpx_mock):
             list(client.stream(CHAT))
 
 
-def test_stream_update_token(httpx_mock):
+def test_stream_update_token_success(httpx_mock):
+    httpx_mock.add_response(url=CHAT_URL, status_code=401)
+    httpx_mock.add_response(url=CHAT_URL, content=CHAT_COMPLETION_STREAM, headers=HEADERS_STREAM)
+    httpx_mock.add_response(url=TOKEN_URL, json=TOKEN)
+    access_token = "access_token"
+
+    with GigaChatSyncClient(base_url=BASE_URL, access_token=access_token, user="user", password="password") as client:
+        assert client.token == access_token
+        response = list(client.stream(CHAT))
+
+    assert client.token
+    assert client.token != access_token
+    assert len(response) == 3
+    assert all(isinstance(chunk, ChatCompletionChunk) for chunk in response)
+    assert response[2].choices[0].finish_reason == "stop"
+
+
+def test_stream_update_token_error(httpx_mock):
     httpx_mock.add_response(url=CHAT_URL, status_code=401)
     httpx_mock.add_response(url=TOKEN_URL, json=TOKEN)
     access_token = "access_token"
@@ -172,8 +218,9 @@ def test_stream_update_token(httpx_mock):
         assert client.token == access_token
         with pytest.raises(AuthenticationError):
             list(client.stream(CHAT))
-        assert client.token
-        assert client.token != access_token
+
+    assert client.token
+    assert client.token != access_token
 
 
 @pytest.mark.asyncio()
