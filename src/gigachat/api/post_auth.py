@@ -1,3 +1,4 @@
+import uuid
 from http import HTTPStatus
 from typing import Any, Dict, Optional
 
@@ -10,11 +11,8 @@ from gigachat.models import AccessToken
 def _get_kwargs(*, url: str, credentials: str, scope: str, request_id: Optional[str] = None) -> Dict[str, Any]:
     headers = {
         "Authorization": f"Bearer {credentials}",
+        "RqUID": request_id or str(uuid.uuid4()),
     }
-
-    if request_id:
-        headers["RqUID"] = request_id
-
     return {
         "method": "POST",
         "url": url,
