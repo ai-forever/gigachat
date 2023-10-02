@@ -1,29 +1,24 @@
+"""Пример работы с чатом"""
 from gigachat import GigaChat
+from gigachat.models import Chat, Messages, MessagesRole
 
-PAYLOAD = {
-    "messages": [
-        {
-            "role": "user",
-            "content": "Когда уже ИИ захватит этот мир?"
-        },
-        {
-            "role": "assistant",
-            "content": "Пока что это не является неизбежным событием. Несмотря на то, что искусственный интеллект (ИИ) развивается быстрыми темпами и может выполнять сложные задачи все более эффективно, он по-прежнему ограничен в своих возможностях и не может заменить полностью человека во многих областях. Кроме того, существуют этические и правовые вопросы, связанные с использованием ИИ, которые необходимо учитывать при его разработке и внедрении."
-        },
-        {
-            "role": "user",
-            "content": "Думаешь, у нас еще есть шанс?"
-        }
+
+payload = Chat(
+    messages=[
+        Messages(
+            role=MessagesRole.SYSTEM,
+            content="Ты эмпатичный бот-психолог, который помогает пользователю решить его проблемы."
+        )
     ],
-    "temperature": 0.7
-}
+    temperature=0.7,
+    max_tokens=100,
+)
 
-
-def main():
-    with GigaChat() as giga:
-        response = giga.chat(PAYLOAD)
-        print(response)
-
-
-if __name__ == '__main__':
-    main()
+# используйте данные из поля Авторизационные данные
+with GigaChat(credentials=..., verify_ssl_certs=False) as giga:
+    while True:
+        user_input = input("User: ")
+        payload.messages.append(Messages(role=MessagesRole.USER, content=user_input))
+        response = giga.chat(payload)
+        payload.messages.append(response.choices[0].message)
+        print("Bot: ", response.choices[0].message.content)
