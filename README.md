@@ -1,11 +1,8 @@
-## GigaChat Python Library
+# GigaChat. Библиотека для Python
 
-GigaChat - мультимодальная нейросетевая модель. Умеет отвечать на вопросы, вести диалог и писать код
+Библиотека Python для работы с GigaChat — нейросетевой моделью, которая умеет вести диалог, писать код, создавать тексты и картинки по запросу. Обмен данными с сервисом обеспечивается с помощью GigaChat API. О том как получить доступ к API [официальной документации](https://developers.sber.ru/docs/ru/gigachat/api/integration).
 
-> [!NOTE]
-> О том как подключить GigaChat читайте в [официальной документации](https://developers.sber.ru/docs/ru/gigachat/api/integration).
-
-Модуль поддерживает работу как в синхронном, так и в асинхронном режиме. Кроме этого модуль поддерживает обработку [потоковой передачи токенов](https://developers.sber.ru/docs/ru/gigachat/api/response-token-streaming).
+Модуль поддерживает работу в синхронном и в асинхронном режиме, а также обработку [потоковой передачи токенов](https://developers.sber.ru/docs/ru/gigachat/api/response-token-streaming).
 
 ## Установка
 
@@ -14,9 +11,21 @@ GigaChat - мультимодальная нейросетевая модель.
 ```sh
 pip install gigachat
 ```
-## Работа с GigaChat:
+## Работа с GigaChat
 
-Вот простой пример работы с чатом с помощью модуля:
+Перед использованием модуля:
+
+1. [Подключите проект GigaChat API](https://developers.sber.ru/docs/ru/gigachat/api/integration).
+2. В личном кабинете нажмите кнопку **Сгенерировать новый Client Secret**.
+
+   Откроется окно Новый Client Secret.
+
+3. В открывшемся окне, скопируйте и сохраните токен, указанный в поле **Авторизационные данные**.
+
+   > [!WARNING]
+   > Не закрывайте окно, пока не сохраните токен. В противном случае его нужно будет сгенерировать заново.
+
+Пример простого обращения к сервису с помощью библиотеки:
 
 ```py
 """Пример работы с чатом"""
@@ -28,14 +37,14 @@ payload = Chat(
     messages=[
         Messages(
             role=MessagesRole.SYSTEM,
-            content="Ты эмпатичный бот-психолог, который помогает пользователю решить его проблемы."
+            content="Ты внимательный бот-психолог, который помогает пользователю решить его проблемы."
         )
     ],
     temperature=0.7,
     max_tokens=100,
 )
 
-# используйте данные из поля Авторизационные данные
+# Используйте токен, полученный в личном кабинете из поля Авторизационные данные
 with GigaChat(credentials=..., verify_ssl_certs=False) as giga:
     while True:
         user_input = input("User: ")
@@ -45,16 +54,18 @@ with GigaChat(credentials=..., verify_ssl_certs=False) as giga:
         print("Bot: ", response.choices[0].message.content)
 ```
 
-> [!NOTE]
-> Для начала использования:
->1. [Подключите](https://developers.sber.ru/link/gc-api) сервис GigaChat
->2. В созданном проекте GigaChat сгенерируйте _**Client Secret**_ и сохраните данные из поля _**Авторизационные данные**_
+[Больше примеров](./examples/README.md).
 
+## Способы авторизации
 
-Больше примеров в [examples](https://github.com/ai-forever/gigachat/tree/main/examples).
+Авторизация с помощью [токена доступа GigaChat API](https://developers.sber.ru/docs/ru/gigachat/api/authorization):
 
+```py
+giga = GigaChat(access_token=...)
+```
 
-Авторизация по логину и паролю
+Авторизация на тестовых стендах с помощью логина и пароля:
+
 ```py
 giga = GigaChat(
     base_url="https://beta.saluteai.sberdevices.ru/v1",
@@ -63,26 +74,39 @@ giga = GigaChat(
 )
 ```
 
-По ранее полученному access_token
-```py
-giga = GigaChat(access_token=...)
-```
+## Дополнительные настройки
 
-Отключаем авторизацию (например когда авторизация средствами service mesh istio)
+Отключение авторизации (например когда авторизация средствами service mesh istio):
+
 ```py
 giga = GigaChat(use_auth=False)
 ```
 
-Отключаем проверку сертификатов (небезопасно)
+> [!NOTE]
+> Функция может быть полезна, например, при авторизации с помощью Istio service mesh.
+
+Отключение проверки сертификатов:
+
 ```py
 giga = GigaChat(verify_ssl_certs=False)
 ```
 
-Настройки можно задать через переменные окружения используется префикс GIGACHAT_
+> [!WARNING]
+> Отключение проверки сертификатов снижает безопасность обмена данными.
+
+
+### Настройки в переменных окружения
+
+Чтобы задать настройки с помощью переменных окружения, используйте префикс `GIGACHAT_`.
+
+Авторизация с помощью токена и отключение проверки сертификатов:
+
 ```sh
 export GIGACHAT_CREDENTIALS=...
 export GIGACHAT_VERIFY_SSL_CERTS=False
 ```
+
+Авторизация на тестовых стендах с помощью логина и пароля:
 
 ```sh
 export GIGACHAT_BASE_URL=https://beta.saluteai.sberdevices.ru/v1
