@@ -1,6 +1,6 @@
-# GigaChat. Библиотека для Python
+# GigaChat. Python-библиотека для GigaChain
 
-Библиотека Python для работы с GigaChat — нейросетевой моделью, которая умеет вести диалог, писать код, создавать тексты и картинки по запросу. Обмен данными с сервисом обеспечивается с помощью GigaChat API. О том как получить доступ к API [официальной документации](https://developers.sber.ru/docs/ru/gigachat/api/integration).
+Библиотека Python, позволяющая [GigaChain](https://github.com/ai-forever/gigachain) обращаться к GigaChat — нейросетевой модели, которая умеет вести диалог, писать код, создавать тексты и картинки по запросу. Обмен данными с сервисом обеспечивается с помощью GigaChat API. О том как получить доступ к API читайте в [официальной документации](https://developers.sber.ru/docs/ru/gigachat/api/integration).
 
 Модуль поддерживает работу в синхронном и в асинхронном режиме, а также обработку [потоковой передачи токенов](https://developers.sber.ru/docs/ru/gigachat/api/response-token-streaming).
 
@@ -18,14 +18,14 @@ pip install gigachat
 1. [Подключите проект GigaChat API](https://developers.sber.ru/docs/ru/gigachat/api/integration).
 2. В личном кабинете нажмите кнопку **Сгенерировать новый Client Secret**.
 
-   Откроется окно Новый Client Secret.
+   Откроется окно **Новый Client Secret**.
 
 3. В открывшемся окне, скопируйте и сохраните токен, указанный в поле **Авторизационные данные**.
 
    > [!WARNING]
    > Не закрывайте окно, пока не сохраните токен. В противном случае его нужно будет сгенерировать заново.
 
-Пример простого обращения к сервису с помощью библиотеки:
+Пример простого обращения к сервису с помощью [GigaChain](https://github.com/ai-forever/gigachain) и подключенной библиотекой:
 
 ```py
 """Пример работы с чатом"""
@@ -44,7 +44,7 @@ payload = Chat(
     max_tokens=100,
 )
 
-# Используйте токен, полученный в личном кабинете из поля Авторизационные данные
+# Используйте токен, полученный в личном кабинете в поле Авторизационные данные
 with GigaChat(credentials=..., verify_ssl_certs=False) as giga:
     while True:
         user_input = input("User: ")
@@ -64,11 +64,11 @@ with GigaChat(credentials=..., verify_ssl_certs=False) as giga:
 giga = GigaChat(access_token=...)
 ```
 
-Авторизация на тестовых стендах с помощью логина и пароля:
+Авторизация с помощью логина и пароля:
 
 ```py
 giga = GigaChat(
-    base_url="https://beta.saluteai.sberdevices.ru/v1",
+    base_url="https://gigachat.devices.sberbank.ru/api/v1",
     user=...,
     password=...,
 )
@@ -76,7 +76,7 @@ giga = GigaChat(
 
 ## Дополнительные настройки
 
-Отключение авторизации (например когда авторизация средствами service mesh istio):
+Отключение авторизации:
 
 ```py
 giga = GigaChat(use_auth=False)
@@ -106,10 +106,10 @@ export GIGACHAT_CREDENTIALS=...
 export GIGACHAT_VERIFY_SSL_CERTS=False
 ```
 
-Авторизация на тестовых стендах с помощью логина и пароля:
+Авторизация с помощью логина и пароля:
 
 ```sh
-export GIGACHAT_BASE_URL=https://beta.saluteai.sberdevices.ru/v1
+export GIGACHAT_BASE_URL=https://gigachat.devices.sberbank.ru/api/v1
 export GIGACHAT_USER=...
 export GIGACHAT_PASSWORD=...
 ```
