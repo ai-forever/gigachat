@@ -7,14 +7,14 @@ payload = Chat(
     messages=[
         Messages(
             role=MessagesRole.SYSTEM,
-            content="Ты эмпатичный бот-психолог, который помогает пользователю решить его проблемы."
+            content="Ты внимательный бот-психолог, который помогает пользователю решить его проблемы."
         )
     ],
     temperature=0.7,
     max_tokens=100,
 )
 
-# используйте данные из поля Авторизационные данные
+# Используйте токен, полученный в личном кабинете из поля Авторизационные данные
 with GigaChat(credentials=..., verify_ssl_certs=False) as giga:
     while True:
         user_input = input("User: ")
