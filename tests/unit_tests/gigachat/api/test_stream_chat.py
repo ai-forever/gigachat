@@ -1,5 +1,6 @@
 import httpx
 import pytest
+from pytest_httpx import HTTPXMock
 
 from gigachat.api import stream_chat
 from gigachat.exceptions import AuthenticationError, ResponseError
@@ -15,7 +16,7 @@ CHAT_COMPLETION_STREAM = get_bytes("chat_completion.stream")
 HEADERS_STREAM = {"Content-Type": "text/event-stream"}
 
 
-def test_sync(httpx_mock):
+def test_sync(httpx_mock: HTTPXMock) -> None:
     httpx_mock.add_response(url=MOCK_URL, content=CHAT_COMPLETION_STREAM, headers=HEADERS_STREAM)
 
     with httpx.Client(base_url=BASE_URL) as client:
@@ -26,15 +27,15 @@ def test_sync(httpx_mock):
     assert response[2].choices[0].finish_reason == "stop"
 
 
-def test_sync_content_type_error(httpx_mock):
-    httpx_mock.add_response(url=MOCK_URL, content=CHAT_COMPLETION_STREAM, headers={})
+def test_sync_content_type_error(httpx_mock: HTTPXMock) -> None:
+    httpx_mock.add_response(url=MOCK_URL, content=CHAT_COMPLETION_STREAM)
 
     with httpx.Client(base_url=BASE_URL) as client:
         with pytest.raises(httpx.TransportError):
             list(stream_chat.sync(client, chat=CHAT))
 
 
-def test_sync_value_error(httpx_mock):
+def test_sync_value_error(httpx_mock: HTTPXMock) -> None:
     httpx_mock.add_response(url=MOCK_URL, content=b"data: {}", headers=HEADERS_STREAM)
 
     with httpx.Client(base_url=BASE_URL) as client:
@@ -42,7 +43,7 @@ def test_sync_value_error(httpx_mock):
             list(stream_chat.sync(client, chat=CHAT))
 
 
-def test_sync_authentication_error(httpx_mock):
+def test_sync_authentication_error(httpx_mock: HTTPXMock) -> None:
     httpx_mock.add_response(url=MOCK_URL, status_code=401)
 
     with httpx.Client(base_url=BASE_URL) as client:
@@ -50,7 +51,7 @@ def test_sync_authentication_error(httpx_mock):
             list(stream_chat.sync(client, chat=CHAT))
 
 
-def test_sync_response_error(httpx_mock):
+def test_sync_response_error(httpx_mock: HTTPXMock) -> None:
     httpx_mock.add_response(url=MOCK_URL, status_code=400)
 
     with httpx.Client(base_url=BASE_URL) as client:
@@ -58,7 +59,7 @@ def test_sync_response_error(httpx_mock):
             list(stream_chat.sync(client, chat=CHAT))
 
 
-def test_sync_headers(httpx_mock):
+def test_sync_headers(httpx_mock: HTTPXMock) -> None:
     httpx_mock.add_response(url=MOCK_URL, content=CHAT_COMPLETION_STREAM, headers=HEADERS_STREAM)
 
     with httpx.Client(base_url=BASE_URL) as client:
@@ -79,7 +80,7 @@ def test_sync_headers(httpx_mock):
 
 
 @pytest.mark.asyncio()
-async def test_asyncio(httpx_mock):
+async def test_asyncio(httpx_mock: HTTPXMock) -> None:
     httpx_mock.add_response(url=MOCK_URL, content=CHAT_COMPLETION_STREAM, headers=HEADERS_STREAM)
 
     async with httpx.AsyncClient(base_url=BASE_URL) as client:

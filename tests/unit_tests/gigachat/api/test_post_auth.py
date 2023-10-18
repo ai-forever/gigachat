@@ -1,5 +1,6 @@
 import httpx
 import pytest
+from pytest_httpx import HTTPXMock
 
 from gigachat.api import post_auth
 from gigachat.exceptions import AuthenticationError, ResponseError
@@ -12,7 +13,7 @@ MOCK_URL = "http://testserver/foo"
 ACCESS_TOKEN = get_json("access_token.json")
 
 
-def test_sync(httpx_mock):
+def test_sync(httpx_mock: HTTPXMock) -> None:
     httpx_mock.add_response(url=MOCK_URL, json=ACCESS_TOKEN)
 
     with httpx.Client() as client:
@@ -21,7 +22,7 @@ def test_sync(httpx_mock):
     assert isinstance(response, AccessToken)
 
 
-def test_sync_value_error(httpx_mock):
+def test_sync_value_error(httpx_mock: HTTPXMock) -> None:
     httpx_mock.add_response(url=MOCK_URL, json={})
 
     with httpx.Client() as client:
@@ -29,7 +30,7 @@ def test_sync_value_error(httpx_mock):
             post_auth.sync(client, url=MOCK_URL, credentials="credentials", scope="scope")
 
 
-def test_sync_authentication_error(httpx_mock):
+def test_sync_authentication_error(httpx_mock: HTTPXMock) -> None:
     httpx_mock.add_response(url=MOCK_URL, status_code=401)
 
     with httpx.Client() as client:
@@ -37,7 +38,7 @@ def test_sync_authentication_error(httpx_mock):
             post_auth.sync(client, url=MOCK_URL, credentials="credentials", scope="scope")
 
 
-def test_sync_response_error(httpx_mock):
+def test_sync_response_error(httpx_mock: HTTPXMock) -> None:
     httpx_mock.add_response(url=MOCK_URL, status_code=400)
 
     with httpx.Client() as client:
@@ -45,7 +46,7 @@ def test_sync_response_error(httpx_mock):
             post_auth.sync(client, url=MOCK_URL, credentials="credentials", scope="scope")
 
 
-def test_sync_headers(httpx_mock):
+def test_sync_headers(httpx_mock: HTTPXMock) -> None:
     httpx_mock.add_response(url=MOCK_URL, json=ACCESS_TOKEN)
 
     with httpx.Client() as client:
@@ -57,7 +58,7 @@ def test_sync_headers(httpx_mock):
 
 
 @pytest.mark.asyncio()
-async def test_asyncio(httpx_mock):
+async def test_asyncio(httpx_mock: HTTPXMock) -> None:
     httpx_mock.add_response(url=MOCK_URL, json=ACCESS_TOKEN)
 
     async with httpx.AsyncClient() as client:

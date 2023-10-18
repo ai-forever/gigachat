@@ -47,7 +47,7 @@ lint:
 
 .PHONY: mypy  ## Perform type-checking
 mypy:
-	poetry run mypy src
+	poetry run mypy src tests
 
 .PHONY: test  ## Run tests and generate a coverage report
 test:

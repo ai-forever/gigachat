@@ -1,5 +1,6 @@
 import httpx
 import pytest
+from pytest_httpx import HTTPXMock
 
 from gigachat.api import post_token
 from gigachat.exceptions import AuthenticationError, ResponseError
@@ -13,7 +14,7 @@ MOCK_URL = f"{BASE_URL}/token"
 TOKEN = get_json("token.json")
 
 
-def test_sync(httpx_mock):
+def test_sync(httpx_mock: HTTPXMock) -> None:
     httpx_mock.add_response(url=MOCK_URL, json=TOKEN)
 
     with httpx.Client(base_url=BASE_URL) as client:
@@ -22,7 +23,7 @@ def test_sync(httpx_mock):
     assert isinstance(response, Token)
 
 
-def test_sync_value_error(httpx_mock):
+def test_sync_value_error(httpx_mock: HTTPXMock) -> None:
     httpx_mock.add_response(url=MOCK_URL, json={})
 
     with httpx.Client(base_url=BASE_URL) as client:
@@ -30,7 +31,7 @@ def test_sync_value_error(httpx_mock):
             post_token.sync(client, user="user", password="password")
 
 
-def test_sync_authentication_error(httpx_mock):
+def test_sync_authentication_error(httpx_mock: HTTPXMock) -> None:
     httpx_mock.add_response(url=MOCK_URL, status_code=401)
 
     with httpx.Client(base_url=BASE_URL) as client:
@@ -38,7 +39,7 @@ def test_sync_authentication_error(httpx_mock):
             post_token.sync(client, user="user", password="password")
 
 
-def test_sync_response_error(httpx_mock):
+def test_sync_response_error(httpx_mock: HTTPXMock) -> None:
     httpx_mock.add_response(url=MOCK_URL, status_code=400)
 
     with httpx.Client(base_url=BASE_URL) as client:
@@ -46,7 +47,7 @@ def test_sync_response_error(httpx_mock):
             post_token.sync(client, user="user", password="password")
 
 
-def test_sync_headers(httpx_mock):
+def test_sync_headers(httpx_mock: HTTPXMock) -> None:
     httpx_mock.add_response(url=MOCK_URL, json=TOKEN)
 
     with httpx.Client(base_url=BASE_URL) as client:
@@ -63,7 +64,7 @@ def test_sync_headers(httpx_mock):
 
 
 @pytest.mark.asyncio()
-async def test_asyncio(httpx_mock):
+async def test_asyncio(httpx_mock: HTTPXMock) -> None:
     httpx_mock.add_response(url=MOCK_URL, json=TOKEN)
 
     async with httpx.AsyncClient(base_url=BASE_URL) as client:

@@ -1,8 +1,10 @@
 import pytest
+from pytest_httpx import HTTPXMock
 
-from gigachat.client import GigaChatAsyncClient, GigaChatSyncClient
+from gigachat.client import GigaChatAsyncClient, GigaChatSyncClient, _get_kwargs
 from gigachat.exceptions import AuthenticationError
 from gigachat.models import Chat, ChatCompletion, ChatCompletionChunk, Model, Models
+from gigachat.settings import Settings
 
 from ...utils import get_bytes, get_json
 
@@ -26,34 +28,39 @@ HEADERS_STREAM = {"Content-Type": "text/event-stream"}
 CREDENTIALS = "NmIwNzhlODgtNDlkNC00ZjFmLTljMjMtYjFiZTZjMjVmNTRlOmU3NWJlNjVhLTk4YjAtNGY0Ni1iOWVhLTljMDkwZGE4YTk4MQ=="
 
 
-def test_get_models(httpx_mock):
+def test__get_kwargs() -> None:
+    settings = Settings(ca_bundle_file="ca.pem", cert_file="tls.pem", key_file="tls.key")
+    assert _get_kwargs(settings)
+
+
+def test_get_models(httpx_mock: HTTPXMock) -> None:
     httpx_mock.add_response(url=MODELS_URL, json=MODELS)
 
-    with GigaChatSyncClient(base_url=BASE_URL, use_auth=False) as client:
+    with GigaChatSyncClient(base_url=BASE_URL) as client:
         response = client.get_models()
 
     assert isinstance(response, Models)
 
 
-def test_get_model(httpx_mock):
+def test_get_model(httpx_mock: HTTPXMock) -> None:
     httpx_mock.add_response(url=MODEL_URL, json=MODEL)
 
-    with GigaChatSyncClient(base_url=BASE_URL, use_auth=False) as client:
+    with GigaChatSyncClient(base_url=BASE_URL) as client:
         response = client.get_model("model")
 
     assert isinstance(response, Model)
 
 
-def test_chat(httpx_mock):
+def test_chat(httpx_mock: HTTPXMock) -> None:
     httpx_mock.add_response(url=CHAT_URL, json=CHAT_COMPLETION)
 
-    with GigaChatSyncClient(base_url=BASE_URL, use_auth=False, model="model") as client:
-        response = client.chat(CHAT)
+    with GigaChatSyncClient(base_url=BASE_URL, model="model") as client:
+        response = client.chat("text")
 
     assert isinstance(response, ChatCompletion)
 
 
-def test_chat_access_token(httpx_mock):
+def test_chat_access_token(httpx_mock: HTTPXMock) -> None:
     httpx_mock.add_response(url=CHAT_URL, json=CHAT_COMPLETION)
     access_token = "access_token"
 
@@ -63,7 +70,7 @@ def test_chat_access_token(httpx_mock):
     assert isinstance(response, ChatCompletion)
 
 
-def test_chat_credentials(httpx_mock):
+def test_chat_credentials(httpx_mock: HTTPXMock) -> None:
     httpx_mock.add_response(url=AUTH_URL, json=ACCESS_TOKEN)
     httpx_mock.add_response(url=CHAT_URL, json=CHAT_COMPLETION)
 
@@ -73,7 +80,7 @@ def test_chat_credentials(httpx_mock):
     assert isinstance(response, ChatCompletion)
 
 
-def test_chat_user_password(httpx_mock):
+def test_chat_user_password(httpx_mock: HTTPXMock) -> None:
     httpx_mock.add_response(url=CHAT_URL, json=CHAT_COMPLETION)
     httpx_mock.add_response(url=TOKEN_URL, json=TOKEN)
 
@@ -83,7 +90,7 @@ def test_chat_user_password(httpx_mock):
     assert isinstance(response, ChatCompletion)
 
 
-def test_chat_authentication_error(httpx_mock):
+def test_chat_authentication_error(httpx_mock: HTTPXMock) -> None:
     httpx_mock.add_response(url=AUTH_URL, json=ACCESS_TOKEN)
     httpx_mock.add_response(url=CHAT_URL, status_code=401)
 
@@ -92,7 +99,7 @@ def test_chat_authentication_error(httpx_mock):
             client.chat(CHAT)
 
 
-def test_chat_update_token_credentials(httpx_mock):
+def test_chat_update_token_credentials(httpx_mock: HTTPXMock) -> None:
     httpx_mock.add_response(url=AUTH_URL, json=ACCESS_TOKEN)
     httpx_mock.add_response(url=CHAT_URL, status_code=401)
     access_token = "access_token"
@@ -107,7 +114,7 @@ def test_chat_update_token_credentials(httpx_mock):
         assert client.token != access_token
 
 
-def test_chat_update_token_user_password(httpx_mock):
+def test_chat_update_token_user_password(httpx_mock: HTTPXMock) -> None:
     httpx_mock.add_response(url=CHAT_URL, status_code=401)
     httpx_mock.add_response(url=TOKEN_URL, json=TOKEN)
     access_token = "access_token"
@@ -120,7 +127,7 @@ def test_chat_update_token_user_password(httpx_mock):
         assert client.token != access_token
 
 
-def test_chat_update_token(httpx_mock):
+def test_chat_update_token_false(httpx_mock: HTTPXMock) -> None:
     httpx_mock.add_response(url=CHAT_URL, status_code=401)
     access_token = "access_token"
 
@@ -128,10 +135,10 @@ def test_chat_update_token(httpx_mock):
         assert client.token == access_token
         with pytest.raises(AuthenticationError):
             client.chat(CHAT)
-        assert client.token is None
+        assert client.token == access_token
 
 
-def test_chat_update_token_success(httpx_mock):
+def test_chat_update_token_success(httpx_mock: HTTPXMock) -> None:
     httpx_mock.add_response(url=CHAT_URL, status_code=401)
     httpx_mock.add_response(url=CHAT_URL, json=CHAT_COMPLETION)
     httpx_mock.add_response(url=TOKEN_URL, json=TOKEN)
@@ -146,7 +153,7 @@ def test_chat_update_token_success(httpx_mock):
     assert isinstance(response, ChatCompletion)
 
 
-def test_chat_update_token_error(httpx_mock):
+def test_chat_update_token_error(httpx_mock: HTTPXMock) -> None:
     httpx_mock.add_response(url=CHAT_URL, status_code=401)
     httpx_mock.add_response(url=TOKEN_URL, json=TOKEN)
     access_token = "access_token"
@@ -160,10 +167,10 @@ def test_chat_update_token_error(httpx_mock):
     assert client.token != access_token
 
 
-def test_stream(httpx_mock):
+def test_stream(httpx_mock: HTTPXMock) -> None:
     httpx_mock.add_response(url=CHAT_URL, content=CHAT_COMPLETION_STREAM, headers=HEADERS_STREAM)
 
-    with GigaChatSyncClient(base_url=BASE_URL, use_auth=False) as client:
+    with GigaChatSyncClient(base_url=BASE_URL) as client:
         response = list(client.stream(CHAT))
 
     assert len(response) == 3
@@ -171,11 +178,11 @@ def test_stream(httpx_mock):
     assert response[2].choices[0].finish_reason == "stop"
 
 
-def test_stream_access_token(httpx_mock):
+def test_stream_access_token(httpx_mock: HTTPXMock) -> None:
     httpx_mock.add_response(url=CHAT_URL, content=CHAT_COMPLETION_STREAM, headers=HEADERS_STREAM)
     access_token = "access_token"
 
-    with GigaChatSyncClient(base_url=BASE_URL, access_token=access_token) as client:
+    with GigaChatSyncClient(base_url=BASE_URL, access_token=access_token, user="user", password="password") as client:
         response = list(client.stream(CHAT))
 
     assert len(response) == 3
@@ -183,7 +190,7 @@ def test_stream_access_token(httpx_mock):
     assert response[2].choices[0].finish_reason == "stop"
 
 
-def test_stream_authentication_error(httpx_mock):
+def test_stream_authentication_error(httpx_mock: HTTPXMock) -> None:
     httpx_mock.add_response(url=AUTH_URL, json=ACCESS_TOKEN)
     httpx_mock.add_response(url=CHAT_URL, status_code=401)
 
@@ -192,7 +199,7 @@ def test_stream_authentication_error(httpx_mock):
             list(client.stream(CHAT))
 
 
-def test_stream_update_token_success(httpx_mock):
+def test_stream_update_token_success(httpx_mock: HTTPXMock) -> None:
     httpx_mock.add_response(url=CHAT_URL, status_code=401)
     httpx_mock.add_response(url=CHAT_URL, content=CHAT_COMPLETION_STREAM, headers=HEADERS_STREAM)
     httpx_mock.add_response(url=TOKEN_URL, json=TOKEN)
@@ -209,7 +216,7 @@ def test_stream_update_token_success(httpx_mock):
     assert response[2].choices[0].finish_reason == "stop"
 
 
-def test_stream_update_token_error(httpx_mock):
+def test_stream_update_token_error(httpx_mock: HTTPXMock) -> None:
     httpx_mock.add_response(url=CHAT_URL, status_code=401)
     httpx_mock.add_response(url=TOKEN_URL, json=TOKEN)
     access_token = "access_token"
@@ -224,37 +231,37 @@ def test_stream_update_token_error(httpx_mock):
 
 
 @pytest.mark.asyncio()
-async def test_aget_models(httpx_mock):
+async def test_aget_models(httpx_mock: HTTPXMock) -> None:
     httpx_mock.add_response(url=MODELS_URL, json=MODELS)
 
-    async with GigaChatAsyncClient(base_url=BASE_URL, use_auth=False) as client:
+    async with GigaChatAsyncClient(base_url=BASE_URL) as client:
         response = await client.aget_models()
 
     assert isinstance(response, Models)
 
 
 @pytest.mark.asyncio()
-async def test_aget_model(httpx_mock):
+async def test_aget_model(httpx_mock: HTTPXMock) -> None:
     httpx_mock.add_response(url=MODEL_URL, json=MODEL)
 
-    async with GigaChatAsyncClient(base_url=BASE_URL, use_auth=False) as client:
+    async with GigaChatAsyncClient(base_url=BASE_URL) as client:
         response = await client.aget_model("model")
 
     assert isinstance(response, Model)
 
 
 @pytest.mark.asyncio()
-async def test_achat(httpx_mock):
+async def test_achat(httpx_mock: HTTPXMock) -> None:
     httpx_mock.add_response(url=CHAT_URL, json=CHAT_COMPLETION)
 
-    async with GigaChatAsyncClient(base_url=BASE_URL, use_auth=False) as client:
-        response = await client.achat(CHAT)
+    async with GigaChatAsyncClient(base_url=BASE_URL) as client:
+        response = await client.achat("text")
 
     assert isinstance(response, ChatCompletion)
 
 
 @pytest.mark.asyncio()
-async def test_achat_access_token(httpx_mock):
+async def test_achat_access_token(httpx_mock: HTTPXMock) -> None:
     httpx_mock.add_response(url=CHAT_URL, json=CHAT_COMPLETION)
     access_token = "access_token"
 
@@ -265,7 +272,7 @@ async def test_achat_access_token(httpx_mock):
 
 
 @pytest.mark.asyncio()
-async def test_achat_credentials(httpx_mock):
+async def test_achat_credentials(httpx_mock: HTTPXMock) -> None:
     httpx_mock.add_response(url=AUTH_URL, json=ACCESS_TOKEN)
     httpx_mock.add_response(url=CHAT_URL, json=CHAT_COMPLETION)
 
@@ -276,7 +283,7 @@ async def test_achat_credentials(httpx_mock):
 
 
 @pytest.mark.asyncio()
-async def test_achat_user_password(httpx_mock):
+async def test_achat_user_password(httpx_mock: HTTPXMock) -> None:
     httpx_mock.add_response(url=CHAT_URL, json=CHAT_COMPLETION)
     httpx_mock.add_response(url=TOKEN_URL, json=TOKEN)
 
@@ -287,7 +294,7 @@ async def test_achat_user_password(httpx_mock):
 
 
 @pytest.mark.asyncio()
-async def test_achat_authentication_error(httpx_mock):
+async def test_achat_authentication_error(httpx_mock: HTTPXMock) -> None:
     httpx_mock.add_response(url=AUTH_URL, json=ACCESS_TOKEN)
     httpx_mock.add_response(url=CHAT_URL, status_code=401)
 
@@ -297,7 +304,7 @@ async def test_achat_authentication_error(httpx_mock):
 
 
 @pytest.mark.asyncio()
-async def test_achat_update_token(httpx_mock):
+async def test_achat_update_token_false(httpx_mock: HTTPXMock) -> None:
     httpx_mock.add_response(url=CHAT_URL, status_code=401)
     access_token = "access_token"
 
@@ -305,11 +312,11 @@ async def test_achat_update_token(httpx_mock):
         assert client.token == access_token
         with pytest.raises(AuthenticationError):
             await client.achat(CHAT)
-        assert client.token is None
+        assert client.token == access_token
 
 
 @pytest.mark.asyncio()
-async def test_achat_update_token_credentials(httpx_mock):
+async def test_achat_update_token_credentials(httpx_mock: HTTPXMock) -> None:
     httpx_mock.add_response(url=AUTH_URL, json=ACCESS_TOKEN)
     httpx_mock.add_response(url=CHAT_URL, status_code=401)
     access_token = "access_token"
@@ -325,7 +332,7 @@ async def test_achat_update_token_credentials(httpx_mock):
 
 
 @pytest.mark.asyncio()
-async def test_achat_update_token_user_password(httpx_mock):
+async def test_achat_update_token_user_password(httpx_mock: HTTPXMock) -> None:
     httpx_mock.add_response(url=CHAT_URL, status_code=401)
     httpx_mock.add_response(url=TOKEN_URL, json=TOKEN)
     access_token = "access_token"
@@ -341,10 +348,10 @@ async def test_achat_update_token_user_password(httpx_mock):
 
 
 @pytest.mark.asyncio()
-async def test_astream(httpx_mock):
+async def test_astream(httpx_mock: HTTPXMock) -> None:
     httpx_mock.add_response(url=CHAT_URL, content=CHAT_COMPLETION_STREAM, headers=HEADERS_STREAM)
 
-    async with GigaChatAsyncClient(base_url=BASE_URL, use_auth=False) as client:
+    async with GigaChatAsyncClient(base_url=BASE_URL) as client:
         response = [chunk async for chunk in client.astream(CHAT)]
 
     assert len(response) == 3
@@ -353,11 +360,13 @@ async def test_astream(httpx_mock):
 
 
 @pytest.mark.asyncio()
-async def test_astream_access_token(httpx_mock):
+async def test_astream_access_token(httpx_mock: HTTPXMock) -> None:
     httpx_mock.add_response(url=CHAT_URL, content=CHAT_COMPLETION_STREAM, headers=HEADERS_STREAM)
     access_token = "access_token"
 
-    async with GigaChatAsyncClient(base_url=BASE_URL, access_token=access_token) as client:
+    async with GigaChatAsyncClient(
+        base_url=BASE_URL, access_token=access_token, user="user", password="password"
+    ) as client:
         response = [chunk async for chunk in client.astream(CHAT)]
 
     assert len(response) == 3
@@ -366,7 +375,7 @@ async def test_astream_access_token(httpx_mock):
 
 
 @pytest.mark.asyncio()
-async def test_astream_authentication_error(httpx_mock):
+async def test_astream_authentication_error(httpx_mock: HTTPXMock) -> None:
     httpx_mock.add_response(url=AUTH_URL, json=ACCESS_TOKEN)
     httpx_mock.add_response(url=CHAT_URL, status_code=401)
 
@@ -376,7 +385,7 @@ async def test_astream_authentication_error(httpx_mock):
 
 
 @pytest.mark.asyncio()
-async def test_astream_update_token(httpx_mock):
+async def test_astream_update_token(httpx_mock: HTTPXMock) -> None:
     httpx_mock.add_response(url=CHAT_URL, status_code=401)
     httpx_mock.add_response(url=TOKEN_URL, json=TOKEN)
     access_token = "access_token"
@@ -389,3 +398,14 @@ async def test_astream_update_token(httpx_mock):
             _ = [chunk async for chunk in client.astream(CHAT)]
         assert client.token
         assert client.token != access_token
+
+
+def test__update_token() -> None:
+    with GigaChatSyncClient(base_url=BASE_URL) as client:
+        client._update_token()
+
+
+@pytest.mark.asyncio()
+async def test__aupdate_token() -> None:
+    async with GigaChatAsyncClient(base_url=BASE_URL) as client:
+        await client._aupdate_token()

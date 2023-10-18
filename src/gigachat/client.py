@@ -21,6 +21,8 @@ from gigachat.models import (
     Chat,
     ChatCompletion,
     ChatCompletionChunk,
+    Messages,
+    MessagesRole,
     Model,
     Models,
     Token,
@@ -34,11 +36,16 @@ logger = logging.getLogger(__name__)
 
 def _get_kwargs(settings: Settings) -> Dict[str, Any]:
     """Настройки для подключения к API GIGACHAT"""
-    return {
+    kwargs = {
         "base_url": settings.base_url,
         "verify": settings.verify_ssl_certs,
         "timeout": httpx.Timeout(settings.timeout),
     }
+    if settings.ca_bundle_file:
+        kwargs["verify"] = settings.ca_bundle_file
+    if settings.cert_file:
+        kwargs["cert"] = (settings.cert_file, settings.key_file, settings.key_file_password)
+    return kwargs
 
 
 def _get_auth_kwargs(settings: Settings) -> Dict[str, Any]:
@@ -49,11 +56,14 @@ def _get_auth_kwargs(settings: Settings) -> Dict[str, Any]:
     }
 
 
-def _parse_chat(chat: Union[Chat, Dict[str, Any]], model: Optional[str]) -> Chat:
-    payload = Chat.parse_obj(chat)
+def _parse_chat(payload: Union[Chat, Dict[str, Any], str], model: Optional[str]) -> Chat:
+    if isinstance(payload, str):
+        chat = Chat(messages=[Messages(role=MessagesRole.USER, content=payload)])
+    else:
+        chat = Chat.parse_obj(payload)
     if model:
-        payload.model = model
-    return payload
+        chat.model = model
+    return chat
 
 
 def _build_access_token(token: Token) -> AccessToken:
@@ -76,24 +86,45 @@ class _BaseClient:
         password: Optional[str] = None,
         timeout: Optional[float] = None,
         verify_ssl_certs: Optional[bool] = None,
-        use_auth: Optional[bool] = None,
         verbose: Optional[bool] = None,
+        ca_bundle_file: Optional[str] = None,
+        cert_file: Optional[str] = None,
+        key_file: Optional[str] = None,
+        key_file_password: Optional[str] = None,
+        **_kwargs: Any,
     ) -> None:
-        config = {k: v for k, v in locals().items() if k != "self" and v is not None}
+        kwargs: Dict[str, Any] = {
+            "base_url": base_url,
+            "auth_url": auth_url,
+            "credentials": credentials,
+            "scope": scope,
+            "access_token": access_token,
+            "model": model,
+            "user": user,
+            "password": password,
+            "timeout": timeout,
+            "verify_ssl_certs": verify_ssl_certs,
+            "verbose": verbose,
+            "ca_bundle_file": ca_bundle_file,
+            "cert_file": cert_file,
+            "key_file": key_file,
+            "key_file_password": key_file_password,
+        }
+        config = {k: v for k, v in kwargs.items() if v is not None}
         self._settings = Settings(**config)
         if self._settings.access_token:
             self._access_token = AccessToken(access_token=self._settings.access_token, expires_at=0)
 
     @property
     def token(self) -> Optional[str]:
-        if self._settings.use_auth and self._access_token:
+        if self._access_token:
             return self._access_token.access_token
         else:
             return None
 
     @property
     def _use_auth(self) -> bool:
-        return self._settings.use_auth
+        return bool(self._settings.credentials or (self._settings.user and self._settings.password))
 
     def _check_validity_token(self) -> bool:
         """Проверить время завершения действия токена"""
@@ -162,12 +193,12 @@ class GigaChatSyncClient(_BaseClient):
         """Возвращает объект с описанием указанной модели"""
         return self._decorator(lambda: get_model.sync(self._client, model=model, access_token=self.token))
 
-    def chat(self, payload: Union[Chat, Dict[str, Any]]) -> ChatCompletion:
+    def chat(self, payload: Union[Chat, Dict[str, Any], str]) -> ChatCompletion:
         """Возвращает ответ модели с учетом переданных сообщений"""
         chat = _parse_chat(payload, model=self._settings.model)
         return self._decorator(lambda: post_chat.sync(self._client, chat=chat, access_token=self.token))
 
-    def stream(self, payload: Union[Chat, Dict[str, Any]]) -> Iterator[ChatCompletionChunk]:
+    def stream(self, payload: Union[Chat, Dict[str, Any], str]) -> Iterator[ChatCompletionChunk]:
         """Возвращает ответ модели с учетом переданных сообщений"""
         chat = _parse_chat(payload, model=self._settings.model)
 
@@ -249,7 +280,7 @@ class GigaChatAsyncClient(_BaseClient):
 
         return await self._adecorator(_acall)
 
-    async def achat(self, payload: Union[Chat, Dict[str, Any]]) -> ChatCompletion:
+    async def achat(self, payload: Union[Chat, Dict[str, Any], str]) -> ChatCompletion:
         """Возвращает ответ модели с учетом переданных сообщений"""
         chat = _parse_chat(payload, model=self._settings.model)
 
@@ -258,7 +289,7 @@ class GigaChatAsyncClient(_BaseClient):
 
         return await self._adecorator(_acall)
 
-    async def astream(self, payload: Union[Chat, Dict[str, Any]]) -> AsyncIterator[ChatCompletionChunk]:
+    async def astream(self, payload: Union[Chat, Dict[str, Any], str]) -> AsyncIterator[ChatCompletionChunk]:
         """Возвращает ответ модели с учетом переданных сообщений"""
         chat = _parse_chat(payload, model=self._settings.model)
 

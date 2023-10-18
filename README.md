@@ -30,40 +30,22 @@ pip install gigachat
 Пример показывает как импортировать библиотеку в [GigaChain](https://github.com/ai-forever/gigachain) и использовать ее для обращения к GigaChat:
 
 ```py
-"""Пример работы с чатом"""
 from gigachat import GigaChat
-from gigachat.models import Chat, Messages, MessagesRole
 
-
-payload = Chat(
-    messages=[
-        Messages(
-            role=MessagesRole.SYSTEM,
-            content="Ты внимательный бот-психолог, который помогает пользователю решить его проблемы."
-        )
-    ],
-    temperature=0.7,
-    max_tokens=100,
-)
-
-# Используйте токен, полученный в личном кабинете в поле Авторизационные данные
+# Используйте токен, полученный в личном кабинете из поля Авторизационные данные
 with GigaChat(credentials=..., verify_ssl_certs=False) as giga:
-    while True:
-        user_input = input("User: ")
-        payload.messages.append(Messages(role=MessagesRole.USER, content=user_input))
-        response = giga.chat(payload)
-        payload.messages.append(response.choices[0].message)
-        print("Bot: ", response.choices[0].message.content)
+    response = giga.chat("Какие факторы влияют на стоимость страховки на дом?")
+    print(response.choices[0].message.content)
 ```
 
 [Больше примеров](./examples/README.md).
 
-## Способы авторизации
+## Авторизация запросов
 
-Авторизация с помощью [токена доступа GigaChat API](https://developers.sber.ru/docs/ru/gigachat/api/authorization):
+Авторизация с помощью токена (в личном кабинете из поля Авторизационные данные):
 
 ```py
-giga = GigaChat(access_token=...)
+giga = GigaChat(credentials=...)
 ```
 
 Авторизация с помощью логина и пароля:
@@ -76,16 +58,19 @@ giga = GigaChat(
 )
 ```
 
-## Дополнительные настройки
-
-Отключение авторизации:
+Взаимная аутентификация по протоколу TLS (mTLS):
 
 ```py
-giga = GigaChat(use_auth=False)
+giga = GigaChat(
+    base_url="https://gigachat.devices.sberbank.ru/api/v1",
+    ca_bundle_file="certs/ca.pem",
+    cert_file="certs/tls.pem",
+    key_file="certs/tls.key",
+    key_file_password="123456",
+)
 ```
 
-> [!NOTE]
-> Функция может быть полезна, например, при авторизации с помощью Istio service mesh.
+## Дополнительные настройки
 
 Отключение проверки сертификатов:
 
@@ -95,7 +80,6 @@ giga = GigaChat(verify_ssl_certs=False)
 
 > [!WARNING]
 > Отключение проверки сертификатов снижает безопасность обмена данными.
-
 
 ### Настройки в переменных окружения
 

@@ -1,6 +1,6 @@
 import httpx
 import pytest
-import pytest_httpx
+from pytest_httpx import HTTPXMock
 
 from gigachat.api import get_model
 from gigachat.exceptions import AuthenticationError, ResponseError
@@ -14,7 +14,7 @@ MODEL_URL = f"{BASE_URL}/models/model"
 MODEL = get_json("model.json")
 
 
-def test_sync(httpx_mock: pytest_httpx.HTTPXMock):
+def test_sync(httpx_mock: HTTPXMock) -> None:
     httpx_mock.add_response(url=MODEL_URL, json=MODEL)
 
     with httpx.Client(base_url=BASE_URL) as client:
@@ -23,7 +23,7 @@ def test_sync(httpx_mock: pytest_httpx.HTTPXMock):
     assert isinstance(response, Model)
 
 
-def test_sync_value_error(httpx_mock):
+def test_sync_value_error(httpx_mock: HTTPXMock) -> None:
     httpx_mock.add_response(url=MODEL_URL, json={})
 
     with httpx.Client(base_url=BASE_URL) as client:
@@ -31,7 +31,7 @@ def test_sync_value_error(httpx_mock):
             get_model.sync(client, model="model")
 
 
-def test_sync_authentication_error(httpx_mock):
+def test_sync_authentication_error(httpx_mock: HTTPXMock) -> None:
     httpx_mock.add_response(url=MODEL_URL, status_code=401)
 
     with httpx.Client(base_url=BASE_URL) as client:
@@ -39,7 +39,7 @@ def test_sync_authentication_error(httpx_mock):
             get_model.sync(client, model="model")
 
 
-def test_sync_response_error(httpx_mock):
+def test_sync_response_error(httpx_mock: HTTPXMock) -> None:
     httpx_mock.add_response(url=MODEL_URL, status_code=400)
 
     with httpx.Client(base_url=BASE_URL) as client:
@@ -47,7 +47,7 @@ def test_sync_response_error(httpx_mock):
             get_model.sync(client, model="model")
 
 
-def test_sync_headers(httpx_mock: pytest_httpx.HTTPXMock):
+def test_sync_headers(httpx_mock: HTTPXMock) -> None:
     httpx_mock.add_response(url=MODEL_URL, json=MODEL)
 
     with httpx.Client(base_url=BASE_URL) as client:
@@ -64,7 +64,7 @@ def test_sync_headers(httpx_mock: pytest_httpx.HTTPXMock):
 
 
 @pytest.mark.asyncio()
-async def test_asyncio(httpx_mock):
+async def test_asyncio(httpx_mock: HTTPXMock) -> None:
     httpx_mock.add_response(url=MODEL_URL, json=MODEL)
 
     async with httpx.AsyncClient(base_url=BASE_URL) as client:
