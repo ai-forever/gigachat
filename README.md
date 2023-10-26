@@ -90,7 +90,7 @@ giga = GigaChat(verify_ssl_certs=False)
 
 Установка корневого сертификата "Минцифры России":
 ```bash
-curl -k "https://gu-st.ru/content/Other/doc/russian_trusted_root_ca.cer" >> $(python -m certifi)
+curl -k "https://gu-st.ru/content/Other/doc/russian_trusted_root_ca.cer" -w "\n" >> $(python -m certifi)
 ```
 
 ### Настройки в переменных окружения
