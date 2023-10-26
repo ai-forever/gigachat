@@ -6,7 +6,7 @@ ENV_PREFIX = "GIGACHAT_"
 
 BASE_URL = "https://gigachat.devices.sberbank.ru/api/v1"
 AUTH_URL = "https://ngw.devices.sberbank.ru:9443/api/v2/oauth"
-SCOPE = "GIGACHAT_API_CORP"
+SCOPE = "GIGACHAT_API_PERS"
 
 
 class Settings(BaseSettings):

@@ -38,7 +38,7 @@ with GigaChat(credentials=..., verify_ssl_certs=False) as giga:
     print(response.choices[0].message.content)
 ```
 
-[Больше примеров](./examples/README.md).
+[Больше примеров](https://github.com/ai-forever/gigachat/blob/dev/examples/README.md).
 
 ## Способы авторизации
 
@@ -46,6 +46,12 @@ with GigaChat(credentials=..., verify_ssl_certs=False) as giga:
 
 ```py
 giga = GigaChat(credentials=...)
+
+# Личное пространство
+giga = GigaChat(credentials=..., scope="GIGACHAT_API_PERS")
+
+# Корпоративное пространство
+giga = GigaChat(credentials=..., scope="GIGACHAT_API_CORP")
 ```
 
 Авторизация с помощью логина и пароля:
@@ -81,6 +87,12 @@ giga = GigaChat(verify_ssl_certs=False)
 > [!WARNING]
 > Отключение проверки сертификатов снижает безопасность обмена данными.
 
+
+Установка корневого сертификата "Минцифры России":
+```bash
+curl -k "https://gu-st.ru/content/Other/doc/russian_trusted_root_ca.cer" >> $(python -m certifi)
+```
+
 ### Настройки в переменных окружения
 
 Чтобы задать настройки с помощью переменных окружения, используйте префикс `GIGACHAT_`.
@@ -89,6 +101,7 @@ giga = GigaChat(verify_ssl_certs=False)
 
 ```sh
 export GIGACHAT_CREDENTIALS=...
+export GIGACHAT_SCOPE=...
 export GIGACHAT_VERIFY_SSL_CERTS=False
 ```
 
