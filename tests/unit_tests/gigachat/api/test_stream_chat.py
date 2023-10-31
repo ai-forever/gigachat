@@ -68,9 +68,6 @@ def test_sync_headers(httpx_mock: HTTPXMock) -> None:
                 client,
                 chat=CHAT,
                 access_token="access_token",
-                client_id="client_id",
-                session_id="session_id",
-                request_id="request_id",
             )
         )
 

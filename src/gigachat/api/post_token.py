@@ -1,8 +1,9 @@
 from http import HTTPStatus
-from typing import Any, Dict, Optional
+from typing import Any, Dict
 
 import httpx
 
+from gigachat.context import client_id_cvar, request_id_cvar, session_id_cvar
 from gigachat.exceptions import AuthenticationError, ResponseError
 from gigachat.models import Token
 
@@ -11,11 +12,12 @@ def _get_kwargs(
     *,
     user: str,
     password: str,
-    client_id: Optional[str] = None,
-    session_id: Optional[str] = None,
-    request_id: Optional[str] = None,
 ) -> Dict[str, Any]:
     headers = {}
+
+    client_id = client_id_cvar.get()
+    session_id = session_id_cvar.get()
+    request_id = request_id_cvar.get()
 
     if client_id:
         headers["X-Client-ID"] = client_id
@@ -46,13 +48,8 @@ def sync(
     *,
     user: str,
     password: str,
-    client_id: Optional[str] = None,
-    session_id: Optional[str] = None,
-    request_id: Optional[str] = None,
 ) -> Token:
-    kwargs = _get_kwargs(
-        user=user, password=password, client_id=client_id, session_id=session_id, request_id=request_id
-    )
+    kwargs = _get_kwargs(user=user, password=password)
     response = client.request(**kwargs)
     return _build_response(response)
 
@@ -62,12 +59,7 @@ async def asyncio(
     *,
     user: str,
     password: str,
-    client_id: Optional[str] = None,
-    session_id: Optional[str] = None,
-    request_id: Optional[str] = None,
 ) -> Token:
-    kwargs = _get_kwargs(
-        user=user, password=password, client_id=client_id, session_id=session_id, request_id=request_id
-    )
+    kwargs = _get_kwargs(user=user, password=password)
     response = await client.request(**kwargs)
     return _build_response(response)

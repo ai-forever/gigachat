@@ -27,3 +27,4 @@ class Chat(BaseModel):
     update_interval: Optional[float] = None
     """Интервал в секундах между отправкой токенов в потоке"""
     profanity_check: Optional[bool] = None
+    """Параметр цензуры"""

@@ -3,6 +3,7 @@ from typing import Any, Dict, Optional
 
 import httpx
 
+from gigachat.context import authorization_cvar, client_id_cvar, request_id_cvar, session_id_cvar
 from gigachat.exceptions import AuthenticationError, ResponseError
 from gigachat.models import Model
 
@@ -11,14 +12,19 @@ def _get_kwargs(
     *,
     model: str,
     access_token: Optional[str] = None,
-    client_id: Optional[str] = None,
-    session_id: Optional[str] = None,
-    request_id: Optional[str] = None,
 ) -> Dict[str, Any]:
     headers = {}
 
     if access_token:
         headers["Authorization"] = f"Bearer {access_token}"
+
+    authorization = authorization_cvar.get()
+    client_id = client_id_cvar.get()
+    session_id = session_id_cvar.get()
+    request_id = request_id_cvar.get()
+
+    if authorization:
+        headers["Authorization"] = authorization
     if client_id:
         headers["X-Client-ID"] = client_id
     if session_id:
@@ -47,14 +53,9 @@ def sync(
     *,
     model: str,
     access_token: Optional[str] = None,
-    client_id: Optional[str] = None,
-    session_id: Optional[str] = None,
-    request_id: Optional[str] = None,
 ) -> Model:
     """Возвращает объект с описанием указанной модели"""
-    kwargs = _get_kwargs(
-        model=model, access_token=access_token, client_id=client_id, session_id=session_id, request_id=request_id
-    )
+    kwargs = _get_kwargs(model=model, access_token=access_token)
     response = client.request(**kwargs)
     return _build_response(response)
 
@@ -64,13 +65,8 @@ async def asyncio(
     *,
     model: str,
     access_token: Optional[str] = None,
-    client_id: Optional[str] = None,
-    session_id: Optional[str] = None,
-    request_id: Optional[str] = None,
 ) -> Model:
     """Возвращает объект с описанием указанной модели"""
-    kwargs = _get_kwargs(
-        model=model, access_token=access_token, client_id=client_id, session_id=session_id, request_id=request_id
-    )
+    kwargs = _get_kwargs(model=model, access_token=access_token)
     response = await client.request(**kwargs)
     return _build_response(response)

@@ -3,6 +3,7 @@ from typing import Any, AsyncIterator, Dict, Iterator, Optional
 
 import httpx
 
+from gigachat.context import authorization_cvar, client_id_cvar, request_id_cvar, session_id_cvar
 from gigachat.exceptions import AuthenticationError, ResponseError
 from gigachat.models import Chat, ChatCompletionChunk
 
@@ -13,9 +14,6 @@ def _get_kwargs(
     *,
     chat: Chat,
     access_token: Optional[str] = None,
-    client_id: Optional[str] = None,
-    session_id: Optional[str] = None,
-    request_id: Optional[str] = None,
 ) -> Dict[str, Any]:
     headers = {
         "Accept": EVENT_STREAM,
@@ -23,6 +21,14 @@ def _get_kwargs(
     }
     if access_token:
         headers["Authorization"] = f"Bearer {access_token}"
+
+    authorization = authorization_cvar.get()
+    client_id = client_id_cvar.get()
+    session_id = session_id_cvar.get()
+    request_id = request_id_cvar.get()
+
+    if authorization:
+        headers["Authorization"] = authorization
     if client_id:
         headers["X-Client-ID"] = client_id
     if session_id:
@@ -69,13 +75,8 @@ def sync(
     *,
     chat: Chat,
     access_token: Optional[str] = None,
-    client_id: Optional[str] = None,
-    session_id: Optional[str] = None,
-    request_id: Optional[str] = None,
 ) -> Iterator[ChatCompletionChunk]:
-    kwargs = _get_kwargs(
-        chat=chat, access_token=access_token, client_id=client_id, session_id=session_id, request_id=request_id
-    )
+    kwargs = _get_kwargs(chat=chat, access_token=access_token)
     with client.stream(**kwargs) as response:
         _check_response(response)
         for line in response.iter_lines():
@@ -88,13 +89,8 @@ async def asyncio(
     *,
     chat: Chat,
     access_token: Optional[str] = None,
-    client_id: Optional[str] = None,
-    session_id: Optional[str] = None,
-    request_id: Optional[str] = None,
 ) -> AsyncIterator[ChatCompletionChunk]:
-    kwargs = _get_kwargs(
-        chat=chat, access_token=access_token, client_id=client_id, session_id=session_id, request_id=request_id
-    )
+    kwargs = _get_kwargs(chat=chat, access_token=access_token)
     async with client.stream(**kwargs) as response:
         _check_response(response)
         async for line in response.aiter_lines():

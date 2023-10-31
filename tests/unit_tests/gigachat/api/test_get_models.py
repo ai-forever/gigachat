@@ -52,7 +52,8 @@ def test_sync_headers(httpx_mock: HTTPXMock) -> None:
 
     with httpx.Client(base_url=BASE_URL) as client:
         response = get_models.sync(
-            client, access_token="access_token", client_id="client_id", session_id="session_id", request_id="request_id"
+            client,
+            access_token="access_token",
         )
 
     assert isinstance(response, Models)

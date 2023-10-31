@@ -3,6 +3,7 @@ from typing import Any, Dict, Optional
 
 import httpx
 
+from gigachat.context import authorization_cvar, client_id_cvar, request_id_cvar, session_id_cvar
 from gigachat.exceptions import AuthenticationError, ResponseError
 from gigachat.models import Models
 
@@ -10,14 +11,19 @@ from gigachat.models import Models
 def _get_kwargs(
     *,
     access_token: Optional[str] = None,
-    client_id: Optional[str] = None,
-    session_id: Optional[str] = None,
-    request_id: Optional[str] = None,
 ) -> Dict[str, Any]:
     headers = {}
 
     if access_token:
         headers["Authorization"] = f"Bearer {access_token}"
+
+    authorization = authorization_cvar.get()
+    client_id = client_id_cvar.get()
+    session_id = session_id_cvar.get()
+    request_id = request_id_cvar.get()
+
+    if authorization:
+        headers["Authorization"] = authorization
     if client_id:
         headers["X-Client-ID"] = client_id
     if session_id:
@@ -45,12 +51,9 @@ def sync(
     client: httpx.Client,
     *,
     access_token: Optional[str] = None,
-    client_id: Optional[str] = None,
-    session_id: Optional[str] = None,
-    request_id: Optional[str] = None,
 ) -> Models:
     """Возвращает массив объектов с данными доступных моделей"""
-    kwargs = _get_kwargs(access_token=access_token, client_id=client_id, session_id=session_id, request_id=request_id)
+    kwargs = _get_kwargs(access_token=access_token)
     response = client.request(**kwargs)
     return _build_response(response)
 
@@ -59,11 +62,8 @@ async def asyncio(
     client: httpx.AsyncClient,
     *,
     access_token: Optional[str] = None,
-    client_id: Optional[str] = None,
-    session_id: Optional[str] = None,
-    request_id: Optional[str] = None,
 ) -> Models:
     """Возвращает массив объектов с данными доступных моделей"""
-    kwargs = _get_kwargs(access_token=access_token, client_id=client_id, session_id=session_id, request_id=request_id)
+    kwargs = _get_kwargs(access_token=access_token)
     response = await client.request(**kwargs)
     return _build_response(response)

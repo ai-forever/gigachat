@@ -50,10 +50,13 @@ def _get_kwargs(settings: Settings) -> Dict[str, Any]:
 
 def _get_auth_kwargs(settings: Settings) -> Dict[str, Any]:
     """Настройки для подключения к серверу авторизации OAuth 2.0"""
-    return {
+    kwargs = {
         "verify": settings.verify_ssl_certs,
         "timeout": httpx.Timeout(settings.timeout),
     }
+    if settings.ca_bundle_file:
+        kwargs["verify"] = settings.ca_bundle_file
+    return kwargs
 
 
 def _parse_chat(payload: Union[Chat, Dict[str, Any], str], model: Optional[str]) -> Chat:

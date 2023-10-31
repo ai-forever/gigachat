@@ -2,37 +2,37 @@
 # See https://pre-commit.com/hooks.html for more hooks
 repos:
   - repo: https://github.com/pre-commit/pre-commit-hooks
-    rev: v3.2.0
+    rev: v4.5.0
     hooks:
       - id: trailing-whitespace
       - id: end-of-file-fixer
       - id: check-yaml
       - id: check-added-large-files
-      - id: check-byte-order-marker
+      - id: fix-byte-order-marker
       - id: detect-private-key
       - id: check-ast
   - repo: local
     hooks:
       - id: lint
-        name: Lint python source files
+        name: lint python source files
         entry: make lint
         language: system
         pass_filenames: false
         always_run: true
       - id: mypy
-        name: Perform type-checking
+        name: perform type-checking
         entry: make mypy
         language: system
         pass_filenames: false
         always_run: true
       - id: poetry-check
-        name: Validate the structure of the pyproject.toml
+        name: validate the structure of the pyproject.toml
         entry: poetry check
         language: system
         pass_filenames: false
         always_run: true
       - id: poetry-lock-check
-        name: Verify that poetry.lock is consistent with pyproject.toml
+        name: verify that poetry.lock is consistent with pyproject.toml
         entry: poetry lock --check
         language: system
         pass_filenames: false

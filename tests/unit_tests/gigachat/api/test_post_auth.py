@@ -51,7 +51,10 @@ def test_sync_headers(httpx_mock: HTTPXMock) -> None:
 
     with httpx.Client() as client:
         response = post_auth.sync(
-            client, url=MOCK_URL, credentials="credentials", scope="scope", request_id="request_id"
+            client,
+            url=MOCK_URL,
+            credentials="credentials",
+            scope="scope",
         )
 
     assert isinstance(response, AccessToken)
