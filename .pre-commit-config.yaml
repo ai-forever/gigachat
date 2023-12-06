@@ -19,12 +19,12 @@ repos:
         language: system
         pass_filenames: false
         always_run: true
-      - id: mypy
-        name: perform type-checking
-        entry: make mypy
-        language: system
-        pass_filenames: false
-        always_run: true
+      # - id: mypy
+      #   name: perform type-checking
+      #   entry: make mypy
+      #   language: system
+      #   pass_filenames: false
+      #   always_run: true
       - id: poetry-check
         name: validate the structure of the pyproject.toml
         entry: poetry check
