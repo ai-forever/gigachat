@@ -1,7 +1,18 @@
+from typing import Optional
+
 import pytest
 from pytest_httpx import HTTPXMock
+from pytest_mock import MockerFixture
 
-from gigachat.client import GigaChatAsyncClient, GigaChatSyncClient, _get_kwargs
+from gigachat.client import (
+    GIGACHAT_MODEL,
+    GigaChatAsyncClient,
+    GigaChatSyncClient,
+    _get_auth_kwargs,
+    _get_kwargs,
+    _logger,
+    _parse_chat,
+)
 from gigachat.exceptions import AuthenticationError
 from gigachat.models import Chat, ChatCompletion, ChatCompletionChunk, Model, Models
 from gigachat.settings import Settings
@@ -31,6 +42,54 @@ CREDENTIALS = "NmIwNzhlODgtNDlkNC00ZjFmLTljMjMtYjFiZTZjMjVmNTRlOmU3NWJlNjVhLTk4Y
 def test__get_kwargs() -> None:
     settings = Settings(ca_bundle_file="ca.pem", cert_file="tls.pem", key_file="tls.key")
     assert _get_kwargs(settings)
+
+
+def test__get_auth_kwargs() -> None:
+    settings = Settings(ca_bundle_file="ca.pem", cert_file="tls.pem", key_file="tls.key")
+    assert _get_auth_kwargs(settings)
+
+
+@pytest.mark.parametrize(
+    ("payload_value", "setting_value", "expected"),
+    [
+        (None, None, GIGACHAT_MODEL),
+        (None, "setting_model", "setting_model"),
+        ("payload_model", None, "payload_model"),
+        ("payload_model", "setting_model", "payload_model"),
+    ],
+)
+def test__parse_chat_model(payload_value: Optional[str], setting_value: Optional[str], expected: str) -> None:
+    actual = _parse_chat(Chat(messages=[], model=payload_value), Settings(model=setting_value))
+    assert actual.model is expected
+
+
+@pytest.mark.parametrize(
+    ("payload_value", "setting_value", "expected"),
+    [
+        (None, None, None),
+        (None, False, False),
+        (None, True, True),
+        (False, None, False),
+        (False, False, False),
+        (False, True, False),
+        (True, None, True),
+        (True, False, True),
+        (True, True, True),
+    ],
+)
+def test__parse_chat_profanity_check(
+    payload_value: Optional[bool], setting_value: Optional[bool], expected: Optional[bool]
+) -> None:
+    actual = _parse_chat(Chat(messages=[], profanity_check=payload_value), Settings(profanity_check=setting_value))
+    assert actual.profanity_check is expected
+
+
+def test__unknown_kwargs(mocker: MockerFixture) -> None:
+    spy = mocker.spy(_logger, "warning")
+
+    GigaChatSyncClient(foo="bar")
+
+    assert spy.call_count == 1
 
 
 def test_get_models(httpx_mock: HTTPXMock) -> None:

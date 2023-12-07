@@ -5,7 +5,6 @@ import httpx
 
 from gigachat.context import (
     authorization_cvar,
-    client_id_cvar,
     operation_id_cvar,
     request_id_cvar,
     service_id_cvar,
@@ -26,7 +25,6 @@ def _get_kwargs(
         headers["Authorization"] = f"Bearer {access_token}"
 
     authorization = authorization_cvar.get()
-    client_id = client_id_cvar.get()
     session_id = session_id_cvar.get()
     request_id = request_id_cvar.get()
     service_id = service_id_cvar.get()
@@ -34,8 +32,6 @@ def _get_kwargs(
 
     if authorization:
         headers["Authorization"] = authorization
-    if client_id:
-        headers["X-Client-ID"] = client_id
     if session_id:
         headers["X-Session-ID"] = session_id
     if request_id:

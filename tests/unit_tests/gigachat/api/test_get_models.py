@@ -3,6 +3,7 @@ import pytest
 from pytest_httpx import HTTPXMock
 
 from gigachat.api import get_models
+from gigachat.context import authorization_cvar, operation_id_cvar, request_id_cvar, service_id_cvar, session_id_cvar
 from gigachat.exceptions import AuthenticationError, ResponseError
 from gigachat.models import Models
 
@@ -12,6 +13,22 @@ BASE_URL = "http://testserver/api"
 MODELS_URL = f"{BASE_URL}/models"
 
 MODELS = get_json("models.json")
+
+
+def test__kwargs_context_vars() -> None:
+    token_authorization_cvar = authorization_cvar.set("authorization_cvar")
+    token_request_id_cvar = request_id_cvar.set("request_id_cvar")
+    token_session_id_cvar = session_id_cvar.set("session_id_cvar")
+    token_service_id_cvar = service_id_cvar.set("service_id_cvar")
+    token_operation_id_cvar = operation_id_cvar.set("operation_id_cvar")
+
+    assert get_models._get_kwargs()
+
+    authorization_cvar.reset(token_authorization_cvar)
+    request_id_cvar.reset(token_request_id_cvar)
+    session_id_cvar.reset(token_session_id_cvar)
+    service_id_cvar.reset(token_service_id_cvar)
+    operation_id_cvar.reset(token_operation_id_cvar)
 
 
 def test_sync(httpx_mock: HTTPXMock) -> None:

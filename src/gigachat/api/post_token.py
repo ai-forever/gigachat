@@ -3,7 +3,7 @@ from typing import Any, Dict
 
 import httpx
 
-from gigachat.context import client_id_cvar, operation_id_cvar, request_id_cvar, service_id_cvar, session_id_cvar
+from gigachat.context import operation_id_cvar, request_id_cvar, service_id_cvar, session_id_cvar
 from gigachat.exceptions import AuthenticationError, ResponseError
 from gigachat.models import Token
 
@@ -15,14 +15,11 @@ def _get_kwargs(
 ) -> Dict[str, Any]:
     headers = {}
 
-    client_id = client_id_cvar.get()
     session_id = session_id_cvar.get()
     request_id = request_id_cvar.get()
     service_id = service_id_cvar.get()
     operation_id = operation_id_cvar.get()
 
-    if client_id:
-        headers["X-Client-ID"] = client_id
     if session_id:
         headers["X-Session-ID"] = session_id
     if request_id:

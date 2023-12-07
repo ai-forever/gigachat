@@ -13,11 +13,18 @@ class Settings(BaseSettings):
     base_url: str = BASE_URL
     """Адрес относительно которого выполняются запросы"""
     auth_url: str = AUTH_URL
+    """Адрес для запроса токена доступа OAuth 2.0"""
     credentials: Optional[str] = None
+    """Авторизационные данные"""
     scope: str = SCOPE
-
+    """Версия API, к которой предоставляется доступ"""
     access_token: Optional[str] = None
+    """JWE токен"""
     model: Optional[str] = None
+    """Название модели, от которой нужно получить ответ"""
+    profanity_check: Optional[bool] = None
+    """Параметр цензуры"""
+
     user: Optional[str] = None
     password: Optional[str] = None
 

@@ -3,6 +3,7 @@ import pytest
 from pytest_httpx import HTTPXMock
 
 from gigachat.api import post_token
+from gigachat.context import operation_id_cvar, request_id_cvar, service_id_cvar, session_id_cvar
 from gigachat.exceptions import AuthenticationError, ResponseError
 from gigachat.models import Token
 
@@ -12,6 +13,20 @@ BASE_URL = "http://testserver/api"
 MOCK_URL = f"{BASE_URL}/token"
 
 TOKEN = get_json("token.json")
+
+
+def test__kwargs_context_vars() -> None:
+    token_request_id_cvar = request_id_cvar.set("request_id_cvar")
+    token_session_id_cvar = session_id_cvar.set("session_id_cvar")
+    token_service_id_cvar = service_id_cvar.set("service_id_cvar")
+    token_operation_id_cvar = operation_id_cvar.set("operation_id_cvar")
+
+    assert post_token._get_kwargs(user="user", password="password")
+
+    request_id_cvar.reset(token_request_id_cvar)
+    session_id_cvar.reset(token_session_id_cvar)
+    service_id_cvar.reset(token_service_id_cvar)
+    operation_id_cvar.reset(token_operation_id_cvar)
 
 
 def test_sync(httpx_mock: HTTPXMock) -> None:
