@@ -11,6 +11,8 @@ from gigachat.models.model import Model
 from gigachat.models.models import Models
 from gigachat.models.token import Token
 from gigachat.models.usage import Usage
+from gigachat.models.tokens_count import TokensCount
+
 
 __all__ = (
     "AccessToken",
@@ -26,4 +28,5 @@ __all__ = (
     "Models",
     "Token",
     "Usage",
+    "TokensCount"
 )
