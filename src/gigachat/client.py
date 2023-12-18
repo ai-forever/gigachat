@@ -1,21 +1,10 @@
 import logging
 from functools import cached_property
-from typing import (
-    Any,
-    AsyncIterator,
-    Awaitable,
-    Callable,
-    Dict,
-    Iterator,
-    Optional,
-    TypeVar,
-    Union,
-    List
-)
+from typing import Any, AsyncIterator, Awaitable, Callable, Dict, Iterator, List, Optional, TypeVar, Union
 
 import httpx
 
-from gigachat.api import get_model, get_models, post_auth, post_chat, post_token, stream_chat, post_tokens_count
+from gigachat.api import get_model, get_models, post_auth, post_chat, post_token, post_tokens_count, stream_chat
 from gigachat.exceptions import AuthenticationError
 from gigachat.models import (
     AccessToken,
@@ -199,9 +188,13 @@ class GigaChatSyncClient(_BaseClient):
             self._update_token()
         return call()
 
-    def tokens_count(self, input: List[str], model: str) -> List[TokensCount]:
+    def tokens_count(self, input_: List[str], model: str | None = None) -> List[TokensCount]:
         """Возвращает объект с информацией о количестве токенов"""
-        return self._decorator(lambda: post_tokens_count.sync(self._client, access_token=self.token, input=input, model=model))
+        if not model:
+            model = self._settings.model or GIGACHAT_MODEL
+        return self._decorator(
+            lambda: post_tokens_count.sync(self._client, input_=input_, model=model, access_token=self.token)
+        )
 
     def get_models(self) -> Models:
         """Возвращает массив объектов с данными доступных моделей"""
@@ -282,9 +275,13 @@ class GigaChatAsyncClient(_BaseClient):
             await self._aupdate_token()
         return await acall()
 
-    async def atokens_count(self, input: List[str], model: str) -> List[TokensCount]:
-        async def _acall() -> Model:
-            return await post_tokens_count.asyncio(self._aclient, access_token=self.token, input=input, model=model)
+    async def atokens_count(self, input_: List[str], model: str | None = None) -> List[TokensCount]:
+        """Возвращает объект с информацией о количестве токенов"""
+        if not model:
+            model = self._settings.model or GIGACHAT_MODEL
+
+        async def _acall() -> List[TokensCount]:
+            return await post_tokens_count.asyncio(self._aclient, input_=input_, model=model, access_token=self.token)
 
         return await self._adecorator(_acall)
 

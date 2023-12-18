@@ -1,4 +1,4 @@
-from typing import Optional, List
+from typing import List, Optional
 
 import pytest
 from pytest_httpx import HTTPXMock
@@ -98,7 +98,7 @@ def test_get_tokens_count(httpx_mock: HTTPXMock) -> None:
     httpx_mock.add_response(url=TOKENS_COUNT_URL, json=TOKENS_COUNT)
 
     with GigaChatSyncClient(base_url=BASE_URL) as client:
-        response = client.tokens_count(input=["123"], model="GigaChat:latest")
+        response = client.tokens_count(input_=["123"], model="GigaChat:latest")
     assert isinstance(response, List)
     for row in response:
         assert isinstance(row, TokensCount)
@@ -316,7 +316,7 @@ async def test_atokens_count(httpx_mock: HTTPXMock) -> None:
     httpx_mock.add_response(url=TOKENS_COUNT_URL, json=TOKENS_COUNT)
 
     async with GigaChatAsyncClient(base_url=BASE_URL) as client:
-        response = await client.atokens_count(input=["text"], model="GigaChat:latest")
+        response = await client.atokens_count(input_=["text"], model="GigaChat:latest")
 
     assert isinstance(response, List)
     for row in response:

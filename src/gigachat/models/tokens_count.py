@@ -1,5 +1,3 @@
-from typing import List
-
 from gigachat.pydantic_v1 import BaseModel, Field
 
 
