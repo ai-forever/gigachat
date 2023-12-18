@@ -1,4 +1,4 @@
-from typing import Optional
+from typing import Optional, List
 
 import pytest
 from pytest_httpx import HTTPXMock
@@ -14,7 +14,7 @@ from gigachat.client import (
     _parse_chat,
 )
 from gigachat.exceptions import AuthenticationError
-from gigachat.models import Chat, ChatCompletion, ChatCompletionChunk, Model, Models
+from gigachat.models import Chat, ChatCompletion, ChatCompletionChunk, Model, Models, TokensCount
 from gigachat.settings import Settings
 
 from ...utils import get_bytes, get_json
@@ -25,6 +25,7 @@ CHAT_URL = f"{BASE_URL}/chat/completions"
 TOKEN_URL = f"{BASE_URL}/token"
 MODELS_URL = f"{BASE_URL}/models"
 MODEL_URL = f"{BASE_URL}/models/model"
+TOKENS_COUNT_URL = f"{BASE_URL}/tokens/count"
 
 ACCESS_TOKEN = get_json("access_token.json")
 TOKEN = get_json("token.json")
@@ -32,6 +33,7 @@ CHAT = Chat.parse_obj(get_json("chat.json"))
 CHAT_COMPLETION = get_json("chat_completion.json")
 CHAT_COMPLETION_STREAM = get_bytes("chat_completion.stream")
 MODELS = get_json("models.json")
+TOKENS_COUNT = get_json("tokens_count.json")
 MODEL = get_json("model.json")
 
 HEADERS_STREAM = {"Content-Type": "text/event-stream"}
@@ -90,6 +92,16 @@ def test__unknown_kwargs(mocker: MockerFixture) -> None:
     GigaChatSyncClient(foo="bar")
 
     assert spy.call_count == 1
+
+
+def test_get_tokens_count(httpx_mock: HTTPXMock) -> None:
+    httpx_mock.add_response(url=TOKENS_COUNT_URL, json=TOKENS_COUNT)
+
+    with GigaChatSyncClient(base_url=BASE_URL) as client:
+        response = client.tokens_count(input=["123"], model="GigaChat:latest")
+    assert isinstance(response, List)
+    for row in response:
+        assert isinstance(row, TokensCount)
 
 
 def test_get_models(httpx_mock: HTTPXMock) -> None:
@@ -297,6 +309,18 @@ async def test_aget_models(httpx_mock: HTTPXMock) -> None:
         response = await client.aget_models()
 
     assert isinstance(response, Models)
+
+
+@pytest.mark.asyncio()
+async def test_atokens_count(httpx_mock: HTTPXMock) -> None:
+    httpx_mock.add_response(url=TOKENS_COUNT_URL, json=TOKENS_COUNT)
+
+    async with GigaChatAsyncClient(base_url=BASE_URL) as client:
+        response = await client.atokens_count(input=["text"], model="GigaChat:latest")
+
+    assert isinstance(response, List)
+    for row in response:
+        assert isinstance(row, TokensCount)
 
 
 @pytest.mark.asyncio()
