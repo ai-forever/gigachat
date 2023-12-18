@@ -10,11 +10,12 @@ from typing import (
     Optional,
     TypeVar,
     Union,
+    List
 )
 
 import httpx
 
-from gigachat.api import get_model, get_models, post_auth, post_chat, post_token, stream_chat
+from gigachat.api import get_model, get_models, post_auth, post_chat, post_token, stream_chat, post_tokens_count
 from gigachat.exceptions import AuthenticationError
 from gigachat.models import (
     AccessToken,
@@ -26,6 +27,7 @@ from gigachat.models import (
     Model,
     Models,
     Token,
+    TokensCount,
 )
 from gigachat.settings import Settings
 
@@ -188,6 +190,10 @@ class GigaChatSyncClient(_BaseClient):
             self._update_token()
         return call()
 
+    def tokens_count(self, input: List[str], model: str) -> List[TokensCount]:
+        """Возвращает объект с информацией о количестве токенов"""
+        return self._decorator(lambda: post_tokens_count.sync(self._client, access_token=self.token, input=input, model=model))
+
     def get_models(self) -> Models:
         """Возвращает массив объектов с данными доступных моделей"""
         return self._decorator(lambda: get_models.sync(self._client, access_token=self.token))
@@ -266,6 +272,12 @@ class GigaChatAsyncClient(_BaseClient):
                     self._reset_token()
             await self._aupdate_token()
         return await acall()
+
+    async def atokens_count(self, input: List[str], model: str) -> List[TokensCount]:
+        async def _acall() -> Model:
+            return await post_tokens_count.asyncio(self._aclient, access_token=self.token, input=input, model=model)
+
+        return await self._adecorator(_acall)
 
     async def aget_models(self) -> Models:
         """Возвращает массив объектов с данными доступных моделей"""
