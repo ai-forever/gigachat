@@ -41,7 +41,7 @@ with GigaChat(credentials=..., verify_ssl_certs=False) as giga:
 ```
 
 > [!NOTE]
-> Вы можете явно указать используемюу модель с помощью параметра `model`, например `GigaChat(model='GigaChat-Pro')`
+> Вы можете явно указать используемую модель с помощью параметра `model`, например `GigaChat(model='GigaChat-Pro')`
 > Получить список доступных моделей можно с помощью метода `get_models()`
 
 > [!NOTE]
