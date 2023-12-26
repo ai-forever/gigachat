@@ -188,7 +188,7 @@ class GigaChatSyncClient(_BaseClient):
             self._update_token()
         return call()
 
-    def tokens_count(self, input_: List[str], model: str | None = None) -> List[TokensCount]:
+    def tokens_count(self, input_: List[str], model: Optional[str] = None) -> List[TokensCount]:
         """Возвращает объект с информацией о количестве токенов"""
         if not model:
             model = self._settings.model or GIGACHAT_MODEL
@@ -275,7 +275,7 @@ class GigaChatAsyncClient(_BaseClient):
             await self._aupdate_token()
         return await acall()
 
-    async def atokens_count(self, input_: List[str], model: str | None = None) -> List[TokensCount]:
+    async def atokens_count(self, input_: List[str], model: Optional[str] = None) -> List[TokensCount]:
         """Возвращает объект с информацией о количестве токенов"""
         if not model:
             model = self._settings.model or GIGACHAT_MODEL
