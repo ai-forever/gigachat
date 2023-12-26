@@ -4,6 +4,8 @@ from gigachat.models.chat_completion import ChatCompletion
 from gigachat.models.chat_completion_chunk import ChatCompletionChunk
 from gigachat.models.choices import Choices
 from gigachat.models.choices_chunk import ChoicesChunk
+from gigachat.models.embedding import Embedding
+from gigachat.models.embeddings import Embeddings
 from gigachat.models.messages import Messages
 from gigachat.models.messages_chunk import MessagesChunk
 from gigachat.models.messages_role import MessagesRole
@@ -20,6 +22,8 @@ __all__ = (
     "ChatCompletionChunk",
     "Choices",
     "ChoicesChunk",
+    "Embedding",
+    "Embeddings",
     "Messages",
     "MessagesChunk",
     "MessagesRole",

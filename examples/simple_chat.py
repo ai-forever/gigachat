@@ -2,7 +2,6 @@
 from gigachat import GigaChat
 from gigachat.models import Chat, Messages, MessagesRole
 
-
 payload = Chat(
     messages=[
         Messages(
