@@ -14,7 +14,16 @@ from gigachat.client import (
     _parse_chat,
 )
 from gigachat.exceptions import AuthenticationError
-from gigachat.models import Chat, ChatCompletion, ChatCompletionChunk, Model, Models, TokensCount
+from gigachat.models import (
+    Chat,
+    ChatCompletion,
+    ChatCompletionChunk,
+    Embedding,
+    Embeddings,
+    Model,
+    Models,
+    TokensCount,
+)
 from gigachat.settings import Settings
 
 from ...utils import get_bytes, get_json
@@ -26,12 +35,14 @@ TOKEN_URL = f"{BASE_URL}/token"
 MODELS_URL = f"{BASE_URL}/models"
 MODEL_URL = f"{BASE_URL}/models/model"
 TOKENS_COUNT_URL = f"{BASE_URL}/tokens/count"
+EMBEDDINGS_URL = f"{BASE_URL}/embeddings"
 
 ACCESS_TOKEN = get_json("access_token.json")
 TOKEN = get_json("token.json")
 CHAT = Chat.parse_obj(get_json("chat.json"))
 CHAT_COMPLETION = get_json("chat_completion.json")
 CHAT_COMPLETION_STREAM = get_bytes("chat_completion.stream")
+EMBEDDINGS = get_json("embeddings.json")
 MODELS = get_json("models.json")
 TOKENS_COUNT = get_json("tokens_count.json")
 MODEL = get_json("model.json")
@@ -238,6 +249,16 @@ def test_chat_update_token_error(httpx_mock: HTTPXMock) -> None:
     assert client.token != access_token
 
 
+def test_embeddings(httpx_mock: HTTPXMock) -> None:
+    httpx_mock.add_response(url=EMBEDDINGS_URL, json=EMBEDDINGS)
+
+    with GigaChatSyncClient(base_url=BASE_URL) as client:
+        response = client.embeddings(text="text", model="model")
+    assert isinstance(response, Embeddings)
+    for row in response.data:
+        assert isinstance(row, Embedding)
+
+
 def test_stream(httpx_mock: HTTPXMock) -> None:
     httpx_mock.add_response(url=CHAT_URL, content=CHAT_COMPLETION_STREAM, headers=HEADERS_STREAM)
 
@@ -428,6 +449,17 @@ async def test_achat_update_token_user_password(httpx_mock: HTTPXMock) -> None:
             await client.achat(CHAT)
         assert client.token
         assert client.token != access_token
+
+
+@pytest.mark.asyncio()
+async def test_aembeddings(httpx_mock: HTTPXMock) -> None:
+    httpx_mock.add_response(url=EMBEDDINGS_URL, json=EMBEDDINGS)
+
+    async with GigaChatAsyncClient(base_url=BASE_URL) as client:
+        response = await client.aembeddings(text="text", model="model")
+    assert isinstance(response, Embeddings)
+    for row in response.data:
+        assert isinstance(row, Embedding)
 
 
 @pytest.mark.asyncio()
