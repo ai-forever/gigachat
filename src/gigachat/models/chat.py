@@ -3,19 +3,18 @@ from typing import List, Optional
 from gigachat.models.messages import Messages
 from gigachat.pydantic_v1 import BaseModel
 
-LATEST_MODEL = "GigaChat:latest"
-
 
 class Chat(BaseModel):
     """Параметры запроса"""
 
-    model: str = LATEST_MODEL
+    model: Optional[str] = None
     """Название модели, от которой нужно получить ответ"""
     messages: List[Messages]
     """Массив сообщений"""
     temperature: Optional[float] = None
     """Температура выборки в диапазоне от ноля до двух"""
     top_p: Optional[float] = None
+    """Альтернатива параметру температуры"""
     n: Optional[int] = None
     """Количество вариантов ответов, которые нужно сгенерировать для каждого входного сообщения"""
     stream: Optional[bool] = None

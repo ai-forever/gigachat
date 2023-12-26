@@ -4,7 +4,6 @@ import time
 from gigachat import GigaChat
 from gigachat.models import Chat, Messages, MessagesRole
 
-
 PAYLOAD = Chat(
     messages=[
         Messages(
@@ -30,5 +29,5 @@ async def main():
             print(time.time(), chunk, flush=True)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     asyncio.run(main())

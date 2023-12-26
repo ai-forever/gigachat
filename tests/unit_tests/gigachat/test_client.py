@@ -1,9 +1,29 @@
+from typing import List, Optional
+
 import pytest
 from pytest_httpx import HTTPXMock
+from pytest_mock import MockerFixture
 
-from gigachat.client import GigaChatAsyncClient, GigaChatSyncClient, _get_kwargs
+from gigachat.client import (
+    GIGACHAT_MODEL,
+    GigaChatAsyncClient,
+    GigaChatSyncClient,
+    _get_auth_kwargs,
+    _get_kwargs,
+    _logger,
+    _parse_chat,
+)
 from gigachat.exceptions import AuthenticationError
-from gigachat.models import Chat, ChatCompletion, ChatCompletionChunk, Model, Models
+from gigachat.models import (
+    Chat,
+    ChatCompletion,
+    ChatCompletionChunk,
+    Embedding,
+    Embeddings,
+    Model,
+    Models,
+    TokensCount,
+)
 from gigachat.settings import Settings
 
 from ...utils import get_bytes, get_json
@@ -14,13 +34,17 @@ CHAT_URL = f"{BASE_URL}/chat/completions"
 TOKEN_URL = f"{BASE_URL}/token"
 MODELS_URL = f"{BASE_URL}/models"
 MODEL_URL = f"{BASE_URL}/models/model"
+TOKENS_COUNT_URL = f"{BASE_URL}/tokens/count"
+EMBEDDINGS_URL = f"{BASE_URL}/embeddings"
 
 ACCESS_TOKEN = get_json("access_token.json")
 TOKEN = get_json("token.json")
 CHAT = Chat.parse_obj(get_json("chat.json"))
 CHAT_COMPLETION = get_json("chat_completion.json")
 CHAT_COMPLETION_STREAM = get_bytes("chat_completion.stream")
+EMBEDDINGS = get_json("embeddings.json")
 MODELS = get_json("models.json")
+TOKENS_COUNT = get_json("tokens_count.json")
 MODEL = get_json("model.json")
 
 HEADERS_STREAM = {"Content-Type": "text/event-stream"}
@@ -31,6 +55,64 @@ CREDENTIALS = "NmIwNzhlODgtNDlkNC00ZjFmLTljMjMtYjFiZTZjMjVmNTRlOmU3NWJlNjVhLTk4Y
 def test__get_kwargs() -> None:
     settings = Settings(ca_bundle_file="ca.pem", cert_file="tls.pem", key_file="tls.key")
     assert _get_kwargs(settings)
+
+
+def test__get_auth_kwargs() -> None:
+    settings = Settings(ca_bundle_file="ca.pem", cert_file="tls.pem", key_file="tls.key")
+    assert _get_auth_kwargs(settings)
+
+
+@pytest.mark.parametrize(
+    ("payload_value", "setting_value", "expected"),
+    [
+        (None, None, GIGACHAT_MODEL),
+        (None, "setting_model", "setting_model"),
+        ("payload_model", None, "payload_model"),
+        ("payload_model", "setting_model", "payload_model"),
+    ],
+)
+def test__parse_chat_model(payload_value: Optional[str], setting_value: Optional[str], expected: str) -> None:
+    actual = _parse_chat(Chat(messages=[], model=payload_value), Settings(model=setting_value))
+    assert actual.model is expected
+
+
+@pytest.mark.parametrize(
+    ("payload_value", "setting_value", "expected"),
+    [
+        (None, None, None),
+        (None, False, False),
+        (None, True, True),
+        (False, None, False),
+        (False, False, False),
+        (False, True, False),
+        (True, None, True),
+        (True, False, True),
+        (True, True, True),
+    ],
+)
+def test__parse_chat_profanity_check(
+    payload_value: Optional[bool], setting_value: Optional[bool], expected: Optional[bool]
+) -> None:
+    actual = _parse_chat(Chat(messages=[], profanity_check=payload_value), Settings(profanity_check=setting_value))
+    assert actual.profanity_check is expected
+
+
+def test__unknown_kwargs(mocker: MockerFixture) -> None:
+    spy = mocker.spy(_logger, "warning")
+
+    GigaChatSyncClient(foo="bar")
+
+    assert spy.call_count == 1
+
+
+def test_get_tokens_count(httpx_mock: HTTPXMock) -> None:
+    httpx_mock.add_response(url=TOKENS_COUNT_URL, json=TOKENS_COUNT)
+
+    with GigaChatSyncClient(base_url=BASE_URL) as client:
+        response = client.tokens_count(input_=["123"], model="GigaChat:latest")
+    assert isinstance(response, List)
+    for row in response:
+        assert isinstance(row, TokensCount)
 
 
 def test_get_models(httpx_mock: HTTPXMock) -> None:
@@ -167,6 +249,16 @@ def test_chat_update_token_error(httpx_mock: HTTPXMock) -> None:
     assert client.token != access_token
 
 
+def test_embeddings(httpx_mock: HTTPXMock) -> None:
+    httpx_mock.add_response(url=EMBEDDINGS_URL, json=EMBEDDINGS)
+
+    with GigaChatSyncClient(base_url=BASE_URL) as client:
+        response = client.embeddings(text="text", model="model")
+    assert isinstance(response, Embeddings)
+    for row in response.data:
+        assert isinstance(row, Embedding)
+
+
 def test_stream(httpx_mock: HTTPXMock) -> None:
     httpx_mock.add_response(url=CHAT_URL, content=CHAT_COMPLETION_STREAM, headers=HEADERS_STREAM)
 
@@ -238,6 +330,18 @@ async def test_aget_models(httpx_mock: HTTPXMock) -> None:
         response = await client.aget_models()
 
     assert isinstance(response, Models)
+
+
+@pytest.mark.asyncio()
+async def test_atokens_count(httpx_mock: HTTPXMock) -> None:
+    httpx_mock.add_response(url=TOKENS_COUNT_URL, json=TOKENS_COUNT)
+
+    async with GigaChatAsyncClient(base_url=BASE_URL) as client:
+        response = await client.atokens_count(input_=["text"], model="GigaChat:latest")
+
+    assert isinstance(response, List)
+    for row in response:
+        assert isinstance(row, TokensCount)
 
 
 @pytest.mark.asyncio()
@@ -345,6 +449,17 @@ async def test_achat_update_token_user_password(httpx_mock: HTTPXMock) -> None:
             await client.achat(CHAT)
         assert client.token
         assert client.token != access_token
+
+
+@pytest.mark.asyncio()
+async def test_aembeddings(httpx_mock: HTTPXMock) -> None:
+    httpx_mock.add_response(url=EMBEDDINGS_URL, json=EMBEDDINGS)
+
+    async with GigaChatAsyncClient(base_url=BASE_URL) as client:
+        response = await client.aembeddings(text="text", model="model")
+    assert isinstance(response, Embeddings)
+    for row in response.data:
+        assert isinstance(row, Embedding)
 
 
 @pytest.mark.asyncio()

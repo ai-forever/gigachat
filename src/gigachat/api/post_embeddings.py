@@ -1,25 +1,38 @@
 from http import HTTPStatus
-from typing import Any, Dict
+from typing import Any, Dict, Optional
 
 import httpx
 
-from gigachat.context import operation_id_cvar, request_id_cvar, service_id_cvar, session_id_cvar
+from gigachat.context import (
+    authorization_cvar,
+    operation_id_cvar,
+    request_id_cvar,
+    service_id_cvar,
+    session_id_cvar,
+)
 from gigachat.exceptions import AuthenticationError, ResponseError
-from gigachat.models import Token
+from gigachat.models import Embeddings
 
 
 def _get_kwargs(
     *,
-    user: str,
-    password: str,
+    input_: str,
+    model: str,
+    access_token: Optional[str] = None,
 ) -> Dict[str, Any]:
     headers = {}
 
+    if access_token:
+        headers["Authorization"] = f"Bearer {access_token}"
+
+    authorization = authorization_cvar.get()
     session_id = session_id_cvar.get()
     request_id = request_id_cvar.get()
     service_id = service_id_cvar.get()
     operation_id = operation_id_cvar.get()
 
+    if authorization:
+        headers["Authorization"] = authorization
     if session_id:
         headers["X-Session-ID"] = session_id
     if request_id:
@@ -31,15 +44,15 @@ def _get_kwargs(
 
     return {
         "method": "POST",
-        "url": "/token",
-        "auth": (user, password),
+        "url": "/embeddings",
+        "json": {"input": input_, "model": model},
         "headers": headers,
     }
 
 
-def _build_response(response: httpx.Response) -> Token:
+def _build_response(response: httpx.Response) -> Embeddings:
     if response.status_code == HTTPStatus.OK:
-        return Token(**response.json())
+        return Embeddings(**response.json())
     elif response.status_code == HTTPStatus.UNAUTHORIZED:
         raise AuthenticationError(response.url, response.status_code, response.content, response.headers)
     else:
@@ -49,10 +62,11 @@ def _build_response(response: httpx.Response) -> Token:
 def sync(
     client: httpx.Client,
     *,
-    user: str,
-    password: str,
-) -> Token:
-    kwargs = _get_kwargs(user=user, password=password)
+    input_: str,
+    model: str,
+    access_token: Optional[str] = None,
+) -> Embeddings:
+    kwargs = _get_kwargs(input_=input_, model=model, access_token=access_token)
     response = client.request(**kwargs)
     return _build_response(response)
 
@@ -60,9 +74,10 @@ def sync(
 async def asyncio(
     client: httpx.AsyncClient,
     *,
-    user: str,
-    password: str,
-) -> Token:
-    kwargs = _get_kwargs(user=user, password=password)
+    input_: str,
+    model: str,
+    access_token: Optional[str] = None,
+) -> Embeddings:
+    kwargs = _get_kwargs(input_=input_, model=model, access_token=access_token)
     response = await client.request(**kwargs)
     return _build_response(response)

@@ -1,37 +1,40 @@
 import logging
 from functools import cached_property
-from typing import (
-    Any,
-    AsyncIterator,
-    Awaitable,
-    Callable,
-    Dict,
-    Iterator,
-    Optional,
-    TypeVar,
-    Union,
-)
+from typing import Any, AsyncIterator, Awaitable, Callable, Dict, Iterator, List, Optional, TypeVar, Union
 
 import httpx
 
-from gigachat.api import get_model, get_models, post_auth, post_chat, post_token, stream_chat
+from gigachat.api import (
+    get_model,
+    get_models,
+    post_auth,
+    post_chat,
+    post_embeddings,
+    post_token,
+    post_tokens_count,
+    stream_chat,
+)
 from gigachat.exceptions import AuthenticationError
 from gigachat.models import (
     AccessToken,
     Chat,
     ChatCompletion,
     ChatCompletionChunk,
+    Embeddings,
     Messages,
     MessagesRole,
     Model,
     Models,
     Token,
+    TokensCount,
 )
 from gigachat.settings import Settings
 
 T = TypeVar("T")
 
-logger = logging.getLogger(__name__)
+_logger = logging.getLogger(__name__)
+
+GIGACHAT_MODEL = "GigaChat"
 
 
 def _get_kwargs(settings: Settings) -> Dict[str, Any]:
@@ -59,13 +62,15 @@ def _get_auth_kwargs(settings: Settings) -> Dict[str, Any]:
     return kwargs
 
 
-def _parse_chat(payload: Union[Chat, Dict[str, Any], str], model: Optional[str]) -> Chat:
+def _parse_chat(payload: Union[Chat, Dict[str, Any], str], settings: Settings) -> Chat:
     if isinstance(payload, str):
         chat = Chat(messages=[Messages(role=MessagesRole.USER, content=payload)])
     else:
         chat = Chat.parse_obj(payload)
-    if model:
-        chat.model = model
+    if chat.model is None:
+        chat.model = settings.model or GIGACHAT_MODEL
+    if chat.profanity_check is None:
+        chat.profanity_check = settings.profanity_check
     return chat
 
 
@@ -85,6 +90,7 @@ class _BaseClient:
         scope: Optional[str] = None,
         access_token: Optional[str] = None,
         model: Optional[str] = None,
+        profanity_check: Optional[bool] = None,
         user: Optional[str] = None,
         password: Optional[str] = None,
         timeout: Optional[float] = None,
@@ -94,8 +100,11 @@ class _BaseClient:
         cert_file: Optional[str] = None,
         key_file: Optional[str] = None,
         key_file_password: Optional[str] = None,
-        **_kwargs: Any,
+        **_unknown_kwargs: Any,
     ) -> None:
+        if _unknown_kwargs:
+            _logger.warning("GigaChat: unknown kwargs - %s", _unknown_kwargs)
+
         kwargs: Dict[str, Any] = {
             "base_url": base_url,
             "auth_url": auth_url,
@@ -103,6 +112,7 @@ class _BaseClient:
             "scope": scope,
             "access_token": access_token,
             "model": model,
+            "profanity_check": profanity_check,
             "user": user,
             "password": password,
             "timeout": timeout,
@@ -170,12 +180,12 @@ class GigaChatSyncClient(_BaseClient):
                 credentials=self._settings.credentials,
                 scope=self._settings.scope,
             )
-            logger.info("OAUTH UPDATE TOKEN")
+            _logger.info("OAUTH UPDATE TOKEN")
         elif self._settings.user and self._settings.password:
             self._access_token = _build_access_token(
                 post_token.sync(self._client, user=self._settings.user, password=self._settings.password)
             )
-            logger.info("UPDATE TOKEN")
+            _logger.info("UPDATE TOKEN")
 
     def _decorator(self, call: Callable[..., T]) -> T:
         if self._use_auth:
@@ -183,10 +193,24 @@ class GigaChatSyncClient(_BaseClient):
                 try:
                     return call()
                 except AuthenticationError:
-                    logger.warning("AUTHENTICATION ERROR")
+                    _logger.warning("AUTHENTICATION ERROR")
                     self._reset_token()
             self._update_token()
         return call()
+
+    def tokens_count(self, input_: List[str], model: Optional[str] = None) -> List[TokensCount]:
+        """Возвращает объект с информацией о количестве токенов"""
+        if not model:
+            model = self._settings.model or GIGACHAT_MODEL
+        return self._decorator(
+            lambda: post_tokens_count.sync(self._client, input_=input_, model=model, access_token=self.token)
+        )
+
+    def embeddings(self, text: str, model: str = "Embeddings") -> Embeddings:
+        """Возвращает эмбеддинги"""
+        return self._decorator(
+            lambda: post_embeddings.sync(self._client, access_token=self.token, input_=text, model=model)
+        )
 
     def get_models(self) -> Models:
         """Возвращает массив объектов с данными доступных моделей"""
@@ -198,12 +222,12 @@ class GigaChatSyncClient(_BaseClient):
 
     def chat(self, payload: Union[Chat, Dict[str, Any], str]) -> ChatCompletion:
         """Возвращает ответ модели с учетом переданных сообщений"""
-        chat = _parse_chat(payload, model=self._settings.model)
+        chat = _parse_chat(payload, self._settings)
         return self._decorator(lambda: post_chat.sync(self._client, chat=chat, access_token=self.token))
 
     def stream(self, payload: Union[Chat, Dict[str, Any], str]) -> Iterator[ChatCompletionChunk]:
         """Возвращает ответ модели с учетом переданных сообщений"""
-        chat = _parse_chat(payload, model=self._settings.model)
+        chat = _parse_chat(payload, self._settings)
 
         if self._use_auth:
             if self._check_validity_token():
@@ -212,7 +236,7 @@ class GigaChatSyncClient(_BaseClient):
                         yield chunk
                     return
                 except AuthenticationError:
-                    logger.warning("AUTHENTICATION ERROR")
+                    _logger.warning("AUTHENTICATION ERROR")
                     self._reset_token()
             self._update_token()
 
@@ -249,12 +273,12 @@ class GigaChatAsyncClient(_BaseClient):
                 credentials=self._settings.credentials,
                 scope=self._settings.scope,
             )
-            logger.info("OAUTH UPDATE TOKEN")
+            _logger.info("OAUTH UPDATE TOKEN")
         elif self._settings.user and self._settings.password:
             self._access_token = _build_access_token(
                 await post_token.asyncio(self._aclient, user=self._settings.user, password=self._settings.password)
             )
-            logger.info("UPDATE TOKEN")
+            _logger.info("UPDATE TOKEN")
 
     async def _adecorator(self, acall: Callable[..., Awaitable[T]]) -> T:
         if self._use_auth:
@@ -262,10 +286,28 @@ class GigaChatAsyncClient(_BaseClient):
                 try:
                     return await acall()
                 except AuthenticationError:
-                    logger.warning("AUTHENTICATION ERROR")
+                    _logger.warning("AUTHENTICATION ERROR")
                     self._reset_token()
             await self._aupdate_token()
         return await acall()
+
+    async def atokens_count(self, input_: List[str], model: Optional[str] = None) -> List[TokensCount]:
+        """Возвращает объект с информацией о количестве токенов"""
+        if not model:
+            model = self._settings.model or GIGACHAT_MODEL
+
+        async def _acall() -> List[TokensCount]:
+            return await post_tokens_count.asyncio(self._aclient, input_=input_, model=model, access_token=self.token)
+
+        return await self._adecorator(_acall)
+
+    async def aembeddings(self, text: str, model: str = "Embeddings") -> Embeddings:
+        """Возвращает эмбеддинги"""
+
+        async def _acall() -> Embeddings:
+            return await post_embeddings.asyncio(self._aclient, access_token=self.token, input_=text, model=model)
+
+        return await self._adecorator(_acall)
 
     async def aget_models(self) -> Models:
         """Возвращает массив объектов с данными доступных моделей"""
@@ -285,7 +327,7 @@ class GigaChatAsyncClient(_BaseClient):
 
     async def achat(self, payload: Union[Chat, Dict[str, Any], str]) -> ChatCompletion:
         """Возвращает ответ модели с учетом переданных сообщений"""
-        chat = _parse_chat(payload, model=self._settings.model)
+        chat = _parse_chat(payload, self._settings)
 
         async def _acall() -> ChatCompletion:
             return await post_chat.asyncio(self._aclient, chat=chat, access_token=self.token)
@@ -294,7 +336,7 @@ class GigaChatAsyncClient(_BaseClient):
 
     async def astream(self, payload: Union[Chat, Dict[str, Any], str]) -> AsyncIterator[ChatCompletionChunk]:
         """Возвращает ответ модели с учетом переданных сообщений"""
-        chat = _parse_chat(payload, model=self._settings.model)
+        chat = _parse_chat(payload, self._settings)
 
         if self._use_auth:
             if self._check_validity_token():
@@ -303,7 +345,7 @@ class GigaChatAsyncClient(_BaseClient):
                         yield chunk
                     return
                 except AuthenticationError:
-                    logger.warning("AUTHENTICATION ERROR")
+                    _logger.warning("AUTHENTICATION ERROR")
                     self._reset_token()
             await self._aupdate_token()
 

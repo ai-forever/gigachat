@@ -1,5 +1,5 @@
 from http import HTTPStatus
-from typing import Any, Dict, Optional
+from typing import Any, Dict, List, Optional
 
 import httpx
 
@@ -11,12 +11,13 @@ from gigachat.context import (
     session_id_cvar,
 )
 from gigachat.exceptions import AuthenticationError, ResponseError
-from gigachat.models import Chat, ChatCompletion
+from gigachat.models import TokensCount
 
 
 def _get_kwargs(
     *,
-    chat: Chat,
+    input_: List[str],
+    model: str,
     access_token: Optional[str] = None,
 ) -> Dict[str, Any]:
     headers = {}
@@ -41,17 +42,19 @@ def _get_kwargs(
     if operation_id:
         headers["X-Operation-ID"] = operation_id
 
+    json_data = {"model": model, "input": input_}
+
     return {
         "method": "POST",
-        "url": "/chat/completions",
-        "json": chat.dict(exclude_none=True, exclude={"stream"}),
+        "url": "/tokens/count",
         "headers": headers,
+        "json": json_data,
     }
 
 
-def _build_response(response: httpx.Response) -> ChatCompletion:
+def _build_response(response: httpx.Response) -> List[TokensCount]:
     if response.status_code == HTTPStatus.OK:
-        return ChatCompletion(**response.json())
+        return [TokensCount(**row) for row in response.json()]
     elif response.status_code == HTTPStatus.UNAUTHORIZED:
         raise AuthenticationError(response.url, response.status_code, response.content, response.headers)
     else:
@@ -61,10 +64,12 @@ def _build_response(response: httpx.Response) -> ChatCompletion:
 def sync(
     client: httpx.Client,
     *,
-    chat: Chat,
+    input_: List[str],
+    model: str,
     access_token: Optional[str] = None,
-) -> ChatCompletion:
-    kwargs = _get_kwargs(chat=chat, access_token=access_token)
+) -> List[TokensCount]:
+    """Возвращает объект с информацией о количестве токенов"""
+    kwargs = _get_kwargs(input_=input_, model=model, access_token=access_token)
     response = client.request(**kwargs)
     return _build_response(response)
 
@@ -72,9 +77,11 @@ def sync(
 async def asyncio(
     client: httpx.AsyncClient,
     *,
-    chat: Chat,
+    input_: List[str],
+    model: str,
     access_token: Optional[str] = None,
-) -> ChatCompletion:
-    kwargs = _get_kwargs(chat=chat, access_token=access_token)
+) -> List[TokensCount]:
+    """Возвращает объект с информацией о количестве токенов"""
+    kwargs = _get_kwargs(input_=input_, model=model, access_token=access_token)
     response = await client.request(**kwargs)
     return _build_response(response)

@@ -3,6 +3,7 @@ import pytest
 from pytest_httpx import HTTPXMock
 
 from gigachat.api import stream_chat
+from gigachat.context import authorization_cvar, operation_id_cvar, request_id_cvar, service_id_cvar, session_id_cvar
 from gigachat.exceptions import AuthenticationError, ResponseError
 from gigachat.models import Chat, ChatCompletionChunk
 
@@ -14,6 +15,22 @@ MOCK_URL = f"{BASE_URL}/chat/completions"
 CHAT = Chat.parse_obj(get_json("chat.json"))
 CHAT_COMPLETION_STREAM = get_bytes("chat_completion.stream")
 HEADERS_STREAM = {"Content-Type": "text/event-stream"}
+
+
+def test__kwargs_context_vars() -> None:
+    token_authorization_cvar = authorization_cvar.set("authorization_cvar")
+    token_request_id_cvar = request_id_cvar.set("request_id_cvar")
+    token_session_id_cvar = session_id_cvar.set("session_id_cvar")
+    token_service_id_cvar = service_id_cvar.set("service_id_cvar")
+    token_operation_id_cvar = operation_id_cvar.set("operation_id_cvar")
+
+    assert stream_chat._get_kwargs(chat=Chat(messages=[]))
+
+    authorization_cvar.reset(token_authorization_cvar)
+    request_id_cvar.reset(token_request_id_cvar)
+    session_id_cvar.reset(token_session_id_cvar)
+    service_id_cvar.reset(token_service_id_cvar)
+    operation_id_cvar.reset(token_operation_id_cvar)
 
 
 def test_sync(httpx_mock: HTTPXMock) -> None:
