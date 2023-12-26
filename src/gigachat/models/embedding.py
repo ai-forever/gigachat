@@ -1,6 +1,6 @@
 from typing import List
 
-from gigachat.models.usage import Usage
+from gigachat.models.embeddings_usage import EmbeddingsUsage
 from gigachat.pydantic_v1 import BaseModel, Field
 
 
@@ -9,7 +9,7 @@ class Embedding(BaseModel):
 
     embedding: List[float]
     """Эмбеддинг"""
-    usage: Usage
+    usage: EmbeddingsUsage
     """Данные об использовании модели"""
     index: int
     """Индекс эмбеддинга в массиве"""
