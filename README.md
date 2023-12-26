@@ -35,7 +35,7 @@ pip install gigachat
 from gigachat import GigaChat
 
 # Используйте токен, полученный в личном кабинете из поля Авторизационные данные
-with GigaChat(credentials=..., verify_ssl_certs=False) as giga:
+with GigaChat(credentials=<авторизационные данные>, verify_ssl_certs=False) as giga:
     response = giga.chat("Какие факторы влияют на стоимость страховки на дом?")
     print(response.choices[0].message.content)
 ```
@@ -93,7 +93,25 @@ giga = GigaChat(
 
 ## Дополнительные настройки
 
-Отключение проверки сертификатов:
+### Выбор модели
+
+С помощью GigaChain вы можете обращаться к различным моделям, которые предоставляет GigaChat
+
+Для этого передайте название модели в параметре `model`:
+
+```py
+giga = GigaChat(model="GigaChat-Pro")
+```
+
+Полный список доступных моделей можно получить с помощью запроса [`GET /models`](https://developers.sber.ru/docs/ru/gigachat/api/reference#get-models) к GigaChat API.
+
+> [!WARNING]
+> Стоимость запросов к разным моделям отличается. Подробную информацию о тарификации запросов к той или иной модели вы ищите в [официальной документации](https://developers.sber.ru/docs/ru/gigachat/api/tariffs).
+
+
+### Отключение проверки сертификатов
+
+Для отключения проверки сертификатов передайте параметр `verify_ssl_certs=False`:
 
 ```py
 giga = GigaChat(verify_ssl_certs=False)
@@ -103,7 +121,10 @@ giga = GigaChat(verify_ssl_certs=False)
 > Отключение проверки сертификатов снижает безопасность обмена данными.
 
 
-Установка корневого сертификата "Минцифры России":
+### Установка корневого сертификата НУЦ Минцифры:
+
+Для установка корневого сертификата НУЦ Минцифры выполните команду:
+
 ```bash
 curl -k "https://gu-st.ru/content/Other/doc/russian_trusted_root_ca.cer" -w "\n" >> $(python -m certifi)
 ```
