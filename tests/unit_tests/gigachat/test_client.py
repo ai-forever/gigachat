@@ -253,7 +253,7 @@ def test_embeddings(httpx_mock: HTTPXMock) -> None:
     httpx_mock.add_response(url=EMBEDDINGS_URL, json=EMBEDDINGS)
 
     with GigaChatSyncClient(base_url=BASE_URL) as client:
-        response = client.embeddings(text="text", model="model")
+        response = client.embeddings(texts=["text"], model="model")
     assert isinstance(response, Embeddings)
     for row in response.data:
         assert isinstance(row, Embedding)
@@ -456,7 +456,7 @@ async def test_aembeddings(httpx_mock: HTTPXMock) -> None:
     httpx_mock.add_response(url=EMBEDDINGS_URL, json=EMBEDDINGS)
 
     async with GigaChatAsyncClient(base_url=BASE_URL) as client:
-        response = await client.aembeddings(text="text", model="model")
+        response = await client.aembeddings(texts=["text"], model="model")
     assert isinstance(response, Embeddings)
     for row in response.data:
         assert isinstance(row, Embedding)

@@ -206,10 +206,10 @@ class GigaChatSyncClient(_BaseClient):
             lambda: post_tokens_count.sync(self._client, input_=input_, model=model, access_token=self.token)
         )
 
-    def embeddings(self, text: str, model: str = "Embeddings") -> Embeddings:
+    def embeddings(self, texts: List[str], model: str = "Embeddings") -> Embeddings:
         """Возвращает эмбеддинги"""
         return self._decorator(
-            lambda: post_embeddings.sync(self._client, access_token=self.token, input_=text, model=model)
+            lambda: post_embeddings.sync(self._client, access_token=self.token, input_=texts, model=model)
         )
 
     def get_models(self) -> Models:
@@ -301,11 +301,11 @@ class GigaChatAsyncClient(_BaseClient):
 
         return await self._adecorator(_acall)
 
-    async def aembeddings(self, text: str, model: str = "Embeddings") -> Embeddings:
+    async def aembeddings(self, texts: List[str], model: str = "Embeddings") -> Embeddings:
         """Возвращает эмбеддинги"""
 
         async def _acall() -> Embeddings:
-            return await post_embeddings.asyncio(self._aclient, access_token=self.token, input_=text, model=model)
+            return await post_embeddings.asyncio(self._aclient, access_token=self.token, input_=texts, model=model)
 
         return await self._adecorator(_acall)
 
