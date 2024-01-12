@@ -14,6 +14,7 @@ from gigachat.api import (
     post_tokens_count,
     stream_chat,
 )
+from gigachat.context import authorization_cvar
 from gigachat.exceptions import AuthenticationError
 from gigachat.models import (
     AccessToken,
@@ -173,6 +174,8 @@ class GigaChatSyncClient(_BaseClient):
         self.close()
 
     def _update_token(self) -> None:
+        if authorization_cvar.get() is not None:
+            return
         if self._settings.credentials:
             self._access_token = post_auth.sync(
                 self._auth_client,
@@ -266,6 +269,8 @@ class GigaChatAsyncClient(_BaseClient):
         await self.aclose()
 
     async def _aupdate_token(self) -> None:
+        if authorization_cvar.get() is not None:
+            return
         if self._settings.credentials:
             self._access_token = await post_auth.asyncio(
                 self._auth_aclient,
