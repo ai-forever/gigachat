@@ -62,6 +62,7 @@ with GigaChat(
             print("\033[90m" + f"  << Function result: {func_result}\n\n" + "\033[0m")
 
             messages.append(
-                Messages(role=MessagesRole.FUNCTION, content=json.dumps({"result": func_result}, ensure_ascii=False))
+                Messages(role=MessagesRole.FUNCTION,
+                         content=json.dumps({"result": func_result}, ensure_ascii=False))
             )
             function_called = True
