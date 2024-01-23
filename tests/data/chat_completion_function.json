@@ -1,0 +1,28 @@
+{
+  "choices": [
+      {
+          "message": {
+              "content": "",
+              "role": "assistant",
+              "function_call": {
+                  "name": "fc",
+                  "arguments": {
+                      "location": "Москва",
+                      "num_days": 0
+                  }
+              }
+          },
+          "index": 0,
+          "finish_reason": "function_call"
+      }
+  ],
+  "created": 1706016586,
+  "model": "GigaChat-funcs",
+  "object": "chat.completion",
+  "usage": {
+      "prompt_tokens": 138,
+      "completion_tokens": 21,
+      "total_tokens": 159,
+      "system_tokens": 0
+  }
+}
