@@ -1,0 +1,64 @@
+{
+  "messages": [
+      {
+          "content": "Какая погода в Москве сегодня?",
+          "role": "user"
+      }
+  ],
+  "functions": [
+      {
+          "name": "fc",
+          "description": "Get an N-day weather forecast",
+          "parameters": {
+              "properties": {
+                  "format": {
+                      "description": "The temperature unit to use. Infer this from the users location.",
+                      "enum": [
+                          "celsius",
+                          "fahrenheit"
+                      ],
+                      "type": "string"
+                  },
+                  "location": {
+                      "description": "Location, e.g. the city name",
+                      "type": "string"
+                  },
+                  "num_days": {
+                      "description": "The number of days to forecast",
+                      "type": "integer"
+                  }
+              },
+              "required": [
+                  "location",
+                  "num_days"
+              ],
+              "type": "object"
+          },
+          "return_parameters": {
+              "properties": {
+                  "error": {
+                      "description": "returned if an error has occured, value is the error description string",
+                      "type": "string"
+                  },
+                  "forecast": {
+                      "description": "Weather condition descriptions",
+                      "items": {
+                          "type": "string"
+                      },
+                      "type": "array"
+                  },
+                  "location": {
+                      "description": "Location, e.g. the city name",
+                      "type": "string"
+                  },
+                  "temperature": {
+                      "description": "The temperature forecast for the location",
+                      "type": "integer"
+                  }
+              },
+              "type": "object"
+          }
+      }
+  ],
+  "model": "GigaChat-funcs"
+}
