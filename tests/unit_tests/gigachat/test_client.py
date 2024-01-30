@@ -40,7 +40,9 @@ EMBEDDINGS_URL = f"{BASE_URL}/embeddings"
 ACCESS_TOKEN = get_json("access_token.json")
 TOKEN = get_json("token.json")
 CHAT = Chat.parse_obj(get_json("chat.json"))
+CHAT_FUNCTION = Chat.parse_obj(get_json("chat_function.json"))
 CHAT_COMPLETION = get_json("chat_completion.json")
+CHAT_COMPLETION_FUNCTION = get_json("chat_completion_function.json")
 CHAT_COMPLETION_STREAM = get_bytes("chat_completion.stream")
 EMBEDDINGS = get_json("embeddings.json")
 MODELS = get_json("models.json")
@@ -249,11 +251,26 @@ def test_chat_update_token_error(httpx_mock: HTTPXMock) -> None:
     assert client.token != access_token
 
 
+def test_chat_with_functions(httpx_mock: HTTPXMock) -> None:
+    httpx_mock.add_response(url=CHAT_URL, json=CHAT_COMPLETION_FUNCTION)
+    access_token = "access_token"
+
+    with GigaChatSyncClient(base_url=BASE_URL, access_token=access_token) as client:
+        response = client.chat(CHAT_FUNCTION)
+
+    assert isinstance(response, ChatCompletion)
+    assert response.choices[0].finish_reason == "function_call"
+    assert response.choices[0].message.function_call is not None
+    assert response.choices[0].message.function_call.name == "fc"
+    assert response.choices[0].message.function_call.arguments is not None
+    assert response.choices[0].message.function_call.arguments == {"location": "Москва", "num_days": 0}
+
+
 def test_embeddings(httpx_mock: HTTPXMock) -> None:
     httpx_mock.add_response(url=EMBEDDINGS_URL, json=EMBEDDINGS)
 
     with GigaChatSyncClient(base_url=BASE_URL) as client:
-        response = client.embeddings(text="text", model="model")
+        response = client.embeddings(texts=["text"], model="model")
     assert isinstance(response, Embeddings)
     for row in response.data:
         assert isinstance(row, Embedding)
@@ -456,7 +473,7 @@ async def test_aembeddings(httpx_mock: HTTPXMock) -> None:
     httpx_mock.add_response(url=EMBEDDINGS_URL, json=EMBEDDINGS)
 
     async with GigaChatAsyncClient(base_url=BASE_URL) as client:
-        response = await client.aembeddings(text="text", model="model")
+        response = await client.aembeddings(texts=["text"], model="model")
     assert isinstance(response, Embeddings)
     for row in response.data:
         assert isinstance(row, Embedding)

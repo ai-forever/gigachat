@@ -6,5 +6,5 @@ with GigaChat(
     credentials=...,
     verify_ssl_certs=False,
 ) as giga:
-    response = giga.embeddings("Hello world!")
+    response = giga.embeddings(["Hello world!"])
     print(response)

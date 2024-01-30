@@ -7,6 +7,9 @@ from gigachat.models.choices_chunk import ChoicesChunk
 from gigachat.models.embedding import Embedding
 from gigachat.models.embeddings import Embeddings
 from gigachat.models.embeddings_usage import EmbeddingsUsage
+from gigachat.models.function import Function
+from gigachat.models.function_call import FunctionCall
+from gigachat.models.function_parameters import FunctionParameters
 from gigachat.models.messages import Messages
 from gigachat.models.messages_chunk import MessagesChunk
 from gigachat.models.messages_role import MessagesRole
@@ -26,6 +29,9 @@ __all__ = (
     "Embedding",
     "Embeddings",
     "EmbeddingsUsage",
+    "Function",
+    "FunctionCall",
+    "FunctionParameters",
     "Messages",
     "MessagesChunk",
     "MessagesRole",

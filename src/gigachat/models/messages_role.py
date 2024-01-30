@@ -7,3 +7,4 @@ class MessagesRole(str, Enum):
     ASSISTANT = "assistant"
     SYSTEM = "system"
     USER = "user"
+    FUNCTION = "function"

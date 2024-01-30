@@ -1,5 +1,5 @@
 from http import HTTPStatus
-from typing import Any, Dict, Optional
+from typing import Any, Dict, List, Optional
 
 import httpx
 
@@ -16,7 +16,7 @@ from gigachat.models import Embeddings
 
 def _get_kwargs(
     *,
-    input_: str,
+    input_: List[str],
     model: str,
     access_token: Optional[str] = None,
 ) -> Dict[str, Any]:
@@ -62,7 +62,7 @@ def _build_response(response: httpx.Response) -> Embeddings:
 def sync(
     client: httpx.Client,
     *,
-    input_: str,
+    input_: List[str],
     model: str,
     access_token: Optional[str] = None,
 ) -> Embeddings:
@@ -74,7 +74,7 @@ def sync(
 async def asyncio(
     client: httpx.AsyncClient,
     *,
-    input_: str,
+    input_: List[str],
     model: str,
     access_token: Optional[str] = None,
 ) -> Embeddings:

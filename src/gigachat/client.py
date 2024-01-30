@@ -14,6 +14,7 @@ from gigachat.api import (
     post_tokens_count,
     stream_chat,
 )
+from gigachat.context import authorization_cvar
 from gigachat.exceptions import AuthenticationError
 from gigachat.models import (
     AccessToken,
@@ -173,6 +174,8 @@ class GigaChatSyncClient(_BaseClient):
         self.close()
 
     def _update_token(self) -> None:
+        if authorization_cvar.get() is not None:
+            return
         if self._settings.credentials:
             self._access_token = post_auth.sync(
                 self._auth_client,
@@ -206,10 +209,10 @@ class GigaChatSyncClient(_BaseClient):
             lambda: post_tokens_count.sync(self._client, input_=input_, model=model, access_token=self.token)
         )
 
-    def embeddings(self, text: str, model: str = "Embeddings") -> Embeddings:
+    def embeddings(self, texts: List[str], model: str = "Embeddings") -> Embeddings:
         """Возвращает эмбеддинги"""
         return self._decorator(
-            lambda: post_embeddings.sync(self._client, access_token=self.token, input_=text, model=model)
+            lambda: post_embeddings.sync(self._client, access_token=self.token, input_=texts, model=model)
         )
 
     def get_models(self) -> Models:
@@ -266,6 +269,8 @@ class GigaChatAsyncClient(_BaseClient):
         await self.aclose()
 
     async def _aupdate_token(self) -> None:
+        if authorization_cvar.get() is not None:
+            return
         if self._settings.credentials:
             self._access_token = await post_auth.asyncio(
                 self._auth_aclient,
@@ -301,11 +306,11 @@ class GigaChatAsyncClient(_BaseClient):
 
         return await self._adecorator(_acall)
 
-    async def aembeddings(self, text: str, model: str = "Embeddings") -> Embeddings:
+    async def aembeddings(self, texts: List[str], model: str = "Embeddings") -> Embeddings:
         """Возвращает эмбеддинги"""
 
         async def _acall() -> Embeddings:
-            return await post_embeddings.asyncio(self._aclient, access_token=self.token, input_=text, model=model)
+            return await post_embeddings.asyncio(self._aclient, access_token=self.token, input_=texts, model=model)
 
         return await self._adecorator(_acall)
 

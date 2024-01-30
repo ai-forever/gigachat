@@ -1,5 +1,6 @@
 from typing import List, Optional
 
+from gigachat.models.function import Function
 from gigachat.models.messages import Messages
 from gigachat.pydantic_v1 import BaseModel
 
@@ -27,3 +28,7 @@ class Chat(BaseModel):
     """Интервал в секундах между отправкой токенов в потоке"""
     profanity_check: Optional[bool] = None
     """Параметр цензуры"""
+    function_call: Optional[str] = None
+    """Правила вызова функций"""
+    functions: Optional[List[Function]] = None
+    """Набор функций, которые могут быть вызваны моделью"""
