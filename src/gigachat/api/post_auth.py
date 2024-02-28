@@ -4,6 +4,7 @@ from typing import Any, Dict
 
 import httpx
 
+from gigachat.api.utils import USER_AGENT
 from gigachat.exceptions import AuthenticationError, ResponseError
 from gigachat.models import AccessToken
 
@@ -12,6 +13,7 @@ def _get_kwargs(*, url: str, credentials: str, scope: str) -> Dict[str, Any]:
     headers = {
         "Authorization": f"Bearer {credentials}",
         "RqUID": str(uuid.uuid4()),
+        "User-Agent": USER_AGENT,
     }
     return {
         "method": "POST",

@@ -1,5 +1,6 @@
 from typing import Any, Dict, List, Optional
 
+from gigachat.models.function_paramaers_property import FunctionParametersProperty
 from gigachat.pydantic_v1 import BaseModel, Field
 
 
@@ -8,7 +9,7 @@ class FunctionParameters(BaseModel):
 
     _type: str = Field(default="obect", alias="type")
     """Тип параметров функции"""
-    properties: Optional[Dict[Any, Any]] = None
+    properties: Optional[Dict[Any, FunctionParametersProperty]] = None
     """Описание функции"""
     required: Optional[List[str]] = None
     """Список обязательных параметров"""
