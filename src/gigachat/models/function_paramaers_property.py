@@ -6,7 +6,7 @@ from gigachat.pydantic_v1 import BaseModel, Field
 class FunctionParametersProperty(BaseModel):
     """Функция, которая может быть вызвана моделью"""
 
-    _type: str = Field(default="obect", alias="type")
+    type_: str = Field(default="object", alias="type")
     """Тип аргумента функции"""
     description: str = ""
     """Описание аргумента"""

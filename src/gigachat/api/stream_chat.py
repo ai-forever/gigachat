@@ -22,7 +22,7 @@ def _get_kwargs(
     return {
         "method": "POST",
         "url": "/chat/completions",
-        "json": {**chat.dict(exclude_none=True), **{"stream": True}},
+        "json": {**chat.dict(exclude_none=True, by_alias=True), **{"stream": True}},
         "headers": headers,
     }
 
