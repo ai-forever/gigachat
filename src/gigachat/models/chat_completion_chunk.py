@@ -1,4 +1,4 @@
-from typing import List, Optional
+from typing import List
 
 from gigachat.models.choices_chunk import ChoicesChunk
 from gigachat.pydantic_v1 import BaseModel, Field
@@ -13,5 +13,5 @@ class ChatCompletionChunk(BaseModel):
     """Дата и время создания ответа в формате Unix time"""
     model: str
     """Название модели, которая вернула ответ"""
-    object_: object = Optional[Field(default=None, alias="object")]
+    object_: str = Field(alias="object")
     """Название вызываемого метода"""
