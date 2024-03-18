@@ -56,7 +56,7 @@ def test_sync_value_error(httpx_mock: HTTPXMock) -> None:
     httpx_mock.add_response(url=MOCK_URL, content=b"data: {}", headers=HEADERS_STREAM)
 
     with httpx.Client(base_url=BASE_URL) as client:
-        with pytest.raises(ValueError, match="3 validation errors for ChatCompletionChunk*"):
+        with pytest.raises(ValueError, match="4 validation errors for ChatCompletionChunk*"):
             list(stream_chat.sync(client, chat=CHAT))
 
 

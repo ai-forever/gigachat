@@ -14,3 +14,4 @@ class FunctionParametersProperty(BaseModel):
     """Возможные значения аргумента"""
     enum: Optional[List[str]] = None
     """Возможные значения enum"""
+    properties: Optional[Dict[Any, "FunctionParametersProperty"]] = None

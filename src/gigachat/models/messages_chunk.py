@@ -10,7 +10,7 @@ class MessagesChunk(BaseModel):
 
     role: Optional[MessagesRole] = None
     """Роль автора сообщения"""
-    content: str
+    content: Optional[str] = None
     """Текст сообщения"""
     function_call: Optional[FunctionCall] = None
     """Вызов функции"""
