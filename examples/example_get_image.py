@@ -1,3 +1,5 @@
+import base64
+
 from gigachat import GigaChat
 from gigachat.models import Image
 
@@ -9,7 +11,7 @@ def get_image(file_path: str = './giga_img.jpg'):
 
         # Сохранить изображение в файл
         with open(file_path, mode="wb") as fd:
-            fd.write(response.content)
+            fd.write(base64.b64decode(response.content))
 
 
 async def get_image_async(file_path: str = './giga_img.jpg'):
@@ -19,5 +21,6 @@ async def get_image_async(file_path: str = './giga_img.jpg'):
                         verify_ssl_certs=False) as giga:
         response: Image = await giga.aget_image(file_id=...)
 
-    async with async_open(file_path, 'wb') as afp:
-        await afp.write(response.content)
+        # Сохранить изображение в файл
+        async with async_open(file_path, 'wb') as afp:
+            await afp.write(base64.b64decode(response.content))

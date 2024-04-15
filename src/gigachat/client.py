@@ -226,7 +226,7 @@ class GigaChatSyncClient(_BaseClient):
         return self._decorator(lambda: get_model.sync(self._client, model=model, access_token=self.token))
 
     def get_image(self, file_id: str) -> Image:
-        """Возвращает изображение"""
+        """Возвращает изображение в кодировке base64"""
         return self._decorator(lambda: get_image.sync(self._client, file_id=file_id, access_token=self.token))
 
     def chat(self, payload: Union[Chat, Dict[str, Any], str]) -> ChatCompletion:
@@ -329,7 +329,7 @@ class GigaChatAsyncClient(_BaseClient):
         return await self._adecorator(_acall)
 
     async def aget_image(self, file_id: str) -> Image:
-        """Возвращает изображение"""
+        """Возвращает изображение в кодировке base64"""
 
         async def _acall() -> Image:
             return await get_image.asyncio(self._aclient, file_id=file_id, access_token=self.token)

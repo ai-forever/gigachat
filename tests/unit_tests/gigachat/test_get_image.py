@@ -7,7 +7,7 @@ from ...utils import get_bytes
 
 BASE_URL = "http://base_url"
 IMAGE_URL = f"{BASE_URL}/files/img_file/content"
-IMAGE = get_bytes("image.jpg")
+IMAGE = get_bytes('image.jpg')
 
 
 def test_get_image(httpx_mock: HTTPXMock) -> None:
