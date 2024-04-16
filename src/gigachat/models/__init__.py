@@ -10,6 +10,7 @@ from gigachat.models.embeddings_usage import EmbeddingsUsage
 from gigachat.models.function import Function
 from gigachat.models.function_call import FunctionCall
 from gigachat.models.function_parameters import FunctionParameters
+from gigachat.models.image import Image
 from gigachat.models.messages import Messages
 from gigachat.models.messages_chunk import MessagesChunk
 from gigachat.models.messages_role import MessagesRole
@@ -18,7 +19,6 @@ from gigachat.models.models import Models
 from gigachat.models.token import Token
 from gigachat.models.tokens_count import TokensCount
 from gigachat.models.usage import Usage
-from gigachat.models.image import Image
 
 __all__ = (
     "AccessToken",
@@ -41,5 +41,5 @@ __all__ = (
     "Token",
     "TokensCount",
     "Usage",
-    "Image"
+    "Image",
 )
