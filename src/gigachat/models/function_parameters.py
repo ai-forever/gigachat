@@ -1,6 +1,6 @@
 from typing import Any, Dict, List, Optional
 
-from gigachat.models.function_paramaers_property import FunctionParametersProperty
+from gigachat.models.function_parameters_property import FunctionParametersProperty
 from gigachat.pydantic_v1 import BaseModel, Field
 
 

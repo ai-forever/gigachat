@@ -13,6 +13,7 @@ from gigachat.api import (
     post_token,
     post_tokens_count,
     stream_chat,
+    get_image
 )
 from gigachat.context import authorization_cvar
 from gigachat.exceptions import AuthenticationError
@@ -28,6 +29,7 @@ from gigachat.models import (
     Models,
     Token,
     TokensCount,
+    Image
 )
 from gigachat.settings import Settings
 
@@ -83,25 +85,25 @@ class _BaseClient:
     _access_token: Optional[AccessToken] = None
 
     def __init__(
-        self,
-        *,
-        base_url: Optional[str] = None,
-        auth_url: Optional[str] = None,
-        credentials: Optional[str] = None,
-        scope: Optional[str] = None,
-        access_token: Optional[str] = None,
-        model: Optional[str] = None,
-        profanity_check: Optional[bool] = None,
-        user: Optional[str] = None,
-        password: Optional[str] = None,
-        timeout: Optional[float] = None,
-        verify_ssl_certs: Optional[bool] = None,
-        verbose: Optional[bool] = None,
-        ca_bundle_file: Optional[str] = None,
-        cert_file: Optional[str] = None,
-        key_file: Optional[str] = None,
-        key_file_password: Optional[str] = None,
-        **_unknown_kwargs: Any,
+            self,
+            *,
+            base_url: Optional[str] = None,
+            auth_url: Optional[str] = None,
+            credentials: Optional[str] = None,
+            scope: Optional[str] = None,
+            access_token: Optional[str] = None,
+            model: Optional[str] = None,
+            profanity_check: Optional[bool] = None,
+            user: Optional[str] = None,
+            password: Optional[str] = None,
+            timeout: Optional[float] = None,
+            verify_ssl_certs: Optional[bool] = None,
+            verbose: Optional[bool] = None,
+            ca_bundle_file: Optional[str] = None,
+            cert_file: Optional[str] = None,
+            key_file: Optional[str] = None,
+            key_file_password: Optional[str] = None,
+            **_unknown_kwargs: Any,
     ) -> None:
         if _unknown_kwargs:
             _logger.warning("GigaChat: unknown kwargs - %s", _unknown_kwargs)
@@ -223,6 +225,10 @@ class GigaChatSyncClient(_BaseClient):
         """Возвращает объект с описанием указанной модели"""
         return self._decorator(lambda: get_model.sync(self._client, model=model, access_token=self.token))
 
+    def get_image(self, file_id: str) -> Image:
+        """Возвращает изображение в кодировке base64"""
+        return self._decorator(lambda: get_image.sync(self._client, file_id=file_id, access_token=self.token))
+
     def chat(self, payload: Union[Chat, Dict[str, Any], str]) -> ChatCompletion:
         """Возвращает ответ модели с учетом переданных сообщений"""
         chat = _parse_chat(payload, self._settings)
@@ -319,6 +325,14 @@ class GigaChatAsyncClient(_BaseClient):
 
         async def _acall() -> Models:
             return await get_models.asyncio(self._aclient, access_token=self.token)
+
+        return await self._adecorator(_acall)
+
+    async def aget_image(self, file_id: str) -> Image:
+        """Возвращает изображение в кодировке base64"""
+
+        async def _acall() -> Image:
+            return await get_image.asyncio(self._aclient, file_id=file_id, access_token=self.token)
 
         return await self._adecorator(_acall)
 
