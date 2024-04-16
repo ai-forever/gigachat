@@ -10,3 +10,4 @@
 * [Пример перенаправления заголовков запроса в GigaChat](./example_contextvars.py)
 * [Пример подсчёта токенов](./example_tokens.py)
 * [Пример получения изображения](./example_get_image.py)
+* [Jupyter-ноутбук с примером работы с чатом и изображениями](./simple_chat_with_images.ipynb)

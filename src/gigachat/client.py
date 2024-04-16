@@ -5,6 +5,7 @@ from typing import Any, AsyncIterator, Awaitable, Callable, Dict, Iterator, List
 import httpx
 
 from gigachat.api import (
+    get_image,
     get_model,
     get_models,
     post_auth,
@@ -13,7 +14,6 @@ from gigachat.api import (
     post_token,
     post_tokens_count,
     stream_chat,
-    get_image
 )
 from gigachat.context import authorization_cvar
 from gigachat.exceptions import AuthenticationError
@@ -23,13 +23,13 @@ from gigachat.models import (
     ChatCompletion,
     ChatCompletionChunk,
     Embeddings,
+    Image,
     Messages,
     MessagesRole,
     Model,
     Models,
     Token,
     TokensCount,
-    Image
 )
 from gigachat.settings import Settings
 
@@ -85,25 +85,25 @@ class _BaseClient:
     _access_token: Optional[AccessToken] = None
 
     def __init__(
-            self,
-            *,
-            base_url: Optional[str] = None,
-            auth_url: Optional[str] = None,
-            credentials: Optional[str] = None,
-            scope: Optional[str] = None,
-            access_token: Optional[str] = None,
-            model: Optional[str] = None,
-            profanity_check: Optional[bool] = None,
-            user: Optional[str] = None,
-            password: Optional[str] = None,
-            timeout: Optional[float] = None,
-            verify_ssl_certs: Optional[bool] = None,
-            verbose: Optional[bool] = None,
-            ca_bundle_file: Optional[str] = None,
-            cert_file: Optional[str] = None,
-            key_file: Optional[str] = None,
-            key_file_password: Optional[str] = None,
-            **_unknown_kwargs: Any,
+        self,
+        *,
+        base_url: Optional[str] = None,
+        auth_url: Optional[str] = None,
+        credentials: Optional[str] = None,
+        scope: Optional[str] = None,
+        access_token: Optional[str] = None,
+        model: Optional[str] = None,
+        profanity_check: Optional[bool] = None,
+        user: Optional[str] = None,
+        password: Optional[str] = None,
+        timeout: Optional[float] = None,
+        verify_ssl_certs: Optional[bool] = None,
+        verbose: Optional[bool] = None,
+        ca_bundle_file: Optional[str] = None,
+        cert_file: Optional[str] = None,
+        key_file: Optional[str] = None,
+        key_file_password: Optional[str] = None,
+        **_unknown_kwargs: Any,
     ) -> None:
         if _unknown_kwargs:
             _logger.warning("GigaChat: unknown kwargs - %s", _unknown_kwargs)

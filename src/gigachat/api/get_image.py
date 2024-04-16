@@ -1,6 +1,7 @@
+import base64
 from http import HTTPStatus
 from typing import Any, Dict, Optional
-import base64
+
 import httpx
 
 from gigachat.api.utils import build_headers
@@ -9,9 +10,9 @@ from gigachat.models import Image
 
 
 def _get_kwargs(
-        *,
-        file_id: str,
-        access_token: Optional[str] = None,
+    *,
+    file_id: str,
+    access_token: Optional[str] = None,
 ) -> Dict[str, Any]:
     headers = build_headers(access_token)
     headers["Accept"] = "application/jpg"
@@ -32,10 +33,10 @@ def _build_response(response: httpx.Response) -> Image:
 
 
 def sync(
-        client: httpx.Client,
-        *,
-        file_id: str,
-        access_token: Optional[str] = None,
+    client: httpx.Client,
+    *,
+    file_id: str,
+    access_token: Optional[str] = None,
 ) -> Image:
     """Возвращает изображение в base64 кодировке"""
     kwargs = _get_kwargs(access_token=access_token, file_id=file_id)
@@ -44,10 +45,10 @@ def sync(
 
 
 async def asyncio(
-        client: httpx.AsyncClient,
-        *,
-        file_id: str,
-        access_token: Optional[str] = None,
+    client: httpx.AsyncClient,
+    *,
+    file_id: str,
+    access_token: Optional[str] = None,
 ) -> Image:
     """Возвращает изображение в base64 кодировке"""
     kwargs = _get_kwargs(access_token=access_token, file_id=file_id)
