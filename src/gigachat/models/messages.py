@@ -1,4 +1,4 @@
-from typing import Optional
+from typing import Any, Optional
 
 from gigachat.models.function_call import FunctionCall
 from gigachat.models.messages_role import MessagesRole
@@ -14,6 +14,7 @@ class Messages(BaseModel):
     """Текст сообщения"""
     function_call: Optional[FunctionCall] = None
     """Вызов функции"""
+    id: Optional[Any] = None  # noqa: A003
 
     class Config:
         use_enum_values = True
