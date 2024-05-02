@@ -48,9 +48,18 @@ def _check_response(response: httpx.Response) -> None:
     if response.status_code == HTTPStatus.OK:
         _check_content_type(response)
     elif response.status_code == HTTPStatus.UNAUTHORIZED:
-        raise AuthenticationError(response.url, response.status_code, b"", response.headers)
+        raise AuthenticationError(response.url, response.status_code, response.read(), response.headers)
     else:
-        raise ResponseError(response.url, response.status_code, b"", response.headers)
+        raise ResponseError(response.url, response.status_code, response.read(), response.headers)
+
+
+async def _acheck_response(response: httpx.Response) -> None:
+    if response.status_code == HTTPStatus.OK:
+        _check_content_type(response)
+    elif response.status_code == HTTPStatus.UNAUTHORIZED:
+        raise AuthenticationError(response.url, response.status_code, await response.aread(), response.headers)
+    else:
+        raise ResponseError(response.url, response.status_code, await response.aread(), response.headers)
 
 
 def sync(
@@ -75,7 +84,7 @@ async def asyncio(
 ) -> AsyncIterator[ChatCompletionChunk]:
     kwargs = _get_kwargs(chat=chat, access_token=access_token)
     async with client.stream(**kwargs) as response:
-        _check_response(response)
+        await _acheck_response(response)
         async for line in response.aiter_lines():
             if chunk := _parse_chunk(line):
                 yield chunk
