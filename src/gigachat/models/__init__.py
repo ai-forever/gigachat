@@ -1,4 +1,10 @@
 from gigachat.models.access_token import AccessToken
+from gigachat.models.assistants import (
+    Assistant,
+    AssistantFileDelete,
+    Assistants,
+    CreateAssistant,
+)
 from gigachat.models.chat import Chat
 from gigachat.models.chat_completion import ChatCompletion
 from gigachat.models.chat_completion_chunk import ChatCompletionChunk
@@ -16,12 +22,20 @@ from gigachat.models.messages_chunk import MessagesChunk
 from gigachat.models.messages_role import MessagesRole
 from gigachat.models.model import Model
 from gigachat.models.models import Models
+from gigachat.models.threads import ThreadMessages, ThreadRunResult, Threads
 from gigachat.models.token import Token
 from gigachat.models.tokens_count import TokensCount
 from gigachat.models.usage import Usage
 
 __all__ = (
+    "Assistants",
+    "Assistant",
+    "AssistantFileDelete",
     "AccessToken",
+    "ThreadRunResult",
+    "ThreadMessages",
+    "Threads",
+    "CreateAssistant",
     "Chat",
     "ChatCompletion",
     "ChatCompletionChunk",

@@ -1,4 +1,4 @@
-from typing import Any, Optional
+from typing import Any, List, Optional
 
 from gigachat.models.function_call import FunctionCall
 from gigachat.models.messages_role import MessagesRole
@@ -14,6 +14,10 @@ class Messages(BaseModel):
     """Текст сообщения"""
     function_call: Optional[FunctionCall] = None
     """Вызов функции"""
+    name: Optional[str] = None
+    """Наименование функции. Заполняется, если role = "function" """
+    attachments: Optional[List[str]] = None
+    """Идентификаторы предзагруженных ранее файлов """
     id: Optional[Any] = None  # noqa: A003
 
     class Config:
