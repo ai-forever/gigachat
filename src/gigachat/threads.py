@@ -26,15 +26,15 @@ from gigachat.exceptions import AuthenticationError
 from gigachat.models import (
     Messages,
     MessagesRole,
-    ThreadMessages,
-    ThreadRunResult,
 )
 from gigachat.models.threads import (
     ThreadCompletion,
     ThreadCompletionChunk,
+    ThreadMessages,
     ThreadMessagesResponse,
     ThreadRunOptions,
     ThreadRunResponse,
+    ThreadRunResult,
     Threads,
 )
 

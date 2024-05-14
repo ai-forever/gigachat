@@ -1,0 +1,17 @@
+{
+  "object": "threads.messages.run",
+  "model": "GigaChat-Pro:2.2.25.3",
+  "thread_id": "b549e2ec-a691-409d-aa6f-ff6a1271db47",
+  "message_id": "4c600221-1aaa-4c9d-9edb-572e465f4ee8",
+  "created": 1715686918,
+  "usage": {
+    "prompt_tokens": 12,
+    "completion_tokens": 15,
+    "total_tokens": 27
+  },
+  "message": {
+    "content": "Здравствуйте! Я могу вам чем-нибудь помочь?",
+    "role": "assistant"
+  },
+  "finish_reason": "stop"
+}

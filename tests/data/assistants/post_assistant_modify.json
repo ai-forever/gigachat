@@ -1,0 +1,14 @@
+{
+  "assistant_id": "111",
+  "created_at": 1715684158,
+  "name": "lonely_assistant",
+  "instructions": "Assistant",
+  "model": "GigaChat-Pro",
+  "updated_at": 1715684158,
+  "metadata": {
+    "test": 234
+  },
+  "file_ids": [
+    "222"
+  ]
+}

@@ -6,7 +6,7 @@ import httpx
 from gigachat.api.utils import build_headers
 from gigachat.exceptions import AuthenticationError, ResponseError
 from gigachat.models import Messages
-from gigachat.models.threads.thread_messages_response import ThreadMessagesResponse
+from gigachat.models.threads import ThreadMessagesResponse
 
 
 def _get_kwargs(

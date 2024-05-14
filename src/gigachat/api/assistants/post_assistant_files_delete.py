@@ -5,7 +5,7 @@ import httpx
 
 from gigachat.api.utils import build_headers
 from gigachat.exceptions import AuthenticationError, ResponseError
-from gigachat.models import AssistantFileDelete
+from gigachat.models.assistants import AssistantFileDelete
 
 
 def _get_kwargs(

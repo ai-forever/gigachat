@@ -6,7 +6,12 @@ from gigachat.api.assistants import (
     post_assistant_modify,
     post_assistants,
 )
-from gigachat.models import Assistant, AssistantFileDelete, Assistants, CreateAssistant
+from gigachat.models.assistants import (
+    Assistant,
+    AssistantFileDelete,
+    Assistants,
+    CreateAssistant,
+)
 
 if TYPE_CHECKING:
     from gigachat.client import GigaChatAsyncClient, GigaChatSyncClient
