@@ -57,7 +57,6 @@ class AssistantsSyncClient:
     def update(
         self,
         assistant_id: str,
-        model: Optional[str] = None,
         name: Optional[str] = None,
         description: Optional[str] = None,
         instructions: Optional[str] = None,
@@ -70,7 +69,6 @@ class AssistantsSyncClient:
             lambda: post_assistant_modify.sync(
                 self.base_client._client,
                 assistant_id=assistant_id,
-                model=model,
                 name=name,
                 description=description,
                 instructions=instructions,
@@ -136,7 +134,6 @@ class AssistantsAsyncClient:
     async def update(
         self,
         assistant_id: str,
-        model: Optional[str] = None,
         name: Optional[str] = None,
         description: Optional[str] = None,
         instructions: Optional[str] = None,
@@ -149,7 +146,6 @@ class AssistantsAsyncClient:
             return await post_assistant_modify.asyncio(
                 self.base_client._aclient,
                 assistant_id=assistant_id,
-                model=model,
                 name=name,
                 description=description,
                 instructions=instructions,

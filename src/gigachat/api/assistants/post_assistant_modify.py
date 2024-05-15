@@ -11,7 +11,6 @@ from gigachat.models.assistants import Assistant
 def _get_kwargs(
     *,
     assistant_id: str,
-    model: Optional[str] = None,
     name: Optional[str] = None,
     description: Optional[str] = None,
     instructions: Optional[str] = None,
@@ -26,7 +25,6 @@ def _get_kwargs(
         "url": "/assistants/modify",
         "json": {
             "assistant_id": assistant_id,
-            "model": model,
             "name": name,
             "description": description,
             "instructions": instructions,
@@ -50,7 +48,6 @@ def sync(
     client: httpx.Client,
     *,
     assistant_id: str,
-    model: Optional[str] = None,
     name: Optional[str] = None,
     description: Optional[str] = None,
     instructions: Optional[str] = None,
@@ -60,7 +57,6 @@ def sync(
 ) -> Assistant:
     kwargs = _get_kwargs(
         assistant_id=assistant_id,
-        model=model,
         name=name,
         description=description,
         instructions=instructions,
@@ -76,7 +72,6 @@ async def asyncio(
     client: httpx.AsyncClient,
     *,
     assistant_id: str,
-    model: Optional[str] = None,
     name: Optional[str] = None,
     description: Optional[str] = None,
     instructions: Optional[str] = None,
@@ -86,7 +81,6 @@ async def asyncio(
 ) -> Assistant:
     kwargs = _get_kwargs(
         assistant_id=assistant_id,
-        model=model,
         name=name,
         description=description,
         instructions=instructions,
