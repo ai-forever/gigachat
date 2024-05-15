@@ -18,6 +18,7 @@ from gigachat.models.model import Model
 from gigachat.models.models import Models
 from gigachat.models.token import Token
 from gigachat.models.tokens_count import TokensCount
+from gigachat.models.uploaded_file import UploadedFile
 from gigachat.models.usage import Usage
 
 __all__ = (
@@ -41,5 +42,6 @@ __all__ = (
     "Token",
     "TokensCount",
     "Usage",
+    "UploadedFile",
     "Image",
 )

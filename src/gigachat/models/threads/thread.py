@@ -1,13 +1,13 @@
 from typing import Optional
 
 from gigachat.models.threads.thread_status import ThreadStatus
-from gigachat.pydantic_v1 import BaseModel
+from gigachat.pydantic_v1 import BaseModel, Field
 
 
 class Thread(BaseModel):
     """Тред"""
 
-    id: str  # noqa: A003
+    id_: str = Field(alias="id")
     """Идентификатор треда"""
     assistant_id: Optional[str]
     """Идентификатор ассистента. Передается при первом сообщении в сессию"""

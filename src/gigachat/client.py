@@ -8,6 +8,7 @@ from typing import (
     Dict,
     Iterator,
     List,
+    Literal,
     Optional,
     TypeVar,
     Union,
@@ -15,6 +16,7 @@ from typing import (
 
 import httpx
 
+from gigachat._types import FileTypes
 from gigachat.api import (
     get_image,
     get_model,
@@ -22,6 +24,7 @@ from gigachat.api import (
     post_auth,
     post_chat,
     post_embeddings,
+    post_files,
     post_token,
     post_tokens_count,
     stream_chat,
@@ -42,6 +45,7 @@ from gigachat.models import (
     Models,
     Token,
     TokensCount,
+    UploadedFile,
 )
 from gigachat.settings import Settings
 from gigachat.threads import ThreadsAsyncClient, ThreadsSyncClient
@@ -255,6 +259,16 @@ class GigaChatSyncClient(_BaseClient):
         """Возвращает изображение в кодировке base64"""
         return self._decorator(lambda: get_image.sync(self._client, file_id=file_id, access_token=self.token))
 
+    def upload_file(
+        self,
+        file: FileTypes,
+        purpose: Literal["general", "assistant"] = "general",
+    ) -> UploadedFile:
+        """Загружает файл"""
+        return self._decorator(
+            lambda: post_files.sync(self._client, file=file, purpose=purpose, access_token=self.token)
+        )
+
     def chat(self, payload: Union[Chat, Dict[str, Any], str]) -> ChatCompletion:
         """Возвращает ответ модели с учетом переданных сообщений"""
         chat = _parse_chat(payload, self._settings)
@@ -385,6 +399,18 @@ class GigaChatAsyncClient(_BaseClient):
 
         async def _acall() -> ChatCompletion:
             return await post_chat.asyncio(self._aclient, chat=chat, access_token=self.token)
+
+        return await self._adecorator(_acall)
+
+    async def aupload_file(
+        self,
+        file: FileTypes,
+        purpose: Literal["general", "assistant"] = "general",
+    ) -> UploadedFile:
+        """Загружает файл"""
+
+        async def _acall() -> UploadedFile:
+            return await post_files.asyncio(self._aclient, file=file, purpose=purpose, access_token=self.token)
 
         return await self._adecorator(_acall)
 
