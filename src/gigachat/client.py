@@ -1,9 +1,22 @@
 import logging
 from functools import cached_property
-from typing import Any, AsyncIterator, Awaitable, Callable, Dict, Iterator, List, Optional, TypeVar, Union
+from typing import (
+    Any,
+    AsyncIterator,
+    Awaitable,
+    Callable,
+    Dict,
+    Iterator,
+    List,
+    Literal,
+    Optional,
+    TypeVar,
+    Union,
+)
 
 import httpx
 
+from gigachat._types import FileTypes
 from gigachat.api import (
     get_image,
     get_model,
@@ -11,10 +24,12 @@ from gigachat.api import (
     post_auth,
     post_chat,
     post_embeddings,
+    post_files,
     post_token,
     post_tokens_count,
     stream_chat,
 )
+from gigachat.assistants import AssistantsAsyncClient, AssistantsSyncClient
 from gigachat.context import authorization_cvar
 from gigachat.exceptions import AuthenticationError
 from gigachat.models import (
@@ -30,8 +45,10 @@ from gigachat.models import (
     Models,
     Token,
     TokensCount,
+    UploadedFile,
 )
 from gigachat.settings import Settings
+from gigachat.threads import ThreadsAsyncClient, ThreadsSyncClient
 
 T = TypeVar("T")
 
@@ -50,7 +67,11 @@ def _get_kwargs(settings: Settings) -> Dict[str, Any]:
     if settings.ca_bundle_file:
         kwargs["verify"] = settings.ca_bundle_file
     if settings.cert_file:
-        kwargs["cert"] = (settings.cert_file, settings.key_file, settings.key_file_password)
+        kwargs["cert"] = (
+            settings.cert_file,
+            settings.key_file,
+            settings.key_file_password,
+        )
     return kwargs
 
 
@@ -157,6 +178,11 @@ class _BaseClient:
 class GigaChatSyncClient(_BaseClient):
     """Синхронный клиент GigaChat"""
 
+    def __init__(self, **kwargs: Any) -> None:
+        super().__init__(**kwargs)
+        self.assistants = AssistantsSyncClient(self)
+        self.threads = ThreadsSyncClient(self)
+
     @cached_property
     def _client(self) -> httpx.Client:
         return httpx.Client(**_get_kwargs(self._settings))
@@ -188,7 +214,11 @@ class GigaChatSyncClient(_BaseClient):
             _logger.info("OAUTH UPDATE TOKEN")
         elif self._settings.user and self._settings.password:
             self._access_token = _build_access_token(
-                post_token.sync(self._client, user=self._settings.user, password=self._settings.password)
+                post_token.sync(
+                    self._client,
+                    user=self._settings.user,
+                    password=self._settings.password,
+                )
             )
             _logger.info("UPDATE TOKEN")
 
@@ -229,6 +259,16 @@ class GigaChatSyncClient(_BaseClient):
         """Возвращает изображение в кодировке base64"""
         return self._decorator(lambda: get_image.sync(self._client, file_id=file_id, access_token=self.token))
 
+    def upload_file(
+        self,
+        file: FileTypes,
+        purpose: Literal["general", "assistant"] = "general",
+    ) -> UploadedFile:
+        """Загружает файл"""
+        return self._decorator(
+            lambda: post_files.sync(self._client, file=file, purpose=purpose, access_token=self.token)
+        )
+
     def chat(self, payload: Union[Chat, Dict[str, Any], str]) -> ChatCompletion:
         """Возвращает ответ модели с учетом переданных сообщений"""
         chat = _parse_chat(payload, self._settings)
@@ -255,6 +295,11 @@ class GigaChatSyncClient(_BaseClient):
 
 class GigaChatAsyncClient(_BaseClient):
     """Асинхронный клиент GigaChat"""
+
+    def __init__(self, **kwargs: Any) -> None:
+        super().__init__(**kwargs)
+        self.a_assistants = AssistantsAsyncClient(self)
+        self.a_threads = ThreadsAsyncClient(self)
 
     @cached_property
     def _aclient(self) -> httpx.AsyncClient:
@@ -287,7 +332,11 @@ class GigaChatAsyncClient(_BaseClient):
             _logger.info("OAUTH UPDATE TOKEN")
         elif self._settings.user and self._settings.password:
             self._access_token = _build_access_token(
-                await post_token.asyncio(self._aclient, user=self._settings.user, password=self._settings.password)
+                await post_token.asyncio(
+                    self._aclient,
+                    user=self._settings.user,
+                    password=self._settings.password,
+                )
             )
             _logger.info("UPDATE TOKEN")
 
@@ -350,6 +399,18 @@ class GigaChatAsyncClient(_BaseClient):
 
         async def _acall() -> ChatCompletion:
             return await post_chat.asyncio(self._aclient, chat=chat, access_token=self.token)
+
+        return await self._adecorator(_acall)
+
+    async def aupload_file(
+        self,
+        file: FileTypes,
+        purpose: Literal["general", "assistant"] = "general",
+    ) -> UploadedFile:
+        """Загружает файл"""
+
+        async def _acall() -> UploadedFile:
+            return await post_files.asyncio(self._aclient, file=file, purpose=purpose, access_token=self.token)
 
         return await self._adecorator(_acall)
 

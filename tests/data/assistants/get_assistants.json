@@ -1,0 +1,32 @@
+{
+  "data": [
+    {
+      "assistant_id": "111",
+      "created_at": 1715684019,
+      "name": "lonely",
+      "instructions": "Assistant",
+      "model": "GigaChat-Pro",
+      "updated_at": 1715684019,
+      "metadata": {
+        "test": 234
+      },
+      "file_ids": [
+        "222"
+      ]
+    },
+    {
+      "assistant_id": "222",
+      "created_at": 1715684019,
+      "name": "lonely",
+      "instructions": "Assistant",
+      "model": "GigaChat-Pro",
+      "updated_at": 1715684019,
+      "metadata": {
+        "test": 234
+      },
+      "file_ids": [
+        "222"
+      ]
+    }
+  ]
+}

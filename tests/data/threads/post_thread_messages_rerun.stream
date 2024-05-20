@@ -1,0 +1,147 @@
+data: {"choices":[{"delta":{"content":"Я попыталась написать стихотворение о том, что такое LLM и как он работает. Вот что у меня получилось:\n\nНейросеть, что генеративной зовётся,\nПостигла суть юридических наук.\nОна теперь не просто развлекается,\nА учится вести большой количество дел.\n\nLLM теперь умеет составлять договоры,","role":"assistant"},"index":0}],"created":1715684767,"model":"GigaChat-Pro:2.2.25.3","object":"threads.messages.run","usage":{"prompt_tokens":69,"completion_tokens":77,"total_tokens":146},"thread_id":"2cc91bae-34f7-4ee4-bcae-f5f71880deda","message_id":"f7968272-89b5-4d28-a0b1-b74dcfb56f37"}
+
+data: {"choices":[{"delta":{"content":"\n"},"index":0}],"created":1715684767,"model":"GigaChat-Pro:2.2.25.3","object":"threads.messages.run","usage":{"prompt_tokens":0,"completion_tokens":1,"total_tokens":1},"thread_id":"2cc91bae-34f7-4ee4-bcae-f5f71880deda","message_id":"f7968272-89b5-4d28-a0b1-b74dcfb56f37"}
+
+data: {"choices":[{"delta":{"content":"Г"},"index":0}],"created":1715684767,"model":"GigaChat-Pro:2.2.25.3","object":"threads.messages.run","usage":{"prompt_tokens":0,"completion_tokens":1,"total_tokens":1},"thread_id":"2cc91bae-34f7-4ee4-bcae-f5f71880deda","message_id":"f7968272-89b5-4d28-a0b1-b74dcfb56f37"}
+
+data: {"choices":[{"delta":{"content":"от"},"index":0}],"created":1715684767,"model":"GigaChat-Pro:2.2.25.3","object":"threads.messages.run","usage":{"prompt_tokens":0,"completion_tokens":1,"total_tokens":1},"thread_id":"2cc91bae-34f7-4ee4-bcae-f5f71880deda","message_id":"f7968272-89b5-4d28-a0b1-b74dcfb56f37"}
+
+data: {"choices":[{"delta":{"content":"ови"},"index":0}],"created":1715684767,"model":"GigaChat-Pro:2.2.25.3","object":"threads.messages.run","usage":{"prompt_tokens":0,"completion_tokens":1,"total_tokens":1},"thread_id":"2cc91bae-34f7-4ee4-bcae-f5f71880deda","message_id":"f7968272-89b5-4d28-a0b1-b74dcfb56f37"}
+
+data: {"choices":[{"delta":{"content":"ть"},"index":0}],"created":1715684767,"model":"GigaChat-Pro:2.2.25.3","object":"threads.messages.run","usage":{"prompt_tokens":0,"completion_tokens":1,"total_tokens":1},"thread_id":"2cc91bae-34f7-4ee4-bcae-f5f71880deda","message_id":"f7968272-89b5-4d28-a0b1-b74dcfb56f37"}
+
+data: {"choices":[{"delta":{"content":" и"},"index":0}],"created":1715684767,"model":"GigaChat-Pro:2.2.25.3","object":"threads.messages.run","usage":{"prompt_tokens":0,"completion_tokens":1,"total_tokens":1},"thread_id":"2cc91bae-34f7-4ee4-bcae-f5f71880deda","message_id":"f7968272-89b5-4d28-a0b1-b74dcfb56f37"}
+
+data: {"choices":[{"delta":{"content":"ски"},"index":0}],"created":1715684767,"model":"GigaChat-Pro:2.2.25.3","object":"threads.messages.run","usage":{"prompt_tokens":0,"completion_tokens":1,"total_tokens":1},"thread_id":"2cc91bae-34f7-4ee4-bcae-f5f71880deda","message_id":"f7968272-89b5-4d28-a0b1-b74dcfb56f37"}
+
+data: {"choices":[{"delta":{"content":","},"index":0}],"created":1715684767,"model":"GigaChat-Pro:2.2.25.3","object":"threads.messages.run","usage":{"prompt_tokens":0,"completion_tokens":1,"total_tokens":1},"thread_id":"2cc91bae-34f7-4ee4-bcae-f5f71880deda","message_id":"f7968272-89b5-4d28-a0b1-b74dcfb56f37"}
+
+data: {"choices":[{"delta":{"content":" консу"},"index":0}],"created":1715684767,"model":"GigaChat-Pro:2.2.25.3","object":"threads.messages.run","usage":{"prompt_tokens":0,"completion_tokens":1,"total_tokens":1},"thread_id":"2cc91bae-34f7-4ee4-bcae-f5f71880deda","message_id":"f7968272-89b5-4d28-a0b1-b74dcfb56f37"}
+
+data: {"choices":[{"delta":{"content":"ль"},"index":0}],"created":1715684767,"model":"GigaChat-Pro:2.2.25.3","object":"threads.messages.run","usage":{"prompt_tokens":0,"completion_tokens":1,"total_tokens":1},"thread_id":"2cc91bae-34f7-4ee4-bcae-f5f71880deda","message_id":"f7968272-89b5-4d28-a0b1-b74dcfb56f37"}
+
+data: {"choices":[{"delta":{"content":"тировать"},"index":0}],"created":1715684767,"model":"GigaChat-Pro:2.2.25.3","object":"threads.messages.run","usage":{"prompt_tokens":0,"completion_tokens":1,"total_tokens":1},"thread_id":"2cc91bae-34f7-4ee4-bcae-f5f71880deda","message_id":"f7968272-89b5-4d28-a0b1-b74dcfb56f37"}
+
+data: {"choices":[{"delta":{"content":" клиентов"},"index":0}],"created":1715684767,"model":"GigaChat-Pro:2.2.25.3","object":"threads.messages.run","usage":{"prompt_tokens":0,"completion_tokens":1,"total_tokens":1},"thread_id":"2cc91bae-34f7-4ee4-bcae-f5f71880deda","message_id":"f7968272-89b5-4d28-a0b1-b74dcfb56f37"}
+
+data: {"choices":[{"delta":{"content":","},"index":0}],"created":1715684767,"model":"GigaChat-Pro:2.2.25.3","object":"threads.messages.run","usage":{"prompt_tokens":0,"completion_tokens":1,"total_tokens":1},"thread_id":"2cc91bae-34f7-4ee4-bcae-f5f71880deda","message_id":"f7968272-89b5-4d28-a0b1-b74dcfb56f37"}
+
+data: {"choices":[{"delta":{"content":"\n"},"index":0}],"created":1715684767,"model":"GigaChat-Pro:2.2.25.3","object":"threads.messages.run","usage":{"prompt_tokens":0,"completion_tokens":1,"total_tokens":1},"thread_id":"2cc91bae-34f7-4ee4-bcae-f5f71880deda","message_id":"f7968272-89b5-4d28-a0b1-b74dcfb56f37"}
+
+data: {"choices":[{"delta":{"content":"У"},"index":0}],"created":1715684768,"model":"GigaChat-Pro:2.2.25.3","object":"threads.messages.run","usage":{"prompt_tokens":0,"completion_tokens":1,"total_tokens":1},"thread_id":"2cc91bae-34f7-4ee4-bcae-f5f71880deda","message_id":"f7968272-89b5-4d28-a0b1-b74dcfb56f37"}
+
+data: {"choices":[{"delta":{"content":"ча"},"index":0}],"created":1715684768,"model":"GigaChat-Pro:2.2.25.3","object":"threads.messages.run","usage":{"prompt_tokens":0,"completion_tokens":1,"total_tokens":1},"thread_id":"2cc91bae-34f7-4ee4-bcae-f5f71880deda","message_id":"f7968272-89b5-4d28-a0b1-b74dcfb56f37"}
+
+data: {"choices":[{"delta":{"content":"ствовать"},"index":0}],"created":1715684768,"model":"GigaChat-Pro:2.2.25.3","object":"threads.messages.run","usage":{"prompt_tokens":0,"completion_tokens":1,"total_tokens":1},"thread_id":"2cc91bae-34f7-4ee4-bcae-f5f71880deda","message_id":"f7968272-89b5-4d28-a0b1-b74dcfb56f37"}
+
+data: {"choices":[{"delta":{"content":" в"},"index":0}],"created":1715684768,"model":"GigaChat-Pro:2.2.25.3","object":"threads.messages.run","usage":{"prompt_tokens":0,"completion_tokens":1,"total_tokens":1},"thread_id":"2cc91bae-34f7-4ee4-bcae-f5f71880deda","message_id":"f7968272-89b5-4d28-a0b1-b74dcfb56f37"}
+
+data: {"choices":[{"delta":{"content":" судеб"},"index":0}],"created":1715684768,"model":"GigaChat-Pro:2.2.25.3","object":"threads.messages.run","usage":{"prompt_tokens":0,"completion_tokens":1,"total_tokens":1},"thread_id":"2cc91bae-34f7-4ee4-bcae-f5f71880deda","message_id":"f7968272-89b5-4d28-a0b1-b74dcfb56f37"}
+
+data: {"choices":[{"delta":{"content":"ных"},"index":0}],"created":1715684768,"model":"GigaChat-Pro:2.2.25.3","object":"threads.messages.run","usage":{"prompt_tokens":0,"completion_tokens":1,"total_tokens":1},"thread_id":"2cc91bae-34f7-4ee4-bcae-f5f71880deda","message_id":"f7968272-89b5-4d28-a0b1-b74dcfb56f37"}
+
+data: {"choices":[{"delta":{"content":" пре"},"index":0}],"created":1715684768,"model":"GigaChat-Pro:2.2.25.3","object":"threads.messages.run","usage":{"prompt_tokens":0,"completion_tokens":1,"total_tokens":1},"thread_id":"2cc91bae-34f7-4ee4-bcae-f5f71880deda","message_id":"f7968272-89b5-4d28-a0b1-b74dcfb56f37"}
+
+data: {"choices":[{"delta":{"content":"ниях"},"index":0}],"created":1715684768,"model":"GigaChat-Pro:2.2.25.3","object":"threads.messages.run","usage":{"prompt_tokens":0,"completion_tokens":1,"total_tokens":1},"thread_id":"2cc91bae-34f7-4ee4-bcae-f5f71880deda","message_id":"f7968272-89b5-4d28-a0b1-b74dcfb56f37"}
+
+data: {"choices":[{"delta":{"content":","},"index":0}],"created":1715684768,"model":"GigaChat-Pro:2.2.25.3","object":"threads.messages.run","usage":{"prompt_tokens":0,"completion_tokens":1,"total_tokens":1},"thread_id":"2cc91bae-34f7-4ee4-bcae-f5f71880deda","message_id":"f7968272-89b5-4d28-a0b1-b74dcfb56f37"}
+
+data: {"choices":[{"delta":{"content":"\n"},"index":0}],"created":1715684768,"model":"GigaChat-Pro:2.2.25.3","object":"threads.messages.run","usage":{"prompt_tokens":0,"completion_tokens":1,"total_tokens":1},"thread_id":"2cc91bae-34f7-4ee4-bcae-f5f71880deda","message_id":"f7968272-89b5-4d28-a0b1-b74dcfb56f37"}
+
+data: {"choices":[{"delta":{"content":"И"},"index":0}],"created":1715684768,"model":"GigaChat-Pro:2.2.25.3","object":"threads.messages.run","usage":{"prompt_tokens":0,"completion_tokens":1,"total_tokens":1},"thread_id":"2cc91bae-34f7-4ee4-bcae-f5f71880deda","message_id":"f7968272-89b5-4d28-a0b1-b74dcfb56f37"}
+
+data: {"choices":[{"delta":{"content":"зу"},"index":0}],"created":1715684768,"model":"GigaChat-Pro:2.2.25.3","object":"threads.messages.run","usage":{"prompt_tokens":0,"completion_tokens":1,"total_tokens":1},"thread_id":"2cc91bae-34f7-4ee4-bcae-f5f71880deda","message_id":"f7968272-89b5-4d28-a0b1-b74dcfb56f37"}
+
+data: {"choices":[{"delta":{"content":"чать"},"index":0}],"created":1715684768,"model":"GigaChat-Pro:2.2.25.3","object":"threads.messages.run","usage":{"prompt_tokens":0,"completion_tokens":1,"total_tokens":1},"thread_id":"2cc91bae-34f7-4ee4-bcae-f5f71880deda","message_id":"f7968272-89b5-4d28-a0b1-b74dcfb56f37"}
+
+data: {"choices":[{"delta":{"content":" юриди"},"index":0}],"created":1715684768,"model":"GigaChat-Pro:2.2.25.3","object":"threads.messages.run","usage":{"prompt_tokens":0,"completion_tokens":1,"total_tokens":1},"thread_id":"2cc91bae-34f7-4ee4-bcae-f5f71880deda","message_id":"f7968272-89b5-4d28-a0b1-b74dcfb56f37"}
+
+data: {"choices":[{"delta":{"content":"ческие"},"index":0}],"created":1715684768,"model":"GigaChat-Pro:2.2.25.3","object":"threads.messages.run","usage":{"prompt_tokens":0,"completion_tokens":1,"total_tokens":1},"thread_id":"2cc91bae-34f7-4ee4-bcae-f5f71880deda","message_id":"f7968272-89b5-4d28-a0b1-b74dcfb56f37"}
+
+data: {"choices":[{"delta":{"content":" тек"},"index":0}],"created":1715684768,"model":"GigaChat-Pro:2.2.25.3","object":"threads.messages.run","usage":{"prompt_tokens":0,"completion_tokens":1,"total_tokens":1},"thread_id":"2cc91bae-34f7-4ee4-bcae-f5f71880deda","message_id":"f7968272-89b5-4d28-a0b1-b74dcfb56f37"}
+
+data: {"choices":[{"delta":{"content":"сты"},"index":0}],"created":1715684768,"model":"GigaChat-Pro:2.2.25.3","object":"threads.messages.run","usage":{"prompt_tokens":0,"completion_tokens":1,"total_tokens":1},"thread_id":"2cc91bae-34f7-4ee4-bcae-f5f71880deda","message_id":"f7968272-89b5-4d28-a0b1-b74dcfb56f37"}
+
+data: {"choices":[{"delta":{"content":"."},"index":0}],"created":1715684768,"model":"GigaChat-Pro:2.2.25.3","object":"threads.messages.run","usage":{"prompt_tokens":0,"completion_tokens":1,"total_tokens":1},"thread_id":"2cc91bae-34f7-4ee4-bcae-f5f71880deda","message_id":"f7968272-89b5-4d28-a0b1-b74dcfb56f37"}
+
+data: {"choices":[{"delta":{"content":"\n"},"index":0}],"created":1715684768,"model":"GigaChat-Pro:2.2.25.3","object":"threads.messages.run","usage":{"prompt_tokens":0,"completion_tokens":1,"total_tokens":1},"thread_id":"2cc91bae-34f7-4ee4-bcae-f5f71880deda","message_id":"f7968272-89b5-4d28-a0b1-b74dcfb56f37"}
+
+data: {"choices":[{"delta":{"content":"\n"},"index":0}],"created":1715684768,"model":"GigaChat-Pro:2.2.25.3","object":"threads.messages.run","usage":{"prompt_tokens":0,"completion_tokens":1,"total_tokens":1},"thread_id":"2cc91bae-34f7-4ee4-bcae-f5f71880deda","message_id":"f7968272-89b5-4d28-a0b1-b74dcfb56f37"}
+
+data: {"choices":[{"delta":{"content":"Е"},"index":0}],"created":1715684768,"model":"GigaChat-Pro:2.2.25.3","object":"threads.messages.run","usage":{"prompt_tokens":0,"completion_tokens":1,"total_tokens":1},"thread_id":"2cc91bae-34f7-4ee4-bcae-f5f71880deda","message_id":"f7968272-89b5-4d28-a0b1-b74dcfb56f37"}
+
+data: {"choices":[{"delta":{"content":"ё"},"index":0}],"created":1715684768,"model":"GigaChat-Pro:2.2.25.3","object":"threads.messages.run","usage":{"prompt_tokens":0,"completion_tokens":1,"total_tokens":1},"thread_id":"2cc91bae-34f7-4ee4-bcae-f5f71880deda","message_id":"f7968272-89b5-4d28-a0b1-b74dcfb56f37"}
+
+data: {"choices":[{"delta":{"content":" работа"},"index":0}],"created":1715684768,"model":"GigaChat-Pro:2.2.25.3","object":"threads.messages.run","usage":{"prompt_tokens":0,"completion_tokens":1,"total_tokens":1},"thread_id":"2cc91bae-34f7-4ee4-bcae-f5f71880deda","message_id":"f7968272-89b5-4d28-a0b1-b74dcfb56f37"}
+
+data: {"choices":[{"delta":{"content":" будет"},"index":0}],"created":1715684768,"model":"GigaChat-Pro:2.2.25.3","object":"threads.messages.run","usage":{"prompt_tokens":0,"completion_tokens":1,"total_tokens":1},"thread_id":"2cc91bae-34f7-4ee4-bcae-f5f71880deda","message_id":"f7968272-89b5-4d28-a0b1-b74dcfb56f37"}
+
+data: {"choices":[{"delta":{"content":" поле"},"index":0}],"created":1715684769,"model":"GigaChat-Pro:2.2.25.3","object":"threads.messages.run","usage":{"prompt_tokens":0,"completion_tokens":1,"total_tokens":1},"thread_id":"2cc91bae-34f7-4ee4-bcae-f5f71880deda","message_id":"f7968272-89b5-4d28-a0b1-b74dcfb56f37"}
+
+data: {"choices":[{"delta":{"content":"зна"},"index":0}],"created":1715684769,"model":"GigaChat-Pro:2.2.25.3","object":"threads.messages.run","usage":{"prompt_tokens":0,"completion_tokens":1,"total_tokens":1},"thread_id":"2cc91bae-34f7-4ee4-bcae-f5f71880deda","message_id":"f7968272-89b5-4d28-a0b1-b74dcfb56f37"}
+
+data: {"choices":[{"delta":{"content":"\n"},"index":0}],"created":1715684769,"model":"GigaChat-Pro:2.2.25.3","object":"threads.messages.run","usage":{"prompt_tokens":0,"completion_tokens":1,"total_tokens":1},"thread_id":"2cc91bae-34f7-4ee4-bcae-f5f71880deda","message_id":"f7968272-89b5-4d28-a0b1-b74dcfb56f37"}
+
+data: {"choices":[{"delta":{"content":"Ю"},"index":0}],"created":1715684769,"model":"GigaChat-Pro:2.2.25.3","object":"threads.messages.run","usage":{"prompt_tokens":0,"completion_tokens":1,"total_tokens":1},"thread_id":"2cc91bae-34f7-4ee4-bcae-f5f71880deda","message_id":"f7968272-89b5-4d28-a0b1-b74dcfb56f37"}
+
+data: {"choices":[{"delta":{"content":"ри"},"index":0}],"created":1715684769,"model":"GigaChat-Pro:2.2.25.3","object":"threads.messages.run","usage":{"prompt_tokens":0,"completion_tokens":1,"total_tokens":1},"thread_id":"2cc91bae-34f7-4ee4-bcae-f5f71880deda","message_id":"f7968272-89b5-4d28-a0b1-b74dcfb56f37"}
+
+data: {"choices":[{"delta":{"content":"стам"},"index":0}],"created":1715684769,"model":"GigaChat-Pro:2.2.25.3","object":"threads.messages.run","usage":{"prompt_tokens":0,"completion_tokens":1,"total_tokens":1},"thread_id":"2cc91bae-34f7-4ee4-bcae-f5f71880deda","message_id":"f7968272-89b5-4d28-a0b1-b74dcfb56f37"}
+
+data: {"choices":[{"delta":{"content":","},"index":0}],"created":1715684769,"model":"GigaChat-Pro:2.2.25.3","object":"threads.messages.run","usage":{"prompt_tokens":0,"completion_tokens":1,"total_tokens":1},"thread_id":"2cc91bae-34f7-4ee4-bcae-f5f71880deda","message_id":"f7968272-89b5-4d28-a0b1-b74dcfb56f37"}
+
+data: {"choices":[{"delta":{"content":" ад"},"index":0}],"created":1715684769,"model":"GigaChat-Pro:2.2.25.3","object":"threads.messages.run","usage":{"prompt_tokens":0,"completion_tokens":1,"total_tokens":1},"thread_id":"2cc91bae-34f7-4ee4-bcae-f5f71880deda","message_id":"f7968272-89b5-4d28-a0b1-b74dcfb56f37"}
+
+data: {"choices":[{"delta":{"content":"во"},"index":0}],"created":1715684769,"model":"GigaChat-Pro:2.2.25.3","object":"threads.messages.run","usage":{"prompt_tokens":0,"completion_tokens":1,"total_tokens":1},"thread_id":"2cc91bae-34f7-4ee4-bcae-f5f71880deda","message_id":"f7968272-89b5-4d28-a0b1-b74dcfb56f37"}
+
+data: {"choices":[{"delta":{"content":"ката"},"index":0}],"created":1715684769,"model":"GigaChat-Pro:2.2.25.3","object":"threads.messages.run","usage":{"prompt_tokens":0,"completion_tokens":1,"total_tokens":1},"thread_id":"2cc91bae-34f7-4ee4-bcae-f5f71880deda","message_id":"f7968272-89b5-4d28-a0b1-b74dcfb56f37"}
+
+data: {"choices":[{"delta":{"content":"м"},"index":0}],"created":1715684769,"model":"GigaChat-Pro:2.2.25.3","object":"threads.messages.run","usage":{"prompt_tokens":0,"completion_tokens":1,"total_tokens":1},"thread_id":"2cc91bae-34f7-4ee4-bcae-f5f71880deda","message_id":"f7968272-89b5-4d28-a0b1-b74dcfb56f37"}
+
+data: {"choices":[{"delta":{"content":" и"},"index":0}],"created":1715684769,"model":"GigaChat-Pro:2.2.25.3","object":"threads.messages.run","usage":{"prompt_tokens":0,"completion_tokens":1,"total_tokens":1},"thread_id":"2cc91bae-34f7-4ee4-bcae-f5f71880deda","message_id":"f7968272-89b5-4d28-a0b1-b74dcfb56f37"}
+
+data: {"choices":[{"delta":{"content":" судь"},"index":0}],"created":1715684769,"model":"GigaChat-Pro:2.2.25.3","object":"threads.messages.run","usage":{"prompt_tokens":0,"completion_tokens":1,"total_tokens":1},"thread_id":"2cc91bae-34f7-4ee4-bcae-f5f71880deda","message_id":"f7968272-89b5-4d28-a0b1-b74dcfb56f37"}
+
+data: {"choices":[{"delta":{"content":"ям"},"index":0}],"created":1715684769,"model":"GigaChat-Pro:2.2.25.3","object":"threads.messages.run","usage":{"prompt_tokens":0,"completion_tokens":1,"total_tokens":1},"thread_id":"2cc91bae-34f7-4ee4-bcae-f5f71880deda","message_id":"f7968272-89b5-4d28-a0b1-b74dcfb56f37"}
+
+data: {"choices":[{"delta":{"content":","},"index":0}],"created":1715684769,"model":"GigaChat-Pro:2.2.25.3","object":"threads.messages.run","usage":{"prompt_tokens":0,"completion_tokens":1,"total_tokens":1},"thread_id":"2cc91bae-34f7-4ee4-bcae-f5f71880deda","message_id":"f7968272-89b5-4d28-a0b1-b74dcfb56f37"}
+
+data: {"choices":[{"delta":{"content":"\n"},"index":0}],"created":1715684769,"model":"GigaChat-Pro:2.2.25.3","object":"threads.messages.run","usage":{"prompt_tokens":0,"completion_tokens":1,"total_tokens":1},"thread_id":"2cc91bae-34f7-4ee4-bcae-f5f71880deda","message_id":"f7968272-89b5-4d28-a0b1-b74dcfb56f37"}
+
+data: {"choices":[{"delta":{"content":"С"},"index":0}],"created":1715684769,"model":"GigaChat-Pro:2.2.25.3","object":"threads.messages.run","usage":{"prompt_tokens":0,"completion_tokens":1,"total_tokens":1},"thread_id":"2cc91bae-34f7-4ee4-bcae-f5f71880deda","message_id":"f7968272-89b5-4d28-a0b1-b74dcfb56f37"}
+
+data: {"choices":[{"delta":{"content":"ту"},"index":0}],"created":1715684769,"model":"GigaChat-Pro:2.2.25.3","object":"threads.messages.run","usage":{"prompt_tokens":0,"completion_tokens":1,"total_tokens":1},"thread_id":"2cc91bae-34f7-4ee4-bcae-f5f71880deda","message_id":"f7968272-89b5-4d28-a0b1-b74dcfb56f37"}
+
+data: {"choices":[{"delta":{"content":"ден"},"index":0}],"created":1715684769,"model":"GigaChat-Pro:2.2.25.3","object":"threads.messages.run","usage":{"prompt_tokens":0,"completion_tokens":1,"total_tokens":1},"thread_id":"2cc91bae-34f7-4ee4-bcae-f5f71880deda","message_id":"f7968272-89b5-4d28-a0b1-b74dcfb56f37"}
+
+data: {"choices":[{"delta":{"content":"там"},"index":0}],"created":1715684769,"model":"GigaChat-Pro:2.2.25.3","object":"threads.messages.run","usage":{"prompt_tokens":0,"completion_tokens":1,"total_tokens":1},"thread_id":"2cc91bae-34f7-4ee4-bcae-f5f71880deda","message_id":"f7968272-89b5-4d28-a0b1-b74dcfb56f37"}
+
+data: {"choices":[{"delta":{"content":" юридических"},"index":0}],"created":1715684769,"model":"GigaChat-Pro:2.2.25.3","object":"threads.messages.run","usage":{"prompt_tokens":0,"completion_tokens":1,"total_tokens":1},"thread_id":"2cc91bae-34f7-4ee4-bcae-f5f71880deda","message_id":"f7968272-89b5-4d28-a0b1-b74dcfb56f37"}
+
+data: {"choices":[{"delta":{"content":" факуль"},"index":0}],"created":1715684769,"model":"GigaChat-Pro:2.2.25.3","object":"threads.messages.run","usage":{"prompt_tokens":0,"completion_tokens":1,"total_tokens":1},"thread_id":"2cc91bae-34f7-4ee4-bcae-f5f71880deda","message_id":"f7968272-89b5-4d28-a0b1-b74dcfb56f37"}
+
+data: {"choices":[{"delta":{"content":"те"},"index":0}],"created":1715684769,"model":"GigaChat-Pro:2.2.25.3","object":"threads.messages.run","usage":{"prompt_tokens":0,"completion_tokens":1,"total_tokens":1},"thread_id":"2cc91bae-34f7-4ee4-bcae-f5f71880deda","message_id":"f7968272-89b5-4d28-a0b1-b74dcfb56f37"}
+
+data: {"choices":[{"delta":{"content":"тов"},"index":0}],"created":1715684770,"model":"GigaChat-Pro:2.2.25.3","object":"threads.messages.run","usage":{"prompt_tokens":0,"completion_tokens":1,"total_tokens":1},"thread_id":"2cc91bae-34f7-4ee4-bcae-f5f71880deda","message_id":"f7968272-89b5-4d28-a0b1-b74dcfb56f37"}
+
+data: {"choices":[{"delta":{"content":"\n"},"index":0}],"created":1715684770,"model":"GigaChat-Pro:2.2.25.3","object":"threads.messages.run","usage":{"prompt_tokens":0,"completion_tokens":1,"total_tokens":1},"thread_id":"2cc91bae-34f7-4ee4-bcae-f5f71880deda","message_id":"f7968272-89b5-4d28-a0b1-b74dcfb56f37"}
+
+data: {"choices":[{"delta":{"content":"И"},"index":0}],"created":1715684770,"model":"GigaChat-Pro:2.2.25.3","object":"threads.messages.run","usage":{"prompt_tokens":0,"completion_tokens":1,"total_tokens":1},"thread_id":"2cc91bae-34f7-4ee4-bcae-f5f71880deda","message_id":"f7968272-89b5-4d28-a0b1-b74dcfb56f37"}
+
+data: {"choices":[{"delta":{"content":" всем"},"index":0}],"created":1715684770,"model":"GigaChat-Pro:2.2.25.3","object":"threads.messages.run","usage":{"prompt_tokens":0,"completion_tokens":1,"total_tokens":1},"thread_id":"2cc91bae-34f7-4ee4-bcae-f5f71880deda","message_id":"f7968272-89b5-4d28-a0b1-b74dcfb56f37"}
+
+data: {"choices":[{"delta":{"content":","},"index":0}],"created":1715684770,"model":"GigaChat-Pro:2.2.25.3","object":"threads.messages.run","usage":{"prompt_tokens":0,"completion_tokens":1,"total_tokens":1},"thread_id":"2cc91bae-34f7-4ee4-bcae-f5f71880deda","message_id":"f7968272-89b5-4d28-a0b1-b74dcfb56f37"}
+
+data: {"choices":[{"delta":{"content":" кто"},"index":0}],"created":1715684770,"model":"GigaChat-Pro:2.2.25.3","object":"threads.messages.run","usage":{"prompt_tokens":0,"completion_tokens":1,"total_tokens":1},"thread_id":"2cc91bae-34f7-4ee4-bcae-f5f71880deda","message_id":"f7968272-89b5-4d28-a0b1-b74dcfb56f37"}
+
+data: {"choices":[{"delta":{"content":" интересу"},"index":0}],"created":1715684770,"model":"GigaChat-Pro:2.2.25.3","object":"threads.messages.run","usage":{"prompt_tokens":0,"completion_tokens":1,"total_tokens":1},"thread_id":"2cc91bae-34f7-4ee4-bcae-f5f71880deda","message_id":"f7968272-89b5-4d28-a0b1-b74dcfb56f37"}
+
+data: {"choices":[{"delta":{"content":"ется"},"index":0}],"created":1715684770,"model":"GigaChat-Pro:2.2.25.3","object":"threads.messages.run","usage":{"prompt_tokens":0,"completion_tokens":1,"total_tokens":1},"thread_id":"2cc91bae-34f7-4ee4-bcae-f5f71880deda","message_id":"f7968272-89b5-4d28-a0b1-b74dcfb56f37"}
+
+data: {"choices":[{"delta":{"content":" правом"},"index":0}],"created":1715684770,"model":"GigaChat-Pro:2.2.25.3","object":"threads.messages.run","usage":{"prompt_tokens":0,"completion_tokens":1,"total_tokens":1},"thread_id":"2cc91bae-34f7-4ee4-bcae-f5f71880deda","message_id":"f7968272-89b5-4d28-a0b1-b74dcfb56f37"}
+
+data: {"choices":[{"delta":{"content":"."},"index":0}],"created":1715684770,"model":"GigaChat-Pro:2.2.25.3","object":"threads.messages.run","usage":{"prompt_tokens":0,"completion_tokens":1,"total_tokens":1},"thread_id":"2cc91bae-34f7-4ee4-bcae-f5f71880deda","message_id":"f7968272-89b5-4d28-a0b1-b74dcfb56f37"}
+
+data: {"choices":[{"delta":{"content":""},"index":0,"finish_reason":"stop"}],"created":1715684770,"model":"GigaChat-Pro:2.2.25.3","object":"threads.messages.run","usage":{"prompt_tokens":0,"completion_tokens":1,"total_tokens":1},"thread_id":"2cc91bae-34f7-4ee4-bcae-f5f71880deda","message_id":"f7968272-89b5-4d28-a0b1-b74dcfb56f37"}
+
+data: [DONE]

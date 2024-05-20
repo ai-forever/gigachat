@@ -23,6 +23,7 @@ from gigachat.models import (
     Model,
     Models,
     TokensCount,
+    UploadedFile,
 )
 from gigachat.settings import Settings
 
@@ -36,6 +37,7 @@ MODELS_URL = f"{BASE_URL}/models"
 MODEL_URL = f"{BASE_URL}/models/model"
 TOKENS_COUNT_URL = f"{BASE_URL}/tokens/count"
 EMBEDDINGS_URL = f"{BASE_URL}/embeddings"
+FILES_URL = f"{BASE_URL}/files"
 
 ACCESS_TOKEN = get_json("access_token.json")
 TOKEN = get_json("token.json")
@@ -48,6 +50,9 @@ EMBEDDINGS = get_json("embeddings.json")
 MODELS = get_json("models.json")
 TOKENS_COUNT = get_json("tokens_count.json")
 MODEL = get_json("model.json")
+FILES = get_json("post_files.json")
+
+FILE = get_bytes("image.jpg")
 
 HEADERS_STREAM = {"Content-Type": "text/event-stream"}
 
@@ -93,9 +98,14 @@ def test__parse_chat_model(payload_value: Optional[str], setting_value: Optional
     ],
 )
 def test__parse_chat_profanity_check(
-    payload_value: Optional[bool], setting_value: Optional[bool], expected: Optional[bool]
+    payload_value: Optional[bool],
+    setting_value: Optional[bool],
+    expected: Optional[bool],
 ) -> None:
-    actual = _parse_chat(Chat(messages=[], profanity_check=payload_value), Settings(profanity_check=setting_value))
+    actual = _parse_chat(
+        Chat(messages=[], profanity_check=payload_value),
+        Settings(profanity_check=setting_value),
+    )
     assert actual.profanity_check is expected
 
 
@@ -144,6 +154,15 @@ def test_chat(httpx_mock: HTTPXMock) -> None:
     assert isinstance(response, ChatCompletion)
 
 
+def test_upload_file(httpx_mock: HTTPXMock) -> None:
+    httpx_mock.add_response(url=FILES_URL, json=FILES)
+
+    with GigaChatSyncClient(base_url=BASE_URL, model="model") as client:
+        response = client.upload_file(file=FILE)
+
+    assert isinstance(response, UploadedFile)
+
+
 def test_chat_access_token(httpx_mock: HTTPXMock) -> None:
     httpx_mock.add_response(url=CHAT_URL, json=CHAT_COMPLETION)
     access_token = "access_token"
@@ -189,7 +208,10 @@ def test_chat_update_token_credentials(httpx_mock: HTTPXMock) -> None:
     access_token = "access_token"
 
     with GigaChatSyncClient(
-        base_url=BASE_URL, auth_url=AUTH_URL, access_token=access_token, credentials=CREDENTIALS
+        base_url=BASE_URL,
+        auth_url=AUTH_URL,
+        access_token=access_token,
+        credentials=CREDENTIALS,
     ) as client:
         assert client.token == access_token
         with pytest.raises(AuthenticationError):
@@ -263,7 +285,10 @@ def test_chat_with_functions(httpx_mock: HTTPXMock) -> None:
     assert response.choices[0].message.function_call is not None
     assert response.choices[0].message.function_call.name == "fc"
     assert response.choices[0].message.function_call.arguments is not None
-    assert response.choices[0].message.function_call.arguments == {"location": "Москва", "num_days": 0}
+    assert response.choices[0].message.function_call.arguments == {
+        "location": "Москва",
+        "num_days": 0,
+    }
 
 
 def test_embeddings(httpx_mock: HTTPXMock) -> None:
@@ -443,7 +468,10 @@ async def test_achat_update_token_credentials(httpx_mock: HTTPXMock) -> None:
     access_token = "access_token"
 
     async with GigaChatAsyncClient(
-        base_url=BASE_URL, auth_url=AUTH_URL, access_token=access_token, credentials=CREDENTIALS
+        base_url=BASE_URL,
+        auth_url=AUTH_URL,
+        access_token=access_token,
+        credentials=CREDENTIALS,
     ) as client:
         assert client.token == access_token
         with pytest.raises(AuthenticationError):
@@ -541,3 +569,13 @@ def test__update_token() -> None:
 async def test__aupdate_token() -> None:
     async with GigaChatAsyncClient(base_url=BASE_URL) as client:
         await client._aupdate_token()
+
+
+@pytest.mark.asyncio()
+async def test_aupload_file(httpx_mock: HTTPXMock) -> None:
+    httpx_mock.add_response(url=FILES_URL, json=FILES)
+
+    async with GigaChatAsyncClient(base_url=BASE_URL) as client:
+        response = await client.aupload_file(file=FILE)
+
+    assert isinstance(response, UploadedFile)

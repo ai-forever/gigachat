@@ -1,0 +1,27 @@
+{
+  "status": "ready",
+  "thread_id": "fc4a58e8-1410-4684-b473-066eabeca000",
+  "updated_at": 1715126200,
+  "model": "GigaChat-Pro",
+  "messages": [
+    {
+      "message_id": "77b2cfe2-706e-4749-9507-7b89d555ad8a",
+      "role": "user",
+      "content": "Какой окрас кота?",
+      "attachments": [
+        {
+          "file_id": "7ec30261-5360-4b12-9e9f-408bc481db51",
+          "name": "1695931383_gas-kvas-com-p-kartinki-s-kotami-9.jpeg"
+        }
+      ],
+      "created_at": 1715126198
+    },
+    {
+      "message_id": "de208428-3d4a-47f4-a4e3-a81a98e3cfeb",
+      "role": "assistant",
+      "content": "У кота на картинке табби окрас, который характеризуется наличием полос на теле и узоров на голове и хвосте. Полосы могут быть разной ширины и формы, образуя уникальный рисунок для каждой кошки.",
+      "created_at": 1715126200,
+      "finish_reason": "stop"
+    }
+  ]
+}
