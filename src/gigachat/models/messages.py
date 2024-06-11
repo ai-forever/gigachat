@@ -18,6 +18,8 @@ class Messages(BaseModel):
     """Наименование функции. Заполняется, если role = "function" """
     attachments: Optional[List[str]] = None
     """Идентификаторы предзагруженных ранее файлов """
+    data_for_context: Optional[List["Messages"]] = None
+    """Данные для контекста"""
     id_: Optional[Any] = Field(alias="id")
 
     class Config:
