@@ -5,35 +5,45 @@ import httpx
 
 from gigachat.api.utils import build_headers
 from gigachat.exceptions import AuthenticationError, ResponseError
-from gigachat.models import Chat, ChatCompletionChunk
+from gigachat.models.threads import ThreadCompletionChunk, ThreadRunOptions
 
 EVENT_STREAM = "text/event-stream"
 
 
 def _get_kwargs(
     *,
-    chat: Chat,
+    thread_id: str,
+    thread_options: Optional[ThreadRunOptions] = None,
+    update_interval: Optional[int] = None,
     access_token: Optional[str] = None,
 ) -> Dict[str, Any]:
     headers = build_headers(access_token)
-    headers["Accept"] = EVENT_STREAM
-    headers["Cache-Control"] = "no-store"
-
-    return {
+    thread_options_dict = {}
+    if thread_options:
+        thread_options_dict = thread_options.dict(exclude_none=True)
+    params = {
         "method": "POST",
-        "url": "/chat/completions",
-        "json": {**chat.dict(exclude_none=True, by_alias=True), **{"stream": True}},
+        "url": "/threads/messages/rerun",
         "headers": headers,
+        "json": {
+            **thread_options_dict,
+            **{
+                "thread_id": thread_id,
+                "update_interval": update_interval,
+                "stream": True,
+            },
+        },
     }
+    return params
 
 
-def _parse_chunk(line: str) -> Optional[ChatCompletionChunk]:
+def _parse_chunk(line: str) -> Optional[ThreadCompletionChunk]:
     name, _, value = line.partition(": ")
     if name == "data":
         if value == "[DONE]":
             return None
         else:
-            return ChatCompletionChunk.parse_raw(value)
+            return ThreadCompletionChunk.parse_raw(value)
     else:
         return None
 
@@ -65,10 +75,18 @@ async def _acheck_response(response: httpx.Response) -> None:
 def sync(
     client: httpx.Client,
     *,
-    chat: Chat,
+    thread_id: str,
+    thread_options: Optional[ThreadRunOptions] = None,
+    update_interval: Optional[int] = None,
     access_token: Optional[str] = None,
-) -> Iterator[ChatCompletionChunk]:
-    kwargs = _get_kwargs(chat=chat, access_token=access_token)
+) -> Iterator[ThreadCompletionChunk]:
+    """Перегенерация ответа модели"""
+    kwargs = _get_kwargs(
+        thread_id=thread_id,
+        thread_options=thread_options,
+        update_interval=update_interval,
+        access_token=access_token,
+    )
     with client.stream(**kwargs) as response:
         _check_response(response)
         for line in response.iter_lines():
@@ -79,10 +97,18 @@ def sync(
 async def asyncio(
     client: httpx.AsyncClient,
     *,
-    chat: Chat,
+    thread_id: str,
+    thread_options: Optional[ThreadRunOptions] = None,
+    update_interval: Optional[int] = None,
     access_token: Optional[str] = None,
-) -> AsyncIterator[ChatCompletionChunk]:
-    kwargs = _get_kwargs(chat=chat, access_token=access_token)
+) -> AsyncIterator[ThreadCompletionChunk]:
+    """Перегенерация ответа модели"""
+    kwargs = _get_kwargs(
+        thread_id=thread_id,
+        thread_options=thread_options,
+        update_interval=update_interval,
+        access_token=access_token,
+    )
     async with client.stream(**kwargs) as response:
         await _acheck_response(response)
         async for line in response.aiter_lines():

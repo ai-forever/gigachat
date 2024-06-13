@@ -1,0 +1,28 @@
+{
+  "threads": [
+    {
+      "id": "2cc91bae-34f7-4ee4-bcae-f5f71880deda",
+      "model": "GigaChat-Pro",
+      "created_at": 1715684634,
+      "updated_at": 1715684764,
+      "status": "ready",
+      "run_lock": false
+    },
+    {
+      "id": "9b1cc6d9-0eeb-46de-b01f-6f74c9a82df7",
+      "model": "GigaChat-Pro",
+      "created_at": 1715684407,
+      "updated_at": 1715684612,
+      "status": "ready",
+      "run_lock": false
+    },
+    {
+      "id": "2fb1bb2b-1459-49be-8f94-ed5604c01786",
+      "model": "GigaChat-Pro",
+      "created_at": 1715626694,
+      "updated_at": 1715626708,
+      "status": "ready",
+      "run_lock": false
+    }
+  ]
+}

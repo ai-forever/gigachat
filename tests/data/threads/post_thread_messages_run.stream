@@ -1,0 +1,5 @@
+data: {"choices":[{"delta":{"content":"Здравствуйте! Я GigaChat, генеративная языковая модель. Готова ответить на ваши","role":"assistant"},"index":0}],"created":1715684408,"model":"GigaChat-Pro:2.2.25.3","object":"threads.messages.run","usage":{"prompt_tokens":64,"completion_tokens":23,"total_tokens":87},"thread_id":"9b1cc6d9-0eeb-46de-b01f-6f74c9a82df7","message_id":"fd753d3f-f1f5-498f-b5dd-da380607d470"}
+
+data: {"choices":[{"delta":{"content":" вопросы. Чем могу вам помочь?"},"index":0,"finish_reason":"stop"}],"created":1715684409,"model":"GigaChat-Pro:2.2.25.3","object":"threads.messages.run","usage":{"prompt_tokens":0,"completion_tokens":8,"total_tokens":8},"thread_id":"9b1cc6d9-0eeb-46de-b01f-6f74c9a82df7","message_id":"fd753d3f-f1f5-498f-b5dd-da380607d470"}
+
+data: [DONE]
