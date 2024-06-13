@@ -9,3 +9,4 @@ class MessagesRole(str, Enum):
     USER = "user"
     FUNCTION = "function"
     SEARCH_RESULT = "search_result"
+    FUNCTION_IN_PROGRESS = "function_in_progress"
