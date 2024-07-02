@@ -19,7 +19,9 @@ class Messages(BaseModel):
     attachments: Optional[List[str]] = None
     """Идентификаторы предзагруженных ранее файлов """
     data_for_context: Optional[List["Messages"]] = None
-    """Данные для контекста"""
+    """DEPRECATED: Данные для контекста"""
+    functions_state_id: Optional[str] = None
+    """ID сообщений функций генерирующий изображения/видео"""
     id_: Optional[Any] = Field(alias="id", default=None)
 
     class Config:
