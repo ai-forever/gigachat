@@ -50,15 +50,15 @@ T = TypeVar("T", bound=BaseModel)
 
 
 def parse_chunk(line: str, model_class: type[T]) -> Optional[T]:
-    name, _, value = line.partition(": ")
-    if name == "data":
-        if value == "[DONE]":
-            return None
-        else:
-            try:
+    try:
+        name, _, value = line.partition(": ")
+        if name == "data":
+            if value == "[DONE]":
+                return None
+            else:
                 return model_class.parse_raw(value)
-            except Exception as e:
-                _logger.error("Error parsing chunk from server: %s, raw value: %s", e, value)
-                raise e
+    except Exception as e:
+        _logger.error("Error parsing chunk from server: %s, raw value: %s", e, line)
+        raise e
     else:
         return None
