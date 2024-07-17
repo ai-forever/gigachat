@@ -20,6 +20,7 @@ from gigachat.api.threads import (
     post_thread_messages_run_stream,
     post_threads_delete,
     post_threads_messages,
+    post_threads_retrieve,
     post_threads_run,
 )
 from gigachat.exceptions import AuthenticationError
@@ -56,10 +57,34 @@ class ThreadsSyncClient:
     def __init__(self, base_client: "GigaChatSyncClient"):
         self.base_client = base_client
 
-    def list(self) -> Threads:  # noqa: A003
+    def list(  # noqa: A003
+        self,
+        assistants_ids: Optional[List[str]] = None,
+        limit: Optional[int] = None,
+        before: Optional[int] = None,
+    ) -> Threads:
         """Получение перечня тредов"""
         return self.base_client._decorator(
-            lambda: get_threads.sync(self.base_client._client, access_token=self.base_client.token)
+            lambda: get_threads.sync(
+                self.base_client._client,
+                assistants_ids=assistants_ids,
+                limit=limit,
+                before=before,
+                access_token=self.base_client.token,
+            )
+        )
+
+    def retrieve(
+        self,
+        threads_ids: List[str],
+    ) -> Threads:
+        """Получение перечня тредов по идентификаторам"""
+        return self.base_client._decorator(
+            lambda: post_threads_retrieve.sync(
+                self.base_client._client,
+                threads_ids=threads_ids,
+                access_token=self.base_client.token,
+            )
         )
 
     def delete(self, thread_id: str) -> bool:
@@ -84,7 +109,7 @@ class ThreadsSyncClient:
             )
         )
 
-    def get_messages(self, thread_id: str, limit: Optional[int] = None) -> ThreadMessages:
+    def get_messages(self, thread_id: str, limit: Optional[int] = None, before: Optional[int] = None) -> ThreadMessages:
         """Получение сообщений треда"""
 
         return self.base_client._decorator(
@@ -92,6 +117,7 @@ class ThreadsSyncClient:
                 self.base_client._client,
                 thread_id=thread_id,
                 limit=limit,
+                before=before,
                 access_token=self.base_client.token,
             )
         )
@@ -263,12 +289,35 @@ class ThreadsAsyncClient:
     def __init__(self, base_client: "GigaChatAsyncClient"):
         self.base_client = base_client
 
-    async def list(self) -> Threads:  # noqa: A003
+    async def list(  # noqa: A003
+        self,
+        assistants_ids: Optional[List[str]] = None,
+        limit: Optional[int] = None,
+        before: Optional[int] = None,
+    ) -> Threads:
         """Получение перечня тредов"""
 
         async def _acall() -> Threads:
             return await get_threads.asyncio(
                 self.base_client._aclient,
+                assistants_ids=assistants_ids,
+                limit=limit,
+                before=before,
+                access_token=self.base_client.token,
+            )
+
+        return await self.base_client._adecorator(_acall)
+
+    async def retrieve(
+        self,
+        threads_ids: List[str],
+    ) -> Threads:
+        """Получение перечня тредов по идентификаторам"""
+
+        async def _acall() -> Threads:
+            return await post_threads_retrieve.asyncio(
+                self.base_client._aclient,
+                threads_ids=threads_ids,
                 access_token=self.base_client.token,
             )
 
@@ -298,7 +347,9 @@ class ThreadsAsyncClient:
 
         return await self.base_client._adecorator(_acall)
 
-    async def get_messages(self, thread_id: str, limit: Optional[int] = None) -> ThreadMessages:
+    async def get_messages(
+        self, thread_id: str, limit: Optional[int] = None, before: Optional[int] = None
+    ) -> ThreadMessages:
         """Получение сообщений треда"""
 
         async def _acall() -> ThreadMessages:
@@ -306,6 +357,7 @@ class ThreadsAsyncClient:
                 self.base_client._aclient,
                 thread_id=thread_id,
                 limit=limit,
+                before=before,
                 access_token=self.base_client.token,
             )
 

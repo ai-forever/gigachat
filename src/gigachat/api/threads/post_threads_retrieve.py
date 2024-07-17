@@ -10,24 +10,17 @@ from gigachat.models.threads import Threads
 
 def _get_kwargs(
     *,
-    assistants_ids: Optional[List[str]] = None,
-    limit: Optional[int] = None,
-    before: Optional[int] = None,
+    threads_ids: List[str],
     access_token: Optional[str] = None,
 ) -> Dict[str, Any]:
     headers = build_headers(access_token)
-    params: Dict[str, Any] = {}
-    if assistants_ids:
-        params["assistants_ids"] = assistants_ids
-    if limit:
-        params["limit"] = limit
-    if before:
-        params["before"] = before
     params = {
-        "method": "GET",
-        "url": "/threads",
+        "method": "POST",
+        "url": "/threads/retrieve",
+        "json": {
+            "threads_ids": threads_ids,
+        },
         "headers": headers,
-        "params": params,
     }
     return params
 
@@ -44,18 +37,11 @@ def _build_response(response: httpx.Response) -> Threads:
 def sync(
     client: httpx.Client,
     *,
-    assistants_ids: Optional[List[str]] = None,
-    limit: Optional[int] = None,
-    before: Optional[int] = None,
+    threads_ids: List[str],
     access_token: Optional[str] = None,
 ) -> Threads:
-    """Получение перечня тредов"""
-    kwargs = _get_kwargs(
-        assistants_ids=assistants_ids,
-        limit=limit,
-        before=before,
-        access_token=access_token,
-    )
+    """Получение перечня тредов по идентификаторам"""
+    kwargs = _get_kwargs(threads_ids=threads_ids, access_token=access_token)
     response = client.request(**kwargs)
     return _build_response(response)
 
@@ -63,17 +49,10 @@ def sync(
 async def asyncio(
     client: httpx.AsyncClient,
     *,
-    assistants_ids: Optional[List[str]] = None,
-    limit: Optional[int] = None,
-    before: Optional[int] = None,
+    threads_ids: List[str],
     access_token: Optional[str] = None,
 ) -> Threads:
-    """Получение перечня тредов"""
-    kwargs = _get_kwargs(
-        assistants_ids=assistants_ids,
-        limit=limit,
-        before=before,
-        access_token=access_token,
-    )
+    """Получение перечня тредов по идентификаторам"""
+    kwargs = _get_kwargs(threads_ids=threads_ids, access_token=access_token)
     response = await client.request(**kwargs)
     return _build_response(response)

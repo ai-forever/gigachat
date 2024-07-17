@@ -44,4 +44,6 @@ __all__ = (
     "Usage",
     "UploadedFile",
     "Image",
+    "threads",
+    "assistants",
 )

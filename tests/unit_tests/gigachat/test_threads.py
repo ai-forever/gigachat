@@ -25,6 +25,7 @@ POST_THREAD_MESSAGES_RUN_URL = f"{BASE_URL}/threads/messages/run"
 POST_THREADS_DELETE_URL = f"{BASE_URL}/threads/delete"
 POST_THREADS_MESSAGES_URL = f"{BASE_URL}/threads/messages"
 POST_THREADS_RUN_URL = f"{BASE_URL}/threads/run"
+POST_THREADS_RETRIEVE_URL = f"{BASE_URL}/threads/retrieve"
 
 GET_THREADS = get_json("threads/get_threads.json")
 GET_THREADS_MESSAGES = get_json("threads/get_threads_messages.json")
@@ -36,6 +37,7 @@ POST_THREAD_MESSAGES_RUN_STREAM = get_bytes("threads/post_thread_messages_run.st
 POST_THREADS_DELETE = get_bytes("threads/post_threads_delete.txt")
 POST_THREADS_MESSAGES = get_json("threads/post_threads_messages.json")
 POST_THREADS_RUN = get_json("threads/post_threads_run.json")
+POST_THREADS_RETRIEVE = get_json("threads/post_threads_retrieve.json")
 
 HEADERS_STREAM = {"Content-Type": "text/event-stream"}
 
@@ -57,6 +59,25 @@ async def test_aget_threads(httpx_mock: HTTPXMock) -> None:
 
     assert isinstance(response, Threads)
     assert len(response.threads) == 3
+
+
+def test_post_threads_retrieve(httpx_mock: HTTPXMock) -> None:
+    httpx_mock.add_response(url=POST_THREADS_RETRIEVE_URL, json=POST_THREADS_RETRIEVE)
+    with GigaChatSyncClient(base_url=BASE_URL) as client:
+        response = client.threads.retrieve(threads_ids=[])
+
+    assert isinstance(response, Threads)
+    assert len(response.threads) == 1
+
+
+@pytest.mark.asyncio()
+async def test_apost_threads_retrieve(httpx_mock: HTTPXMock) -> None:
+    httpx_mock.add_response(url=POST_THREADS_RETRIEVE_URL, json=POST_THREADS_RETRIEVE)
+    async with GigaChatAsyncClient(base_url=BASE_URL) as client:
+        response = await client.a_threads.retrieve(threads_ids=[])
+
+    assert isinstance(response, Threads)
+    assert len(response.threads) == 1
 
 
 def test_get_threads_messages(httpx_mock: HTTPXMock) -> None:
