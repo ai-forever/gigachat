@@ -1,0 +1,13 @@
+{
+  "threads": [
+    {
+      "id": "1715fc00-8ca8-40f2-8a97-371a9f26a163",
+      "model": "GigaChat-Pro",
+      "assistant_id": "c795ebec-bf23-469d-983d-0b53e5244a29",
+      "created_at": 1720624684,
+      "updated_at": 1720624694,
+      "status": "ready",
+      "run_lock": false
+    }
+  ]
+}

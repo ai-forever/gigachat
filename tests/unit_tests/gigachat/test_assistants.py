@@ -4,6 +4,7 @@ from pytest_httpx import HTTPXMock
 from gigachat.client import GigaChatAsyncClient, GigaChatSyncClient
 from gigachat.models.assistants import (
     Assistant,
+    AssistantDelete,
     AssistantFileDelete,
     Assistants,
     CreateAssistant,
@@ -17,11 +18,13 @@ GET_ASSISTANTS_URL = f"{BASE_URL}/assistants"
 POST_ASSISTANTS_URL = f"{BASE_URL}/assistants"
 POST_ASSISTANT_MODIFY_URL = f"{BASE_URL}/assistants/modify"
 POST_ASSISTANT_FILES_DELETE_URL = f"{BASE_URL}/assistants/files/delete"
+POST_ASSISTANT_DELETE_URL = f"{BASE_URL}/assistants/delete"
 
 GET_ASSISTANTS = get_json("assistants/get_assistants.json")
 POST_ASSISTANTS = get_json("assistants/post_assistants.json")
 POST_ASSISTANT_MODIFY = get_json("assistants/post_assistant_modify.json")
 POST_ASSISTANT_FILES_DELETE = get_json("assistants/post_assistant_files_delete.json")
+POST_ASSISTANT_DELETE = get_json("assistants/post_assistant_delete.json")
 
 
 def test_get_assistants(httpx_mock: HTTPXMock) -> None:
@@ -94,3 +97,20 @@ async def test_apost_assistant_files_delete(httpx_mock: HTTPXMock) -> None:
         response = await client.a_assistants.delete_file(assistant_id="111", file_id="222")
 
     assert isinstance(response, AssistantFileDelete)
+
+
+def test_post_assistant_delete(httpx_mock: HTTPXMock) -> None:
+    httpx_mock.add_response(url=POST_ASSISTANT_DELETE_URL, json=POST_ASSISTANT_DELETE)
+    with GigaChatSyncClient(base_url=BASE_URL) as client:
+        response = client.assistants.delete(assistant_id="111")
+
+    assert isinstance(response, AssistantDelete)
+
+
+@pytest.mark.asyncio()
+async def test_apost_assistant_delete(httpx_mock: HTTPXMock) -> None:
+    httpx_mock.add_response(url=POST_ASSISTANT_DELETE_URL, json=POST_ASSISTANT_DELETE)
+    async with GigaChatAsyncClient(base_url=BASE_URL) as client:
+        response = await client.a_assistants.delete(assistant_id="111")
+
+    assert isinstance(response, AssistantDelete)
