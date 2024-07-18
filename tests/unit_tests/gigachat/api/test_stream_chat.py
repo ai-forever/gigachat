@@ -1,3 +1,5 @@
+import logging
+
 import httpx
 import pytest
 from pytest_httpx import HTTPXMock
@@ -15,6 +17,8 @@ MOCK_URL = f"{BASE_URL}/chat/completions"
 CHAT = Chat.parse_obj(get_json("chat.json"))
 CHAT_COMPLETION_STREAM = get_bytes("chat_completion.stream")
 HEADERS_STREAM = {"Content-Type": "text/event-stream"}
+
+logger = logging.getLogger(__name__)
 
 
 def test__kwargs_context_vars() -> None:
@@ -52,12 +56,16 @@ def test_sync_content_type_error(httpx_mock: HTTPXMock) -> None:
             list(stream_chat.sync(client, chat=CHAT))
 
 
-def test_sync_value_error(httpx_mock: HTTPXMock) -> None:
-    httpx_mock.add_response(url=MOCK_URL, content=b"data: {}", headers=HEADERS_STREAM)
+def test_sync_value_error(caplog: pytest.LogCaptureFixture, httpx_mock: HTTPXMock) -> None:
+    caplog.set_level(logging.WARNING)
+
+    httpx_mock.add_response(url=MOCK_URL, content=b'data: {"error": 500}', headers=HEADERS_STREAM)
 
     with httpx.Client(base_url=BASE_URL) as client:
         with pytest.raises(ValueError, match="4 validation errors for ChatCompletionChunk*"):
             list(stream_chat.sync(client, chat=CHAT))
+
+    assert '"error": 500' in caplog.text
 
 
 def test_sync_authentication_error(httpx_mock: HTTPXMock) -> None:
