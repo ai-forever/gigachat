@@ -1,5 +1,7 @@
 from typing import Any, Dict, List, Optional
 
+from gigachat.models import Function
+from gigachat.models.assistants.assistant_attachment import AssistantAttachment
 from gigachat.pydantic_v1 import BaseModel
 
 
@@ -20,7 +22,11 @@ class Assistant(BaseModel):
     """Время создания ассистента в Unix-time формате"""
     updated_at: int
     """Время изменения ассистента в Unix-time формате"""
-    file_ids: Optional[List[str]]
-    """Идентификаторы прикрепленных к ассистенту файлов """
+    files: Optional[List[AssistantAttachment]]
+    """Файлы прикрепленные к ассистенту """
     metadata: Optional[Dict[str, Any]]
     """Дополнительная информация"""
+    threads_count: Optional[int]
+    """Количество тредов клиента взаимодействующих с этим ассистентом"""
+    functions: Optional[List[Function]]
+    """Описания функций, с которыми может работать ассистент"""

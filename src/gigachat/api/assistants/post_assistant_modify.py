@@ -5,6 +5,7 @@ import httpx
 
 from gigachat.api.utils import build_headers
 from gigachat.exceptions import AuthenticationError, ResponseError
+from gigachat.models import Function
 from gigachat.models.assistants import Assistant
 
 
@@ -15,22 +16,27 @@ def _get_kwargs(
     description: Optional[str] = None,
     instructions: Optional[str] = None,
     file_ids: Optional[List[str]] = None,
+    functions: Optional[List[Function]] = None,
     metadata: Optional[Dict[str, Any]] = None,
     access_token: Optional[str] = None,
 ) -> Dict[str, Any]:
     headers = build_headers(access_token)
 
+    data: Dict[str, Any] = {
+        "assistant_id": assistant_id,
+        "name": name,
+        "description": description,
+        "instructions": instructions,
+        "file_ids": file_ids,
+        "metadata": metadata,
+    }
+    if functions is not None:
+        data["functions"] = [function.dict(exclude_none=True, by_alias=True) for function in functions]
+
     return {
         "method": "POST",
         "url": "/assistants/modify",
-        "json": {
-            "assistant_id": assistant_id,
-            "name": name,
-            "description": description,
-            "instructions": instructions,
-            "file_ids": file_ids,
-            "metadata": metadata,
-        },
+        "json": data,
         "headers": headers,
     }
 
@@ -52,6 +58,7 @@ def sync(
     description: Optional[str] = None,
     instructions: Optional[str] = None,
     file_ids: Optional[List[str]] = None,
+    functions: Optional[List[Function]] = None,
     metadata: Optional[Dict[str, Any]] = None,
     access_token: Optional[str] = None,
 ) -> Assistant:
@@ -61,6 +68,7 @@ def sync(
         description=description,
         instructions=instructions,
         file_ids=file_ids,
+        functions=functions,
         metadata=metadata,
         access_token=access_token,
     )
@@ -76,6 +84,7 @@ async def asyncio(
     description: Optional[str] = None,
     instructions: Optional[str] = None,
     file_ids: Optional[List[str]] = None,
+    functions: Optional[List[Function]] = None,
     metadata: Optional[Dict[str, Any]] = None,
     access_token: Optional[str] = None,
 ) -> Assistant:
@@ -85,6 +94,7 @@ async def asyncio(
         description=description,
         instructions=instructions,
         file_ids=file_ids,
+        functions=functions,
         metadata=metadata,
         access_token=access_token,
     )

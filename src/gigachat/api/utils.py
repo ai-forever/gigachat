@@ -1,4 +1,5 @@
-from typing import Dict, Optional
+import logging
+from typing import Dict, Optional, TypeVar
 
 from gigachat.context import (
     authorization_cvar,
@@ -8,6 +9,9 @@ from gigachat.context import (
     service_id_cvar,
     session_id_cvar,
 )
+from gigachat.pydantic_v1 import BaseModel
+
+_logger = logging.getLogger(__name__)
 
 USER_AGENT = "GigaChat-python-lib"
 
@@ -40,3 +44,21 @@ def build_headers(access_token: Optional[str] = None) -> Dict[str, str]:
     if client_id:
         headers["X-Client-ID"] = client_id
     return headers
+
+
+T = TypeVar("T", bound=BaseModel)
+
+
+def parse_chunk(line: str, model_class: type[T]) -> Optional[T]:
+    try:
+        name, _, value = line.partition(": ")
+        if name == "data":
+            if value == "[DONE]":
+                return None
+            else:
+                return model_class.parse_raw(value)
+    except Exception as e:
+        _logger.error("Error parsing chunk from server: %s, raw value: %s", e, line)
+        raise e
+    else:
+        return None
