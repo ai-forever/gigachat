@@ -1,5 +1,5 @@
 import logging
-from typing import Dict, Optional, TypeVar
+from typing import Dict, Optional, Type, TypeVar
 
 from gigachat.context import (
     authorization_cvar,
@@ -49,7 +49,7 @@ def build_headers(access_token: Optional[str] = None) -> Dict[str, str]:
 T = TypeVar("T", bound=BaseModel)
 
 
-def parse_chunk(line: str, model_class: type[T]) -> Optional[T]:
+def parse_chunk(line: str, model_class: Type[T]) -> Optional[T]:
     try:
         name, _, value = line.partition(": ")
         if name == "data":
