@@ -37,6 +37,7 @@ class Settings(BaseSettings):
     cert_file: Optional[str] = None
     key_file: Optional[str] = None
     key_file_password: Optional[str] = None
+    flags: Optional[list] = None
 
     class Config:
         env_prefix = ENV_PREFIX

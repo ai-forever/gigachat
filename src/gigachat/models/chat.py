@@ -33,3 +33,4 @@ class Chat(BaseModel):
     """Правила вызова функций"""
     functions: Optional[List[Function]] = None
     """Набор функций, которые могут быть вызваны моделью"""
+    flags: Optional[list] = None

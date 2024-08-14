@@ -95,6 +95,8 @@ def _parse_chat(payload: Union[Chat, Dict[str, Any], str], settings: Settings) -
         chat.model = settings.model or GIGACHAT_MODEL
     if chat.profanity_check is None:
         chat.profanity_check = settings.profanity_check
+    if chat.flags is None:
+        chat.flags = settings.flags
     return chat
 
 
@@ -124,6 +126,7 @@ class _BaseClient:
         cert_file: Optional[str] = None,
         key_file: Optional[str] = None,
         key_file_password: Optional[str] = None,
+        flags: Optional[list] = None,
         **_unknown_kwargs: Any,
     ) -> None:
         if _unknown_kwargs:
@@ -146,6 +149,7 @@ class _BaseClient:
             "cert_file": cert_file,
             "key_file": key_file,
             "key_file_password": key_file_password,
+            "flags": flags,
         }
         config = {k: v for k, v in kwargs.items() if v is not None}
         self._settings = Settings(**config)
