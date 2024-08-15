@@ -126,7 +126,7 @@ class _BaseClient:
         cert_file: Optional[str] = None,
         key_file: Optional[str] = None,
         key_file_password: Optional[str] = None,
-        flags: Optional[list] = None,
+        flags: Optional[list[str]] = None,
         **_unknown_kwargs: Any,
     ) -> None:
         if _unknown_kwargs:
