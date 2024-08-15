@@ -60,5 +60,6 @@
           }
       }
   ],
-  "model": "GigaChat-funcs"
+  "model": "GigaChat-funcs",
+  "flags": ["some_flag"]
 }
