@@ -1,4 +1,4 @@
-from typing import Optional
+from typing import List, Optional
 
 from gigachat.pydantic_v1 import BaseSettings
 
@@ -37,7 +37,7 @@ class Settings(BaseSettings):
     cert_file: Optional[str] = None
     key_file: Optional[str] = None
     key_file_password: Optional[str] = None
-    flags: Optional[list[str]] = None
+    flags: Optional[List[str]] = None
 
     class Config:
         env_prefix = ENV_PREFIX
