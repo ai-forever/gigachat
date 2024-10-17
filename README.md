@@ -1,4 +1,4 @@
-# GigaChat. Python-библиотека для GigaChain
+# GigaChat. Python-библиотека для работы с GigaChat API
 
 Библиотека Python, позволяющая [GigaChain](https://github.com/ai-forever/gigachain) обращаться к GigaChat — нейросетевой модели, которая умеет вести диалог, писать код, создавать тексты и картинки по запросу.
 
