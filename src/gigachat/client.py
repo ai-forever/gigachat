@@ -47,6 +47,7 @@ GIGACHAT_MODEL = "GigaChat"
 
 _auth_lock = threading.Lock()
 
+
 def _get_kwargs(settings: Settings) -> Dict[str, Any]:
     """Настройки для подключения к API GIGACHAT"""
     kwargs = {
