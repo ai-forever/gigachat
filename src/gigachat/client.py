@@ -47,7 +47,6 @@ GIGACHAT_MODEL = "GigaChat"
 
 _auth_lock = threading.Lock()
 
-
 def _get_kwargs(settings: Settings) -> Dict[str, Any]:
     """Настройки для подключения к API GIGACHAT"""
     kwargs = {
@@ -218,18 +217,21 @@ class GigaChatSyncClient(_BaseClient):
             _logger.debug("UPDATE TOKEN")
 
     def _decorator(self, call: Callable[..., T]) -> T:
-        if self._use_auth:
-            if self._check_validity_token():
-                try:
-                    return call()
-                except AuthenticationError:
-                    _logger.debug("AUTHENTICATION ERROR")
-                    self._reset_token()
-                with _auth_lock:
-                    # Second check for thread safety
-                    if not self._check_validity_token():
-                        self._update_token()
-        return call()
+        try:
+            if self._use_auth:
+                _auth_lock.acquire()
+                if self._check_validity_token():
+                    try:
+                        _auth_lock.release()
+                        return call()
+                    except AuthenticationError:
+                        _logger.debug("AUTHENTICATION ERROR")
+                        self._reset_token()
+                self._update_token()
+            return call()
+        finally:
+            if _auth_lock.locked():
+                _auth_lock.release()
 
     def tokens_count(self, input_: List[str], model: Optional[str] = None) -> List[TokensCount]:
         """Возвращает объект с информацией о количестве токенов"""
