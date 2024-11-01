@@ -219,14 +219,16 @@ class GigaChatSyncClient(_BaseClient):
 
     def _decorator(self, call: Callable[..., T]) -> T:
         if self._use_auth:
-            with _auth_lock:
-                if self._check_validity_token():
-                    try:
-                        return call()
-                    except AuthenticationError:
-                        _logger.debug("AUTHENTICATION ERROR")
-                        self._reset_token()
-                self._update_token()
+            if self._check_validity_token():
+                try:
+                    return call()
+                except AuthenticationError:
+                    _logger.debug("AUTHENTICATION ERROR")
+                    self._reset_token()
+                with _auth_lock:
+                    # Second check for thread safety
+                    if not self._check_validity_token():
+                        self._update_token()
         return call()
 
     def tokens_count(self, input_: List[str], model: Optional[str] = None) -> List[TokensCount]:
