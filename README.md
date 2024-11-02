@@ -1,5 +1,11 @@
 # GigaChat. Python-библиотека для GigaChain
 
+[![GitHub Actions Workflow Status](https://img.shields.io/github/actions/workflow/status/ai-forever/gigachat/gigachat.yml?style=flat-square)](https://github.com/ai-forever/gigachat/actions/workflows/gigachat.yml)
+[![GitHub License](https://img.shields.io/github/license/ai-forever/gigachat?style=flat-square)](https://opensource.org/license/MIT)
+[![GitHub Downloads (all assets, all releases)](https://img.shields.io/pypi/dm/gigachat?style=flat-square?style=flat-square)](https://pypistats.org/packages/gigachat)
+[![GitHub Repo stars](https://img.shields.io/github/stars/ai-forever/gigachat?style=flat-square)](https://star-history.com/#ai-forever/gigachat)
+[![GitHub Open Issues](https://img.shields.io/github/issues-raw/ai-forever/gigachat)](https://github.com/ai-forever/gigachat/issues)
+
 Библиотека Python, позволяющая [GigaChain](https://github.com/ai-forever/gigachain) обращаться к GigaChat — нейросетевой модели, которая умеет вести диалог, писать код, создавать тексты и картинки по запросу.
 
 Обмен данными с сервисом обеспечивается с помощью GigaChat API. О том как получить доступ к API читайте в [официальной документации](https://developers.sber.ru/docs/ru/gigachat/api/integration).
