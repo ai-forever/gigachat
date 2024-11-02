@@ -215,7 +215,7 @@ class GigaChatSyncClient(_BaseClient):
                 credentials=self._settings.credentials,
                 scope=self._settings.scope,
             )
-            _logger.info("OAUTH UPDATE TOKEN")
+            _logger.debug("OAUTH UPDATE TOKEN")
         elif self._settings.user and self._settings.password:
             self._access_token = _build_access_token(
                 post_token.sync(
@@ -232,7 +232,7 @@ class GigaChatSyncClient(_BaseClient):
                 try:
                     return call()
                 except AuthenticationError:
-                    _logger.warning("AUTHENTICATION ERROR")
+                    _logger.debug("AUTHENTICATION ERROR")
                     self._reset_token()
             self._update_token()
         return call()
@@ -289,7 +289,7 @@ class GigaChatSyncClient(_BaseClient):
                         yield chunk
                     return
                 except AuthenticationError:
-                    _logger.warning("AUTHENTICATION ERROR")
+                    _logger.debug("AUTHENTICATION ERROR")
                     self._reset_token()
             self._update_token()
 
@@ -333,7 +333,7 @@ class GigaChatAsyncClient(_BaseClient):
                 credentials=self._settings.credentials,
                 scope=self._settings.scope,
             )
-            _logger.info("OAUTH UPDATE TOKEN")
+            _logger.debug("OAUTH UPDATE TOKEN")
         elif self._settings.user and self._settings.password:
             self._access_token = _build_access_token(
                 await post_token.asyncio(
@@ -350,7 +350,7 @@ class GigaChatAsyncClient(_BaseClient):
                 try:
                     return await acall()
                 except AuthenticationError:
-                    _logger.warning("AUTHENTICATION ERROR")
+                    _logger.debug("AUTHENTICATION ERROR")
                     self._reset_token()
             await self._aupdate_token()
         return await acall()
@@ -429,7 +429,7 @@ class GigaChatAsyncClient(_BaseClient):
                         yield chunk
                     return
                 except AuthenticationError:
-                    _logger.warning("AUTHENTICATION ERROR")
+                    _logger.debug("AUTHENTICATION ERROR")
                     self._reset_token()
             await self._aupdate_token()
 
