@@ -232,7 +232,7 @@ class ThreadsSyncClient:
                         yield chunk
                     return
                 except AuthenticationError:
-                    _logger.warning("AUTHENTICATION ERROR")
+                    _logger.debug("AUTHENTICATION ERROR")
                     self.base_client._reset_token()
             self.base_client._update_token()
 
@@ -271,7 +271,7 @@ class ThreadsSyncClient:
                         yield chunk
                     return
                 except AuthenticationError:
-                    _logger.warning("AUTHENTICATION ERROR")
+                    _logger.debug("AUTHENTICATION ERROR")
                     self.base_client._reset_token()
             self.base_client._update_token()
 
@@ -479,7 +479,7 @@ class ThreadsAsyncClient:
                         yield chunk
                     return
                 except AuthenticationError:
-                    _logger.warning("AUTHENTICATION ERROR")
+                    _logger.debug("AUTHENTICATION ERROR")
                     self.base_client._reset_token()
             await self.base_client._aupdate_token()
 
@@ -518,7 +518,7 @@ class ThreadsAsyncClient:
                         yield chunk
                     return
                 except AuthenticationError:
-                    _logger.warning("AUTHENTICATION ERROR")
+                    _logger.debug("AUTHENTICATION ERROR")
                     self.base_client._reset_token()
             await self.base_client._aupdate_token()
 
