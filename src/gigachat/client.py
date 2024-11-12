@@ -12,6 +12,7 @@ from typing import (
     Optional,
     TypeVar,
     Union,
+    cast,
 )
 
 import httpx
@@ -226,6 +227,10 @@ class GigaChatSyncClient(_BaseClient):
             )
             _logger.info("UPDATE TOKEN")
 
+    def get_token(self) -> AccessToken:
+        self._update_token()
+        return cast(AccessToken, self._access_token)
+
     def _decorator(self, call: Callable[..., T]) -> T:
         if self._use_auth:
             if self._check_validity_token():
@@ -343,6 +348,10 @@ class GigaChatAsyncClient(_BaseClient):
                 )
             )
             _logger.info("UPDATE TOKEN")
+
+    async def aget_token(self) -> AccessToken:
+        await self._aupdate_token()
+        return cast(AccessToken, self._access_token)
 
     async def _adecorator(self, acall: Callable[..., Awaitable[T]]) -> T:
         if self._use_auth:
