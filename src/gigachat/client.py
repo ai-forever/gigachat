@@ -64,6 +64,8 @@ def _get_kwargs(settings: Settings) -> Dict[str, Any]:
         "verify": settings.verify_ssl_certs,
         "timeout": httpx.Timeout(settings.timeout),
     }
+    if settings.ssl_context:
+        kwargs["verify"] = settings.ssl_context
     if settings.ca_bundle_file:
         kwargs["verify"] = settings.ca_bundle_file
     if settings.cert_file:
@@ -81,6 +83,8 @@ def _get_auth_kwargs(settings: Settings) -> Dict[str, Any]:
         "verify": settings.verify_ssl_certs,
         "timeout": httpx.Timeout(settings.timeout),
     }
+    if settings.ssl_context:
+        kwargs["verify"] = settings.ssl_context
     if settings.ca_bundle_file:
         kwargs["verify"] = settings.ca_bundle_file
     return kwargs

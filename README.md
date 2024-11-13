@@ -88,7 +88,16 @@ giga = GigaChat(
 )
 ```
 
-Авторизация с помощью временного токена
+Вы также можете сконфигурировать свой `ssl_context`, если хотите использовать другие способы загрузки сертификатов:
+```py
+ssl_context = ssl.SSLContext(...)
+...
+
+giga = GigaChat(
+    base_url="https://gigachat.devices.sberbank.ru/api/v1",
+    ssl_context=ssl_context
+)
+```
 
 ## Дополнительные настройки
 

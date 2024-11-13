@@ -1,3 +1,4 @@
+import ssl
 from typing import List, Optional
 
 from gigachat.pydantic_v1 import BaseSettings
@@ -33,6 +34,7 @@ class Settings(BaseSettings):
 
     verbose: bool = False
 
+    ssl_context: Optional[ssl.SSLContext] = None
     ca_bundle_file: Optional[str] = None
     cert_file: Optional[str] = None
     key_file: Optional[str] = None
