@@ -4,6 +4,7 @@ import pytest
 from pytest_httpx import HTTPXMock
 from pytest_mock import MockerFixture
 
+from gigachat import GigaChat
 from gigachat.client import (
     GIGACHAT_MODEL,
     GigaChatAsyncClient,
@@ -364,6 +365,20 @@ def test_stream_update_token_error(httpx_mock: HTTPXMock) -> None:
     assert client.token != access_token
 
 
+def test_get_token_credentials(httpx_mock: HTTPXMock) -> None:
+    httpx_mock.add_response(url=AUTH_URL, json=ACCESS_TOKEN)
+
+    model = GigaChat(
+        base_url=BASE_URL,
+        auth_url=AUTH_URL,
+        credentials=CREDENTIALS,
+    )
+    access_token = model.get_token()
+
+    assert model._access_token == ACCESS_TOKEN
+    assert access_token == ACCESS_TOKEN
+
+
 @pytest.mark.asyncio()
 async def test_aget_models(httpx_mock: HTTPXMock) -> None:
     httpx_mock.add_response(url=MODELS_URL, json=MODELS)
@@ -579,3 +594,18 @@ async def test_aupload_file(httpx_mock: HTTPXMock) -> None:
         response = await client.aupload_file(file=FILE)
 
     assert isinstance(response, UploadedFile)
+
+
+@pytest.mark.asyncio()
+async def test_aget_token_credentials(httpx_mock: HTTPXMock) -> None:
+    httpx_mock.add_response(url=AUTH_URL, json=ACCESS_TOKEN)
+
+    model = GigaChat(
+        base_url=BASE_URL,
+        auth_url=AUTH_URL,
+        credentials=CREDENTIALS,
+    )
+    access_token = await model.aget_token()
+
+    assert model._access_token == ACCESS_TOKEN
+    assert access_token == ACCESS_TOKEN
