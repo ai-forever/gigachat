@@ -225,7 +225,7 @@ class GigaChatSyncClient(_BaseClient):
                     password=self._settings.password,
                 )
             )
-            _logger.info("UPDATE TOKEN")
+            _logger.debug("UPDATE TOKEN")
 
     def get_token(self) -> AccessToken:
         self._update_token()
@@ -347,7 +347,7 @@ class GigaChatAsyncClient(_BaseClient):
                     password=self._settings.password,
                 )
             )
-            _logger.info("UPDATE TOKEN")
+            _logger.debug("UPDATE TOKEN")
 
     async def aget_token(self) -> AccessToken:
         await self._aupdate_token()
