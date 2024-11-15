@@ -1,4 +1,4 @@
-# GigaChat. Python-библиотека для GigaChain
+# Python-библиотека для работы с GigaChat API
 
 [![GitHub Actions Workflow Status](https://img.shields.io/github/actions/workflow/status/ai-forever/gigachat/gigachat.yml?style=flat-square)](https://github.com/ai-forever/gigachat/actions/workflows/gigachat.yml)
 [![GitHub License](https://img.shields.io/github/license/ai-forever/gigachat?style=flat-square)](https://opensource.org/license/MIT)

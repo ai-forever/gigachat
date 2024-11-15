@@ -11,3 +11,4 @@
 * [Пример подсчёта токенов](./example_tokens.py)
 * [Пример получения изображения](./example_get_image.py)
 * [Jupyter-ноутбук с примером работы с чатом и изображениями](./simple_chat_with_images.ipynb)
+* [Jupyter-ноутбук с примером работы c GigaChat Vision](./vision/vision.ipynb)
