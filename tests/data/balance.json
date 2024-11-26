@@ -1,0 +1,20 @@
+{
+    "balance": [
+        {
+            "usage": "embeddings",
+            "value": 9999967
+        },
+        {
+            "usage": "GigaChat-Pro",
+            "value": 991490
+        },
+        {
+            "usage": "GigaChat-Max",
+            "value": 50000
+        },
+        {
+            "usage": "GigaChat",
+            "value": 900000
+        }
+    ]
+}
