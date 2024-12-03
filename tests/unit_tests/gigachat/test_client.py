@@ -1,3 +1,4 @@
+import ssl
 from typing import List, Optional
 
 import pytest
@@ -68,14 +69,31 @@ HEADERS_STREAM = {"Content-Type": "text/event-stream"}
 CREDENTIALS = "NmIwNzhlODgtNDlkNC00ZjFmLTljMjMtYjFiZTZjMjVmNTRlOmU3NWJlNjVhLTk4YjAtNGY0Ni1iOWVhLTljMDkwZGE4YTk4MQ=="
 
 
+def _make_ssl_context() -> ssl.SSLContext:
+    context = ssl.SSLContext(ssl.PROTOCOL_TLS_CLIENT)
+    return context
+
+
 def test__get_kwargs() -> None:
     settings = Settings(ca_bundle_file="ca.pem", cert_file="tls.pem", key_file="tls.key")
     assert _get_kwargs(settings)
 
 
+def test__get_kwargs_ssl() -> None:
+    context = _make_ssl_context()
+    settings = Settings(ssl_context=context)
+    assert _get_kwargs(settings)["verify"] == context
+
+
 def test__get_auth_kwargs() -> None:
     settings = Settings(ca_bundle_file="ca.pem", cert_file="tls.pem", key_file="tls.key")
     assert _get_auth_kwargs(settings)
+
+
+def test__get_auth_kwargs_ssl() -> None:
+    context = _make_ssl_context()
+    settings = Settings(ssl_context=context)
+    assert _get_kwargs(settings)["verify"] == context
 
 
 @pytest.mark.parametrize(
