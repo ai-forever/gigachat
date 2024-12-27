@@ -103,6 +103,7 @@ giga = GigaChat(
     cert_file="certs/tls.pem",  # published_pem.txt
     key_file="certs/tls.key",
     key_file_password="123456",
+    ssl_context=context # optional ssl.SSLContext instance
 )
 ```
 
