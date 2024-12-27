@@ -1,4 +1,5 @@
 import logging
+import ssl
 from functools import cached_property
 from typing import (
     Any,
@@ -135,6 +136,7 @@ class _BaseClient:
         cert_file: Optional[str] = None,
         key_file: Optional[str] = None,
         key_file_password: Optional[str] = None,
+        ssl_context: Optional[ssl.SSLContext] = None,
         flags: Optional[List[str]] = None,
         **_unknown_kwargs: Any,
     ) -> None:
@@ -158,6 +160,7 @@ class _BaseClient:
             "cert_file": cert_file,
             "key_file": key_file,
             "key_file_password": key_file_password,
+            "ssl_context": ssl_context,
             "flags": flags,
         }
         config = {k: v for k, v in kwargs.items() if v is not None}
