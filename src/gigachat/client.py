@@ -12,12 +12,14 @@ from typing import (
     Optional,
     TypeVar,
     Union,
+    cast,
 )
 
 import httpx
 
 from gigachat._types import FileTypes
 from gigachat.api import (
+    get_balance,
     get_image,
     get_model,
     get_models,
@@ -25,6 +27,7 @@ from gigachat.api import (
     post_chat,
     post_embeddings,
     post_files,
+    post_functions_convert,
     post_token,
     post_tokens_count,
     stream_chat,
@@ -34,6 +37,7 @@ from gigachat.context import authorization_cvar
 from gigachat.exceptions import AuthenticationError
 from gigachat.models import (
     AccessToken,
+    Balance,
     Chat,
     ChatCompletion,
     ChatCompletionChunk,
@@ -43,6 +47,7 @@ from gigachat.models import (
     MessagesRole,
     Model,
     Models,
+    OpenApiFunctions,
     Token,
     TokensCount,
     UploadedFile,
@@ -228,7 +233,11 @@ class GigaChatSyncClient(_BaseClient):
                     password=self._settings.password,
                 )
             )
-            _logger.info("UPDATE TOKEN")
+            _logger.debug("UPDATE TOKEN")
+
+    def get_token(self) -> AccessToken:
+        self._update_token()
+        return cast(AccessToken, self._access_token)
 
     def _decorator(self, call: Callable[..., T]) -> T:
         if self._use_auth:
@@ -281,6 +290,19 @@ class GigaChatSyncClient(_BaseClient):
         """Возвращает ответ модели с учетом переданных сообщений"""
         chat = _parse_chat(payload, self._settings)
         return self._decorator(lambda: post_chat.sync(self._client, chat=chat, access_token=self.token))
+
+    def get_balance(self) -> Balance:
+        """Метод для получения баланса доступных для использования токенов.
+        Только для клиентов с предоплатой иначе http 403"""
+        return self._decorator(lambda: get_balance.sync(self._client, access_token=self.token))
+
+    def openapi_function_convert(self, openapi_function: str) -> OpenApiFunctions:
+        """Конвертация описание функции в формате OpenAPI в gigachat функцию"""
+        return self._decorator(
+            lambda: post_functions_convert.sync(
+                self._client, openapi_function=openapi_function, access_token=self.token
+            )
+        )
 
     def stream(self, payload: Union[Chat, Dict[str, Any], str]) -> Iterator[ChatCompletionChunk]:
         """Возвращает ответ модели с учетом переданных сообщений"""
@@ -346,7 +368,11 @@ class GigaChatAsyncClient(_BaseClient):
                     password=self._settings.password,
                 )
             )
-            _logger.info("UPDATE TOKEN")
+            _logger.debug("UPDATE TOKEN")
+
+    async def aget_token(self) -> AccessToken:
+        await self._aupdate_token()
+        return cast(AccessToken, self._access_token)
 
     async def _adecorator(self, acall: Callable[..., Awaitable[T]]) -> T:
         if self._use_auth:
@@ -419,6 +445,25 @@ class GigaChatAsyncClient(_BaseClient):
 
         async def _acall() -> UploadedFile:
             return await post_files.asyncio(self._aclient, file=file, purpose=purpose, access_token=self.token)
+
+        return await self._adecorator(_acall)
+
+    async def aget_balance(self) -> Balance:
+        """Метод для получения баланса доступных для использования токенов.
+        Только для клиентов с предоплатой иначе http 403"""
+
+        async def _acall() -> Balance:
+            return await get_balance.asyncio(self._aclient, access_token=self.token)
+
+        return await self._adecorator(_acall)
+
+    async def aopenapi_function_convert(self, openapi_function: str) -> OpenApiFunctions:
+        """Конвертация описание функции в формате OpenAPI в gigachat функцию"""
+
+        async def _acall() -> OpenApiFunctions:
+            return await post_functions_convert.asyncio(
+                self._aclient, openapi_function=openapi_function, access_token=self.token
+            )
 
         return await self._adecorator(_acall)
 

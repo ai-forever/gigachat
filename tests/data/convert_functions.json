@@ -1,0 +1,61 @@
+{
+  "functions": [
+    {
+      "name": "send_sms",
+      "description": "Подробное описание того за что отвечает функция, в данном случае отправка SMS по табельному номеру",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "employeeId": {
+            "description": "Id сотрудника/табельный номер сотрудника без лидирующих нулей",
+            "format": "int32",
+            "type": "integer"
+          },
+          "text": {
+            "description": "Текст смс",
+            "minLength": 1,
+            "type": "string"
+          },
+          "version": {
+            "description": "Описание параметра - версия API",
+            "type": "string"
+          }
+        },
+        "required": [
+          "version",
+          "employeeId",
+          "text"
+        ]
+      },
+      "return_parameters": {
+        "type": "object",
+        "properties": {
+          "description": {
+            "description": "Описание статуса",
+            "nullable": true,
+            "type": "string"
+          },
+          "phone": {
+            "description": "Номер: маска + 2 последние цифры номера",
+            "nullable": true,
+            "type": "string"
+          },
+          "status": {
+            "description": "Отправлено/не отправлено",
+            "type": "boolean"
+          }
+        }
+      },
+      "few_shot_examples": [
+        {
+          "request": "Отправь смс сотруднику с табельным номером 111111 с текстом Hello World используя API v2",
+          "params": {
+            "employeeId": "111111",
+            "text": "Hello world",
+            "version": "2"
+          }
+        }
+      ]
+    }
+  ]
+}

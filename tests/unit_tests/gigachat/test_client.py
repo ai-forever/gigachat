@@ -5,6 +5,7 @@ import pytest
 from pytest_httpx import HTTPXMock
 from pytest_mock import MockerFixture
 
+from gigachat import GigaChat
 from gigachat.client import (
     GIGACHAT_MODEL,
     GigaChatAsyncClient,
@@ -16,16 +17,20 @@ from gigachat.client import (
 )
 from gigachat.exceptions import AuthenticationError
 from gigachat.models import (
+    Balance,
     Chat,
     ChatCompletion,
     ChatCompletionChunk,
     Embedding,
     Embeddings,
+    Function,
     Model,
     Models,
+    OpenApiFunctions,
     TokensCount,
     UploadedFile,
 )
+from gigachat.models.balance import BalanceValue
 from gigachat.settings import Settings
 
 from ...utils import get_bytes, get_json
@@ -39,6 +44,8 @@ MODEL_URL = f"{BASE_URL}/models/model"
 TOKENS_COUNT_URL = f"{BASE_URL}/tokens/count"
 EMBEDDINGS_URL = f"{BASE_URL}/embeddings"
 FILES_URL = f"{BASE_URL}/files"
+BALANCE_URL = f"{BASE_URL}/balance"
+CONVERT_FUNCTIONS_URL = f"{BASE_URL}/functions/convert"
 
 ACCESS_TOKEN = get_json("access_token.json")
 TOKEN = get_json("token.json")
@@ -52,6 +59,8 @@ MODELS = get_json("models.json")
 TOKENS_COUNT = get_json("tokens_count.json")
 MODEL = get_json("model.json")
 FILES = get_json("post_files.json")
+BALANCE = get_json("balance.json")
+CONVERT_FUNCTIONS = get_json("convert_functions.json")
 
 FILE = get_bytes("image.jpg")
 
@@ -382,6 +391,40 @@ def test_stream_update_token_error(httpx_mock: HTTPXMock) -> None:
     assert client.token != access_token
 
 
+def test_get_token_credentials(httpx_mock: HTTPXMock) -> None:
+    httpx_mock.add_response(url=AUTH_URL, json=ACCESS_TOKEN)
+
+    model = GigaChat(
+        base_url=BASE_URL,
+        auth_url=AUTH_URL,
+        credentials=CREDENTIALS,
+    )
+    access_token = model.get_token()
+
+    assert model._access_token == ACCESS_TOKEN
+    assert access_token == ACCESS_TOKEN
+
+
+def test_balance(httpx_mock: HTTPXMock) -> None:
+    httpx_mock.add_response(url=BALANCE_URL, json=BALANCE)
+
+    with GigaChatSyncClient(base_url=BASE_URL) as client:
+        response = client.get_balance()
+    assert isinstance(response, Balance)
+    for row in response.balance:
+        assert isinstance(row, BalanceValue)
+
+
+def test_convert_functions(httpx_mock: HTTPXMock) -> None:
+    httpx_mock.add_response(url=CONVERT_FUNCTIONS_URL, json=CONVERT_FUNCTIONS)
+
+    with GigaChatSyncClient(base_url=BASE_URL) as client:
+        response = client.openapi_function_convert(openapi_function="")
+    assert isinstance(response, OpenApiFunctions)
+    for row in response.functions:
+        assert isinstance(row, Function)
+
+
 @pytest.mark.asyncio()
 async def test_aget_models(httpx_mock: HTTPXMock) -> None:
     httpx_mock.add_response(url=MODELS_URL, json=MODELS)
@@ -526,6 +569,28 @@ async def test_aembeddings(httpx_mock: HTTPXMock) -> None:
 
 
 @pytest.mark.asyncio()
+async def test_abalance(httpx_mock: HTTPXMock) -> None:
+    httpx_mock.add_response(url=BALANCE_URL, json=BALANCE)
+
+    async with GigaChatAsyncClient(base_url=BASE_URL) as client:
+        response = await client.aget_balance()
+    assert isinstance(response, Balance)
+    for row in response.balance:
+        assert isinstance(row, BalanceValue)
+
+
+@pytest.mark.asyncio()
+async def test_aconvert_functions(httpx_mock: HTTPXMock) -> None:
+    httpx_mock.add_response(url=CONVERT_FUNCTIONS_URL, json=CONVERT_FUNCTIONS)
+
+    async with GigaChatAsyncClient(base_url=BASE_URL) as client:
+        response = await client.aopenapi_function_convert(openapi_function="")
+    assert isinstance(response, OpenApiFunctions)
+    for row in response.functions:
+        assert isinstance(row, Function)
+
+
+@pytest.mark.asyncio()
 async def test_astream(httpx_mock: HTTPXMock) -> None:
     httpx_mock.add_response(url=CHAT_URL, content=CHAT_COMPLETION_STREAM, headers=HEADERS_STREAM)
 
@@ -597,3 +662,18 @@ async def test_aupload_file(httpx_mock: HTTPXMock) -> None:
         response = await client.aupload_file(file=FILE)
 
     assert isinstance(response, UploadedFile)
+
+
+@pytest.mark.asyncio()
+async def test_aget_token_credentials(httpx_mock: HTTPXMock) -> None:
+    httpx_mock.add_response(url=AUTH_URL, json=ACCESS_TOKEN)
+
+    model = GigaChat(
+        base_url=BASE_URL,
+        auth_url=AUTH_URL,
+        credentials=CREDENTIALS,
+    )
+    access_token = await model.aget_token()
+
+    assert model._access_token == ACCESS_TOKEN
+    assert access_token == ACCESS_TOKEN
