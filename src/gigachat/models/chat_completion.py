@@ -18,3 +18,8 @@ class ChatCompletion(BaseModel):
     """Данные об использовании модели"""
     object_: str = Field(alias="object")
     """Название вызываемого метода"""
+
+    session_id: str = Field(default=None)
+    """Sessing id for debug purposes"""
+    request_id: str = Field(default=None)
+    """Request id for debug purposes"""

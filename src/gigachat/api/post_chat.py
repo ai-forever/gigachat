@@ -25,7 +25,10 @@ def _get_kwargs(
 
 def _build_response(response: httpx.Response) -> ChatCompletion:
     if response.status_code == HTTPStatus.OK:
-        return ChatCompletion(**response.json())
+        result = ChatCompletion(**response.json())
+        result.request_id = response.headers.get("x-request-id", None)
+        result.session_id = response.headers.get("x-session-id", None)
+        return result
     elif response.status_code == HTTPStatus.UNAUTHORIZED:
         raise AuthenticationError(response.url, response.status_code, response.content, response.headers)
     else:
