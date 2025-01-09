@@ -69,6 +69,7 @@ def _get_kwargs(settings: Settings) -> Dict[str, Any]:
         "base_url": settings.base_url,
         "verify": settings.verify_ssl_certs,
         "timeout": httpx.Timeout(settings.timeout),
+        "http2": settings.http2,
     }
     if settings.ssl_context:
         kwargs["verify"] = settings.ssl_context
@@ -138,6 +139,7 @@ class _BaseClient:
         key_file_password: Optional[str] = None,
         ssl_context: Optional[ssl.SSLContext] = None,
         flags: Optional[List[str]] = None,
+        http2: Optional[bool] = None,
         **_unknown_kwargs: Any,
     ) -> None:
         if _unknown_kwargs:
@@ -162,6 +164,7 @@ class _BaseClient:
             "key_file_password": key_file_password,
             "ssl_context": ssl_context,
             "flags": flags,
+            "http2": http2,
         }
         config = {k: v for k, v in kwargs.items() if v is not None}
         self._settings = Settings(**config)

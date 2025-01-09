@@ -25,6 +25,8 @@ class Settings(BaseSettings):
     """Название модели, от которой нужно получить ответ"""
     profanity_check: Optional[bool] = None
     """Параметр цензуры"""
+    http2: bool = False
+    """Использовать ли HTTP/2 для запросов"""
 
     user: Optional[str] = None
     password: Optional[str] = None

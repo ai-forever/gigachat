@@ -96,6 +96,12 @@ def test__get_auth_kwargs_ssl() -> None:
     assert _get_kwargs(settings)["verify"] == context
 
 
+def test__get_kwargs_http2() -> None:
+    settings = Settings(http2=True)
+    kwargs = _get_kwargs(settings)
+    assert kwargs["http2"] is True
+
+
 @pytest.mark.parametrize(
     ("payload_value", "setting_value", "expected"),
     [

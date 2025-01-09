@@ -24,7 +24,7 @@ PAYLOAD = Chat(
 
 
 async def main():
-    async with GigaChat() as giga:
+    async with GigaChat(http2=True) as giga:
         async for chunk in giga.astream(PAYLOAD):
             print(time.time(), chunk, flush=True)
 
