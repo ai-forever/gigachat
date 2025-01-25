@@ -35,3 +35,5 @@ class Chat(BaseModel):
     """Набор функций, которые могут быть вызваны моделью"""
     flags: Optional[List[str]] = None
     """Флаги, включающие особенные фичи"""
+    session_id: Optional[str] = None
+    """Идентификатор сессии для кэширования X-Session-ID"""

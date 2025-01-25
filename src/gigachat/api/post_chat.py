@@ -13,7 +13,7 @@ def _get_kwargs(
     chat: Chat,
     access_token: Optional[str] = None,
 ) -> Dict[str, Any]:
-    headers = build_headers(access_token)
+    headers = build_headers(access_token, chat.session_id)
 
     return {
         "method": "POST",

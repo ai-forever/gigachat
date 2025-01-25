@@ -16,7 +16,7 @@ _logger = logging.getLogger(__name__)
 USER_AGENT = "GigaChat-python-lib"
 
 
-def build_headers(access_token: Optional[str] = None) -> Dict[str, str]:
+def build_headers(access_token: Optional[str] = None, session_id: Optional[str] = None) -> Dict[str, str]:
     headers = {}
 
     if access_token:
@@ -25,7 +25,8 @@ def build_headers(access_token: Optional[str] = None) -> Dict[str, str]:
     headers["User-Agent"] = USER_AGENT
 
     authorization = authorization_cvar.get()
-    session_id = session_id_cvar.get()
+    if session_id is None:
+        session_id = session_id_cvar.get()
     request_id = request_id_cvar.get()
     service_id = service_id_cvar.get()
     operation_id = operation_id_cvar.get()
