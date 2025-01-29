@@ -1,10 +1,8 @@
-from http import HTTPStatus
 from typing import Any, Dict, Optional
 
 import httpx
 
-from gigachat.api.utils import build_headers
-from gigachat.exceptions import AuthenticationError, ResponseError
+from gigachat.api.utils import build_headers, build_response
 from gigachat.models.threads import ThreadMessages
 
 
@@ -30,15 +28,6 @@ def _get_kwargs(
     return params
 
 
-def _build_response(response: httpx.Response) -> ThreadMessages:
-    if response.status_code == HTTPStatus.OK:
-        return ThreadMessages(**response.json())
-    elif response.status_code == HTTPStatus.UNAUTHORIZED:
-        raise AuthenticationError(response.url, response.status_code, response.content, response.headers)
-    else:
-        raise ResponseError(response.url, response.status_code, response.content, response.headers)
-
-
 def sync(
     client: httpx.Client,
     *,
@@ -50,7 +39,7 @@ def sync(
     """Получение сообщений треда"""
     kwargs = _get_kwargs(thread_id=thread_id, limit=limit, before=before, access_token=access_token)
     response = client.request(**kwargs)
-    return _build_response(response)
+    return build_response(response, ThreadMessages)
 
 
 async def asyncio(
@@ -64,4 +53,4 @@ async def asyncio(
     """Получение сообщений треда"""
     kwargs = _get_kwargs(thread_id=thread_id, limit=limit, before=before, access_token=access_token)
     response = await client.request(**kwargs)
-    return _build_response(response)
+    return build_response(response, ThreadMessages)

@@ -1,10 +1,11 @@
 from typing import List, Optional
 
 from gigachat.models.embedding import Embedding
-from gigachat.pydantic_v1 import BaseModel, Field
+from gigachat.models.with_x_headers import WithXHeaders
+from gigachat.pydantic_v1 import Field
 
 
-class Embeddings(BaseModel):
+class Embeddings(WithXHeaders):
     """Ответ модели"""
 
     data: List[Embedding]

@@ -401,8 +401,11 @@ def test_get_token_credentials(httpx_mock: HTTPXMock) -> None:
     )
     access_token = model.get_token()
 
-    assert model._access_token == ACCESS_TOKEN
-    assert access_token == ACCESS_TOKEN
+    assert model._access_token is not None
+    assert model._access_token.access_token == ACCESS_TOKEN["access_token"]
+    assert model._access_token.expires_at == ACCESS_TOKEN["expires_at"]
+    assert access_token.access_token == ACCESS_TOKEN["access_token"]
+    assert access_token.expires_at == ACCESS_TOKEN["expires_at"]
 
 
 def test_balance(httpx_mock: HTTPXMock) -> None:
@@ -675,5 +678,8 @@ async def test_aget_token_credentials(httpx_mock: HTTPXMock) -> None:
     )
     access_token = await model.aget_token()
 
-    assert model._access_token == ACCESS_TOKEN
-    assert access_token == ACCESS_TOKEN
+    assert model._access_token is not None
+    assert model._access_token.access_token == ACCESS_TOKEN["access_token"]
+    assert model._access_token.expires_at == ACCESS_TOKEN["expires_at"]
+    assert access_token.access_token == ACCESS_TOKEN["access_token"]
+    assert access_token.expires_at == ACCESS_TOKEN["expires_at"]

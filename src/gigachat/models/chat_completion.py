@@ -2,10 +2,11 @@ from typing import List
 
 from gigachat.models.choices import Choices
 from gigachat.models.usage import Usage
-from gigachat.pydantic_v1 import BaseModel, Field
+from gigachat.models.with_x_headers import WithXHeaders
+from gigachat.pydantic_v1 import Field
 
 
-class ChatCompletion(BaseModel):
+class ChatCompletion(WithXHeaders):
     """Ответ модели"""
 
     choices: List[Choices]

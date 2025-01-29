@@ -1,10 +1,10 @@
 from typing import List
 
 from gigachat.models.assistants.assistant import Assistant
-from gigachat.pydantic_v1 import BaseModel
+from gigachat.models.with_x_headers import WithXHeaders
 
 
-class Assistants(BaseModel):
+class Assistants(WithXHeaders):
     """Доступные ассистенты"""
 
     data: List[Assistant]

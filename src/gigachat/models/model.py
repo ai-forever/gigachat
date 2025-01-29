@@ -1,7 +1,8 @@
-from gigachat.pydantic_v1 import BaseModel, Field
+from gigachat.models.with_x_headers import WithXHeaders
+from gigachat.pydantic_v1 import Field
 
 
-class Model(BaseModel):
+class Model(WithXHeaders):
     """Описание модели"""
 
     id_: str = Field(alias="id")

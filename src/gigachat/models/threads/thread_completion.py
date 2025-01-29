@@ -1,9 +1,10 @@
-from gigachat.models import Messages
+from gigachat.models.messages import Messages
 from gigachat.models.usage import Usage
-from gigachat.pydantic_v1 import BaseModel, Field
+from gigachat.models.with_x_headers import WithXHeaders
+from gigachat.pydantic_v1 import Field
 
 
-class ThreadCompletion(BaseModel):
+class ThreadCompletion(WithXHeaders):
     """Ответ модели"""
 
     object_: str = Field(alias="object")

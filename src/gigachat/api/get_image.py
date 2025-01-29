@@ -4,7 +4,7 @@ from typing import Any, Dict, Optional
 
 import httpx
 
-from gigachat.api.utils import build_headers
+from gigachat.api.utils import build_headers, build_x_headers
 from gigachat.exceptions import AuthenticationError, ResponseError
 from gigachat.models import Image
 
@@ -25,7 +25,8 @@ def _get_kwargs(
 
 def _build_response(response: httpx.Response) -> Image:
     if response.status_code == HTTPStatus.OK:
-        return Image(content=base64.b64encode(response.content).decode())
+        x_headers = build_x_headers(response)
+        return Image(x_headers=x_headers, content=base64.b64encode(response.content).decode())
     elif response.status_code == HTTPStatus.UNAUTHORIZED:
         raise AuthenticationError(response.url, response.status_code, response.content, response.headers)
     else:

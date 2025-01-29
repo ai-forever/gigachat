@@ -111,7 +111,7 @@ def _parse_chat(payload: Union[Chat, Dict[str, Any], str], settings: Settings) -
 
 
 def _build_access_token(token: Token) -> AccessToken:
-    return AccessToken(access_token=token.tok, expires_at=token.exp)
+    return AccessToken(access_token=token.tok, expires_at=token.exp, x_headers=token.x_headers)
 
 
 class _BaseClient:

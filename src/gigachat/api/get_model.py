@@ -1,10 +1,8 @@
-from http import HTTPStatus
 from typing import Any, Dict, Optional
 
 import httpx
 
-from gigachat.api.utils import build_headers
-from gigachat.exceptions import AuthenticationError, ResponseError
+from gigachat.api.utils import build_headers, build_response
 from gigachat.models import Model
 
 
@@ -22,15 +20,6 @@ def _get_kwargs(
     }
 
 
-def _build_response(response: httpx.Response) -> Model:
-    if response.status_code == HTTPStatus.OK:
-        return Model(**response.json())
-    elif response.status_code == HTTPStatus.UNAUTHORIZED:
-        raise AuthenticationError(response.url, response.status_code, response.content, response.headers)
-    else:
-        raise ResponseError(response.url, response.status_code, response.content, response.headers)
-
-
 def sync(
     client: httpx.Client,
     *,
@@ -40,7 +29,7 @@ def sync(
     """Возвращает объект с описанием указанной модели"""
     kwargs = _get_kwargs(model=model, access_token=access_token)
     response = client.request(**kwargs)
-    return _build_response(response)
+    return build_response(response, Model)
 
 
 async def asyncio(
@@ -52,4 +41,4 @@ async def asyncio(
     """Возвращает объект с описанием указанной модели"""
     kwargs = _get_kwargs(model=model, access_token=access_token)
     response = await client.request(**kwargs)
-    return _build_response(response)
+    return build_response(response, Model)

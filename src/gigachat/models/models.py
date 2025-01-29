@@ -1,10 +1,11 @@
 from typing import List
 
 from gigachat.models.model import Model
-from gigachat.pydantic_v1 import BaseModel, Field
+from gigachat.models.with_x_headers import WithXHeaders
+from gigachat.pydantic_v1 import Field
 
 
-class Models(BaseModel):
+class Models(WithXHeaders):
     """Доступные модели"""
 
     data: List[Model]
