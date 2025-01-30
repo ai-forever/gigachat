@@ -1,8 +1,8 @@
 from gigachat.models.threads.thread_status import ThreadStatus
-from gigachat.pydantic_v1 import BaseModel
+from gigachat.models.with_x_headers import WithXHeaders
 
 
-class ThreadRunResponse(BaseModel):
+class ThreadRunResponse(WithXHeaders):
     status: ThreadStatus
     """Статус запуска"""
     thread_id: str

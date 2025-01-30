@@ -1,10 +1,10 @@
 from typing import List
 
-from gigachat.models import Function
-from gigachat.pydantic_v1 import BaseModel
+from gigachat.models.function import Function
+from gigachat.models.with_x_headers import WithXHeaders
 
 
-class OpenApiFunctions(BaseModel):
+class OpenApiFunctions(WithXHeaders):
     """Функции конвертированные из OpenAPI в GigaFunctions"""
 
     functions: List[Function]

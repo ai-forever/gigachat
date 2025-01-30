@@ -2,10 +2,10 @@ from typing import List, Optional
 
 from gigachat.models.threads.thread_message import ThreadMessage
 from gigachat.models.threads.thread_status import ThreadStatus
-from gigachat.pydantic_v1 import BaseModel
+from gigachat.models.with_x_headers import WithXHeaders
 
 
-class ThreadRunResult(BaseModel):
+class ThreadRunResult(WithXHeaders):
     """Run треда"""
 
     status: ThreadStatus

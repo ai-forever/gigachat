@@ -3,7 +3,7 @@ from typing import Any, AsyncIterator, Dict, Iterator, Optional
 
 import httpx
 
-from gigachat.api.utils import build_headers, parse_chunk
+from gigachat.api.utils import build_headers, build_x_headers, parse_chunk
 from gigachat.exceptions import AuthenticationError, ResponseError
 from gigachat.models import Chat, ChatCompletionChunk
 
@@ -60,8 +60,10 @@ def sync(
     kwargs = _get_kwargs(chat=chat, access_token=access_token)
     with client.stream(**kwargs) as response:
         _check_response(response)
+        x_headers = build_x_headers(response)
         for line in response.iter_lines():
             if chunk := parse_chunk(line, ChatCompletionChunk):
+                chunk.x_headers = x_headers
                 yield chunk
 
 
@@ -74,6 +76,8 @@ async def asyncio(
     kwargs = _get_kwargs(chat=chat, access_token=access_token)
     async with client.stream(**kwargs) as response:
         await _acheck_response(response)
+        x_headers = build_x_headers(response)
         async for line in response.aiter_lines():
             if chunk := parse_chunk(line, ChatCompletionChunk):
+                chunk.x_headers = x_headers
                 yield chunk

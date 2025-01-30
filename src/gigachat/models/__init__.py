@@ -22,6 +22,7 @@ from gigachat.models.token import Token
 from gigachat.models.tokens_count import TokensCount
 from gigachat.models.uploaded_file import UploadedFile
 from gigachat.models.usage import Usage
+from gigachat.models.with_x_headers import WithXHeaders
 
 __all__ = (
     "AccessToken",
@@ -50,4 +51,5 @@ __all__ = (
     "Image",
     "threads",
     "assistants",
+    "WithXHeaders",
 )

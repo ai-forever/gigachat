@@ -1,10 +1,8 @@
-from http import HTTPStatus
 from typing import Any, Dict, Optional
 
 import httpx
 
-from gigachat.api.utils import build_headers
-from gigachat.exceptions import AuthenticationError, ResponseError
+from gigachat.api.utils import build_headers, build_response
 from gigachat.models.balance import Balance
 
 
@@ -21,15 +19,6 @@ def _get_kwargs(
     }
 
 
-def _build_response(response: httpx.Response) -> Balance:
-    if response.status_code == HTTPStatus.OK:
-        return Balance(**response.json())
-    elif response.status_code == HTTPStatus.UNAUTHORIZED:
-        raise AuthenticationError(response.url, response.status_code, response.content, response.headers)
-    else:
-        raise ResponseError(response.url, response.status_code, response.content, response.headers)
-
-
 def sync(
     client: httpx.Client,
     *,
@@ -39,7 +28,7 @@ def sync(
     Только для клиентов с предоплатой иначе http 403"""
     kwargs = _get_kwargs(access_token=access_token)
     response = client.request(**kwargs)
-    return _build_response(response)
+    return build_response(response, Balance)
 
 
 async def asyncio(
@@ -51,4 +40,4 @@ async def asyncio(
     Только для клиентов с предоплатой иначе http 403"""
     kwargs = _get_kwargs(access_token=access_token)
     response = await client.request(**kwargs)
-    return _build_response(response)
+    return build_response(response, Balance)

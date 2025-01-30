@@ -1,7 +1,7 @@
-from gigachat.pydantic_v1 import BaseModel
+from gigachat.models.with_x_headers import WithXHeaders
 
 
-class Token(BaseModel):
+class Token(WithXHeaders):
     """Токен доступа"""
 
     tok: str

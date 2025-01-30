@@ -1,10 +1,10 @@
 from typing import List
 
 from gigachat.models.threads.thread_message import ThreadMessage
-from gigachat.pydantic_v1 import BaseModel
+from gigachat.models.with_x_headers import WithXHeaders
 
 
-class ThreadMessages(BaseModel):
+class ThreadMessages(WithXHeaders):
     """Сообщения треда"""
 
     thread_id: str

@@ -1,7 +1,7 @@
-from gigachat.pydantic_v1 import BaseModel
+from gigachat.models.with_x_headers import WithXHeaders
 
 
-class AssistantFileDelete(BaseModel):
+class AssistantFileDelete(WithXHeaders):
     """Информация об удаленном файле"""
 
     file_id: str

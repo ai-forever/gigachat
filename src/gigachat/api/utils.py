@@ -1,5 +1,8 @@
 import logging
+from http import HTTPStatus
 from typing import Dict, Optional, Type, TypeVar
+
+import httpx
 
 from gigachat.context import (
     authorization_cvar,
@@ -9,6 +12,7 @@ from gigachat.context import (
     service_id_cvar,
     session_id_cvar,
 )
+from gigachat.exceptions import AuthenticationError, ResponseError
 from gigachat.pydantic_v1 import BaseModel
 
 _logger = logging.getLogger(__name__)
@@ -62,3 +66,20 @@ def parse_chunk(line: str, model_class: Type[T]) -> Optional[T]:
         raise e
     else:
         return None
+
+
+def build_x_headers(response: httpx.Response) -> Dict[str, Optional[str]]:
+    return {
+        "x-request-id": response.headers.get("x-request-id"),
+        "x-session-id": response.headers.get("x-session-id"),
+        "x-client-id": response.headers.get("x-client-id"),
+    }
+
+
+def build_response(response: httpx.Response, model_class: Type[T]) -> T:
+    if response.status_code == HTTPStatus.OK:
+        return model_class(x_headers=build_x_headers(response), **response.json())
+    elif response.status_code == HTTPStatus.UNAUTHORIZED:
+        raise AuthenticationError(response.url, response.status_code, response.content, response.headers)
+    else:
+        raise ResponseError(response.url, response.status_code, response.content, response.headers)

@@ -1,11 +1,12 @@
 from typing import List
 
-from gigachat.models import ChoicesChunk
+from gigachat.models.choices_chunk import ChoicesChunk
 from gigachat.models.usage import Usage
-from gigachat.pydantic_v1 import BaseModel, Field
+from gigachat.models.with_x_headers import WithXHeaders
+from gigachat.pydantic_v1 import Field
 
 
-class ThreadCompletionChunk(BaseModel):
+class ThreadCompletionChunk(WithXHeaders):
     """Ответ модели"""
 
     object_: str = Field(alias="object")

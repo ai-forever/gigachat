@@ -1,7 +1,7 @@
-from gigachat.pydantic_v1 import BaseModel
+from gigachat.models.with_x_headers import WithXHeaders
 
 
-class Image(BaseModel):
+class Image(WithXHeaders):
     """Изображение"""
 
     content: str
