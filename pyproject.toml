@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "gigachat"
-version = "0.1.38"
+version = "0.1.39"
 description = "GigaChat. Python-library for GigaChain and LangChain"
 authors = ["Konstantin Krestnikov <rai220@gmail.com>", "Sergey Malyshev <in1t@ya.ru>"]
 license = "MIT"
@@ -11,7 +11,7 @@ packages = [{include = "gigachat", from = "src"}]
 [tool.poetry.dependencies]
 python = "^3.8"
 pydantic = ">=1"
-httpx = "<=0.27.2"
+httpx = "<1"
 
 [tool.poetry.group.dev.dependencies]
 black = "^23.12.1"

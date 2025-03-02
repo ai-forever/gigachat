@@ -21,6 +21,8 @@ import httpx
 from gigachat._types import FileTypes
 from gigachat.api import (
     get_balance,
+    get_file,
+    get_files,
     get_image,
     get_model,
     get_models,
@@ -28,6 +30,7 @@ from gigachat.api import (
     post_chat,
     post_embeddings,
     post_files,
+    post_files_delete,
     post_functions_convert,
     post_token,
     post_tokens_count,
@@ -42,6 +45,7 @@ from gigachat.models import (
     Chat,
     ChatCompletion,
     ChatCompletionChunk,
+    DeletedFile,
     Embeddings,
     Image,
     Messages,
@@ -52,6 +56,7 @@ from gigachat.models import (
     Token,
     TokensCount,
     UploadedFile,
+    UploadedFiles,
 )
 from gigachat.settings import Settings
 from gigachat.threads import ThreadsAsyncClient, ThreadsSyncClient
@@ -101,7 +106,8 @@ def _parse_chat(payload: Union[Chat, Dict[str, Any], str], settings: Settings) -
         chat = Chat(messages=[Messages(role=MessagesRole.USER, content=payload)])
     else:
         chat = Chat.parse_obj(payload)
-    if chat.model is None:
+    using_assistant = chat.storage is not None and (chat.storage.assistant_id or chat.storage.thread_id)
+    if not using_assistant and chat.model is None:
         chat.model = settings.model or GIGACHAT_MODEL
     if chat.profanity_check is None:
         chat.profanity_check = settings.profanity_check
@@ -289,6 +295,21 @@ class GigaChatSyncClient(_BaseClient):
             lambda: post_files.sync(self._client, file=file, purpose=purpose, access_token=self.token)
         )
 
+    def get_file(self, file: str) -> UploadedFile:
+        """Получает информацию о файле"""
+        return self._decorator(lambda: get_file.sync(self._client, file=file, access_token=self.token))
+
+    def get_files(self) -> UploadedFiles:
+        """Получает загруженные файлы"""
+        return self._decorator(lambda: get_files.sync(self._client, access_token=self.token))
+
+    def delete_file(
+        self,
+        file: str,
+    ) -> DeletedFile:
+        """Удаляет файл"""
+        return self._decorator(lambda: post_files_delete.sync(self._client, file=file, access_token=self.token))
+
     def chat(self, payload: Union[Chat, Dict[str, Any], str]) -> ChatCompletion:
         """Возвращает ответ модели с учетом переданных сообщений"""
         chat = _parse_chat(payload, self._settings)
@@ -448,6 +469,33 @@ class GigaChatAsyncClient(_BaseClient):
 
         async def _acall() -> UploadedFile:
             return await post_files.asyncio(self._aclient, file=file, purpose=purpose, access_token=self.token)
+
+        return await self._adecorator(_acall)
+
+    async def aget_file(self, file: str) -> UploadedFile:
+        """Получает информацию о файле"""
+
+        async def _acall() -> UploadedFile:
+            return await get_file.asyncio(self._aclient, file=file, access_token=self.token)
+
+        return await self._adecorator(_acall)
+
+    async def aget_files(self) -> UploadedFiles:
+        """Получает загруженные файлы"""
+
+        async def _acall() -> UploadedFiles:
+            return await get_files.asyncio(self._aclient, access_token=self.token)
+
+        return await self._adecorator(_acall)
+
+    async def adelete_file(
+        self,
+        file: str,
+    ) -> DeletedFile:
+        """Удаляет файл"""
+
+        async def _acall() -> DeletedFile:
+            return await post_files_delete.asyncio(self._aclient, file=file, access_token=self.token)
 
         return await self._adecorator(_acall)
 

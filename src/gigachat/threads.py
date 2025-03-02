@@ -1,4 +1,5 @@
 import logging
+import warnings
 from typing import (
     TYPE_CHECKING,
     Any,
@@ -100,6 +101,7 @@ class ThreadsSyncClient:
 
     def get_run(self, thread_id: str) -> ThreadRunResult:
         """Получить результат run треда"""
+        warnings.warn("get_run is deprecated. Use get_messages instead", stacklevel=2)
 
         return self.base_client._decorator(
             lambda: get_threads_run.sync(
@@ -168,6 +170,7 @@ class ThreadsSyncClient:
         thread_options: Optional[Union[ThreadRunOptions, Dict[str, Any]]] = None,
     ) -> ThreadCompletion:
         """Добавление сообщений к треду с запуском"""
+        warnings.warn("run_messages is deprecated. Use GigaChat.chat instead", stacklevel=2)
         parsed_messages = [_parse_message(message) for message in messages]
         if thread_options is not None:
             thread_options = ThreadRunOptions.parse_obj(thread_options)
@@ -212,6 +215,7 @@ class ThreadsSyncClient:
         update_interval: Optional[int] = None,
     ) -> Iterator[ThreadCompletionChunk]:
         """Добавление сообщений к треду с запуском"""
+        warnings.warn("run_messages is deprecated. Use GigaChat.chat instead", stacklevel=2)
         parsed_messages = [_parse_message(message) for message in messages]
         if thread_options is not None:
             thread_options = ThreadRunOptions.parse_obj(thread_options)
@@ -337,6 +341,7 @@ class ThreadsAsyncClient:
 
     async def get_run(self, thread_id: str) -> ThreadRunResult:
         """Получить результат run треда"""
+        warnings.warn("get_run is deprecated. Use get_messages instead", stacklevel=2)
 
         async def _acall() -> ThreadRunResult:
             return await get_threads_run.asyncio(
@@ -413,6 +418,7 @@ class ThreadsAsyncClient:
         thread_options: Optional[Union[ThreadRunOptions, Dict[str, Any]]] = None,
     ) -> ThreadCompletion:
         """Добавление сообщений к треду с запуском"""
+        warnings.warn("run_messages is deprecated. Use GigaChat.chat instead", stacklevel=2)
         parsed_messages = [_parse_message(message) for message in messages]
         if thread_options is not None:
             thread_options = ThreadRunOptions.parse_obj(thread_options)
@@ -459,6 +465,7 @@ class ThreadsAsyncClient:
         update_interval: Optional[int] = None,
     ) -> AsyncIterator[ThreadCompletionChunk]:
         """Добавление сообщений к треду с запуском"""
+        warnings.warn("run_messages is deprecated. Use GigaChat.chat instead", stacklevel=2)
         parsed_messages = [_parse_message(message) for message in messages]
         if thread_options is not None:
             thread_options = ThreadRunOptions.parse_obj(thread_options)

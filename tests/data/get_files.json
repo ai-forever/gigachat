@@ -1,0 +1,22 @@
+{
+  "data": [
+    {
+      "id": "123",
+      "object": "file",
+      "bytes": 202725,
+      "access_policy": "private",
+      "created_at": 1740658568,
+      "filename": "invoicesample.pdf",
+      "purpose": "general"
+    },
+    {
+      "id": "123",
+      "object": "file",
+      "bytes": 1063892,
+      "access_policy": "private",
+      "created_at": 1739225612,
+      "filename": "123.jpg",
+      "purpose": "general"
+    }
+  ]
+}
