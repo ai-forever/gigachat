@@ -3,6 +3,7 @@ from typing import List, Literal, Optional, Union
 from gigachat.models.chat_function_call import ChatFunctionCall
 from gigachat.models.function import Function
 from gigachat.models.messages import Messages
+from gigachat.models.storage import Storage
 from gigachat.pydantic_v1 import BaseModel
 
 
@@ -35,3 +36,5 @@ class Chat(BaseModel):
     """Набор функций, которые могут быть вызваны моделью"""
     flags: Optional[List[str]] = None
     """Флаги, включающие особенные фичи"""
+    storage: Optional[Storage] = None
+    """Данные для хранения контекста на стороне GigaChat"""

@@ -1,6 +1,7 @@
-from typing import List
+from typing import List, Optional
 
 from gigachat.models.choices_chunk import ChoicesChunk
+from gigachat.models.usage import Usage
 from gigachat.models.with_x_headers import WithXHeaders
 from gigachat.pydantic_v1 import Field
 
@@ -15,4 +16,6 @@ class ChatCompletionChunk(WithXHeaders):
     model: str
     """Название модели, которая вернула ответ"""
     object_: str = Field(alias="object")
-    """Название вызываемого метода"""
+    """Наименование вызываемого метода"""
+    usage: Optional[Usage] = None
+    """Данные о потребленных токенах"""

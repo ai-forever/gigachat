@@ -21,6 +21,7 @@ from gigachat.models import (
     Chat,
     ChatCompletion,
     ChatCompletionChunk,
+    DeletedFile,
     Embedding,
     Embeddings,
     Function,
@@ -29,6 +30,7 @@ from gigachat.models import (
     OpenApiFunctions,
     TokensCount,
     UploadedFile,
+    UploadedFiles,
 )
 from gigachat.models.balance import BalanceValue
 from gigachat.settings import Settings
@@ -46,6 +48,9 @@ EMBEDDINGS_URL = f"{BASE_URL}/embeddings"
 FILES_URL = f"{BASE_URL}/files"
 BALANCE_URL = f"{BASE_URL}/balance"
 CONVERT_FUNCTIONS_URL = f"{BASE_URL}/functions/convert"
+GET_FILE_URL = f"{BASE_URL}/files/1"
+GET_FILES_URL = f"{BASE_URL}/files"
+FILE_DELETE_URL = f"{BASE_URL}/files/1/delete"
 
 ACCESS_TOKEN = get_json("access_token.json")
 TOKEN = get_json("token.json")
@@ -61,6 +66,9 @@ MODEL = get_json("model.json")
 FILES = get_json("post_files.json")
 BALANCE = get_json("balance.json")
 CONVERT_FUNCTIONS = get_json("convert_functions.json")
+GET_FILE = get_json("get_file.json")
+GET_FILES = get_json("get_files.json")
+FILE_DELETE = get_json("post_files_delete.json")
 
 FILE = get_bytes("image.jpg")
 
@@ -428,6 +436,31 @@ def test_convert_functions(httpx_mock: HTTPXMock) -> None:
         assert isinstance(row, Function)
 
 
+def test_get_file(httpx_mock: HTTPXMock) -> None:
+    httpx_mock.add_response(url=GET_FILE_URL, json=GET_FILE)
+
+    with GigaChatSyncClient(base_url=BASE_URL) as client:
+        response = client.get_file(file="1")
+    assert isinstance(response, UploadedFile)
+
+
+def test_get_files(httpx_mock: HTTPXMock) -> None:
+    httpx_mock.add_response(url=GET_FILES_URL, json=GET_FILES)
+
+    with GigaChatSyncClient(base_url=BASE_URL) as client:
+        response = client.get_files()
+    assert isinstance(response, UploadedFiles)
+    assert len(response.data) == 2
+
+
+def test_delete_file(httpx_mock: HTTPXMock) -> None:
+    httpx_mock.add_response(url=FILE_DELETE_URL, json=FILE_DELETE)
+
+    with GigaChatSyncClient(base_url=BASE_URL) as client:
+        response = client.delete_file(file="1")
+    assert isinstance(response, DeletedFile)
+
+
 @pytest.mark.asyncio()
 async def test_aget_models(httpx_mock: HTTPXMock) -> None:
     httpx_mock.add_response(url=MODELS_URL, json=MODELS)
@@ -683,3 +716,31 @@ async def test_aget_token_credentials(httpx_mock: HTTPXMock) -> None:
     assert model._access_token.expires_at == ACCESS_TOKEN["expires_at"]
     assert access_token.access_token == ACCESS_TOKEN["access_token"]
     assert access_token.expires_at == ACCESS_TOKEN["expires_at"]
+
+
+@pytest.mark.asyncio()
+async def test_aget_file(httpx_mock: HTTPXMock) -> None:
+    httpx_mock.add_response(url=GET_FILE_URL, json=GET_FILE)
+
+    async with GigaChatAsyncClient(base_url=BASE_URL) as client:
+        response = await client.aget_file(file="1")
+    assert isinstance(response, UploadedFile)
+
+
+@pytest.mark.asyncio()
+async def test_aget_files(httpx_mock: HTTPXMock) -> None:
+    httpx_mock.add_response(url=GET_FILES_URL, json=GET_FILES)
+
+    async with GigaChatAsyncClient(base_url=BASE_URL) as client:
+        response = await client.aget_files()
+    assert isinstance(response, UploadedFiles)
+    assert len(response.data) == 2
+
+
+@pytest.mark.asyncio()
+async def test_adelete_file(httpx_mock: HTTPXMock) -> None:
+    httpx_mock.add_response(url=FILE_DELETE_URL, json=FILE_DELETE)
+
+    async with GigaChatAsyncClient(base_url=BASE_URL) as client:
+        response = await client.adelete_file(file="1")
+    assert isinstance(response, DeletedFile)

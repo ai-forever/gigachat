@@ -1,4 +1,4 @@
-from typing import List
+from typing import List, Optional
 
 from gigachat.models.choices import Choices
 from gigachat.models.usage import Usage
@@ -15,6 +15,10 @@ class ChatCompletion(WithXHeaders):
     """Дата и время создания ответа в формате Unix time"""
     model: str
     """Название модели, которая вернула ответ"""
+    thread_id: Optional[str] = None
+    """Идентификатор треда"""
+    message_id: Optional[str] = None
+    """Идентификатор сообщения. Для storage_mode - true"""
     usage: Usage
     """Данные об использовании модели"""
     object_: str = Field(alias="object")
