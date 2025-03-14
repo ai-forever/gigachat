@@ -1,3 +1,4 @@
+import json
 from typing import Any, Dict, Optional
 
 import httpx
@@ -16,7 +17,7 @@ def _get_kwargs(
     return {
         "method": "POST",
         "url": "/chat/completions",
-        "json": chat.dict(exclude_none=True, by_alias=True, exclude={"stream"}),
+        "json": json.dumps(chat.dict(exclude_none=True, by_alias=True, exclude={"stream"}), ensure_ascii=False),
         "headers": headers,
     }
 
