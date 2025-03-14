@@ -1,4 +1,4 @@
-from typing import Dict, Optional, Any
+from typing import Any, Dict, Optional
 
 from gigachat.pydantic_v1 import BaseModel
 
