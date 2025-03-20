@@ -1,3 +1,4 @@
+import json
 from http import HTTPStatus
 from typing import Any, Dict, List, Optional
 
@@ -15,6 +16,7 @@ def _get_kwargs(
     access_token: Optional[str] = None,
 ) -> Dict[str, Any]:
     headers = build_headers(access_token)
+    headers["Content-Type"] = "application/json"
 
     json_data = {"model": model, "input": input_}
 
@@ -22,7 +24,7 @@ def _get_kwargs(
         "method": "POST",
         "url": "/tokens/count",
         "headers": headers,
-        "json": json_data,
+        "content": json.dumps(json_data, ensure_ascii=False),
     }
 
 
