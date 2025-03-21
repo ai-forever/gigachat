@@ -1,3 +1,4 @@
+import json
 from http import HTTPStatus
 from typing import Any, AsyncIterator, Dict, Iterator, Optional
 
@@ -18,11 +19,12 @@ def _get_kwargs(
     headers = build_headers(access_token)
     headers["Accept"] = EVENT_STREAM
     headers["Cache-Control"] = "no-store"
+    headers["Content-Type"] = "application/json"
 
     return {
         "method": "POST",
         "url": "/chat/completions",
-        "json": {**chat.dict(exclude_none=True, by_alias=True), **{"stream": True}},
+        "content": json.dumps({**chat.dict(exclude_none=True, by_alias=True), **{"stream": True}}, ensure_ascii=False),
         "headers": headers,
     }
 

@@ -1,3 +1,4 @@
+import json
 from typing import Any, Dict, List, Optional
 
 import httpx
@@ -13,11 +14,12 @@ def _get_kwargs(
     access_token: Optional[str] = None,
 ) -> Dict[str, Any]:
     headers = build_headers(access_token)
+    headers["Content-Type"] = "application/json"
 
     return {
         "method": "POST",
         "url": "/embeddings",
-        "json": {"input": input_, "model": model},
+        "content": json.dumps({"input": input_, "model": model}, ensure_ascii=False),
         "headers": headers,
     }
 
