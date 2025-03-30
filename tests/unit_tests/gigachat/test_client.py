@@ -17,6 +17,7 @@ from gigachat.client import (
 )
 from gigachat.exceptions import AuthenticationError
 from gigachat.models import (
+    AICheckResult,
     Balance,
     Chat,
     ChatCompletion,
@@ -51,6 +52,7 @@ CONVERT_FUNCTIONS_URL = f"{BASE_URL}/functions/convert"
 GET_FILE_URL = f"{BASE_URL}/files/1"
 GET_FILES_URL = f"{BASE_URL}/files"
 FILE_DELETE_URL = f"{BASE_URL}/files/1/delete"
+AI_CHECK_URL = f"{BASE_URL}/ai/check"
 
 ACCESS_TOKEN = get_json("access_token.json")
 TOKEN = get_json("token.json")
@@ -69,6 +71,7 @@ CONVERT_FUNCTIONS = get_json("convert_functions.json")
 GET_FILE = get_json("get_file.json")
 GET_FILES = get_json("get_files.json")
 FILE_DELETE = get_json("post_files_delete.json")
+AI_CHECK = get_json("ai_check.json")
 
 FILE = get_bytes("image.jpg")
 
@@ -461,6 +464,14 @@ def test_delete_file(httpx_mock: HTTPXMock) -> None:
     assert isinstance(response, DeletedFile)
 
 
+def test_check_ai(httpx_mock: HTTPXMock) -> None:
+    httpx_mock.add_response(url=AI_CHECK_URL, json=AI_CHECK)
+
+    with GigaChatSyncClient(base_url=BASE_URL) as client:
+        response = client.check_ai(text="", model="")
+    assert isinstance(response, AICheckResult)
+
+
 @pytest.mark.asyncio()
 async def test_aget_models(httpx_mock: HTTPXMock) -> None:
     httpx_mock.add_response(url=MODELS_URL, json=MODELS)
@@ -744,3 +755,12 @@ async def test_adelete_file(httpx_mock: HTTPXMock) -> None:
     async with GigaChatAsyncClient(base_url=BASE_URL) as client:
         response = await client.adelete_file(file="1")
     assert isinstance(response, DeletedFile)
+
+
+@pytest.mark.asyncio()
+async def test_acheck_ai(httpx_mock: HTTPXMock) -> None:
+    httpx_mock.add_response(url=AI_CHECK_URL, json=AI_CHECK)
+
+    async with GigaChatAsyncClient(base_url=BASE_URL) as client:
+        response = await client.acheck_ai(text="", model="")
+    assert isinstance(response, AICheckResult)

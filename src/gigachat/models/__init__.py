@@ -1,4 +1,5 @@
 from gigachat.models.access_token import AccessToken
+from gigachat.models.ai_check_result import AICheckResult
 from gigachat.models.balance import Balance
 from gigachat.models.chat import Chat
 from gigachat.models.chat_completion import ChatCompletion
@@ -29,6 +30,7 @@ from gigachat.models.with_x_headers import WithXHeaders
 
 __all__ = (
     "AccessToken",
+    "AICheckResult",
     "Balance",
     "Chat",
     "ChatCompletion",

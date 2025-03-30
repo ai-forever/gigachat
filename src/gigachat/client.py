@@ -26,6 +26,7 @@ from gigachat.api import (
     get_image,
     get_model,
     get_models,
+    post_ai_check,
     post_auth,
     post_chat,
     post_embeddings,
@@ -41,6 +42,7 @@ from gigachat.context import authorization_cvar
 from gigachat.exceptions import AuthenticationError
 from gigachat.models import (
     AccessToken,
+    AICheckResult,
     Balance,
     Chat,
     ChatCompletion,
@@ -328,6 +330,12 @@ class GigaChatSyncClient(_BaseClient):
             )
         )
 
+    def check_ai(self, text: str, model: str) -> AICheckResult:
+        """Проверяет переданный текст на наличие содержимого, сгенерированного с помощью нейросетевых моделей."""
+        return self._decorator(
+            lambda: post_ai_check.sync(self._client, input_=text, model=model, access_token=self.token)
+        )
+
     def stream(self, payload: Union[Chat, Dict[str, Any], str]) -> Iterator[ChatCompletionChunk]:
         """Возвращает ответ модели с учетом переданных сообщений"""
         chat = _parse_chat(payload, self._settings)
@@ -515,6 +523,14 @@ class GigaChatAsyncClient(_BaseClient):
             return await post_functions_convert.asyncio(
                 self._aclient, openapi_function=openapi_function, access_token=self.token
             )
+
+        return await self._adecorator(_acall)
+
+    async def acheck_ai(self, text: str, model: str) -> AICheckResult:
+        """Проверяет переданный текст на наличие содержимого, сгенерированного с помощью нейросетевых моделей."""
+
+        async def _acall() -> AICheckResult:
+            return await post_ai_check.asyncio(self._aclient, input_=text, model=model, access_token=self.token)
 
         return await self._adecorator(_acall)
 
