@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "gigachat"
-version = "0.1.39post1"
+version = "0.1.39post2"  # Includes fix related to h11 upgrade
 description = "GigaChat. Python-library for GigaChain and LangChain"
 authors = ["Konstantin Krestnikov <rai220@gmail.com>", "Sergey Malyshev <in1t@ya.ru>"]
 license = "MIT"
