@@ -38,7 +38,7 @@ from gigachat.api import (
     stream_chat,
 )
 from gigachat.assistants import AssistantsAsyncClient, AssistantsSyncClient
-from gigachat.context import authorization_cvar
+from gigachat.context import authorization_cvar, headers_cvar
 from gigachat.exceptions import AuthenticationError
 from gigachat.models import (
     AccessToken,
@@ -146,6 +146,7 @@ class _BaseClient:
         key_file_password: Optional[str] = None,
         ssl_context: Optional[ssl.SSLContext] = None,
         flags: Optional[List[str]] = None,
+        headers: Optional[Dict[str, str]] = None,
         **_unknown_kwargs: Any,
     ) -> None:
         if _unknown_kwargs:
@@ -170,6 +171,7 @@ class _BaseClient:
             "key_file_password": key_file_password,
             "ssl_context": ssl_context,
             "flags": flags,
+            "headers": headers,
         }
         config = {k: v for k, v in kwargs.items() if v is not None}
         self._settings = Settings(**config)
@@ -250,16 +252,20 @@ class GigaChatSyncClient(_BaseClient):
         self._update_token()
         return cast(AccessToken, self._access_token)
 
-    def _decorator(self, call: Callable[..., T]) -> T:
-        if self._use_auth:
-            if self._check_validity_token():
-                try:
-                    return call()
-                except AuthenticationError:
-                    _logger.debug("AUTHENTICATION ERROR")
-                    self._reset_token()
-            self._update_token()
-        return call()
+    def _decorator(self, call: Callable[..., T], *, headers: Optional[Dict[str, str]] = None) -> T:
+        token = headers_cvar.set({**(self._settings.headers or {}), **(headers or {})})
+        try:
+            if self._use_auth:
+                if self._check_validity_token():
+                    try:
+                        return call()
+                    except AuthenticationError:
+                        _logger.debug("AUTHENTICATION ERROR")
+                        self._reset_token()
+                self._update_token()
+            return call()
+        finally:
+            headers_cvar.reset(token)
 
     def tokens_count(self, input_: List[str], model: Optional[str] = None) -> List[TokensCount]:
         """Возвращает объект с информацией о количестве токенов"""
@@ -312,10 +318,15 @@ class GigaChatSyncClient(_BaseClient):
         """Удаляет файл"""
         return self._decorator(lambda: post_files_delete.sync(self._client, file=file, access_token=self.token))
 
-    def chat(self, payload: Union[Chat, Dict[str, Any], str]) -> ChatCompletion:
+    def chat(
+        self, payload: Union[Chat, Dict[str, Any], str], *, headers: Optional[Dict[str, str]] = None
+    ) -> ChatCompletion:
         """Возвращает ответ модели с учетом переданных сообщений"""
         chat = _parse_chat(payload, self._settings)
-        return self._decorator(lambda: post_chat.sync(self._client, chat=chat, access_token=self.token))
+        return self._decorator(
+            lambda: post_chat.sync(self._client, chat=chat, access_token=self.token),
+            headers=headers,
+        )
 
     def get_balance(self) -> Balance:
         """Метод для получения баланса доступных для использования токенов.
@@ -336,9 +347,12 @@ class GigaChatSyncClient(_BaseClient):
             lambda: post_ai_check.sync(self._client, input_=text, model=model, access_token=self.token)
         )
 
-    def stream(self, payload: Union[Chat, Dict[str, Any], str]) -> Iterator[ChatCompletionChunk]:
+    def stream(
+        self, payload: Union[Chat, Dict[str, Any], str], *, headers: Optional[Dict[str, str]] = None
+    ) -> Iterator[ChatCompletionChunk]:
         """Возвращает ответ модели с учетом переданных сообщений"""
         chat = _parse_chat(payload, self._settings)
+        token_ctx = headers_cvar.set({**(self._settings.headers or {}), **(headers or {})})
 
         if self._use_auth:
             if self._check_validity_token():
@@ -351,8 +365,11 @@ class GigaChatSyncClient(_BaseClient):
                     self._reset_token()
             self._update_token()
 
-        for chunk in stream_chat.sync(self._client, chat=chat, access_token=self.token):
-            yield chunk
+        try:
+            for chunk in stream_chat.sync(self._client, chat=chat, access_token=self.token):
+                yield chunk
+        finally:
+            headers_cvar.reset(token_ctx)
 
 
 class GigaChatAsyncClient(_BaseClient):
@@ -406,16 +423,20 @@ class GigaChatAsyncClient(_BaseClient):
         await self._aupdate_token()
         return cast(AccessToken, self._access_token)
 
-    async def _adecorator(self, acall: Callable[..., Awaitable[T]]) -> T:
-        if self._use_auth:
-            if self._check_validity_token():
-                try:
-                    return await acall()
-                except AuthenticationError:
-                    _logger.debug("AUTHENTICATION ERROR")
-                    self._reset_token()
-            await self._aupdate_token()
-        return await acall()
+    async def _adecorator(self, acall: Callable[..., Awaitable[T]], *, headers: Optional[Dict[str, str]] = None) -> T:
+        token = headers_cvar.set({**(self._settings.headers or {}), **(headers or {})})
+        try:
+            if self._use_auth:
+                if self._check_validity_token():
+                    try:
+                        return await acall()
+                    except AuthenticationError:
+                        _logger.debug("AUTHENTICATION ERROR")
+                        self._reset_token()
+                await self._aupdate_token()
+            return await acall()
+        finally:
+            headers_cvar.reset(token)
 
     async def atokens_count(self, input_: List[str], model: Optional[str] = None) -> List[TokensCount]:
         """Возвращает объект с информацией о количестве токенов"""
@@ -459,14 +480,16 @@ class GigaChatAsyncClient(_BaseClient):
 
         return await self._adecorator(_acall)
 
-    async def achat(self, payload: Union[Chat, Dict[str, Any], str]) -> ChatCompletion:
+    async def achat(
+        self, payload: Union[Chat, Dict[str, Any], str], *, headers: Optional[Dict[str, str]] = None
+    ) -> ChatCompletion:
         """Возвращает ответ модели с учетом переданных сообщений"""
         chat = _parse_chat(payload, self._settings)
 
         async def _acall() -> ChatCompletion:
             return await post_chat.asyncio(self._aclient, chat=chat, access_token=self.token)
 
-        return await self._adecorator(_acall)
+        return await self._adecorator(_acall, headers=headers)
 
     async def aupload_file(
         self,
@@ -534,9 +557,12 @@ class GigaChatAsyncClient(_BaseClient):
 
         return await self._adecorator(_acall)
 
-    async def astream(self, payload: Union[Chat, Dict[str, Any], str]) -> AsyncIterator[ChatCompletionChunk]:
+    async def astream(
+        self, payload: Union[Chat, Dict[str, Any], str], *, headers: Optional[Dict[str, str]] = None
+    ) -> AsyncIterator[ChatCompletionChunk]:
         """Возвращает ответ модели с учетом переданных сообщений"""
         chat = _parse_chat(payload, self._settings)
+        token_ctx = headers_cvar.set({**(self._settings.headers or {}), **(headers or {})})
 
         if self._use_auth:
             if self._check_validity_token():
@@ -549,5 +575,8 @@ class GigaChatAsyncClient(_BaseClient):
                     self._reset_token()
             await self._aupdate_token()
 
-        async for chunk in stream_chat.asyncio(self._aclient, chat=chat, access_token=self.token):
-            yield chunk
+        try:
+            async for chunk in stream_chat.asyncio(self._aclient, chat=chat, access_token=self.token):
+                yield chunk
+        finally:
+            headers_cvar.reset(token_ctx)

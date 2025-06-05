@@ -1,5 +1,5 @@
 from contextvars import ContextVar
-from typing import Optional
+from typing import Dict, Optional
 
 authorization_cvar: ContextVar[Optional[str]] = ContextVar("authorization_cvar", default=None)
 """Информация об авторизации с помощью JWE"""
@@ -11,3 +11,4 @@ session_id_cvar: ContextVar[Optional[str]] = ContextVar("session_id_cvar", defau
 """Уникальный ID сессии"""
 service_id_cvar: ContextVar[Optional[str]] = ContextVar("service_id_cvar", default=None)
 operation_id_cvar: ContextVar[Optional[str]] = ContextVar("operation_id_cvar", default=None)
+headers_cvar: ContextVar[Dict[str, str]] = ContextVar("headers_cvar", default={})
