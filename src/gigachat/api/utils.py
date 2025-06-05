@@ -7,6 +7,7 @@ import httpx
 from gigachat.context import (
     authorization_cvar,
     client_id_cvar,
+    headers_cvar,
     operation_id_cvar,
     request_id_cvar,
     service_id_cvar,
@@ -47,6 +48,11 @@ def build_headers(access_token: Optional[str] = None) -> Dict[str, str]:
         headers["X-Operation-ID"] = operation_id
     if client_id:
         headers["X-Client-ID"] = client_id
+
+    custom_headers = headers_cvar.get()
+    if custom_headers:
+        headers.update(custom_headers)
+
     return headers
 
 

@@ -211,6 +211,30 @@ def test_chat_access_token(httpx_mock: HTTPXMock) -> None:
     assert isinstance(response, ChatCompletion)
 
 
+def test_chat_init_headers(httpx_mock: HTTPXMock) -> None:
+    httpx_mock.add_response(url=CHAT_URL, json=CHAT_COMPLETION)
+    headers = {"X-Test": "init"}
+
+    with GigaChatSyncClient(base_url=BASE_URL, headers=headers) as client:
+        client.chat(CHAT)
+
+    request = httpx_mock.get_request()
+    assert request.headers.get("X-Test") == "init"
+
+
+def test_chat_call_headers_override(httpx_mock: HTTPXMock) -> None:
+    httpx_mock.add_response(url=CHAT_URL, json=CHAT_COMPLETION)
+    init_headers = {"X-Test": "init"}
+    call_headers = {"X-Test": "call", "X-Another": "v"}
+
+    with GigaChatSyncClient(base_url=BASE_URL, headers=init_headers) as client:
+        client.chat(CHAT, headers=call_headers)
+
+    request = httpx_mock.get_request()
+    assert request.headers.get("X-Test") == "call"
+    assert request.headers.get("X-Another") == "v"
+
+
 def test_chat_credentials(httpx_mock: HTTPXMock) -> None:
     httpx_mock.add_response(url=AUTH_URL, json=ACCESS_TOKEN)
     httpx_mock.add_response(url=CHAT_URL, json=CHAT_COMPLETION)
@@ -523,6 +547,32 @@ async def test_achat_access_token(httpx_mock: HTTPXMock) -> None:
         response = await client.achat(CHAT)
 
     assert isinstance(response, ChatCompletion)
+
+
+@pytest.mark.asyncio()
+async def test_achat_init_headers(httpx_mock: HTTPXMock) -> None:
+    httpx_mock.add_response(url=CHAT_URL, json=CHAT_COMPLETION)
+    headers = {"X-Test": "init"}
+
+    async with GigaChatAsyncClient(base_url=BASE_URL, headers=headers) as client:
+        await client.achat(CHAT)
+
+    request = httpx_mock.get_request()
+    assert request.headers.get("X-Test") == "init"
+
+
+@pytest.mark.asyncio()
+async def test_achat_call_headers_override(httpx_mock: HTTPXMock) -> None:
+    httpx_mock.add_response(url=CHAT_URL, json=CHAT_COMPLETION)
+    init_headers = {"X-Test": "init"}
+    call_headers = {"X-Test": "call", "X-Another": "v"}
+
+    async with GigaChatAsyncClient(base_url=BASE_URL, headers=init_headers) as client:
+        await client.achat(CHAT, headers=call_headers)
+
+    request = httpx_mock.get_request()
+    assert request.headers.get("X-Test") == "call"
+    assert request.headers.get("X-Another") == "v"
 
 
 @pytest.mark.asyncio()
