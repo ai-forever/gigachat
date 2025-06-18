@@ -12,8 +12,9 @@ def _get_kwargs(
     limit: Optional[int] = None,
     before: Optional[int] = None,
     access_token: Optional[str] = None,
+    custom_headers: Optional[Dict[str, str]] = None,
 ) -> Dict[str, Any]:
-    headers = build_headers(access_token)
+    headers = build_headers(access_token, custom_headers=custom_headers)
     params: Dict[str, Any] = {}
     if assistants_ids:
         params["assistants_ids"] = assistants_ids

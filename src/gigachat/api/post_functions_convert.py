@@ -7,11 +7,9 @@ from gigachat.models.open_api_functions import OpenApiFunctions
 
 
 def _get_kwargs(
-    *,
-    openapi_function: str,
-    access_token: Optional[str] = None,
+    *, openapi_function: str, access_token: Optional[str] = None, custom_headers: Optional[Dict[str, str]] = None
 ) -> Dict[str, Any]:
-    headers = build_headers(access_token)
+    headers = build_headers(access_token, custom_headers=custom_headers)
 
     return {
         "method": "POST",
@@ -26,9 +24,10 @@ def sync(
     *,
     openapi_function: str,
     access_token: Optional[str] = None,
+    custom_headers: Optional[Dict[str, str]] = None,
 ) -> OpenApiFunctions:
     """Конвертация описание функции в формате OpenAPI в gigachat функцию"""
-    kwargs = _get_kwargs(openapi_function=openapi_function, access_token=access_token)
+    kwargs = _get_kwargs(openapi_function=openapi_function, access_token=access_token, custom_headers=custom_headers)
     response = client.request(**kwargs)
     return build_response(response, OpenApiFunctions)
 
@@ -38,8 +37,9 @@ async def asyncio(
     *,
     openapi_function: str,
     access_token: Optional[str] = None,
+    custom_headers: Optional[Dict[str, str]] = None,
 ) -> OpenApiFunctions:
     """Конвертация описание функции в формате OpenAPI в gigachat функцию"""
-    kwargs = _get_kwargs(openapi_function=openapi_function, access_token=access_token)
+    kwargs = _get_kwargs(openapi_function=openapi_function, access_token=access_token, custom_headers=custom_headers)
     response = await client.request(**kwargs)
     return build_response(response, OpenApiFunctions)

@@ -9,8 +9,9 @@ from gigachat.models.balance import Balance
 def _get_kwargs(
     *,
     access_token: Optional[str] = None,
+    custom_headers: Optional[Dict[str, str]] = None,
 ) -> Dict[str, Any]:
-    headers = build_headers(access_token)
+    headers = build_headers(access_token, custom_headers=custom_headers)
 
     return {
         "method": "GET",
@@ -23,10 +24,11 @@ def sync(
     client: httpx.Client,
     *,
     access_token: Optional[str] = None,
+    custom_headers: Optional[Dict[str, str]] = None,
 ) -> Balance:
     """Метод для получения баланса доступных для использования токенов.
     Только для клиентов с предоплатой иначе http 403"""
-    kwargs = _get_kwargs(access_token=access_token)
+    kwargs = _get_kwargs(access_token=access_token, custom_headers=custom_headers)
     response = client.request(**kwargs)
     return build_response(response, Balance)
 
@@ -35,9 +37,10 @@ async def asyncio(
     client: httpx.AsyncClient,
     *,
     access_token: Optional[str] = None,
+    custom_headers: Optional[Dict[str, str]] = None,
 ) -> Balance:
     """Метод для получения баланса доступных для использования токенов.
     Только для клиентов с предоплатой иначе http 403"""
-    kwargs = _get_kwargs(access_token=access_token)
+    kwargs = _get_kwargs(access_token=access_token, custom_headers=custom_headers)
     response = await client.request(**kwargs)
     return build_response(response, Balance)

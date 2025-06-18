@@ -12,8 +12,9 @@ def _get_kwargs(
     limit: Optional[int] = None,
     before: Optional[int] = None,
     access_token: Optional[str] = None,
+    custom_headers: Optional[Dict[str, str]] = None,
 ) -> Dict[str, Any]:
-    headers = build_headers(access_token)
+    headers = build_headers(access_token, custom_headers=custom_headers)
     params: Dict[str, Any] = {"thread_id": thread_id}
     if limit:
         params["limit"] = limit
@@ -35,9 +36,12 @@ def sync(
     limit: Optional[int] = None,
     before: Optional[int] = None,
     access_token: Optional[str] = None,
+    custom_headers: Optional[Dict[str, str]] = None,
 ) -> ThreadMessages:
     """Получение сообщений треда"""
-    kwargs = _get_kwargs(thread_id=thread_id, limit=limit, before=before, access_token=access_token)
+    kwargs = _get_kwargs(
+        thread_id=thread_id, limit=limit, before=before, access_token=access_token, custom_headers=custom_headers
+    )
     response = client.request(**kwargs)
     return build_response(response, ThreadMessages)
 
@@ -49,8 +53,11 @@ async def asyncio(
     limit: Optional[int] = None,
     before: Optional[int] = None,
     access_token: Optional[str] = None,
+    custom_headers: Optional[Dict[str, str]] = None,
 ) -> ThreadMessages:
     """Получение сообщений треда"""
-    kwargs = _get_kwargs(thread_id=thread_id, limit=limit, before=before, access_token=access_token)
+    kwargs = _get_kwargs(
+        thread_id=thread_id, limit=limit, before=before, access_token=access_token, custom_headers=custom_headers
+    )
     response = await client.request(**kwargs)
     return build_response(response, ThreadMessages)

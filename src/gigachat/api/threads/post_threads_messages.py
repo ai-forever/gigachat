@@ -14,8 +14,9 @@ def _get_kwargs(
     thread_id: Optional[str] = None,
     assistant_id: Optional[str] = None,
     access_token: Optional[str] = None,
+    custom_headers: Optional[Dict[str, str]] = None,
 ) -> Dict[str, Any]:
-    headers = build_headers(access_token)
+    headers = build_headers(access_token, custom_headers=custom_headers)
     if thread_id is not None or assistant_id is not None:
         model = None
     params = {

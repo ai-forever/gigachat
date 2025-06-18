@@ -10,8 +10,9 @@ def _get_kwargs(
     *,
     file: str,
     access_token: Optional[str] = None,
+    custom_headers: Optional[Dict[str, str]] = None,
 ) -> Dict[str, Any]:
-    headers = build_headers(access_token)
+    headers = build_headers(access_token, custom_headers=custom_headers)
 
     return {
         "method": "GET",
@@ -25,9 +26,10 @@ def sync(
     *,
     file: str,
     access_token: Optional[str] = None,
+    custom_headers: Optional[Dict[str, str]] = None,
 ) -> UploadedFile:
     """Возвращает объект с описанием указанного файла."""
-    kwargs = _get_kwargs(file=file, access_token=access_token)
+    kwargs = _get_kwargs(file=file, access_token=access_token, custom_headers=custom_headers)
     response = client.request(**kwargs)
     return build_response(response, UploadedFile)
 
@@ -37,8 +39,9 @@ async def asyncio(
     *,
     file: str,
     access_token: Optional[str] = None,
+    custom_headers: Optional[Dict[str, str]] = None,
 ) -> UploadedFile:
     """Возвращает объект с описанием указанного файла."""
-    kwargs = _get_kwargs(file=file, access_token=access_token)
+    kwargs = _get_kwargs(file=file, access_token=access_token, custom_headers=custom_headers)
     response = await client.request(**kwargs)
     return build_response(response, UploadedFile)

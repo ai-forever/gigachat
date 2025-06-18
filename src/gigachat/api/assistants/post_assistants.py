@@ -17,8 +17,9 @@ def _get_kwargs(
     functions: Optional[List[Function]] = None,
     metadata: Optional[Dict[str, Any]] = None,
     access_token: Optional[str] = None,
+    custom_headers: Optional[Dict[str, str]] = None,
 ) -> Dict[str, Any]:
-    headers = build_headers(access_token)
+    headers = build_headers(access_token, custom_headers=custom_headers)
     data: Dict[str, Any] = {
         "model": model,
         "name": name,
@@ -49,6 +50,7 @@ def sync(
     functions: Optional[List[Function]] = None,
     metadata: Optional[Dict[str, Any]] = None,
     access_token: Optional[str] = None,
+    custom_headers: Optional[Dict[str, str]] = None,
 ) -> CreateAssistant:
     """Создание ассистента"""
     kwargs = _get_kwargs(
@@ -60,6 +62,7 @@ def sync(
         functions=functions,
         metadata=metadata,
         access_token=access_token,
+        custom_headers=custom_headers,
     )
     response = client.request(**kwargs)
     return build_response(response, CreateAssistant)
@@ -76,6 +79,7 @@ async def asyncio(
     functions: Optional[List[Function]] = None,
     metadata: Optional[Dict[str, Any]] = None,
     access_token: Optional[str] = None,
+    custom_headers: Optional[Dict[str, str]] = None,
 ) -> CreateAssistant:
     """Создание ассистента"""
     kwargs = _get_kwargs(
@@ -87,6 +91,7 @@ async def asyncio(
         functions=functions,
         metadata=metadata,
         access_token=access_token,
+        custom_headers=custom_headers,
     )
     response = await client.request(**kwargs)
     return build_response(response, CreateAssistant)

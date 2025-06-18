@@ -336,14 +336,16 @@ class GigaChatSyncClient(_BaseClient):
             lambda: post_ai_check.sync(self._client, input_=text, model=model, access_token=self.token)
         )
 
-    def stream(self, payload: Union[Chat, Dict[str, Any], str]) -> Iterator[ChatCompletionChunk]:
+    def stream(
+        self, payload: Union[Chat, Dict[str, Any], str], headers: Optional[Dict[str, str]] = None
+    ) -> Iterator[ChatCompletionChunk]:
         """Возвращает ответ модели с учетом переданных сообщений"""
         chat = _parse_chat(payload, self._settings)
 
         if self._use_auth:
             if self._check_validity_token():
                 try:
-                    for chunk in stream_chat.sync(self._client, chat=chat, access_token=self.token):
+                    for chunk in stream_chat.sync(self._client, chat=chat, access_token=self.token, headers=headers):
                         yield chunk
                     return
                 except AuthenticationError:

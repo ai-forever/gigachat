@@ -20,7 +20,9 @@ _logger = logging.getLogger(__name__)
 USER_AGENT = "GigaChat-python-lib"
 
 
-def build_headers(access_token: Optional[str] = None) -> Dict[str, str]:
+def build_headers(
+    access_token: Optional[str] = None, custom_headers: Optional[Dict[str, str]] = None
+) -> Dict[str, str]:
     headers = {}
 
     if access_token:
@@ -47,6 +49,10 @@ def build_headers(access_token: Optional[str] = None) -> Dict[str, str]:
         headers["X-Operation-ID"] = operation_id
     if client_id:
         headers["X-Client-ID"] = client_id
+
+    if custom_headers:
+        headers.update(custom_headers)
+
     return headers
 
 

@@ -10,8 +10,9 @@ def _get_kwargs(
     *,
     thread_id: str,
     access_token: Optional[str] = None,
+    custom_headers: Optional[Dict[str, str]] = None,
 ) -> Dict[str, Any]:
-    headers = build_headers(access_token)
+    headers = build_headers(access_token, custom_headers=custom_headers)
     params = {
         "method": "GET",
         "url": "/threads/run",
@@ -26,9 +27,10 @@ def sync(
     *,
     thread_id: str,
     access_token: Optional[str] = None,
+    custom_headers: Optional[Dict[str, str]] = None,
 ) -> ThreadRunResult:
     """Получить результат run треда"""
-    kwargs = _get_kwargs(thread_id=thread_id, access_token=access_token)
+    kwargs = _get_kwargs(thread_id=thread_id, access_token=access_token, custom_headers=custom_headers)
     response = client.request(**kwargs)
     return build_response(response, ThreadRunResult)
 
@@ -38,8 +40,9 @@ async def asyncio(
     *,
     thread_id: str,
     access_token: Optional[str] = None,
+    custom_headers: Optional[Dict[str, str]] = None,
 ) -> ThreadRunResult:
     """Получить результат run треда"""
-    kwargs = _get_kwargs(thread_id=thread_id, access_token=access_token)
+    kwargs = _get_kwargs(thread_id=thread_id, access_token=access_token, custom_headers=custom_headers)
     response = await client.request(**kwargs)
     return build_response(response, ThreadRunResult)

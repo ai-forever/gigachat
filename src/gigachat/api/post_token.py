@@ -1,4 +1,4 @@
-from typing import Any, Dict
+from typing import Any, Dict, Optional
 
 import httpx
 
@@ -10,8 +10,9 @@ def _get_kwargs(
     *,
     user: str,
     password: str,
+    custom_headers: Optional[Dict[str, str]] = None,
 ) -> Dict[str, Any]:
-    headers = build_headers()
+    headers = build_headers(custom_headers=custom_headers)
 
     return {
         "method": "POST",
@@ -26,8 +27,9 @@ def sync(
     *,
     user: str,
     password: str,
+    custom_headers: Optional[Dict[str, str]] = None,
 ) -> Token:
-    kwargs = _get_kwargs(user=user, password=password)
+    kwargs = _get_kwargs(user=user, password=password, custom_headers=custom_headers)
     response = client.request(**kwargs)
     return build_response(response, Token)
 
@@ -37,7 +39,8 @@ async def asyncio(
     *,
     user: str,
     password: str,
+    custom_headers: Optional[Dict[str, str]] = None,
 ) -> Token:
-    kwargs = _get_kwargs(user=user, password=password)
+    kwargs = _get_kwargs(user=user, password=password, custom_headers=custom_headers)
     response = await client.request(**kwargs)
     return build_response(response, Token)

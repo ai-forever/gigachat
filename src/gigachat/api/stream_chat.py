@@ -12,11 +12,9 @@ EVENT_STREAM = "text/event-stream"
 
 
 def _get_kwargs(
-    *,
-    chat: Chat,
-    access_token: Optional[str] = None,
+    *, chat: Chat, access_token: Optional[str] = None, custom_headers: Optional[Dict[str, str]] = None
 ) -> Dict[str, Any]:
-    headers = build_headers(access_token)
+    headers = build_headers(access_token, custom_headers=custom_headers)
     headers["Accept"] = EVENT_STREAM
     headers["Cache-Control"] = "no-store"
     headers["Content-Type"] = "application/json"
@@ -58,8 +56,9 @@ def sync(
     *,
     chat: Chat,
     access_token: Optional[str] = None,
+    custom_headers: Optional[Dict[str, str]] = None,
 ) -> Iterator[ChatCompletionChunk]:
-    kwargs = _get_kwargs(chat=chat, access_token=access_token)
+    kwargs = _get_kwargs(chat=chat, access_token=access_token, custom_headers=custom_headers)
     with client.stream(**kwargs) as response:
         _check_response(response)
         x_headers = build_x_headers(response)
@@ -74,8 +73,9 @@ async def asyncio(
     *,
     chat: Chat,
     access_token: Optional[str] = None,
+    custom_headers: Optional[Dict[str, str]] = None,
 ) -> AsyncIterator[ChatCompletionChunk]:
-    kwargs = _get_kwargs(chat=chat, access_token=access_token)
+    kwargs = _get_kwargs(chat=chat, access_token=access_token, custom_headers=custom_headers)
     async with client.stream(**kwargs) as response:
         await _acheck_response(response)
         x_headers = build_x_headers(response)

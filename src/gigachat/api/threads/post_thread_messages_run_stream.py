@@ -20,8 +20,9 @@ def _get_kwargs(
     thread_options: Optional[ThreadRunOptions] = None,
     update_interval: Optional[int] = None,
     access_token: Optional[str] = None,
+    custom_headers: Optional[Dict[str, str]] = None,
 ) -> Dict[str, Any]:
-    headers = build_headers(access_token)
+    headers = build_headers(access_token, custom_headers=custom_headers)
     thread_options_dict = {}
     if assistant_id is not None or thread_id is not None:
         model = None

@@ -14,8 +14,9 @@ def _get_kwargs(
     input_: List[str],
     model: str,
     access_token: Optional[str] = None,
+    custom_headers: Optional[Dict[str, str]] = None,
 ) -> Dict[str, Any]:
-    headers = build_headers(access_token)
+    headers = build_headers(access_token, custom_headers=custom_headers)
     headers["Content-Type"] = "application/json"
 
     json_data = {"model": model, "input": input_}
@@ -43,9 +44,10 @@ def sync(
     input_: List[str],
     model: str,
     access_token: Optional[str] = None,
+    custom_headers: Optional[Dict[str, str]] = None,
 ) -> List[TokensCount]:
     """Возвращает объект с информацией о количестве токенов"""
-    kwargs = _get_kwargs(input_=input_, model=model, access_token=access_token)
+    kwargs = _get_kwargs(input_=input_, model=model, access_token=access_token, custom_headers=custom_headers)
     response = client.request(**kwargs)
     return _build_response(response)
 
@@ -56,8 +58,9 @@ async def asyncio(
     input_: List[str],
     model: str,
     access_token: Optional[str] = None,
+    custom_headers: Optional[Dict[str, str]] = None,
 ) -> List[TokensCount]:
     """Возвращает объект с информацией о количестве токенов"""
-    kwargs = _get_kwargs(input_=input_, model=model, access_token=access_token)
+    kwargs = _get_kwargs(input_=input_, model=model, access_token=access_token, custom_headers=custom_headers)
     response = await client.request(**kwargs)
     return _build_response(response)

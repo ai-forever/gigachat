@@ -11,8 +11,9 @@ def _get_kwargs(
     input_: str,
     model: str,
     access_token: Optional[str] = None,
+    custom_headers: Optional[Dict[str, str]] = None,
 ) -> Dict[str, Any]:
-    headers = build_headers(access_token)
+    headers = build_headers(access_token, custom_headers=custom_headers)
 
     return {
         "method": "POST",
@@ -28,8 +29,9 @@ def sync(
     input_: str,
     model: str,
     access_token: Optional[str] = None,
+    custom_headers: Optional[Dict[str, str]] = None,
 ) -> AICheckResult:
-    kwargs = _get_kwargs(input_=input_, model=model, access_token=access_token)
+    kwargs = _get_kwargs(input_=input_, model=model, access_token=access_token, custom_headers=custom_headers)
     response = client.request(**kwargs)
     return build_response(response, AICheckResult)
 
@@ -40,7 +42,8 @@ async def asyncio(
     input_: str,
     model: str,
     access_token: Optional[str] = None,
+    custom_headers: Optional[Dict[str, str]] = None,
 ) -> AICheckResult:
-    kwargs = _get_kwargs(input_=input_, model=model, access_token=access_token)
+    kwargs = _get_kwargs(input_=input_, model=model, access_token=access_token, custom_headers=custom_headers)
     response = await client.request(**kwargs)
     return build_response(response, AICheckResult)

@@ -10,8 +10,9 @@ def _get_kwargs(
     *,
     threads_ids: List[str],
     access_token: Optional[str] = None,
+    custom_headers: Optional[Dict[str, str]] = None,
 ) -> Dict[str, Any]:
-    headers = build_headers(access_token)
+    headers = build_headers(access_token, custom_headers=custom_headers)
     params = {
         "method": "POST",
         "url": "/threads/retrieve",

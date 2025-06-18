@@ -10,8 +10,9 @@ def _get_kwargs(
     *,
     assistant_id: Optional[str] = None,
     access_token: Optional[str] = None,
+    custom_headers: Optional[Dict[str, str]] = None,
 ) -> Dict[str, Any]:
-    headers = build_headers(access_token)
+    headers = build_headers(access_token, custom_headers=custom_headers)
     params = {
         "method": "GET",
         "url": "/assistants",
@@ -27,9 +28,10 @@ def sync(
     *,
     assistant_id: Optional[str] = None,
     access_token: Optional[str] = None,
+    custom_headers: Optional[Dict[str, str]] = None,
 ) -> Assistants:
     """Возвращает массив объектов с данными доступных ассистентов"""
-    kwargs = _get_kwargs(assistant_id=assistant_id, access_token=access_token)
+    kwargs = _get_kwargs(assistant_id=assistant_id, access_token=access_token, custom_headers=custom_headers)
     response = client.request(**kwargs)
     return build_response(response, Assistants)
 
@@ -39,8 +41,9 @@ async def asyncio(
     *,
     assistant_id: Optional[str] = None,
     access_token: Optional[str] = None,
+    custom_headers: Optional[Dict[str, str]] = None,
 ) -> Assistants:
     """Возвращает массив объектов с данными доступных ассистентов"""
-    kwargs = _get_kwargs(assistant_id=assistant_id, access_token=access_token)
+    kwargs = _get_kwargs(assistant_id=assistant_id, access_token=access_token, custom_headers=custom_headers)
     response = await client.request(**kwargs)
     return build_response(response, Assistants)

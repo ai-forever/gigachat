@@ -13,8 +13,9 @@ def _get_kwargs(
     *,
     file_id: str,
     access_token: Optional[str] = None,
+    custom_headers: Optional[Dict[str, str]] = None,
 ) -> Dict[str, Any]:
-    headers = build_headers(access_token)
+    headers = build_headers(access_token, custom_headers=custom_headers)
     headers["Accept"] = "application/jpg"
     return {
         "method": "GET",
@@ -38,9 +39,10 @@ def sync(
     *,
     file_id: str,
     access_token: Optional[str] = None,
+    custom_headers: Optional[Dict[str, str]] = None,
 ) -> Image:
     """Возвращает изображение в base64 кодировке"""
-    kwargs = _get_kwargs(access_token=access_token, file_id=file_id)
+    kwargs = _get_kwargs(access_token=access_token, file_id=file_id, custom_headers=custom_headers)
     response = client.request(**kwargs)
     return _build_response(response)
 
@@ -50,8 +52,9 @@ async def asyncio(
     *,
     file_id: str,
     access_token: Optional[str] = None,
+    custom_headers: Optional[Dict[str, str]] = None,
 ) -> Image:
     """Возвращает изображение в base64 кодировке"""
-    kwargs = _get_kwargs(access_token=access_token, file_id=file_id)
+    kwargs = _get_kwargs(access_token=access_token, file_id=file_id, custom_headers=custom_headers)
     response = await client.request(**kwargs)
     return _build_response(response)
