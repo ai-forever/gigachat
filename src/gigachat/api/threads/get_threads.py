@@ -38,6 +38,7 @@ def sync(
     limit: Optional[int] = None,
     before: Optional[int] = None,
     access_token: Optional[str] = None,
+    custom_headers: Optional[Dict[str, str]] = None,
 ) -> Threads:
     """Получение перечня тредов"""
     kwargs = _get_kwargs(
@@ -45,6 +46,7 @@ def sync(
         limit=limit,
         before=before,
         access_token=access_token,
+        custom_headers=custom_headers,
     )
     response = client.request(**kwargs)
     return build_response(response, Threads)
@@ -57,6 +59,7 @@ async def asyncio(
     limit: Optional[int] = None,
     before: Optional[int] = None,
     access_token: Optional[str] = None,
+    custom_headers: Optional[Dict[str, str]] = None,
 ) -> Threads:
     """Получение перечня тредов"""
     kwargs = _get_kwargs(
@@ -64,6 +67,7 @@ async def asyncio(
         limit=limit,
         before=before,
         access_token=access_token,
+        custom_headers=custom_headers,
     )
     response = await client.request(**kwargs)
     return build_response(response, Threads)

@@ -39,9 +39,10 @@ def sync(
     *,
     thread_id: str,
     access_token: Optional[str] = None,
+    custom_headers: Optional[Dict[str, str]] = None,
 ) -> bool:
     """Удаляет тред"""
-    kwargs = _get_kwargs(thread_id=thread_id, access_token=access_token)
+    kwargs = _get_kwargs(thread_id=thread_id, access_token=access_token, custom_headers=custom_headers)
     response = client.request(**kwargs)
     return _build_response(response)
 
@@ -51,8 +52,9 @@ async def asyncio(
     *,
     thread_id: str,
     access_token: Optional[str] = None,
+    custom_headers: Optional[Dict[str, str]] = None,
 ) -> bool:
     """Удаляет тред"""
-    kwargs = _get_kwargs(thread_id=thread_id, access_token=access_token)
+    kwargs = _get_kwargs(thread_id=thread_id, access_token=access_token, custom_headers=custom_headers)
     response = await client.request(**kwargs)
     return _build_response(response)

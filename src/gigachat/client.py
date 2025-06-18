@@ -225,7 +225,7 @@ class GigaChatSyncClient(_BaseClient):
     def __exit__(self, *exc: Any) -> None:
         self.close()
 
-    def _update_token(self) -> None:
+    def _update_token(self, custom_headers: Optional[Dict[str, str]] = None) -> None:
         if authorization_cvar.get() is not None:
             return
         if self._settings.credentials:
@@ -234,6 +234,7 @@ class GigaChatSyncClient(_BaseClient):
                 url=self._settings.auth_url,
                 credentials=self._settings.credentials,
                 scope=self._settings.scope,
+                custom_headers=custom_headers,
             )
             _logger.debug("OAUTH UPDATE TOKEN")
         elif self._settings.user and self._settings.password:
@@ -242,12 +243,13 @@ class GigaChatSyncClient(_BaseClient):
                     self._client,
                     user=self._settings.user,
                     password=self._settings.password,
+                    custom_headers=custom_headers,
                 )
             )
             _logger.debug("UPDATE TOKEN")
 
-    def get_token(self) -> AccessToken:
-        self._update_token()
+    def get_token(self, custom_headers: Optional[Dict[str, str]] = None) -> AccessToken:
+        self._update_token(custom_headers=custom_headers)
         return cast(AccessToken, self._access_token)
 
     def _decorator(self, call: Callable[..., T]) -> T:
@@ -261,66 +263,113 @@ class GigaChatSyncClient(_BaseClient):
             self._update_token()
         return call()
 
-    def tokens_count(self, input_: List[str], model: Optional[str] = None) -> List[TokensCount]:
+    def tokens_count(
+        self,
+        input_: List[str],
+        model: Optional[str] = None,
+        custom_headers: Optional[Dict[str, str]] = None,
+    ) -> List[TokensCount]:
         """Возвращает объект с информацией о количестве токенов"""
         if not model:
             model = self._settings.model or GIGACHAT_MODEL
         return self._decorator(
-            lambda: post_tokens_count.sync(self._client, input_=input_, model=model, access_token=self.token)
+            lambda: post_tokens_count.sync(
+                self._client, input_=input_, model=model, access_token=self.token, custom_headers=custom_headers
+            )
         )
 
-    def embeddings(self, texts: List[str], model: str = "Embeddings") -> Embeddings:
+    def embeddings(
+        self,
+        texts: List[str],
+        model: str = "Embeddings",
+        custom_headers: Optional[Dict[str, str]] = None,
+    ) -> Embeddings:
         """Возвращает эмбеддинги"""
         return self._decorator(
-            lambda: post_embeddings.sync(self._client, access_token=self.token, input_=texts, model=model)
+            lambda: post_embeddings.sync(
+                self._client, access_token=self.token, input_=texts, model=model, custom_headers=custom_headers
+            )
         )
 
-    def get_models(self) -> Models:
+    def get_models(self, custom_headers: Optional[Dict[str, str]] = None) -> Models:
         """Возвращает массив объектов с данными доступных моделей"""
-        return self._decorator(lambda: get_models.sync(self._client, access_token=self.token))
+        return self._decorator(
+            lambda: get_models.sync(self._client, access_token=self.token, custom_headers=custom_headers)
+        )
 
-    def get_model(self, model: str) -> Model:
+    def get_model(self, model: str, custom_headers: Optional[Dict[str, str]] = None) -> Model:
         """Возвращает объект с описанием указанной модели"""
-        return self._decorator(lambda: get_model.sync(self._client, model=model, access_token=self.token))
+        return self._decorator(
+            lambda: get_model.sync(self._client, model=model, access_token=self.token, custom_headers=custom_headers)
+        )
 
-    def get_image(self, file_id: str) -> Image:
+    def get_image(self, file_id: str, custom_headers: Optional[Dict[str, str]] = None) -> Image:
         """Возвращает изображение в кодировке base64"""
-        return self._decorator(lambda: get_image.sync(self._client, file_id=file_id, access_token=self.token))
+        return self._decorator(
+            lambda: get_image.sync(
+                self._client, file_id=file_id, access_token=self.token, custom_headers=custom_headers
+            )
+        )
 
     def upload_file(
         self,
         file: FileTypes,
         purpose: Literal["general", "assistant"] = "general",
+        custom_headers: Optional[Dict[str, str]] = None,
     ) -> UploadedFile:
         """Загружает файл"""
         return self._decorator(
-            lambda: post_files.sync(self._client, file=file, purpose=purpose, access_token=self.token)
+            lambda: post_files.sync(
+                self._client, file=file, purpose=purpose, access_token=self.token, custom_headers=custom_headers
+            )
         )
 
-    def get_file(self, file: str) -> UploadedFile:
+    def get_file(
+        self,
+        file: str,
+        custom_headers: Optional[Dict[str, str]] = None,
+    ) -> UploadedFile:
         """Получает информацию о файле"""
-        return self._decorator(lambda: get_file.sync(self._client, file=file, access_token=self.token))
+        return self._decorator(
+            lambda: get_file.sync(self._client, file=file, access_token=self.token, custom_headers=custom_headers)
+        )
 
-    def get_files(self) -> UploadedFiles:
+    def get_files(
+        self,
+        custom_headers: Optional[Dict[str, str]] = None,
+    ) -> UploadedFiles:
         """Получает загруженные файлы"""
-        return self._decorator(lambda: get_files.sync(self._client, access_token=self.token))
+        return self._decorator(
+            lambda: get_files.sync(self._client, access_token=self.token, custom_headers=custom_headers)
+        )
 
     def delete_file(
         self,
         file: str,
+        custom_headers: Optional[Dict[str, str]] = None,
     ) -> DeletedFile:
         """Удаляет файл"""
-        return self._decorator(lambda: post_files_delete.sync(self._client, file=file, access_token=self.token))
+        return self._decorator(
+            lambda: post_files_delete.sync(
+                self._client, file=file, access_token=self.token, custom_headers=custom_headers
+            )
+        )
 
-    def chat(self, payload: Union[Chat, Dict[str, Any], str]) -> ChatCompletion:
+    def chat(
+        self, payload: Union[Chat, Dict[str, Any], str], custom_headers: Optional[Dict[str, str]] = None
+    ) -> ChatCompletion:
         """Возвращает ответ модели с учетом переданных сообщений"""
         chat = _parse_chat(payload, self._settings)
-        return self._decorator(lambda: post_chat.sync(self._client, chat=chat, access_token=self.token))
+        return self._decorator(
+            lambda: post_chat.sync(self._client, chat=chat, access_token=self.token, custom_headers=custom_headers)
+        )
 
-    def get_balance(self) -> Balance:
+    def get_balance(self, custom_headers: Optional[Dict[str, str]] = None) -> Balance:
         """Метод для получения баланса доступных для использования токенов.
         Только для клиентов с предоплатой иначе http 403"""
-        return self._decorator(lambda: get_balance.sync(self._client, access_token=self.token))
+        return self._decorator(
+            lambda: get_balance.sync(self._client, access_token=self.token, custom_headers=custom_headers)
+        )
 
     def openapi_function_convert(self, openapi_function: str) -> OpenApiFunctions:
         """Конвертация описание функции в формате OpenAPI в gigachat функцию"""
@@ -330,14 +379,16 @@ class GigaChatSyncClient(_BaseClient):
             )
         )
 
-    def check_ai(self, text: str, model: str) -> AICheckResult:
+    def check_ai(self, text: str, model: str, custom_headers: Optional[Dict[str, str]] = None) -> AICheckResult:
         """Проверяет переданный текст на наличие содержимого, сгенерированного с помощью нейросетевых моделей."""
         return self._decorator(
-            lambda: post_ai_check.sync(self._client, input_=text, model=model, access_token=self.token)
+            lambda: post_ai_check.sync(
+                self._client, input_=text, model=model, access_token=self.token, custom_headers=custom_headers
+            )
         )
 
     def stream(
-        self, payload: Union[Chat, Dict[str, Any], str], headers: Optional[Dict[str, str]] = None
+        self, payload: Union[Chat, Dict[str, Any], str], custom_headers: Optional[Dict[str, str]] = None
     ) -> Iterator[ChatCompletionChunk]:
         """Возвращает ответ модели с учетом переданных сообщений"""
         chat = _parse_chat(payload, self._settings)
@@ -345,7 +396,9 @@ class GigaChatSyncClient(_BaseClient):
         if self._use_auth:
             if self._check_validity_token():
                 try:
-                    for chunk in stream_chat.sync(self._client, chat=chat, access_token=self.token, headers=headers):
+                    for chunk in stream_chat.sync(
+                        self._client, chat=chat, access_token=self.token, custom_headers=custom_headers
+                    ):
                         yield chunk
                     return
                 except AuthenticationError:
@@ -353,7 +406,7 @@ class GigaChatSyncClient(_BaseClient):
                     self._reset_token()
             self._update_token()
 
-        for chunk in stream_chat.sync(self._client, chat=chat, access_token=self.token):
+        for chunk in stream_chat.sync(self._client, chat=chat, access_token=self.token, custom_headers=custom_headers):
             yield chunk
 
 
@@ -383,7 +436,10 @@ class GigaChatAsyncClient(_BaseClient):
     async def __aexit__(self, *exc: Any) -> None:
         await self.aclose()
 
-    async def _aupdate_token(self) -> None:
+    async def _aupdate_token(
+        self,
+        custom_headers: Optional[Dict[str, str]] = None,
+    ) -> None:
         if authorization_cvar.get() is not None:
             return
         if self._settings.credentials:
@@ -392,6 +448,7 @@ class GigaChatAsyncClient(_BaseClient):
                 url=self._settings.auth_url,
                 credentials=self._settings.credentials,
                 scope=self._settings.scope,
+                custom_headers=custom_headers,
             )
             _logger.debug("OAUTH UPDATE TOKEN")
         elif self._settings.user and self._settings.password:
@@ -400,12 +457,16 @@ class GigaChatAsyncClient(_BaseClient):
                     self._aclient,
                     user=self._settings.user,
                     password=self._settings.password,
+                    custom_headers=custom_headers,
                 )
             )
             _logger.debug("UPDATE TOKEN")
 
-    async def aget_token(self) -> AccessToken:
-        await self._aupdate_token()
+    async def aget_token(
+        self,
+        custom_headers: Optional[Dict[str, str]] = None,
+    ) -> AccessToken:
+        await self._aupdate_token(custom_headers=custom_headers)
         return cast(AccessToken, self._access_token)
 
     async def _adecorator(self, acall: Callable[..., Awaitable[T]]) -> T:
@@ -419,54 +480,73 @@ class GigaChatAsyncClient(_BaseClient):
             await self._aupdate_token()
         return await acall()
 
-    async def atokens_count(self, input_: List[str], model: Optional[str] = None) -> List[TokensCount]:
+    async def atokens_count(
+        self,
+        input_: List[str],
+        model: Optional[str] = None,
+        custom_headers: Optional[Dict[str, str]] = None,
+    ) -> List[TokensCount]:
         """Возвращает объект с информацией о количестве токенов"""
         if not model:
             model = self._settings.model or GIGACHAT_MODEL
 
         async def _acall() -> List[TokensCount]:
-            return await post_tokens_count.asyncio(self._aclient, input_=input_, model=model, access_token=self.token)
+            return await post_tokens_count.asyncio(
+                self._aclient, input_=input_, model=model, access_token=self.token, custom_headers=custom_headers
+            )
 
         return await self._adecorator(_acall)
 
-    async def aembeddings(self, texts: List[str], model: str = "Embeddings") -> Embeddings:
+    async def aembeddings(
+        self, texts: List[str], model: str = "Embeddings", custom_headers: Optional[Dict[str, str]] = None
+    ) -> Embeddings:
         """Возвращает эмбеддинги"""
 
         async def _acall() -> Embeddings:
-            return await post_embeddings.asyncio(self._aclient, access_token=self.token, input_=texts, model=model)
+            return await post_embeddings.asyncio(
+                self._aclient, access_token=self.token, input_=texts, model=model, custom_headers=custom_headers
+            )
 
         return await self._adecorator(_acall)
 
-    async def aget_models(self) -> Models:
+    async def aget_models(self, custom_headers: Optional[Dict[str, str]] = None) -> Models:
         """Возвращает массив объектов с данными доступных моделей"""
 
         async def _acall() -> Models:
-            return await get_models.asyncio(self._aclient, access_token=self.token)
+            return await get_models.asyncio(self._aclient, access_token=self.token, custom_headers=custom_headers)
 
         return await self._adecorator(_acall)
 
-    async def aget_image(self, file_id: str) -> Image:
+    async def aget_image(self, file_id: str, custom_headers: Optional[Dict[str, str]] = None) -> Image:
         """Возвращает изображение в кодировке base64"""
 
         async def _acall() -> Image:
-            return await get_image.asyncio(self._aclient, file_id=file_id, access_token=self.token)
+            return await get_image.asyncio(
+                self._aclient, file_id=file_id, access_token=self.token, custom_headers=custom_headers
+            )
 
         return await self._adecorator(_acall)
 
-    async def aget_model(self, model: str) -> Model:
+    async def aget_model(self, model: str, custom_headers: Optional[Dict[str, str]] = None) -> Model:
         """Возвращает объект с описанием указанной модели"""
 
         async def _acall() -> Model:
-            return await get_model.asyncio(self._aclient, model=model, access_token=self.token)
+            return await get_model.asyncio(
+                self._aclient, model=model, access_token=self.token, custom_headers=custom_headers
+            )
 
         return await self._adecorator(_acall)
 
-    async def achat(self, payload: Union[Chat, Dict[str, Any], str]) -> ChatCompletion:
+    async def achat(
+        self, payload: Union[Chat, Dict[str, Any], str], custom_headers: Optional[Dict[str, str]] = None
+    ) -> ChatCompletion:
         """Возвращает ответ модели с учетом переданных сообщений"""
         chat = _parse_chat(payload, self._settings)
 
         async def _acall() -> ChatCompletion:
-            return await post_chat.asyncio(self._aclient, chat=chat, access_token=self.token)
+            return await post_chat.asyncio(
+                self._aclient, chat=chat, access_token=self.token, custom_headers=custom_headers
+            )
 
         return await self._adecorator(_acall)
 
@@ -474,47 +554,55 @@ class GigaChatAsyncClient(_BaseClient):
         self,
         file: FileTypes,
         purpose: Literal["general", "assistant"] = "general",
+        custom_headers: Optional[Dict[str, str]] = None,
     ) -> UploadedFile:
         """Загружает файл"""
 
         async def _acall() -> UploadedFile:
-            return await post_files.asyncio(self._aclient, file=file, purpose=purpose, access_token=self.token)
+            return await post_files.asyncio(
+                self._aclient, file=file, purpose=purpose, access_token=self.token, custom_headers=custom_headers
+            )
 
         return await self._adecorator(_acall)
 
-    async def aget_file(self, file: str) -> UploadedFile:
+    async def aget_file(self, file: str, custom_headers: Optional[Dict[str, str]] = None) -> UploadedFile:
         """Получает информацию о файле"""
 
         async def _acall() -> UploadedFile:
-            return await get_file.asyncio(self._aclient, file=file, access_token=self.token)
+            return await get_file.asyncio(
+                self._aclient, file=file, access_token=self.token, custom_headers=custom_headers
+            )
 
         return await self._adecorator(_acall)
 
-    async def aget_files(self) -> UploadedFiles:
+    async def aget_files(self, custom_headers: Optional[Dict[str, str]] = None) -> UploadedFiles:
         """Получает загруженные файлы"""
 
         async def _acall() -> UploadedFiles:
-            return await get_files.asyncio(self._aclient, access_token=self.token)
+            return await get_files.asyncio(self._aclient, access_token=self.token, custom_headers=custom_headers)
 
         return await self._adecorator(_acall)
 
     async def adelete_file(
         self,
         file: str,
+        custom_headers: Optional[Dict[str, str]] = None,
     ) -> DeletedFile:
         """Удаляет файл"""
 
         async def _acall() -> DeletedFile:
-            return await post_files_delete.asyncio(self._aclient, file=file, access_token=self.token)
+            return await post_files_delete.asyncio(
+                self._aclient, file=file, access_token=self.token, custom_headers=custom_headers
+            )
 
         return await self._adecorator(_acall)
 
-    async def aget_balance(self) -> Balance:
+    async def aget_balance(self, custom_headers: Optional[Dict[str, str]] = None) -> Balance:
         """Метод для получения баланса доступных для использования токенов.
         Только для клиентов с предоплатой иначе http 403"""
 
         async def _acall() -> Balance:
-            return await get_balance.asyncio(self._aclient, access_token=self.token)
+            return await get_balance.asyncio(self._aclient, access_token=self.token, custom_headers=custom_headers)
 
         return await self._adecorator(_acall)
 
@@ -528,22 +616,28 @@ class GigaChatAsyncClient(_BaseClient):
 
         return await self._adecorator(_acall)
 
-    async def acheck_ai(self, text: str, model: str) -> AICheckResult:
+    async def acheck_ai(self, text: str, model: str, custom_headers: Optional[Dict[str, str]] = None) -> AICheckResult:
         """Проверяет переданный текст на наличие содержимого, сгенерированного с помощью нейросетевых моделей."""
 
         async def _acall() -> AICheckResult:
-            return await post_ai_check.asyncio(self._aclient, input_=text, model=model, access_token=self.token)
+            return await post_ai_check.asyncio(
+                self._aclient, input_=text, model=model, access_token=self.token, custom_headers=custom_headers
+            )
 
         return await self._adecorator(_acall)
 
-    async def astream(self, payload: Union[Chat, Dict[str, Any], str]) -> AsyncIterator[ChatCompletionChunk]:
+    async def astream(
+        self, payload: Union[Chat, Dict[str, Any], str], custom_headers: Optional[Dict[str, str]] = None
+    ) -> AsyncIterator[ChatCompletionChunk]:
         """Возвращает ответ модели с учетом переданных сообщений"""
         chat = _parse_chat(payload, self._settings)
 
         if self._use_auth:
             if self._check_validity_token():
                 try:
-                    async for chunk in stream_chat.asyncio(self._aclient, chat=chat, access_token=self.token):
+                    async for chunk in stream_chat.asyncio(
+                        self._aclient, chat=chat, access_token=self.token, custom_headers=custom_headers
+                    ):
                         yield chunk
                     return
                 except AuthenticationError:
@@ -551,5 +645,7 @@ class GigaChatAsyncClient(_BaseClient):
                     self._reset_token()
             await self._aupdate_token()
 
-        async for chunk in stream_chat.asyncio(self._aclient, chat=chat, access_token=self.token):
+        async for chunk in stream_chat.asyncio(
+            self._aclient, chat=chat, access_token=self.token, custom_headers=custom_headers
+        ):
             yield chunk

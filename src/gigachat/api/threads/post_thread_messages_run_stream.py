@@ -81,6 +81,7 @@ def sync(
     thread_options: Optional[ThreadRunOptions] = None,
     update_interval: Optional[int] = None,
     access_token: Optional[str] = None,
+    custom_headers: Optional[Dict[str, str]] = None,
 ) -> Iterator[ThreadCompletionChunk]:
     kwargs = _get_kwargs(
         messages=messages,
@@ -90,6 +91,7 @@ def sync(
         thread_options=thread_options,
         update_interval=update_interval,
         access_token=access_token,
+        custom_headers=custom_headers,
     )
     with client.stream(**kwargs) as response:
         _check_response(response)

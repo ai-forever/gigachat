@@ -29,9 +29,10 @@ def sync(
     *,
     threads_ids: List[str],
     access_token: Optional[str] = None,
+    custom_headers: Optional[Dict[str, str]] = None,
 ) -> Threads:
     """Получение перечня тредов по идентификаторам"""
-    kwargs = _get_kwargs(threads_ids=threads_ids, access_token=access_token)
+    kwargs = _get_kwargs(threads_ids=threads_ids, access_token=access_token, custom_headers=custom_headers)
     response = client.request(**kwargs)
     return build_response(response, Threads)
 
@@ -41,8 +42,9 @@ async def asyncio(
     *,
     threads_ids: List[str],
     access_token: Optional[str] = None,
+    custom_headers: Optional[Dict[str, str]] = None,
 ) -> Threads:
     """Получение перечня тредов по идентификаторам"""
-    kwargs = _get_kwargs(threads_ids=threads_ids, access_token=access_token)
+    kwargs = _get_kwargs(threads_ids=threads_ids, access_token=access_token, custom_headers=custom_headers)
     response = await client.request(**kwargs)
     return build_response(response, Threads)

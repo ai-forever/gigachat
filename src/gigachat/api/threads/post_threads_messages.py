@@ -41,6 +41,7 @@ def sync(
     thread_id: Optional[str] = None,
     assistant_id: Optional[str] = None,
     access_token: Optional[str] = None,
+    custom_headers: Optional[Dict[str, str]] = None,
 ) -> ThreadMessagesResponse:
     """Добавление сообщений к треду без запуска"""
     kwargs = _get_kwargs(
@@ -49,6 +50,7 @@ def sync(
         thread_id=thread_id,
         assistant_id=assistant_id,
         access_token=access_token,
+        custom_headers=custom_headers,
     )
     response = client.request(**kwargs)
     return build_response(response, ThreadMessagesResponse)
@@ -62,6 +64,7 @@ async def asyncio(
     thread_id: Optional[str] = None,
     assistant_id: Optional[str] = None,
     access_token: Optional[str] = None,
+    custom_headers: Optional[Dict[str, str]] = None,
 ) -> ThreadMessagesResponse:
     """Добавление сообщений к треду без запуска"""
     kwargs = _get_kwargs(
@@ -70,6 +73,7 @@ async def asyncio(
         thread_id=thread_id,
         assistant_id=assistant_id,
         access_token=access_token,
+        custom_headers=custom_headers,
     )
     response = await client.request(**kwargs)
     return build_response(response, ThreadMessagesResponse)

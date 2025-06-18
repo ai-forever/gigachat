@@ -76,6 +76,8 @@ AI_CHECK = get_json("ai_check.json")
 FILE = get_bytes("image.jpg")
 
 HEADERS_STREAM = {"Content-Type": "text/event-stream"}
+CUSTOM_HEADER_VALUE = "some_value"
+CUSTOM_HEADERS = {"X-Custom-Header": CUSTOM_HEADER_VALUE}
 
 CREDENTIALS = "NmIwNzhlODgtNDlkNC00ZjFmLTljMjMtYjFiZTZjMjVmNTRlOmU3NWJlNjVhLTk4YjAtNGY0Ni1iOWVhLTljMDkwZGE4YTk4MQ=="
 
@@ -159,46 +161,51 @@ def test_get_tokens_count(httpx_mock: HTTPXMock) -> None:
     httpx_mock.add_response(url=TOKENS_COUNT_URL, json=TOKENS_COUNT)
 
     with GigaChatSyncClient(base_url=BASE_URL) as client:
-        response = client.tokens_count(input_=["123"], model="GigaChat:latest")
+        response = client.tokens_count(input_=["123"], model="GigaChat:latest", custom_headers=CUSTOM_HEADERS)
     assert isinstance(response, List)
     for row in response:
         assert isinstance(row, TokensCount)
+    assert httpx_mock.get_requests(url=TOKENS_COUNT_URL)[0].headers.get("X-Custom-Header") == CUSTOM_HEADER_VALUE
 
 
 def test_get_models(httpx_mock: HTTPXMock) -> None:
     httpx_mock.add_response(url=MODELS_URL, json=MODELS)
 
     with GigaChatSyncClient(base_url=BASE_URL) as client:
-        response = client.get_models()
+        response = client.get_models(custom_headers=CUSTOM_HEADERS)
 
     assert isinstance(response, Models)
+    assert httpx_mock.get_requests(url=MODELS_URL)[0].headers.get("X-Custom-Header") == CUSTOM_HEADER_VALUE
 
 
 def test_get_model(httpx_mock: HTTPXMock) -> None:
     httpx_mock.add_response(url=MODEL_URL, json=MODEL)
 
     with GigaChatSyncClient(base_url=BASE_URL) as client:
-        response = client.get_model("model")
+        response = client.get_model("model", custom_headers=CUSTOM_HEADERS)
 
     assert isinstance(response, Model)
+    assert httpx_mock.get_requests(url=MODEL_URL)[0].headers.get("X-Custom-Header") == CUSTOM_HEADER_VALUE
 
 
 def test_chat(httpx_mock: HTTPXMock) -> None:
     httpx_mock.add_response(url=CHAT_URL, json=CHAT_COMPLETION)
 
     with GigaChatSyncClient(base_url=BASE_URL, model="model") as client:
-        response = client.chat("text")
+        response = client.chat("text", custom_headers=CUSTOM_HEADERS)
 
     assert isinstance(response, ChatCompletion)
+    assert httpx_mock.get_requests(url=CHAT_URL)[0].headers.get("X-Custom-Header") == CUSTOM_HEADER_VALUE
 
 
 def test_upload_file(httpx_mock: HTTPXMock) -> None:
     httpx_mock.add_response(url=FILES_URL, json=FILES)
 
     with GigaChatSyncClient(base_url=BASE_URL, model="model") as client:
-        response = client.upload_file(file=FILE)
+        response = client.upload_file(file=FILE, custom_headers=CUSTOM_HEADERS)
 
     assert isinstance(response, UploadedFile)
+    assert httpx_mock.get_requests(url=FILES_URL)[0].headers.get("X-Custom-Header") == CUSTOM_HEADER_VALUE
 
 
 def test_chat_access_token(httpx_mock: HTTPXMock) -> None:
@@ -206,9 +213,10 @@ def test_chat_access_token(httpx_mock: HTTPXMock) -> None:
     access_token = "access_token"
 
     with GigaChatSyncClient(base_url=BASE_URL, access_token=access_token) as client:
-        response = client.chat(CHAT)
+        response = client.chat(CHAT, custom_headers=CUSTOM_HEADERS)
 
     assert isinstance(response, ChatCompletion)
+    assert httpx_mock.get_requests(url=CHAT_URL)[0].headers.get("X-Custom-Header") == CUSTOM_HEADER_VALUE
 
 
 def test_chat_credentials(httpx_mock: HTTPXMock) -> None:
@@ -333,21 +341,23 @@ def test_embeddings(httpx_mock: HTTPXMock) -> None:
     httpx_mock.add_response(url=EMBEDDINGS_URL, json=EMBEDDINGS)
 
     with GigaChatSyncClient(base_url=BASE_URL) as client:
-        response = client.embeddings(texts=["text"], model="model")
+        response = client.embeddings(texts=["text"], model="model", custom_headers=CUSTOM_HEADERS)
     assert isinstance(response, Embeddings)
     for row in response.data:
         assert isinstance(row, Embedding)
+    assert httpx_mock.get_requests(url=EMBEDDINGS_URL)[0].headers.get("X-Custom-Header") == CUSTOM_HEADER_VALUE
 
 
 def test_stream(httpx_mock: HTTPXMock) -> None:
     httpx_mock.add_response(url=CHAT_URL, content=CHAT_COMPLETION_STREAM, headers=HEADERS_STREAM)
 
     with GigaChatSyncClient(base_url=BASE_URL) as client:
-        response = list(client.stream(CHAT))
+        response = list(client.stream(CHAT, custom_headers=CUSTOM_HEADERS))
 
     assert len(response) == 3
     assert all(isinstance(chunk, ChatCompletionChunk) for chunk in response)
     assert response[2].choices[0].finish_reason == "stop"
+    assert httpx_mock.get_requests(url=CHAT_URL)[0].headers.get("X-Custom-Header") == CUSTOM_HEADER_VALUE
 
 
 def test_stream_access_token(httpx_mock: HTTPXMock) -> None:
@@ -410,23 +420,25 @@ def test_get_token_credentials(httpx_mock: HTTPXMock) -> None:
         auth_url=AUTH_URL,
         credentials=CREDENTIALS,
     )
-    access_token = model.get_token()
+    access_token = model.get_token(custom_headers=CUSTOM_HEADERS)
 
     assert model._access_token is not None
     assert model._access_token.access_token == ACCESS_TOKEN["access_token"]
     assert model._access_token.expires_at == ACCESS_TOKEN["expires_at"]
     assert access_token.access_token == ACCESS_TOKEN["access_token"]
     assert access_token.expires_at == ACCESS_TOKEN["expires_at"]
+    assert httpx_mock.get_requests(url=AUTH_URL)[0].headers.get("X-Custom-Header") == CUSTOM_HEADER_VALUE
 
 
 def test_balance(httpx_mock: HTTPXMock) -> None:
     httpx_mock.add_response(url=BALANCE_URL, json=BALANCE)
 
     with GigaChatSyncClient(base_url=BASE_URL) as client:
-        response = client.get_balance()
+        response = client.get_balance(custom_headers=CUSTOM_HEADERS)
     assert isinstance(response, Balance)
     for row in response.balance:
         assert isinstance(row, BalanceValue)
+    assert httpx_mock.get_requests(url=BALANCE_URL)[0].headers.get("X-Custom-Header") == CUSTOM_HEADER_VALUE
 
 
 def test_convert_functions(httpx_mock: HTTPXMock) -> None:
@@ -443,33 +455,37 @@ def test_get_file(httpx_mock: HTTPXMock) -> None:
     httpx_mock.add_response(url=GET_FILE_URL, json=GET_FILE)
 
     with GigaChatSyncClient(base_url=BASE_URL) as client:
-        response = client.get_file(file="1")
+        response = client.get_file(file="1", custom_headers=CUSTOM_HEADERS)
     assert isinstance(response, UploadedFile)
+    assert httpx_mock.get_requests(url=GET_FILE_URL)[0].headers.get("X-Custom-Header") == CUSTOM_HEADER_VALUE
 
 
 def test_get_files(httpx_mock: HTTPXMock) -> None:
     httpx_mock.add_response(url=GET_FILES_URL, json=GET_FILES)
 
     with GigaChatSyncClient(base_url=BASE_URL) as client:
-        response = client.get_files()
+        response = client.get_files(custom_headers=CUSTOM_HEADERS)
     assert isinstance(response, UploadedFiles)
     assert len(response.data) == 2
+    assert httpx_mock.get_requests(url=GET_FILES_URL)[0].headers.get("X-Custom-Header") == CUSTOM_HEADER_VALUE
 
 
 def test_delete_file(httpx_mock: HTTPXMock) -> None:
     httpx_mock.add_response(url=FILE_DELETE_URL, json=FILE_DELETE)
 
     with GigaChatSyncClient(base_url=BASE_URL) as client:
-        response = client.delete_file(file="1")
+        response = client.delete_file(file="1", custom_headers=CUSTOM_HEADERS)
     assert isinstance(response, DeletedFile)
+    assert httpx_mock.get_requests(url=FILE_DELETE_URL)[0].headers.get("X-Custom-Header") == CUSTOM_HEADER_VALUE
 
 
 def test_check_ai(httpx_mock: HTTPXMock) -> None:
     httpx_mock.add_response(url=AI_CHECK_URL, json=AI_CHECK)
 
     with GigaChatSyncClient(base_url=BASE_URL) as client:
-        response = client.check_ai(text="", model="")
+        response = client.check_ai(text="", model="", custom_headers=CUSTOM_HEADERS)
     assert isinstance(response, AICheckResult)
+    assert httpx_mock.get_requests(url=AI_CHECK_URL)[0].headers.get("X-Custom-Header") == CUSTOM_HEADER_VALUE
 
 
 @pytest.mark.asyncio()
@@ -477,9 +493,10 @@ async def test_aget_models(httpx_mock: HTTPXMock) -> None:
     httpx_mock.add_response(url=MODELS_URL, json=MODELS)
 
     async with GigaChatAsyncClient(base_url=BASE_URL) as client:
-        response = await client.aget_models()
+        response = await client.aget_models(custom_headers=CUSTOM_HEADERS)
 
     assert isinstance(response, Models)
+    assert httpx_mock.get_requests(url=MODELS_URL)[0].headers.get("X-Custom-Header") == CUSTOM_HEADER_VALUE
 
 
 @pytest.mark.asyncio()
@@ -487,11 +504,12 @@ async def test_atokens_count(httpx_mock: HTTPXMock) -> None:
     httpx_mock.add_response(url=TOKENS_COUNT_URL, json=TOKENS_COUNT)
 
     async with GigaChatAsyncClient(base_url=BASE_URL) as client:
-        response = await client.atokens_count(input_=["text"], model="GigaChat:latest")
+        response = await client.atokens_count(input_=["text"], model="GigaChat:latest", custom_headers=CUSTOM_HEADERS)
 
     assert isinstance(response, List)
     for row in response:
         assert isinstance(row, TokensCount)
+    assert httpx_mock.get_requests(url=TOKENS_COUNT_URL)[0].headers.get("X-Custom-Header") == CUSTOM_HEADER_VALUE
 
 
 @pytest.mark.asyncio()

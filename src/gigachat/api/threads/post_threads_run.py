@@ -32,9 +32,12 @@ def sync(
     thread_id: str,
     thread_options: Optional[ThreadRunOptions] = None,
     access_token: Optional[str] = None,
+    custom_headers: Optional[Dict[str, str]] = None,
 ) -> ThreadRunResponse:
     """Получить результат run треда"""
-    kwargs = _get_kwargs(thread_id=thread_id, thread_options=thread_options, access_token=access_token)
+    kwargs = _get_kwargs(
+        thread_id=thread_id, thread_options=thread_options, access_token=access_token, custom_headers=custom_headers
+    )
     response = client.request(**kwargs)
     return build_response(response, ThreadRunResponse)
 
@@ -45,8 +48,11 @@ async def asyncio(
     thread_id: str,
     thread_options: Optional[ThreadRunOptions] = None,
     access_token: Optional[str] = None,
+    custom_headers: Optional[Dict[str, str]] = None,
 ) -> ThreadRunResponse:
     """Получить результат run треда"""
-    kwargs = _get_kwargs(thread_id=thread_id, thread_options=thread_options, access_token=access_token)
+    kwargs = _get_kwargs(
+        thread_id=thread_id, thread_options=thread_options, access_token=access_token, custom_headers=custom_headers
+    )
     response = await client.request(**kwargs)
     return build_response(response, ThreadRunResponse)
