@@ -3,7 +3,14 @@ import pytest
 from pytest_httpx import HTTPXMock
 
 from gigachat.api import get_model
-from gigachat.context import authorization_cvar, operation_id_cvar, request_id_cvar, service_id_cvar, session_id_cvar
+from gigachat.context import (
+    authorization_cvar,
+    custom_headers_cvar,
+    operation_id_cvar,
+    request_id_cvar,
+    service_id_cvar,
+    session_id_cvar,
+)
 from gigachat.exceptions import AuthenticationError, ResponseError
 from gigachat.models import Model
 
@@ -21,6 +28,7 @@ def test__kwargs_context_vars() -> None:
     token_session_id_cvar = session_id_cvar.set("session_id_cvar")
     token_service_id_cvar = service_id_cvar.set("service_id_cvar")
     token_operation_id_cvar = operation_id_cvar.set("operation_id_cvar")
+    token_custom_headers_cvar = custom_headers_cvar.set({"custom_headers_cvar": "val"})
 
     assert get_model._get_kwargs(model="model")
 
@@ -29,6 +37,7 @@ def test__kwargs_context_vars() -> None:
     session_id_cvar.reset(token_session_id_cvar)
     service_id_cvar.reset(token_service_id_cvar)
     operation_id_cvar.reset(token_operation_id_cvar)
+    custom_headers_cvar.reset(token_custom_headers_cvar)
 
 
 def test_sync(httpx_mock: HTTPXMock) -> None:
