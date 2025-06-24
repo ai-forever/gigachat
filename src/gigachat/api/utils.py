@@ -5,6 +5,7 @@ from typing import Dict, Optional, Type, TypeVar
 import httpx
 
 from gigachat.context import (
+    agent_id_cvar,
     authorization_cvar,
     client_id_cvar,
     custom_headers_cvar,
@@ -12,6 +13,7 @@ from gigachat.context import (
     request_id_cvar,
     service_id_cvar,
     session_id_cvar,
+    trace_id_cvar,
 )
 from gigachat.exceptions import AuthenticationError, ResponseError
 from gigachat.pydantic_v1 import BaseModel
@@ -29,29 +31,25 @@ def build_headers(access_token: Optional[str] = None) -> Dict[str, str]:
 
     headers["User-Agent"] = USER_AGENT
 
-    authorization = authorization_cvar.get()
-    session_id = session_id_cvar.get()
-    request_id = request_id_cvar.get()
-    service_id = service_id_cvar.get()
-    operation_id = operation_id_cvar.get()
-    client_id = client_id_cvar.get()
-    custom_headers = custom_headers_cvar.get()
+    context_vars = {
+        "Authorization": authorization_cvar,
+        "X-Session-ID": session_id_cvar,
+        "X-Request-ID": request_id_cvar,
+        "X-Service-ID": service_id_cvar,
+        "X-Operation-ID": operation_id_cvar,
+        "X-Client-ID": client_id_cvar,
+        "X-Trace-ID": trace_id_cvar,
+        "X-Agent-ID": agent_id_cvar,
+    }
 
-    if authorization:
-        headers["Authorization"] = authorization
-    if session_id:
-        headers["X-Session-ID"] = session_id
-    if request_id:
-        headers["X-Request-ID"] = request_id
-    if service_id:
-        headers["X-Service-ID"] = service_id
-    if operation_id:
-        headers["X-Operation-ID"] = operation_id
-    if client_id:
-        headers["X-Client-ID"] = client_id
+    for header, cvar in context_vars.items():
+        value = cvar.get()
+        if value:
+            headers[header] = value
+
+    custom_headers = custom_headers_cvar.get()
     if custom_headers:
-        for key, value in custom_headers.items():
-            headers[key] = value
+        headers.update(custom_headers)
     return headers
 
 

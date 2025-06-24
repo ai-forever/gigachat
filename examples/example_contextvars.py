@@ -13,6 +13,8 @@ headers = {
     "X-Request-ID": "8324244b-7133-4d30-a328-31d8466e5502",
     "X-Service-ID": "my_custom_service",
     "X-Operation-ID": "my_custom_qna",
+    "X-Trace-ID": "trace-id-1234567890",
+    "X-Agent-ID": "agent-id-1234567890",
 }
 
 # Установка переменных для клиента
@@ -22,6 +24,8 @@ with GigaChat(verify_ssl_certs=False) as giga:
     gigachat.context.request_id_cvar.set(headers.get("X-Request-ID"))
     gigachat.context.service_id_cvar.set(headers.get("X-Service-ID"))
     gigachat.context.operation_id_cvar.set(headers.get("X-Operation-ID"))
+    gigachat.context.trace_id_cvar.set(headers.get("X-Trace-ID"))
+    gigachat.context.agent_id_cvar.set(headers.get("X-Agent-ID"))
     gigachat.context.custom_headers_cvar.set({"X-Custom-Header": "CustomValue"})
 
     response = giga.chat("Какие факторы влияют на стоимость страховки на дом?")
