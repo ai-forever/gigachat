@@ -20,11 +20,15 @@ def _get_kwargs(
     headers["Accept"] = EVENT_STREAM
     headers["Cache-Control"] = "no-store"
     headers["Content-Type"] = "application/json"
+    json_data = chat.dict(exclude_none=True, by_alias=True)
+    fields = json_data.pop("additional_fields", None)
+    if fields:
+        json_data = {**json_data, **fields}
 
     return {
         "method": "POST",
         "url": "/chat/completions",
-        "content": json.dumps({**chat.dict(exclude_none=True, by_alias=True), **{"stream": True}}, ensure_ascii=False),
+        "content": json.dumps({**json_data, **{"stream": True}}, ensure_ascii=False),
         "headers": headers,
     }
 

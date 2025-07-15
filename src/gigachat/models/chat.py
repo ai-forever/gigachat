@@ -38,3 +38,5 @@ class Chat(BaseModel):
     """Флаги, включающие особенные фичи"""
     storage: Optional[Storage] = None
     """Данные для хранения контекста на стороне GigaChat"""
+    additional_fields: Optional[dict] = None
+    """Дополнительные поля, которые прокидываются в API /chat/completions"""

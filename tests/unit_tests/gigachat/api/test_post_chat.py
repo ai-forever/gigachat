@@ -1,4 +1,5 @@
 import asyncio
+import json
 
 import httpx
 import pytest
@@ -61,6 +62,20 @@ def test_sync(httpx_mock: HTTPXMock) -> None:
     assert isinstance(response, ChatCompletion)
 
 
+def test_sync_additional_fields(httpx_mock: HTTPXMock) -> None:
+    httpx_mock.add_response(url=MOCK_URL, json=CHAT_COMPLETION)
+
+    json_data = get_json("chat.json")
+    json_data["additional_fields"] = {"additional_field": "val"}
+    chat = Chat.parse_obj(json_data)
+
+    with httpx.Client(base_url=BASE_URL) as client:
+        post_chat.sync(client, chat=chat)
+    requests = httpx_mock.get_requests()
+    request_content = json.loads(requests[0].content.decode("utf-8"))
+    assert request_content["additional_field"] == "val"
+
+
 def test_sync_value_error(httpx_mock: HTTPXMock) -> None:
     httpx_mock.add_response(url=MOCK_URL, json={})
 
@@ -106,6 +121,21 @@ async def test_asyncio(httpx_mock: HTTPXMock) -> None:
         response = await post_chat.asyncio(client, chat=CHAT)
 
     assert isinstance(response, ChatCompletion)
+
+
+@pytest.mark.asyncio()
+async def test_async_additional_fields(httpx_mock: HTTPXMock) -> None:
+    httpx_mock.add_response(url=MOCK_URL, json=CHAT_COMPLETION)
+
+    json_data = get_json("chat.json")
+    json_data["additional_fields"] = {"additional_field": "val"}
+    chat = Chat.parse_obj(json_data)
+
+    async with httpx.AsyncClient(base_url=BASE_URL) as client:
+        await post_chat.asyncio(client, chat=chat)
+    requests = httpx_mock.get_requests()
+    request_content = json.loads(requests[0].content.decode("utf-8"))
+    assert request_content["additional_field"] == "val"
 
 
 def test_headers_in_request(httpx_mock: HTTPXMock) -> None:

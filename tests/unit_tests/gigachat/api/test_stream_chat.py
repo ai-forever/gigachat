@@ -1,3 +1,4 @@
+import json
 import logging
 
 import httpx
@@ -63,6 +64,20 @@ def test_sync(httpx_mock: HTTPXMock) -> None:
     assert response[2].choices[0].finish_reason == "stop"
 
 
+def test_sync_additional_fields(httpx_mock: HTTPXMock) -> None:
+    httpx_mock.add_response(url=MOCK_URL, content=CHAT_COMPLETION_STREAM, headers=HEADERS_STREAM)
+    json_data = get_json("chat.json")
+    json_data["additional_fields"] = {"additional_field": "val"}
+    chat = Chat.parse_obj(json_data)
+
+    with httpx.Client(base_url=BASE_URL) as client:
+        list(stream_chat.sync(client, chat=chat))
+
+    requests = httpx_mock.get_requests()
+    request_content = json.loads(requests[0].content.decode("utf-8"))
+    assert request_content["additional_field"] == "val"
+
+
 def test_sync_content_type_error(httpx_mock: HTTPXMock) -> None:
     httpx_mock.add_response(url=MOCK_URL, content=CHAT_COMPLETION_STREAM)
 
@@ -126,3 +141,19 @@ async def test_asyncio(httpx_mock: HTTPXMock) -> None:
     assert len(response) == 3
     assert all(isinstance(chunk, ChatCompletionChunk) for chunk in response)
     assert response[2].choices[0].finish_reason == "stop"
+
+
+@pytest.mark.asyncio()
+async def test_asyncio_additional_fields(httpx_mock: HTTPXMock) -> None:
+    httpx_mock.add_response(url=MOCK_URL, content=CHAT_COMPLETION_STREAM, headers=HEADERS_STREAM)
+    json_data = get_json("chat.json")
+    json_data["additional_fields"] = {"additional_field": "val"}
+    chat = Chat.parse_obj(json_data)
+
+    async with httpx.AsyncClient(base_url=BASE_URL) as client:
+        async for chunk in stream_chat.asyncio(client, chat=chat):
+            pass
+
+    requests = httpx_mock.get_requests()
+    request_content = json.loads(requests[0].content.decode("utf-8"))
+    assert request_content["additional_field"] == "val"
