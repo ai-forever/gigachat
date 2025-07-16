@@ -14,11 +14,14 @@ def _get_kwargs(
 ) -> Dict[str, Any]:
     headers = build_headers(access_token)
     headers["Content-Type"] = "application/json"
-
+    json_data = chat.dict(exclude_none=True, by_alias=True, exclude={"stream"})
+    fields = json_data.pop("additional_fields", None)
+    if fields:
+        json_data = {**json_data, **fields}
     return {
         "method": "POST",
         "url": "/chat/completions",
-        "content": json.dumps(chat.dict(exclude_none=True, by_alias=True, exclude={"stream"}), ensure_ascii=False),
+        "content": json.dumps(json_data, ensure_ascii=False),
         "headers": headers,
     }
 
