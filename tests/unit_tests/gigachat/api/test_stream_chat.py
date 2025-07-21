@@ -151,7 +151,7 @@ async def test_asyncio_additional_fields(httpx_mock: HTTPXMock) -> None:
     chat = Chat.parse_obj(json_data)
 
     async with httpx.AsyncClient(base_url=BASE_URL) as client:
-        async for chunk in stream_chat.asyncio(client, chat=chat):
+        async for _chunk in stream_chat.asyncio(client, chat=chat):
             pass
 
     requests = httpx_mock.get_requests()

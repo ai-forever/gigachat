@@ -41,8 +41,9 @@ def build_response(response: httpx.Response) -> AccessToken:
     if response.status_code == HTTPStatus.OK:
         json_data = response.json()
         if "tok" in json_data:
-            return AccessToken(x_headers=build_x_headers(response), access_token=json_data["tok"],
-                               expires_at=json_data["exp"])
+            return AccessToken(
+                x_headers=build_x_headers(response), access_token=json_data["tok"], expires_at=json_data["exp"]
+            )
         else:
             return AccessToken(x_headers=build_x_headers(response), **json_data)
     elif response.status_code == HTTPStatus.UNAUTHORIZED:
