@@ -22,6 +22,8 @@ class Messages(BaseModel):
     """DEPRECATED: Данные для контекста"""
     functions_state_id: Optional[str] = None
     """ID сообщений функций генерирующий изображения/видео"""
+    reasoning_content: Optional[str] = None
+    """Рассуждения модели"""
     id_: Optional[Any] = Field(alias="id", default=None)
 
     class Config:
