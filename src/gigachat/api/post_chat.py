@@ -4,6 +4,7 @@ from typing import Any, Dict, Optional
 import httpx
 
 from gigachat.api.utils import build_headers, build_response
+from gigachat.context import chat_url_cvar
 from gigachat.models import Chat, ChatCompletion
 
 
@@ -16,11 +17,12 @@ def _get_kwargs(
     headers["Content-Type"] = "application/json"
     json_data = chat.dict(exclude_none=True, by_alias=True, exclude={"stream"})
     fields = json_data.pop("additional_fields", None)
+
     if fields:
         json_data = {**json_data, **fields}
     return {
         "method": "POST",
-        "url": "/chat/completions",
+        "url": chat_url_cvar.get(),
         "content": json.dumps(json_data, ensure_ascii=False),
         "headers": headers,
     }

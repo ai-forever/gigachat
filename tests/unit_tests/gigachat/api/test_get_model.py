@@ -6,6 +6,7 @@ from gigachat.api import get_model
 from gigachat.context import (
     agent_id_cvar,
     authorization_cvar,
+    chat_url_cvar,
     custom_headers_cvar,
     operation_id_cvar,
     request_id_cvar,
@@ -33,6 +34,7 @@ def test__kwargs_context_vars() -> None:
     token_trace_id_cvar = trace_id_cvar.set("trace_id_cvar")
     token_agent_id_cvar = agent_id_cvar.set("agent_id_cvar")
     token_custom_headers_cvar = custom_headers_cvar.set({"custom_headers_cvar": "val"})
+    token_chat_url_cvar = chat_url_cvar.set("/chat/completions")
 
     assert get_model._get_kwargs(model="model")
 
@@ -44,6 +46,7 @@ def test__kwargs_context_vars() -> None:
     trace_id_cvar.reset(token_trace_id_cvar)
     agent_id_cvar.reset(token_agent_id_cvar)
     custom_headers_cvar.reset(token_custom_headers_cvar)
+    chat_url_cvar.reset(token_chat_url_cvar)
 
 
 def test_sync(httpx_mock: HTTPXMock) -> None:
