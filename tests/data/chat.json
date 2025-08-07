@@ -3,7 +3,8 @@
   "messages": [
     {
       "role": "user",
-      "content": "Когда уже ИИ захватит этот мир?"
+      "content": "Когда уже ИИ захватит этот мир?",
+      "reasoning_effort": "medium"
     },
     {
       "role": "assistant",

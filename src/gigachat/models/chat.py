@@ -41,4 +41,4 @@ class Chat(BaseModel):
     additional_fields: Optional[dict] = None
     """Дополнительные поля, которые прокидываются в API /chat/completions"""
     reasoning_effort: Optional[Literal["low", "medium", "high"]] = None
-    """Сила рассуждений"""
+    """Глубина рассуждений"""
