@@ -5,6 +5,7 @@ from typing import Any, AsyncIterator, Dict, Iterator, Optional
 import httpx
 
 from gigachat.api.utils import build_headers, build_x_headers, parse_chunk
+from gigachat.context import chat_url_cvar
 from gigachat.exceptions import AuthenticationError, ResponseError
 from gigachat.models import Chat, ChatCompletionChunk
 
@@ -27,7 +28,7 @@ def _get_kwargs(
 
     return {
         "method": "POST",
-        "url": "/chat/completions",
+        "url": chat_url_cvar.get(),
         "content": json.dumps({**json_data, **{"stream": True}}, ensure_ascii=False),
         "headers": headers,
     }

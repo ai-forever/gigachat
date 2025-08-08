@@ -19,3 +19,5 @@ agent_id_cvar: ContextVar[Optional[str]] = ContextVar("agent_id_cvar", default=N
 """Уникальный ID агента"""
 custom_headers_cvar: ContextVar[Optional[Dict[str, str]]] = ContextVar("custom_headers_cvar", default=None)
 """Дополнительные HTTP-заголовки, которые будут добавлены к запросу"""
+chat_url_cvar: ContextVar[str] = ContextVar("chat_url_cvar", default="/chat/completions")
+"""Пользовательский URL для chat/completions, если требуется использовать другой URL для чата"""
