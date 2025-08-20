@@ -25,7 +25,7 @@ GigaChat — это Python-библиотека для работы с [REST API
 Для установки библиотеки используйте менеджер пакетов pip:
 
 ```sh
-pip install gigachat
+pip install langchain-gigachat
 ```
 
 ## Быстрый старт
@@ -47,7 +47,7 @@ pip install gigachat
 Пример показывает как отправить простой запрос на генерацию с помощью библиотеки GigaChat:
 
 ```py
-from gigachat import GigaChat
+from langchain_gigachat.chat_models import GigaChat
 
 # Укажите ключ авторизации, полученный в личном кабинете, в интерфейсе проекта GigaChat API
 with GigaChat(credentials="ваш_ключ_авторизации", verify_ssl_certs=False) as giga:
