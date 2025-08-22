@@ -14,3 +14,5 @@ class MessagesChunk(BaseModel):
     """Текст сообщения"""
     function_call: Optional[FunctionCall] = None
     """Вызов функции"""
+    functions_state_id: str = None
+    """Идентификатор вызова функции"""
