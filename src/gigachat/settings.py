@@ -40,6 +40,7 @@ class Settings(BaseSettings):
     key_file: Optional[str] = None
     key_file_password: Optional[str] = None
     flags: Optional[List[str]] = None
+    max_connections: Optional[int] = None
 
     class Config:
         env_prefix = ENV_PREFIX

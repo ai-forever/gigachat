@@ -1,3 +1,4 @@
+import asyncio
 import ssl
 from typing import List, Optional
 
@@ -764,3 +765,13 @@ async def test_acheck_ai(httpx_mock: HTTPXMock) -> None:
     async with GigaChatAsyncClient(base_url=BASE_URL) as client:
         response = await client.acheck_ai(text="", model="")
     assert isinstance(response, AICheckResult)
+
+
+@pytest.mark.asyncio()
+async def test_achat_max_connections(httpx_mock: HTTPXMock) -> None:
+    for _ in range(3):
+        httpx_mock.add_response(url=CHAT_URL, json=CHAT_COMPLETION)
+    async with GigaChatAsyncClient(base_url=BASE_URL, max_connections=2) as client:
+        tasks = [client.achat(f"text {i}") for i in range(3)]
+        responses = await asyncio.gather(*tasks)
+    assert all(isinstance(r, ChatCompletion) for r in responses)

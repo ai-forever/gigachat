@@ -1,3 +1,4 @@
+import asyncio
 import logging
 import ssl
 from functools import cached_property
@@ -90,6 +91,14 @@ def _get_kwargs(settings: Settings) -> Dict[str, Any]:
     return kwargs
 
 
+def _get_async_max_connections_kwargs(settings: Settings) -> Dict[str, Any]:
+    """Настройки максимального количество конкурентных запросов к API GIGACHAT"""
+    kwargs = {
+        "max_connections": settings.max_connections,
+    }
+    return kwargs
+
+
 def _get_auth_kwargs(settings: Settings) -> Dict[str, Any]:
     """Настройки для подключения к серверу авторизации OAuth 2.0"""
     kwargs = {
@@ -146,6 +155,7 @@ class _BaseClient:
         key_file_password: Optional[str] = None,
         ssl_context: Optional[ssl.SSLContext] = None,
         flags: Optional[List[str]] = None,
+        max_connections: Optional[int] = None,
         **_unknown_kwargs: Any,
     ) -> None:
         if _unknown_kwargs:
@@ -170,6 +180,7 @@ class _BaseClient:
             "key_file_password": key_file_password,
             "ssl_context": ssl_context,
             "flags": flags,
+            "max_connections": max_connections,
         }
         config = {k: v for k, v in kwargs.items() if v is not None}
         self._settings = Settings(**config)
@@ -355,6 +366,18 @@ class GigaChatSyncClient(_BaseClient):
             yield chunk
 
 
+class ThrottledAsyncClient(httpx.AsyncClient):
+    """httpx.AsyncClient с семафором"""
+    def __init__(self, max_connections: Optional[int] = None, **kwargs) -> None:
+        super().__init__(**kwargs)
+        self.max_connections = max_connections
+        self._semaphore: asyncio.Semaphore = asyncio.Semaphore(max_connections)
+
+    async def request(self, *args, **kwargs) -> httpx.Response:
+        async with self._semaphore:
+            return await super().request(*args, **kwargs)
+
+
 class GigaChatAsyncClient(_BaseClient):
     """Асинхронный клиент GigaChat"""
 
@@ -365,10 +388,18 @@ class GigaChatAsyncClient(_BaseClient):
 
     @cached_property
     def _aclient(self) -> httpx.AsyncClient:
+        if self._settings.max_connections is not None and self._settings.max_connections > 0:
+            return ThrottledAsyncClient(
+                **_get_kwargs(self._settings), **_get_async_max_connections_kwargs(self._settings)
+            )
         return httpx.AsyncClient(**_get_kwargs(self._settings))
 
     @cached_property
     def _auth_aclient(self) -> httpx.AsyncClient:
+        if self._settings.max_connections is not None and self._settings.max_connections > 0:
+            return ThrottledAsyncClient(
+                **_get_auth_kwargs(self._settings), **_get_async_max_connections_kwargs(self._settings)
+            )
         return httpx.AsyncClient(**_get_auth_kwargs(self._settings))
 
     async def aclose(self) -> None:
