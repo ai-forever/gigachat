@@ -1,11 +1,12 @@
 import asyncio
-from typing import Any, Dict, List
+from typing import List
 
 import httpx
 import pytest
 from pytest_httpx import HTTPXMock
 
 from gigachat.client import GigaChatAsyncClient, GigaChatSyncClient, _get_auth_kwargs, _get_kwargs
+from gigachat.exceptions import ResponseError
 from gigachat.models import ChatCompletion
 from gigachat.settings import Settings
 
@@ -14,9 +15,11 @@ from ...utils import get_json
 BASE_URL = "http://base_url"
 AUTH_URL = "http://auth_url"
 CHAT_URL = f"{BASE_URL}/chat/completions"
+TOKEN_URL = f"{BASE_URL}/token"
 
 ACCESS_TOKEN = get_json("access_token.json")
 CHAT_COMPLETION = get_json("chat_completion.json")
+TOKEN = get_json("token.json")
 CREDENTIALS = "NmIwNzhlODgtNDlkNC00ZjFmLTljMjMtYjFiZTZjMjVmNTRlOmU3NWJlNjVhLTk4YjAtNGY0Ni1iOWVhLTljMDkwZGE4YTk4MQ=="
 
 
@@ -225,3 +228,132 @@ def test_constructor_overrides_env_max_auth_connections(monkeypatch: pytest.Monk
         response = client.chat("test")
 
     assert isinstance(response, ChatCompletion)
+
+
+def test_sync_429_retry_on_token_request(httpx_mock: HTTPXMock) -> None:
+    """Test that 429 errors on token requests are retried with exponential backoff"""
+    httpx_mock.add_response(url=TOKEN_URL, status_code=429, json={"status": 429, "message": "Too Many Requests"})
+    httpx_mock.add_response(url=TOKEN_URL, json=TOKEN)
+    httpx_mock.add_response(url=CHAT_URL, json=CHAT_COMPLETION)
+
+    with GigaChatSyncClient(
+        base_url=BASE_URL,
+        user="test_user",
+        password="test_password",
+    ) as client:
+        response = client.chat("test")
+
+    assert isinstance(response, ChatCompletion)
+
+
+def test_sync_429_retry_on_oauth_request(httpx_mock: HTTPXMock) -> None:
+    """Test that 429 errors on OAuth requests are retried with exponential backoff"""
+    httpx_mock.add_response(url=AUTH_URL, status_code=429, json={"status": 429, "message": "Too Many Requests"})
+    httpx_mock.add_response(url=AUTH_URL, json=ACCESS_TOKEN)
+    httpx_mock.add_response(url=CHAT_URL, json=CHAT_COMPLETION)
+
+    with GigaChatSyncClient(
+        base_url=BASE_URL,
+        auth_url=AUTH_URL,
+        credentials=CREDENTIALS,
+    ) as client:
+        response = client.chat("test")
+
+    assert isinstance(response, ChatCompletion)
+
+
+def test_sync_429_max_retries_exceeded(httpx_mock: HTTPXMock) -> None:
+    """Test that 429 errors raise ResponseError after max retries"""
+    for _ in range(3):
+        httpx_mock.add_response(url=TOKEN_URL, status_code=429, json={"status": 429, "message": "Too Many Requests"})
+
+    with GigaChatSyncClient(
+        base_url=BASE_URL,
+        user="test_user",
+        password="test_password",
+    ) as client:
+        with pytest.raises(ResponseError) as exc_info:
+            client.chat("test")
+
+        assert exc_info.value.args[1] == 429
+
+
+def test_sync_429_respects_retry_after_header(httpx_mock: HTTPXMock) -> None:
+    """Test that 429 retry logic respects Retry-After header"""
+    httpx_mock.add_response(
+        url=TOKEN_URL,
+        status_code=429,
+        json={"status": 429, "message": "Too Many Requests"},
+        headers={"Retry-After": "0.1"},
+    )
+    httpx_mock.add_response(url=TOKEN_URL, json=TOKEN)
+    httpx_mock.add_response(url=CHAT_URL, json=CHAT_COMPLETION)
+
+    with GigaChatSyncClient(
+        base_url=BASE_URL,
+        user="test_user",
+        password="test_password",
+    ) as client:
+        response = client.chat("test")
+
+    assert isinstance(response, ChatCompletion)
+
+
+@pytest.mark.asyncio()
+async def test_async_429_retry_on_token_request(httpx_mock: HTTPXMock) -> None:
+    """Test that 429 errors on async token requests are retried with exponential backoff"""
+    httpx_mock.add_response(url=TOKEN_URL, status_code=429, json={"status": 429, "message": "Too Many Requests"})
+    httpx_mock.add_response(url=TOKEN_URL, json=TOKEN)
+    httpx_mock.add_response(url=CHAT_URL, json=CHAT_COMPLETION)
+
+    async with GigaChatAsyncClient(
+        base_url=BASE_URL,
+        user="test_user",
+        password="test_password",
+    ) as client:
+        response = await client.achat("test")
+
+    assert isinstance(response, ChatCompletion)
+
+
+@pytest.mark.asyncio()
+async def test_async_429_retry_on_oauth_request(httpx_mock: HTTPXMock) -> None:
+    """Test that 429 errors on async OAuth requests are retried with exponential backoff"""
+    httpx_mock.add_response(url=AUTH_URL, status_code=429, json={"status": 429, "message": "Too Many Requests"})
+    httpx_mock.add_response(url=AUTH_URL, json=ACCESS_TOKEN)
+    httpx_mock.add_response(url=CHAT_URL, json=CHAT_COMPLETION)
+
+    async with GigaChatAsyncClient(
+        base_url=BASE_URL,
+        auth_url=AUTH_URL,
+        credentials=CREDENTIALS,
+    ) as client:
+        response = await client.achat("test")
+
+    assert isinstance(response, ChatCompletion)
+
+
+@pytest.mark.asyncio()
+async def test_async_429_max_retries_exceeded(httpx_mock: HTTPXMock) -> None:
+    """Test that 429 errors raise ResponseError after max retries in async"""
+    for _ in range(3):
+        httpx_mock.add_response(url=TOKEN_URL, status_code=429, json={"status": 429, "message": "Too Many Requests"})
+
+    async with GigaChatAsyncClient(
+        base_url=BASE_URL,
+        user="test_user",
+        password="test_password",
+    ) as client:
+        with pytest.raises(ResponseError) as exc_info:
+            await client.achat("test")
+
+        assert exc_info.value.args[1] == 429
+
+
+def test_get_auth_kwargs_includes_base_url() -> None:
+    """Test that _get_auth_kwargs includes base_url for token endpoint"""
+    settings = Settings(base_url=BASE_URL)
+    kwargs = _get_auth_kwargs(settings)
+
+    assert "base_url" in kwargs
+    assert kwargs["base_url"] == BASE_URL

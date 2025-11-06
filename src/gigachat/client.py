@@ -1,5 +1,9 @@
+import asyncio
 import logging
+import random
 import ssl
+import threading
+import time
 from functools import cached_property
 from typing import (
     Any,
@@ -39,7 +43,7 @@ from gigachat.api import (
 )
 from gigachat.assistants import AssistantsAsyncClient, AssistantsSyncClient
 from gigachat.context import authorization_cvar
-from gigachat.exceptions import AuthenticationError
+from gigachat.exceptions import AuthenticationError, ResponseError
 from gigachat.models import (
     AccessToken,
     AICheckResult,
@@ -95,6 +99,7 @@ def _get_kwargs(settings: Settings) -> Dict[str, Any]:
 def _get_auth_kwargs(settings: Settings) -> Dict[str, Any]:
     """Настройки для подключения к серверу авторизации OAuth 2.0"""
     kwargs = {
+        "base_url": settings.base_url,
         "verify": settings.verify_ssl_certs,
         "timeout": httpx.Timeout(settings.timeout),
     }
@@ -214,6 +219,7 @@ class GigaChatSyncClient(_BaseClient):
         super().__init__(**kwargs)
         self.assistants = AssistantsSyncClient(self)
         self.threads = ThreadsSyncClient(self)
+        self._sync_token_lock = threading.Lock()
 
     @cached_property
     def _client(self) -> httpx.Client:
@@ -236,23 +242,56 @@ class GigaChatSyncClient(_BaseClient):
     def _update_token(self) -> None:
         if authorization_cvar.get() is not None:
             return
-        if self._settings.credentials:
-            self._access_token = post_auth.sync(
-                self._auth_client,
-                url=self._settings.auth_url,
-                credentials=self._settings.credentials,
-                scope=self._settings.scope,
-            )
-            _logger.debug("OAUTH UPDATE TOKEN")
-        elif self._settings.user and self._settings.password:
-            self._access_token = _build_access_token(
-                post_token.sync(
-                    self._client,
-                    user=self._settings.user,
-                    password=self._settings.password,
-                )
-            )
-            _logger.debug("UPDATE TOKEN")
+
+        with self._sync_token_lock:
+            if self._check_validity_token():
+                return
+
+            max_retries = 3
+            base_delay = 0.5
+
+            for attempt in range(max_retries):
+                try:
+                    if self._settings.credentials:
+                        self._access_token = post_auth.sync(
+                            self._auth_client,
+                            url=self._settings.auth_url,
+                            credentials=self._settings.credentials,
+                            scope=self._settings.scope,
+                        )
+                        _logger.debug("OAUTH UPDATE TOKEN")
+                    elif self._settings.user and self._settings.password:
+                        self._access_token = _build_access_token(
+                            post_token.sync(
+                                self._auth_client,
+                                user=self._settings.user,
+                                password=self._settings.password,
+                            )
+                        )
+                        _logger.debug("UPDATE TOKEN")
+                    return
+                except (AuthenticationError, ResponseError) as e:
+                    status_code = e.args[1] if len(e.args) > 1 else None
+                    if status_code == 429 and attempt < max_retries - 1:
+                        retry_after = None
+                        headers = e.args[3] if len(e.args) > 3 else None
+                        if headers and "retry-after" in headers:
+                            try:
+                                retry_after = float(headers["retry-after"])
+                            except (ValueError, TypeError):
+                                pass
+
+                        if retry_after:
+                            delay = retry_after
+                        else:
+                            delay = base_delay * (2**attempt) + random.uniform(0, 0.1)
+
+                        _logger.debug(
+                            f"Rate limited (429), retrying in {delay:.2f}s " f"(attempt {attempt + 1}/{max_retries})"
+                        )
+                        time.sleep(delay)
+                    else:
+                        raise
 
     def get_token(self) -> AccessToken:
         self._update_token()
@@ -370,6 +409,7 @@ class GigaChatAsyncClient(_BaseClient):
         super().__init__(**kwargs)
         self.a_assistants = AssistantsAsyncClient(self)
         self.a_threads = ThreadsAsyncClient(self)
+        self._async_token_lock = asyncio.Lock()
 
     @cached_property
     def _aclient(self) -> httpx.AsyncClient:
@@ -392,23 +432,56 @@ class GigaChatAsyncClient(_BaseClient):
     async def _aupdate_token(self) -> None:
         if authorization_cvar.get() is not None:
             return
-        if self._settings.credentials:
-            self._access_token = await post_auth.asyncio(
-                self._auth_aclient,
-                url=self._settings.auth_url,
-                credentials=self._settings.credentials,
-                scope=self._settings.scope,
-            )
-            _logger.debug("OAUTH UPDATE TOKEN")
-        elif self._settings.user and self._settings.password:
-            self._access_token = _build_access_token(
-                await post_token.asyncio(
-                    self._aclient,
-                    user=self._settings.user,
-                    password=self._settings.password,
-                )
-            )
-            _logger.debug("UPDATE TOKEN")
+
+        async with self._async_token_lock:
+            if self._check_validity_token():
+                return
+
+            max_retries = 3
+            base_delay = 0.5
+
+            for attempt in range(max_retries):
+                try:
+                    if self._settings.credentials:
+                        self._access_token = await post_auth.asyncio(
+                            self._auth_aclient,
+                            url=self._settings.auth_url,
+                            credentials=self._settings.credentials,
+                            scope=self._settings.scope,
+                        )
+                        _logger.debug("OAUTH UPDATE TOKEN")
+                    elif self._settings.user and self._settings.password:
+                        self._access_token = _build_access_token(
+                            await post_token.asyncio(
+                                self._auth_aclient,
+                                user=self._settings.user,
+                                password=self._settings.password,
+                            )
+                        )
+                        _logger.debug("UPDATE TOKEN")
+                    return
+                except (AuthenticationError, ResponseError) as e:
+                    status_code = e.args[1] if len(e.args) > 1 else None
+                    if status_code == 429 and attempt < max_retries - 1:
+                        retry_after = None
+                        headers = e.args[3] if len(e.args) > 3 else None
+                        if headers and "retry-after" in headers:
+                            try:
+                                retry_after = float(headers["retry-after"])
+                            except (ValueError, TypeError):
+                                pass
+
+                        if retry_after:
+                            delay = retry_after
+                        else:
+                            delay = base_delay * (2**attempt) + random.uniform(0, 0.1)
+
+                        _logger.debug(
+                            f"Rate limited (429), retrying in {delay:.2f}s " f"(attempt {attempt + 1}/{max_retries})"
+                        )
+                        await asyncio.sleep(delay)
+                    else:
+                        raise
 
     async def aget_token(self) -> AccessToken:
         await self._aupdate_token()
