@@ -306,6 +306,37 @@ class GigaChatSyncClient(_BaseClient):
                     _logger.debug("AUTHENTICATION ERROR")
                     self._reset_token()
             self._update_token()
+
+        max_retries = 3
+        base_delay = 0.5
+
+        for attempt in range(max_retries):
+            try:
+                return call()
+            except ResponseError as e:
+                status_code = e.args[1] if len(e.args) > 1 else None
+                if status_code == 429 and attempt < max_retries - 1:
+                    retry_after = None
+                    headers = e.args[3] if len(e.args) > 3 else None
+                    if headers and "retry-after" in headers:
+                        try:
+                            retry_after = float(headers["retry-after"])
+                        except (ValueError, TypeError):
+                            pass
+
+                    if retry_after:
+                        delay = retry_after
+                    else:
+                        delay = base_delay * (2**attempt) + random.uniform(0, 0.1)
+
+                    _logger.debug(
+                        f"Rate limited (429) on API call, retrying in {delay:.2f}s "
+                        f"(attempt {attempt + 1}/{max_retries})"
+                    )
+                    time.sleep(delay)
+                else:
+                    raise
+
         return call()
 
     def tokens_count(self, input_: List[str], model: Optional[str] = None) -> List[TokensCount]:
@@ -496,6 +527,37 @@ class GigaChatAsyncClient(_BaseClient):
                     _logger.debug("AUTHENTICATION ERROR")
                     self._reset_token()
             await self._aupdate_token()
+
+        max_retries = 3
+        base_delay = 0.5
+
+        for attempt in range(max_retries):
+            try:
+                return await acall()
+            except ResponseError as e:
+                status_code = e.args[1] if len(e.args) > 1 else None
+                if status_code == 429 and attempt < max_retries - 1:
+                    retry_after = None
+                    headers = e.args[3] if len(e.args) > 3 else None
+                    if headers and "retry-after" in headers:
+                        try:
+                            retry_after = float(headers["retry-after"])
+                        except (ValueError, TypeError):
+                            pass
+
+                    if retry_after:
+                        delay = retry_after
+                    else:
+                        delay = base_delay * (2**attempt) + random.uniform(0, 0.1)
+
+                    _logger.debug(
+                        f"Rate limited (429) on API call, retrying in {delay:.2f}s "
+                        f"(attempt {attempt + 1}/{max_retries})"
+                    )
+                    await asyncio.sleep(delay)
+                else:
+                    raise
+
         return await acall()
 
     async def atokens_count(self, input_: List[str], model: Optional[str] = None) -> List[TokensCount]:
