@@ -90,6 +90,13 @@ def test__get_kwargs() -> None:
     assert _get_kwargs(settings)
 
 
+def test__get_kwargs_limits() -> None:
+    settings = Settings(max_connections=3)
+    limits = _get_kwargs(settings)["limits"]
+    assert limits.max_connections == 3
+    assert limits.max_keepalive_connections == 3
+
+
 def test__get_kwargs_ssl() -> None:
     context = _make_ssl_context()
     settings = Settings(ssl_context=context)
@@ -99,6 +106,13 @@ def test__get_kwargs_ssl() -> None:
 def test__get_auth_kwargs() -> None:
     settings = Settings(ca_bundle_file="ca.pem", cert_file="tls.pem", key_file="tls.key")
     assert _get_auth_kwargs(settings)
+
+
+def test__get_auth_kwargs_limits() -> None:
+    settings = Settings(max_auth_connections=2)
+    limits = _get_auth_kwargs(settings)["limits"]
+    assert limits.max_connections == 2
+    assert limits.max_keepalive_connections == 2
 
 
 def test__get_auth_kwargs_ssl() -> None:

@@ -77,6 +77,11 @@ def _get_kwargs(settings: Settings) -> Dict[str, Any]:
         "verify": settings.verify_ssl_certs,
         "timeout": httpx.Timeout(settings.timeout),
     }
+    if settings.max_connections is not None:
+        kwargs["limits"] = httpx.Limits(
+            max_connections=settings.max_connections,
+            max_keepalive_connections=settings.max_connections,
+        )
     if settings.ssl_context:
         kwargs["verify"] = settings.ssl_context
     if settings.ca_bundle_file:
@@ -96,6 +101,11 @@ def _get_auth_kwargs(settings: Settings) -> Dict[str, Any]:
         "verify": settings.verify_ssl_certs,
         "timeout": httpx.Timeout(settings.timeout),
     }
+    if settings.max_auth_connections is not None:
+        kwargs["limits"] = httpx.Limits(
+            max_connections=settings.max_auth_connections,
+            max_keepalive_connections=settings.max_auth_connections,
+        )
     if settings.ssl_context:
         kwargs["verify"] = settings.ssl_context
     if settings.ca_bundle_file:
@@ -146,6 +156,8 @@ class _BaseClient:
         key_file_password: Optional[str] = None,
         ssl_context: Optional[ssl.SSLContext] = None,
         flags: Optional[List[str]] = None,
+        max_connections: Optional[int] = None,
+        max_auth_connections: Optional[int] = None,
         **_unknown_kwargs: Any,
     ) -> None:
         if _unknown_kwargs:
@@ -170,6 +182,8 @@ class _BaseClient:
             "key_file_password": key_file_password,
             "ssl_context": ssl_context,
             "flags": flags,
+            "max_connections": max_connections,
+            "max_auth_connections": max_auth_connections,
         }
         config = {k: v for k, v in kwargs.items() if v is not None}
         self._settings = Settings(**config)
