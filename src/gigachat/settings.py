@@ -43,8 +43,6 @@ class Settings(BaseSettings):
 
     max_connections: Optional[int] = None
     """Максимальное количество одновременных соединений к API GigaChat"""
-    max_auth_connections: Optional[int] = None
-    """Максимальное количество одновременных соединений к серверу авторизации"""
 
     class Config:
         env_prefix = ENV_PREFIX

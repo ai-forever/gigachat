@@ -1,9 +1,7 @@
 import asyncio
 import logging
-import random
 import ssl
 import threading
-import time
 from functools import cached_property
 from typing import (
     Any,
@@ -43,7 +41,7 @@ from gigachat.api import (
 )
 from gigachat.assistants import AssistantsAsyncClient, AssistantsSyncClient
 from gigachat.context import authorization_cvar
-from gigachat.exceptions import AuthenticationError, ResponseError
+from gigachat.exceptions import AuthenticationError
 from gigachat.models import (
     AccessToken,
     AICheckResult,
@@ -107,8 +105,6 @@ def _get_auth_kwargs(settings: Settings) -> Dict[str, Any]:
         kwargs["verify"] = settings.ssl_context
     if settings.ca_bundle_file:
         kwargs["verify"] = settings.ca_bundle_file
-    if settings.max_auth_connections is not None:
-        kwargs["limits"] = httpx.Limits(max_connections=settings.max_auth_connections)
     return kwargs
 
 
@@ -156,7 +152,6 @@ class _BaseClient:
         ssl_context: Optional[ssl.SSLContext] = None,
         flags: Optional[List[str]] = None,
         max_connections: Optional[int] = None,
-        max_auth_connections: Optional[int] = None,
         **_unknown_kwargs: Any,
     ) -> None:
         if _unknown_kwargs:
@@ -182,7 +177,6 @@ class _BaseClient:
             "ssl_context": ssl_context,
             "flags": flags,
             "max_connections": max_connections,
-            "max_auth_connections": max_auth_connections,
         }
         config = {k: v for k, v in kwargs.items() if v is not None}
         self._settings = Settings(**config)
@@ -247,51 +241,23 @@ class GigaChatSyncClient(_BaseClient):
             if self._check_validity_token():
                 return
 
-            max_retries = 3
-            base_delay = 0.5
-
-            for attempt in range(max_retries):
-                try:
-                    if self._settings.credentials:
-                        self._access_token = post_auth.sync(
-                            self._auth_client,
-                            url=self._settings.auth_url,
-                            credentials=self._settings.credentials,
-                            scope=self._settings.scope,
-                        )
-                        _logger.debug("OAUTH UPDATE TOKEN")
-                    elif self._settings.user and self._settings.password:
-                        self._access_token = _build_access_token(
-                            post_token.sync(
-                                self._auth_client,
-                                user=self._settings.user,
-                                password=self._settings.password,
-                            )
-                        )
-                        _logger.debug("UPDATE TOKEN")
-                    return
-                except (AuthenticationError, ResponseError) as e:
-                    status_code = e.args[1] if len(e.args) > 1 else None
-                    if status_code == 429 and attempt < max_retries - 1:
-                        retry_after = None
-                        headers = e.args[3] if len(e.args) > 3 else None
-                        if headers and "retry-after" in headers:
-                            try:
-                                retry_after = float(headers["retry-after"])
-                            except (ValueError, TypeError):
-                                pass
-
-                        if retry_after:
-                            delay = retry_after
-                        else:
-                            delay = base_delay * (2**attempt) + random.uniform(0, 0.1)
-
-                        _logger.debug(
-                            f"Rate limited (429), retrying in {delay:.2f}s " f"(attempt {attempt + 1}/{max_retries})"
-                        )
-                        time.sleep(delay)
-                    else:
-                        raise
+            if self._settings.credentials:
+                self._access_token = post_auth.sync(
+                    self._auth_client,
+                    url=self._settings.auth_url,
+                    credentials=self._settings.credentials,
+                    scope=self._settings.scope,
+                )
+                _logger.debug("OAUTH UPDATE TOKEN")
+            elif self._settings.user and self._settings.password:
+                self._access_token = _build_access_token(
+                    post_token.sync(
+                        self._auth_client,
+                        user=self._settings.user,
+                        password=self._settings.password,
+                    )
+                )
+                _logger.debug("UPDATE TOKEN")
 
     def get_token(self) -> AccessToken:
         self._update_token()
@@ -306,37 +272,6 @@ class GigaChatSyncClient(_BaseClient):
                     _logger.debug("AUTHENTICATION ERROR")
                     self._reset_token()
             self._update_token()
-
-        max_retries = 3
-        base_delay = 0.5
-
-        for attempt in range(max_retries):
-            try:
-                return call()
-            except ResponseError as e:
-                status_code = e.args[1] if len(e.args) > 1 else None
-                if status_code == 429 and attempt < max_retries - 1:
-                    retry_after = None
-                    headers = e.args[3] if len(e.args) > 3 else None
-                    if headers and "retry-after" in headers:
-                        try:
-                            retry_after = float(headers["retry-after"])
-                        except (ValueError, TypeError):
-                            pass
-
-                    if retry_after:
-                        delay = retry_after
-                    else:
-                        delay = base_delay * (2**attempt) + random.uniform(0, 0.1)
-
-                    _logger.debug(
-                        f"Rate limited (429) on API call, retrying in {delay:.2f}s "
-                        f"(attempt {attempt + 1}/{max_retries})"
-                    )
-                    time.sleep(delay)
-                else:
-                    raise
-
         return call()
 
     def tokens_count(self, input_: List[str], model: Optional[str] = None) -> List[TokensCount]:
@@ -468,51 +403,23 @@ class GigaChatAsyncClient(_BaseClient):
             if self._check_validity_token():
                 return
 
-            max_retries = 3
-            base_delay = 0.5
-
-            for attempt in range(max_retries):
-                try:
-                    if self._settings.credentials:
-                        self._access_token = await post_auth.asyncio(
-                            self._auth_aclient,
-                            url=self._settings.auth_url,
-                            credentials=self._settings.credentials,
-                            scope=self._settings.scope,
-                        )
-                        _logger.debug("OAUTH UPDATE TOKEN")
-                    elif self._settings.user and self._settings.password:
-                        self._access_token = _build_access_token(
-                            await post_token.asyncio(
-                                self._auth_aclient,
-                                user=self._settings.user,
-                                password=self._settings.password,
-                            )
-                        )
-                        _logger.debug("UPDATE TOKEN")
-                    return
-                except (AuthenticationError, ResponseError) as e:
-                    status_code = e.args[1] if len(e.args) > 1 else None
-                    if status_code == 429 and attempt < max_retries - 1:
-                        retry_after = None
-                        headers = e.args[3] if len(e.args) > 3 else None
-                        if headers and "retry-after" in headers:
-                            try:
-                                retry_after = float(headers["retry-after"])
-                            except (ValueError, TypeError):
-                                pass
-
-                        if retry_after:
-                            delay = retry_after
-                        else:
-                            delay = base_delay * (2**attempt) + random.uniform(0, 0.1)
-
-                        _logger.debug(
-                            f"Rate limited (429), retrying in {delay:.2f}s " f"(attempt {attempt + 1}/{max_retries})"
-                        )
-                        await asyncio.sleep(delay)
-                    else:
-                        raise
+            if self._settings.credentials:
+                self._access_token = await post_auth.asyncio(
+                    self._auth_aclient,
+                    url=self._settings.auth_url,
+                    credentials=self._settings.credentials,
+                    scope=self._settings.scope,
+                )
+                _logger.debug("OAUTH UPDATE TOKEN")
+            elif self._settings.user and self._settings.password:
+                self._access_token = _build_access_token(
+                    await post_token.asyncio(
+                        self._auth_aclient,
+                        user=self._settings.user,
+                        password=self._settings.password,
+                    )
+                )
+                _logger.debug("UPDATE TOKEN")
 
     async def aget_token(self) -> AccessToken:
         await self._aupdate_token()
@@ -527,37 +434,6 @@ class GigaChatAsyncClient(_BaseClient):
                     _logger.debug("AUTHENTICATION ERROR")
                     self._reset_token()
             await self._aupdate_token()
-
-        max_retries = 3
-        base_delay = 0.5
-
-        for attempt in range(max_retries):
-            try:
-                return await acall()
-            except ResponseError as e:
-                status_code = e.args[1] if len(e.args) > 1 else None
-                if status_code == 429 and attempt < max_retries - 1:
-                    retry_after = None
-                    headers = e.args[3] if len(e.args) > 3 else None
-                    if headers and "retry-after" in headers:
-                        try:
-                            retry_after = float(headers["retry-after"])
-                        except (ValueError, TypeError):
-                            pass
-
-                    if retry_after:
-                        delay = retry_after
-                    else:
-                        delay = base_delay * (2**attempt) + random.uniform(0, 0.1)
-
-                    _logger.debug(
-                        f"Rate limited (429) on API call, retrying in {delay:.2f}s "
-                        f"(attempt {attempt + 1}/{max_retries})"
-                    )
-                    await asyncio.sleep(delay)
-                else:
-                    raise
-
         return await acall()
 
     async def atokens_count(self, input_: List[str], model: Optional[str] = None) -> List[TokensCount]:
