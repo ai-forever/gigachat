@@ -1,7 +1,9 @@
+import asyncio
 import ssl
 from typing import List, Optional
 
 import pytest
+import httpx
 from pytest_httpx import HTTPXMock
 from pytest_mock import MockerFixture
 
@@ -10,6 +12,7 @@ from gigachat.client import (
     GIGACHAT_MODEL,
     GigaChatAsyncClient,
     GigaChatSyncClient,
+    ThrottledAsyncClient,
     _get_auth_kwargs,
     _get_kwargs,
     _logger,
@@ -105,6 +108,53 @@ def test__get_auth_kwargs_ssl() -> None:
     context = _make_ssl_context()
     settings = Settings(ssl_context=context)
     assert _get_kwargs(settings)["verify"] == context
+
+
+@pytest.mark.asyncio()
+async def test_async_client_uses_throttled_client() -> None:
+    async with GigaChatAsyncClient(base_url=BASE_URL) as client:
+        assert isinstance(client._aclient, ThrottledAsyncClient)
+        assert isinstance(client._auth_aclient, ThrottledAsyncClient)
+
+
+@pytest.mark.asyncio()
+async def test_async_client_limits_configuration() -> None:
+    async with GigaChatAsyncClient(
+        base_url=BASE_URL,
+        max_connections=2,
+        max_auth_connections=3,
+    ) as client:
+        assert client._aclient.max_connections_limit == 2
+        assert client._auth_aclient.max_connections_limit == 3
+
+
+@pytest.mark.asyncio()
+async def test_throttled_async_client_limits_requests(mocker: MockerFixture) -> None:
+    concurrency = 0
+    max_seen = 0
+
+    async def fake_request(
+        self: httpx.AsyncClient, *args: object, **kwargs: object
+    ) -> httpx.Response:
+        nonlocal concurrency, max_seen
+        concurrency += 1
+        max_seen = max(max_seen, concurrency)
+        await asyncio.sleep(0)
+        concurrency -= 1
+        return httpx.Response(200, request=httpx.Request("GET", "http://test"))
+
+    mocker.patch.object(httpx.AsyncClient, "request", fake_request)
+
+    client = GigaChatAsyncClient(base_url=BASE_URL, max_connections=1)
+    try:
+        await asyncio.gather(
+            client._aclient.request("GET", "http://test"),
+            client._aclient.request("GET", "http://test"),
+        )
+    finally:
+        await client.aclose()
+
+    assert max_seen == 1
 
 
 @pytest.mark.parametrize(

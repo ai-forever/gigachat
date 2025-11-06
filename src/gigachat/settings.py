@@ -32,6 +32,12 @@ class Settings(BaseSettings):
     timeout: float = 30.0
     verify_ssl_certs: bool = True
 
+    max_connections: Optional[int] = None
+    """Максимальное количество одновременных запросов"""
+
+    max_auth_connections: Optional[int] = None
+    """Максимальное количество одновременных запросов авторизации"""
+
     verbose: bool = False
 
     ssl_context: Optional[ssl.SSLContext] = None

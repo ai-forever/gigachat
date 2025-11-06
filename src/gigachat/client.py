@@ -1,5 +1,7 @@
+import asyncio
 import logging
 import ssl
+from contextlib import asynccontextmanager
 from functools import cached_property
 from typing import (
     Any,
@@ -122,6 +124,47 @@ def _build_access_token(token: Token) -> AccessToken:
     return AccessToken(access_token=token.tok, expires_at=token.exp, x_headers=token.x_headers)
 
 
+class ThrottledAsyncClient(httpx.AsyncClient):
+    """Async client that limits the number of concurrent requests."""
+
+    def __init__(self, *args: Any, max_connections: Optional[int] = None, **kwargs: Any) -> None:
+        if max_connections is not None and max_connections <= 0:
+            raise ValueError("max_connections must be a positive integer")
+        super().__init__(*args, **kwargs)
+        self._max_connections_limit = max_connections
+        self._semaphore: Optional[asyncio.Semaphore]
+        if max_connections is None:
+            self._semaphore = None
+        else:
+            self._semaphore = asyncio.Semaphore(max_connections)
+
+    @property
+    def max_connections_limit(self) -> Optional[int]:
+        return self._max_connections_limit
+
+    async def request(self, *args: Any, **kwargs: Any) -> httpx.Response:  # type: ignore[override]
+        if self._semaphore is None:
+            return await super().request(*args, **kwargs)
+        await self._semaphore.acquire()
+        try:
+            return await super().request(*args, **kwargs)
+        finally:
+            self._semaphore.release()
+
+    @asynccontextmanager
+    async def stream(self, *args: Any, **kwargs: Any) -> AsyncIterator[httpx.Response]:  # type: ignore[override]
+        if self._semaphore is None:
+            async with super().stream(*args, **kwargs) as response:
+                yield response
+            return
+        await self._semaphore.acquire()
+        try:
+            async with super().stream(*args, **kwargs) as response:
+                yield response
+        finally:
+            self._semaphore.release()
+
+
 class _BaseClient:
     _access_token: Optional[AccessToken] = None
 
@@ -146,6 +189,8 @@ class _BaseClient:
         key_file_password: Optional[str] = None,
         ssl_context: Optional[ssl.SSLContext] = None,
         flags: Optional[List[str]] = None,
+        max_connections: Optional[int] = None,
+        max_auth_connections: Optional[int] = None,
         **_unknown_kwargs: Any,
     ) -> None:
         if _unknown_kwargs:
@@ -170,6 +215,8 @@ class _BaseClient:
             "key_file_password": key_file_password,
             "ssl_context": ssl_context,
             "flags": flags,
+            "max_connections": max_connections,
+            "max_auth_connections": max_auth_connections,
         }
         config = {k: v for k, v in kwargs.items() if v is not None}
         self._settings = Settings(**config)
@@ -364,12 +411,18 @@ class GigaChatAsyncClient(_BaseClient):
         self.a_threads = ThreadsAsyncClient(self)
 
     @cached_property
-    def _aclient(self) -> httpx.AsyncClient:
-        return httpx.AsyncClient(**_get_kwargs(self._settings))
+    def _aclient(self) -> ThrottledAsyncClient:
+        return ThrottledAsyncClient(
+            **_get_kwargs(self._settings),
+            max_connections=self._settings.max_connections,
+        )
 
     @cached_property
-    def _auth_aclient(self) -> httpx.AsyncClient:
-        return httpx.AsyncClient(**_get_auth_kwargs(self._settings))
+    def _auth_aclient(self) -> ThrottledAsyncClient:
+        return ThrottledAsyncClient(
+            **_get_auth_kwargs(self._settings),
+            max_connections=self._settings.max_auth_connections,
+        )
 
     async def aclose(self) -> None:
         await self._aclient.aclose()
