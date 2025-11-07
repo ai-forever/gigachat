@@ -12,6 +12,8 @@ class MessagesChunk(BaseModel):
     """Роль автора сообщения"""
     content: Optional[str] = None
     """Текст сообщения"""
+    reasoning_content: Optional[str] = None
+    """Reasoning токены"""
     function_call: Optional[FunctionCall] = None
     """Вызов функции"""
     functions_state_id: str = None
