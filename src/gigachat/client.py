@@ -97,7 +97,6 @@ def _get_kwargs(settings: Settings) -> Dict[str, Any]:
 def _get_auth_kwargs(settings: Settings) -> Dict[str, Any]:
     """Настройки для подключения к серверу авторизации OAuth 2.0"""
     kwargs = {
-        "base_url": settings.base_url,
         "verify": settings.verify_ssl_certs,
         "timeout": httpx.Timeout(settings.timeout),
     }
@@ -214,14 +213,8 @@ class GigaChatSyncClient(_BaseClient):
         self.assistants = AssistantsSyncClient(self)
         self.threads = ThreadsSyncClient(self)
         self._sync_token_lock = threading.Lock()
-
-    @cached_property
-    def _client(self) -> httpx.Client:
-        return httpx.Client(**_get_kwargs(self._settings))
-
-    @cached_property
-    def _auth_client(self) -> httpx.Client:
-        return httpx.Client(**_get_auth_kwargs(self._settings))
+        self._client = httpx.Client(**_get_kwargs(self._settings))
+        self._auth_client = httpx.Client(**_get_auth_kwargs(self._settings))
 
     def close(self) -> None:
         self._client.close()
