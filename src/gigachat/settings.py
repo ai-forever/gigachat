@@ -40,6 +40,8 @@ class Settings(BaseSettings):
     key_file: Optional[str] = None
     key_file_password: Optional[str] = None
     flags: Optional[List[str]] = None
+    max_connections: Optional[int] = None
+    """Максимальное количество одновременных соединений к API GigaChat"""
 
     class Config:
         env_prefix = ENV_PREFIX
