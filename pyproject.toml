@@ -1,7 +1,7 @@
 [tool.poetry]
 name = "gigachat"
-version = "0.1.42.post2"
-description = "GigaChat. Python-library for GigaChain and LangChain"
+version = "0.1.43"
+description = "GigaChat. Python-library for GigaChat API"
 authors = ["Konstantin Krestnikov <rai220@gmail.com>", "Sergey Malyshev <in1t@ya.ru>"]
 license = "MIT"
 readme = "README.md"

@@ -1,6 +1,7 @@
+import asyncio
 import logging
 import ssl
-from functools import cached_property
+import threading
 from typing import (
     Any,
     AsyncIterator,
@@ -87,6 +88,8 @@ def _get_kwargs(settings: Settings) -> Dict[str, Any]:
             settings.key_file,
             settings.key_file_password,
         )
+    if settings.max_connections is not None:
+        kwargs["limits"] = httpx.Limits(max_connections=settings.max_connections)
     return kwargs
 
 
@@ -146,6 +149,7 @@ class _BaseClient:
         key_file_password: Optional[str] = None,
         ssl_context: Optional[ssl.SSLContext] = None,
         flags: Optional[List[str]] = None,
+        max_connections: Optional[int] = None,
         **_unknown_kwargs: Any,
     ) -> None:
         if _unknown_kwargs:
@@ -170,6 +174,7 @@ class _BaseClient:
             "key_file_password": key_file_password,
             "ssl_context": ssl_context,
             "flags": flags,
+            "max_connections": max_connections,
         }
         config = {k: v for k, v in kwargs.items() if v is not None}
         self._settings = Settings(**config)
@@ -206,14 +211,9 @@ class GigaChatSyncClient(_BaseClient):
         super().__init__(**kwargs)
         self.assistants = AssistantsSyncClient(self)
         self.threads = ThreadsSyncClient(self)
-
-    @cached_property
-    def _client(self) -> httpx.Client:
-        return httpx.Client(**_get_kwargs(self._settings))
-
-    @cached_property
-    def _auth_client(self) -> httpx.Client:
-        return httpx.Client(**_get_auth_kwargs(self._settings))
+        self._sync_token_lock = threading.Lock()
+        self._client = httpx.Client(**_get_kwargs(self._settings))
+        self._auth_client = httpx.Client(**_get_auth_kwargs(self._settings))
 
     def close(self) -> None:
         self._client.close()
@@ -228,23 +228,28 @@ class GigaChatSyncClient(_BaseClient):
     def _update_token(self) -> None:
         if authorization_cvar.get() is not None:
             return
-        if self._settings.credentials:
-            self._access_token = post_auth.sync(
-                self._auth_client,
-                url=self._settings.auth_url,
-                credentials=self._settings.credentials,
-                scope=self._settings.scope,
-            )
-            _logger.debug("OAUTH UPDATE TOKEN")
-        elif self._settings.user and self._settings.password:
-            self._access_token = _build_access_token(
-                post_token.sync(
-                    self._client,
-                    user=self._settings.user,
-                    password=self._settings.password,
+
+        with self._sync_token_lock:
+            if self._check_validity_token():
+                return
+
+            if self._settings.credentials:
+                self._access_token = post_auth.sync(
+                    self._auth_client,
+                    url=self._settings.auth_url,
+                    credentials=self._settings.credentials,
+                    scope=self._settings.scope,
                 )
-            )
-            _logger.debug("UPDATE TOKEN")
+                _logger.debug("OAUTH UPDATE TOKEN")
+            elif self._settings.user and self._settings.password:
+                self._access_token = _build_access_token(
+                    post_token.sync(
+                        self._client,
+                        user=self._settings.user,
+                        password=self._settings.password,
+                    )
+                )
+                _logger.debug("UPDATE TOKEN")
 
     def get_token(self) -> AccessToken:
         self._update_token()
@@ -362,14 +367,9 @@ class GigaChatAsyncClient(_BaseClient):
         super().__init__(**kwargs)
         self.a_assistants = AssistantsAsyncClient(self)
         self.a_threads = ThreadsAsyncClient(self)
-
-    @cached_property
-    def _aclient(self) -> httpx.AsyncClient:
-        return httpx.AsyncClient(**_get_kwargs(self._settings))
-
-    @cached_property
-    def _auth_aclient(self) -> httpx.AsyncClient:
-        return httpx.AsyncClient(**_get_auth_kwargs(self._settings))
+        self._async_token_lock = asyncio.Lock()
+        self._aclient = httpx.AsyncClient(**_get_kwargs(self._settings))
+        self._auth_aclient = httpx.AsyncClient(**_get_auth_kwargs(self._settings))
 
     async def aclose(self) -> None:
         await self._aclient.aclose()
@@ -384,23 +384,26 @@ class GigaChatAsyncClient(_BaseClient):
     async def _aupdate_token(self) -> None:
         if authorization_cvar.get() is not None:
             return
-        if self._settings.credentials:
-            self._access_token = await post_auth.asyncio(
-                self._auth_aclient,
-                url=self._settings.auth_url,
-                credentials=self._settings.credentials,
-                scope=self._settings.scope,
-            )
-            _logger.debug("OAUTH UPDATE TOKEN")
-        elif self._settings.user and self._settings.password:
-            self._access_token = _build_access_token(
-                await post_token.asyncio(
-                    self._aclient,
-                    user=self._settings.user,
-                    password=self._settings.password,
+        async with self._async_token_lock:
+            if self._check_validity_token():
+                return
+            if self._settings.credentials:
+                self._access_token = await post_auth.asyncio(
+                    self._auth_aclient,
+                    url=self._settings.auth_url,
+                    credentials=self._settings.credentials,
+                    scope=self._settings.scope,
                 )
-            )
-            _logger.debug("UPDATE TOKEN")
+                _logger.debug("OAUTH UPDATE TOKEN")
+            elif self._settings.user and self._settings.password:
+                self._access_token = _build_access_token(
+                    await post_token.asyncio(
+                        self._aclient,
+                        user=self._settings.user,
+                        password=self._settings.password,
+                    )
+                )
+                _logger.debug("UPDATE TOKEN")
 
     async def aget_token(self) -> AccessToken:
         await self._aupdate_token()
