@@ -203,6 +203,21 @@ class _BaseClient:
         """Сбросить токен"""
         self._access_token = None
 
+    @property
+    def settings(self):
+        return self._settings
+
+    @settings.setter
+    def settings(self, value: Settings) -> None:
+        if not isinstance(value, Settings):
+            raise TypeError(f"Expected Settings, got {type(value)}")
+
+        self._settings = value
+
+    def update_settings(self, **kwargs):
+        """Безопасное обновление полей Settings"""
+        self._settings = self._settings.copy(update=kwargs)
+
 
 class GigaChatSyncClient(_BaseClient):
     """Синхронный клиент GigaChat"""
