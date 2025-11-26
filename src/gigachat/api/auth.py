@@ -7,14 +7,14 @@ from typing import Any, Dict
 
 import httpx
 
-from gigachat.api.utils import USER_AGENT, build_x_headers
+from gigachat.api.utils import USER_AGENT, build_headers, build_response, build_x_headers
 from gigachat.exceptions import AuthenticationError, ResponseError
-from gigachat.models import AccessToken
+from gigachat.models import AccessToken, Token
 
 _logger = logging.getLogger(__name__)
 
 
-def _get_kwargs(*, url: str, credentials: str, scope: str) -> Dict[str, Any]:
+def _get_auth_kwargs(*, url: str, credentials: str, scope: str) -> Dict[str, Any]:
     headers = {
         "Authorization": f"Basic {credentials}",
         "RqUID": str(uuid.uuid4()),
@@ -37,7 +37,7 @@ def _validate_credentials(credentials: str) -> None:
         )
 
 
-def build_response(response: httpx.Response) -> AccessToken:
+def _build_auth_response(response: httpx.Response) -> AccessToken:
     if response.status_code == HTTPStatus.OK:
         json_data = response.json()
         if "tok" in json_data:
@@ -52,15 +52,53 @@ def build_response(response: httpx.Response) -> AccessToken:
         raise ResponseError(response.url, response.status_code, response.content, response.headers)
 
 
-def sync(client: httpx.Client, *, url: str, credentials: str, scope: str) -> AccessToken:
+def auth_sync(client: httpx.Client, *, url: str, credentials: str, scope: str) -> AccessToken:
     _validate_credentials(credentials)
-    kwargs = _get_kwargs(url=url, credentials=credentials, scope=scope)
+    kwargs = _get_auth_kwargs(url=url, credentials=credentials, scope=scope)
     response = client.request(**kwargs)
-    return build_response(response)
+    return _build_auth_response(response)
 
 
-async def asyncio(client: httpx.AsyncClient, *, url: str, credentials: str, scope: str) -> AccessToken:
+async def auth_async(client: httpx.AsyncClient, *, url: str, credentials: str, scope: str) -> AccessToken:
     _validate_credentials(credentials)
-    kwargs = _get_kwargs(url=url, credentials=credentials, scope=scope)
+    kwargs = _get_auth_kwargs(url=url, credentials=credentials, scope=scope)
     response = await client.request(**kwargs)
-    return build_response(response)
+    return _build_auth_response(response)
+
+
+def _get_token_kwargs(
+    *,
+    user: str,
+    password: str,
+) -> Dict[str, Any]:
+    headers = build_headers()
+
+    return {
+        "method": "POST",
+        "url": "/token",
+        "auth": (user, password),
+        "headers": headers,
+    }
+
+
+def token_sync(
+    client: httpx.Client,
+    *,
+    user: str,
+    password: str,
+) -> Token:
+    kwargs = _get_token_kwargs(user=user, password=password)
+    response = client.request(**kwargs)
+    return build_response(response, Token)
+
+
+async def token_async(
+    client: httpx.AsyncClient,
+    *,
+    user: str,
+    password: str,
+) -> Token:
+    kwargs = _get_token_kwargs(user=user, password=password)
+    response = await client.request(**kwargs)
+    return build_response(response, Token)
+

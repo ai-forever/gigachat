@@ -24,9 +24,14 @@ GigaChat. Python-library for GigaChat API.
 - **Progress Tracking**: Refer to `docs/TODO.md` for the current status of refactoring tasks.
   - Tasks are grouped by issue.
   - Only analyzed and approved issues are added to the active plan.
-  - Done tasks are kept at the top; pending tasks follow.
+  - **Chronological Order**: All sections (issues) must be listed in **chronological ascending order** (Oldest first).
+    - This applies to both `docs/TODO.md` and `docs/REFACTORING.md`.
+    - New tasks should always be added at the end of the list.
 - **Refactoring Details**: Consult `docs/REFACTORING.md` for information on identified issues, chosen solutions, and other pertinent details related to the refactoring process.
   - Includes detailed analysis of issues and approved solutions.
+  - **Workflow**:
+    - Before implementing each todo item list, get approval.
+    - After implementation, summarize results.
   - **After solving each issue**:
     - Add detailed information about the solution (why and how it was implemented in such way) to `docs/REFACTORING.md`.
     - Update `docs/TODO.md` to reflect detailed implemented steps within each issue section.

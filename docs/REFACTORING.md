@@ -28,44 +28,20 @@
 - **Status**: Resolved. Lazy initialization implemented for both sync and async clients.
 - **Benefit**: Users of one paradigm (sync or async) never create the other's resources, preventing leaks.
 
-## Reliability & Error Handling
-- **Issues**:
-  - **Lack of Retries**: There is no built-in retry mechanism for transient network errors (e.g., 502, 504, timeouts). Retries currently only exist for `AuthenticationError` (token refresh).
-  - **Generic Exceptions**: The `ResponseError` is too generic. Users cannot easily distinguish between server errors, rate limits, or bad requests without parsing strings.
-- **Proposed Solutions**:
-  - **Enhanced Error Handling**:
-    - Implement a retry decorator for idempotent operations on transient errors.
-    - Subclass `ResponseError` into specific types (e.g., `RateLimitError`, `ServiceUnavailableError`).
-
-## Code Duplication (DRY Violation)
-- **Issues**:
-  - **Client Logic**: `GigaChatSyncClient` and `GigaChatAsyncClient` contain nearly identical logic for token management and decorators.
-  - **API Layer**: Files in `src/gigachat/api/` duplicate the request construction and response handling logic for `sync` and `asyncio` functions.
-  - **Risk**: Any fix applied to the sync path must be manually replicated in the async path, prone to human error.
-- **Proposed Solutions**:
-  - **Unify Request Logic**:
-    - Extract request preparation (URL building, header generation, payload serialization) into shared, pure synchronous functions.
-    - The Sync and Async clients should only handle the network I/O transport, delegating logic to these shared helpers.
-
-## Project Structure & Complexity
-- **Issues**:
-  - **Fragmentation**: The "One File Per Endpoint" pattern (e.g., `get_model.py`, `post_chat.py`) creates excessive file overhead for simple logic.
-  - **Implicit State**: Heavy reliance on `contextvars` to pass configuration (like `chat_url`) is opaque and harder to debug than explicit argument passing.
-  - **Circular Imports**: `src/gigachat/client.py` imports everything, leading to a monolithic dependency graph.
-- **Proposed Solutions**:
-  - **Refactor API Layer**:
-    - Group related endpoints into logical modules (e.g., `api/chat.py`, `api/files.py`) instead of single-function files.
-    - Remove `contextvars` in favor of passing a configuration object or explicit arguments.
-
-## Dependency Management
-- **Issues**:
-  - **Outdated Libraries**: `httpx` is pinned to `<1`.
-  - **Pydantic Shim**: The custom Pydantic v1/v2 compatibility layer in `src/gigachat/pydantic_v1/` is fragile compared to standard solutions like `pydantic-settings`.
-- **Proposed Solutions**:
-  - **Modernization**:
-    - Upgrade to `httpx >= 1.0`.
-    - Migrate fully to Pydantic v2 conventions.
-
-## Type Safety
-- **Issues**:
-  - Usage of `cast(AccessToken, ...)` in `get_token` masks potential `None` values, bypassing static type safety.
+## API Layer Fragmentation
+- **Problem**: The API layer is fragmented with a "one file per endpoint" pattern (approx. 20 files in `src/gigachat/api/`), which clutters the directory structure and separates logically related functionality (e.g., file handling is split across 5 different files).
+- **Solution (Consolidation)**:
+  - **Implementation Details**:
+    - Grouped individual API endpoint files into domain-specific modules within `src/gigachat/api/`:
+      - `chat.py`: Combined `post_chat` and `stream_chat`. Renamed functions to `chat_sync`, `chat_async`, `stream_sync`, `stream_async`.
+      - `files.py`: Combined `get_file`, `get_files`, `post_files`, `post_files_delete`, `get_image`. Renamed functions to `get_file_sync/async`, `upload_file_sync/async`, etc.
+      - `models_controller.py`: Combined `get_model` and `get_models`. Renamed to `get_model_sync/async` and `get_models_sync/async`.
+      - `auth.py`: Combined `post_auth` and `post_token`. Renamed to `auth_sync/async` and `token_sync/async`.
+      - `tools.py`: Combined `post_tokens_count`, `post_functions_convert`, `post_ai_check`, `post_embeddings`, `get_balance`. Renamed to `tokens_count_sync/async`, etc.
+    - Updated `GigaChatSyncClient` and `GigaChatAsyncClient` in `src/gigachat/client.py` to use the new modules and function names.
+    - Merged corresponding unit tests into `test_chat.py`, `test_auth.py`, and `test_models_controller.py`.
+    - Deleted the old fragmented files and updated `src/gigachat/api/__init__.py`.
+  - **Why**:
+    - **Cohesion**: Related functionality is now located in a single file, making it easier to understand and maintain the domain logic.
+    - **Navigability**: Reduced the number of files in `src/gigachat/api/` from ~20 to 5, making the project structure cleaner.
+- **Status**: Resolved. API layer consolidated.

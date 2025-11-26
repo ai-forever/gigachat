@@ -4,15 +4,57 @@ from typing import Any, AsyncIterator, Dict, Iterator, Optional
 
 import httpx
 
-from gigachat.api.utils import build_headers, build_x_headers, parse_chunk
+from gigachat.api.utils import build_headers, build_response, build_x_headers, parse_chunk
 from gigachat.context import chat_url_cvar
 from gigachat.exceptions import AuthenticationError, ResponseError
-from gigachat.models import Chat, ChatCompletionChunk
+from gigachat.models import Chat, ChatCompletion, ChatCompletionChunk
 
 EVENT_STREAM = "text/event-stream"
 
 
-def _get_kwargs(
+def _get_chat_kwargs(
+    *,
+    chat: Chat,
+    access_token: Optional[str] = None,
+) -> Dict[str, Any]:
+    headers = build_headers(access_token)
+    headers["Content-Type"] = "application/json"
+    json_data = chat.dict(exclude_none=True, by_alias=True, exclude={"stream"})
+    fields = json_data.pop("additional_fields", None)
+
+    if fields:
+        json_data = {**json_data, **fields}
+    return {
+        "method": "POST",
+        "url": chat_url_cvar.get(),
+        "content": json.dumps(json_data, ensure_ascii=False),
+        "headers": headers,
+    }
+
+
+def chat_sync(
+    client: httpx.Client,
+    *,
+    chat: Chat,
+    access_token: Optional[str] = None,
+) -> ChatCompletion:
+    kwargs = _get_chat_kwargs(chat=chat, access_token=access_token)
+    response = client.request(**kwargs)
+    return build_response(response, ChatCompletion)
+
+
+async def chat_async(
+    client: httpx.AsyncClient,
+    *,
+    chat: Chat,
+    access_token: Optional[str] = None,
+) -> ChatCompletion:
+    kwargs = _get_chat_kwargs(chat=chat, access_token=access_token)
+    response = await client.request(**kwargs)
+    return build_response(response, ChatCompletion)
+
+
+def _get_stream_kwargs(
     *,
     chat: Chat,
     access_token: Optional[str] = None,
@@ -58,13 +100,13 @@ async def _acheck_response(response: httpx.Response) -> None:
         raise ResponseError(response.url, response.status_code, await response.aread(), response.headers)
 
 
-def sync(
+def stream_sync(
     client: httpx.Client,
     *,
     chat: Chat,
     access_token: Optional[str] = None,
 ) -> Iterator[ChatCompletionChunk]:
-    kwargs = _get_kwargs(chat=chat, access_token=access_token)
+    kwargs = _get_stream_kwargs(chat=chat, access_token=access_token)
     with client.stream(**kwargs) as response:
         _check_response(response)
         x_headers = build_x_headers(response)
@@ -74,13 +116,13 @@ def sync(
                 yield chunk
 
 
-async def asyncio(
+async def stream_async(
     client: httpx.AsyncClient,
     *,
     chat: Chat,
     access_token: Optional[str] = None,
 ) -> AsyncIterator[ChatCompletionChunk]:
-    kwargs = _get_kwargs(chat=chat, access_token=access_token)
+    kwargs = _get_stream_kwargs(chat=chat, access_token=access_token)
     async with client.stream(**kwargs) as response:
         await _acheck_response(response)
         x_headers = build_x_headers(response)
@@ -88,3 +130,4 @@ async def asyncio(
             if chunk := parse_chunk(line, ChatCompletionChunk):
                 chunk.x_headers = x_headers
                 yield chunk
+
