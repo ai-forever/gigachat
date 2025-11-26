@@ -212,12 +212,26 @@ class GigaChatSyncClient(_BaseClient):
         self.assistants = AssistantsSyncClient(self)
         self.threads = ThreadsSyncClient(self)
         self._sync_token_lock = threading.Lock()
-        self._client = httpx.Client(**_get_kwargs(self._settings))
-        self._auth_client = httpx.Client(**_get_auth_kwargs(self._settings))
+        self._client_instance: Optional[httpx.Client] = None
+        self._auth_client_instance: Optional[httpx.Client] = None
+
+    @property
+    def _client(self) -> httpx.Client:
+        if self._client_instance is None:
+            self._client_instance = httpx.Client(**_get_kwargs(self._settings))
+        return self._client_instance
+
+    @property
+    def _auth_client(self) -> httpx.Client:
+        if self._auth_client_instance is None:
+            self._auth_client_instance = httpx.Client(**_get_auth_kwargs(self._settings))
+        return self._auth_client_instance
 
     def close(self) -> None:
-        self._client.close()
-        self._auth_client.close()
+        if self._client_instance:
+            self._client_instance.close()
+        if self._auth_client_instance:
+            self._auth_client_instance.close()
 
     def __enter__(self) -> "GigaChatSyncClient":
         return self
@@ -368,12 +382,26 @@ class GigaChatAsyncClient(_BaseClient):
         self.a_assistants = AssistantsAsyncClient(self)
         self.a_threads = ThreadsAsyncClient(self)
         self._async_token_lock = asyncio.Lock()
-        self._aclient = httpx.AsyncClient(**_get_kwargs(self._settings))
-        self._auth_aclient = httpx.AsyncClient(**_get_auth_kwargs(self._settings))
+        self._aclient_instance: Optional[httpx.AsyncClient] = None
+        self._auth_aclient_instance: Optional[httpx.AsyncClient] = None
+
+    @property
+    def _aclient(self) -> httpx.AsyncClient:
+        if self._aclient_instance is None:
+            self._aclient_instance = httpx.AsyncClient(**_get_kwargs(self._settings))
+        return self._aclient_instance
+
+    @property
+    def _auth_aclient(self) -> httpx.AsyncClient:
+        if self._auth_aclient_instance is None:
+            self._auth_aclient_instance = httpx.AsyncClient(**_get_auth_kwargs(self._settings))
+        return self._auth_aclient_instance
 
     async def aclose(self) -> None:
-        await self._aclient.aclose()
-        await self._auth_aclient.aclose()
+        if self._aclient_instance:
+            await self._aclient_instance.aclose()
+        if self._auth_aclient_instance:
+            await self._auth_aclient_instance.aclose()
 
     async def __aenter__(self) -> "GigaChatAsyncClient":
         return self

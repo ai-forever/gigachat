@@ -18,6 +18,7 @@ GigaChat. Python-library for GigaChat API.
 - Use `black` for formatting
 - Use `ruff` for linting
 - Use `mypy` in strict mode (plugin: pydantic.mypy)
+- Do not add comments to the refactored code, only if it is completely necessary
 
 ## Refactoring Documentation
 - **Progress Tracking**: Refer to `docs/TODO.md` for the current status of refactoring tasks.
@@ -26,6 +27,7 @@ GigaChat. Python-library for GigaChat API.
   - Done tasks are kept at the top; pending tasks follow.
 - **Refactoring Details**: Consult `docs/REFACTORING.md` for information on identified issues, chosen solutions, and other pertinent details related to the refactoring process.
   - Includes detailed analysis of issues and approved solutions.
+  - **After solving each issue**: Add detailed information about the solution (why and how it was implemented in such way) to `docs/REFACTORING.md`.
 
 
 ## AGENTS.md Purpose and Maintenance

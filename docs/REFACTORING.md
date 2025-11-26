@@ -2,9 +2,7 @@
 
 **Note**: All information in this file must be grouped by specific issues. Do not separate problems and solutions into different sections; keep them together under the relevant issue heading.
 
-## Critical Priority
-
-### 1. Resource Leak in Hybrid Client
+## Resource Leak in Hybrid Client
 - **Problem**: The `GigaChat` class inherits from both `GigaChatSyncClient` and `GigaChatAsyncClient`. Instantiating `GigaChat()` triggers `__init__` for both, creating **four** clients immediately (sync client, sync auth client, async client, async auth client).
 - **Leak Analysis**:
   - **Sync Context Manager** (`with GigaChat() as giga`):
@@ -18,13 +16,19 @@
   - **Manual Usage**:
     - User must know implementation details to call both `close()` and `aclose()` to fully clean up.
     - Common pattern `giga.close()` leaks async resources.
-- **Solution (Lazy Initialization)**:
-  - Remove client instantiation from `__init__`.
-  - Use properties (`@property`) to initialize `_client`/`_auth_client` and `_aclient`/`_auth_aclient` only on first access.
-  - Update `close()` and `aclose()` to check for existence before closing.
+  - **Solution (Lazy Initialization)**:
+    - **Implementation Details**:
+      - Refactored `GigaChatSyncClient` and `GigaChatAsyncClient` to remove eager instantiation of `httpx` clients in `__init__`.
+      - Introduced private attributes (e.g., `_client_instance`) initialized to `None`.
+      - Implemented properties (e.g., `@property def _client(self)`) that instantiate the `httpx.Client` only upon first access.
+      - Updated `close()` and `aclose()` methods to check if the client instances exist (are not `None`) before attempting to close them.
+    - **Why**:
+      - **Resource Efficiency**: The hybrid `GigaChat` class inherits from both sync and async clients. Previously, this caused all 4 underlying connections to open immediately. Lazy initialization ensures only the requested type (sync or async) creates connections.
+      - **Leak Prevention**: Prevents the scenario where using `with GigaChat() as giga:` would clean up sync clients but leave async clients open (leaking sockets), as the async clients are now never created in that workflow.
+- **Status**: Resolved. Lazy initialization implemented for both sync and async clients.
 - **Benefit**: Users of one paradigm (sync or async) never create the other's resources, preventing leaks.
 
-### 2. Reliability & Error Handling
+## Reliability & Error Handling
 - **Issues**:
   - **Lack of Retries**: There is no built-in retry mechanism for transient network errors (e.g., 502, 504, timeouts). Retries currently only exist for `AuthenticationError` (token refresh).
   - **Generic Exceptions**: The `ResponseError` is too generic. Users cannot easily distinguish between server errors, rate limits, or bad requests without parsing strings.
@@ -33,9 +37,7 @@
     - Implement a retry decorator for idempotent operations on transient errors.
     - Subclass `ResponseError` into specific types (e.g., `RateLimitError`, `ServiceUnavailableError`).
 
-## High Priority
-
-### 3. Code Duplication (DRY Violation)
+## Code Duplication (DRY Violation)
 - **Issues**:
   - **Client Logic**: `GigaChatSyncClient` and `GigaChatAsyncClient` contain nearly identical logic for token management and decorators.
   - **API Layer**: Files in `src/gigachat/api/` duplicate the request construction and response handling logic for `sync` and `asyncio` functions.
@@ -45,7 +47,7 @@
     - Extract request preparation (URL building, header generation, payload serialization) into shared, pure synchronous functions.
     - The Sync and Async clients should only handle the network I/O transport, delegating logic to these shared helpers.
 
-### 4. Project Structure & Complexity
+## Project Structure & Complexity
 - **Issues**:
   - **Fragmentation**: The "One File Per Endpoint" pattern (e.g., `get_model.py`, `post_chat.py`) creates excessive file overhead for simple logic.
   - **Implicit State**: Heavy reliance on `contextvars` to pass configuration (like `chat_url`) is opaque and harder to debug than explicit argument passing.
@@ -55,9 +57,7 @@
     - Group related endpoints into logical modules (e.g., `api/chat.py`, `api/files.py`) instead of single-function files.
     - Remove `contextvars` in favor of passing a configuration object or explicit arguments.
 
-## Medium Priority
-
-### 5. Dependency Management
+## Dependency Management
 - **Issues**:
   - **Outdated Libraries**: `httpx` is pinned to `<1`.
   - **Pydantic Shim**: The custom Pydantic v1/v2 compatibility layer in `src/gigachat/pydantic_v1/` is fragile compared to standard solutions like `pydantic-settings`.
@@ -66,6 +66,6 @@
     - Upgrade to `httpx >= 1.0`.
     - Migrate fully to Pydantic v2 conventions.
 
-### 6. Type Safety
+## Type Safety
 - **Issues**:
   - Usage of `cast(AccessToken, ...)` in `get_token` masks potential `None` values, bypassing static type safety.
