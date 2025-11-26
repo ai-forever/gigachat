@@ -21,8 +21,21 @@ GigaChat. Python-library for GigaChat API.
 
 ## Refactoring Documentation
 - **Progress Tracking**: Refer to `docs/TODO.md` for the current status of refactoring tasks.
+  - Tasks are grouped by issue.
+  - Only analyzed and approved issues are added to the active plan.
+  - Done tasks are kept at the top; pending tasks follow.
 - **Refactoring Details**: Consult `docs/REFACTORING.md` for information on identified issues, chosen solutions, and other pertinent details related to the refactoring process.
+  - Includes detailed analysis of issues and approved solutions.
+
+
+## AGENTS.md Purpose and Maintenance
+- **Purpose**: This file serves as the primary source of truth for AI coding agents. It contains context, rules, and instructions that might be too detailed or operational for the human-facing `README.md`. It ensures agents have predictable, clear guidance on how to build, test, and modify the project.
+- **When to Update**:
+  - When build steps, test commands, or development environment setup changes.
+  - When new coding conventions or architectural rules are adopted.
+  - When the refactoring strategy or documentation structure evolves (as defined in the rules below).
+- **Reference**: Follow the guidelines at [agents.md](https://agents.md) for structuring and maintaining this file.
 
 ## Documentation Updates
-- If there is a request to update existing docs, if required, only update `docs/REFACTORING.md`, `docs/TODO.md`, and `AGENTS.md` files.
+- Update only existing docs: `docs/REFACTORING.md`, `docs/TODO.md`, and `AGENTS.md`.
 
