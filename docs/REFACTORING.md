@@ -1,0 +1,6 @@
+# Refactoring Notes
+
+## Issues
+
+## Solutions
+
