@@ -27,7 +27,9 @@ GigaChat. Python-library for GigaChat API.
   - Done tasks are kept at the top; pending tasks follow.
 - **Refactoring Details**: Consult `docs/REFACTORING.md` for information on identified issues, chosen solutions, and other pertinent details related to the refactoring process.
   - Includes detailed analysis of issues and approved solutions.
-  - **After solving each issue**: Add detailed information about the solution (why and how it was implemented in such way) to `docs/REFACTORING.md`.
+  - **After solving each issue**:
+    - Add detailed information about the solution (why and how it was implemented in such way) to `docs/REFACTORING.md`.
+    - Update `docs/TODO.md` to reflect detailed implemented steps within each issue section.
 
 
 ## AGENTS.md Purpose and Maintenance
