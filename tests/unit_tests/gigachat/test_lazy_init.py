@@ -5,7 +5,7 @@ from gigachat import GigaChat
 
 def test_lazy_init_sync():
     """Test that synchronous client usage does not create async clients."""
-    with GigaChat(verify_ssl_certs=False) as giga:
+    with GigaChat() as giga:
         assert giga._client is not None
         assert giga._auth_client is not None
         assert giga._aclient_instance is None
@@ -15,7 +15,7 @@ def test_lazy_init_sync():
 @pytest.mark.asyncio()
 async def test_lazy_init_async():
     """Test that asynchronous client usage does not create sync clients."""
-    async with GigaChat(verify_ssl_certs=False) as giga:
+    async with GigaChat() as giga:
         assert giga._aclient is not None
         assert giga._auth_aclient is not None
         assert giga._client_instance is None
@@ -24,7 +24,7 @@ async def test_lazy_init_async():
 
 def test_lazy_init_manual_close():
     """Test that manual close only closes initialized clients."""
-    giga = GigaChat(verify_ssl_certs=False)
+    giga = GigaChat()
 
     assert giga._client_instance is None
     assert giga._auth_client_instance is None
