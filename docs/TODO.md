@@ -90,3 +90,10 @@
   - [x] Implement `_astream_decorator` in `GigaChatAsyncClient`
   - [x] Refactor `stream` methods to use stream decorators
   - [x] Verify refactoring
+
+## Thread Safety and Cleanup Improvements
+- [x] Fix Thread Safety and Cleanup in Hybrid Client
+  - [x] Move `GigaChat` class from `__init__.py` to `client.py`
+  - [x] Implement thread-safe lazy initialization (Double-Checked Locking)
+  - [x] Update `GigaChat.aclose()` to close both sync and async clients
+  - [x] Add tests for thread safety and cleanup

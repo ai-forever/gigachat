@@ -1,5 +1,1 @@
-from gigachat.client import GigaChatAsyncClient, GigaChatSyncClient
-
-
-class GigaChat(GigaChatSyncClient, GigaChatAsyncClient):
-    ...
+from gigachat.client import GigaChat, GigaChatAsyncClient, GigaChatSyncClient

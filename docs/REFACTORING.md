@@ -128,3 +128,17 @@
     - **Performance**: Proactive checks avoid the latency of a failed 401 request for most cases.
     - **Maintainability**: Centralizing stream retry logic removes massive duplication and ensures consistent behavior across all streaming endpoints. Any future changes to retry logic only need to happen in the decorators.
 - **Status**: Resolved. All stream methods refactored and verified.
+
+## Thread Safety and Cleanup Improvements
+- **Problem**: The introduction of lazy initialization in the hybrid `GigaChat` client introduced a race condition where multiple threads accessing `_client` simultaneously could create multiple `httpx.Client` instances, causing resource leaks. Additionally, `aclose()` in the hybrid client only closed async resources, potentially leaking sync resources if both were used.
+- **Solution (Thread Safety & Full Cleanup)**:
+  - **Implementation Details**:
+    - **Centralization**: Moved `GigaChat` class from `__init__.py` to `client.py` to better manage inheritance and overrides.
+    - **Thread Safety**: Implemented Double-Checked Locking in `GigaChatSyncClient` lazy properties (`_client`, `_auth_client`) using `_sync_token_lock` to ensure only one client instance is created even under heavy concurrency. Switched to `threading.RLock` to prevent deadlocks in re-entrant calls.
+    - **Cleanup**: Overrode `aclose()` in `GigaChat` to explicitly call `self.close()` (sync cleanup) in addition to `super().aclose()`, ensuring all resources (sync and async) are released when using `async with`.
+    - **Testing**: Consolidated lazy init and thread safety tests into `tests/unit_tests/gigachat/test_client_lifecycle.py` and fixed Ruff warnings.
+  - **Why**:
+    - **Robustness**: Prevents race conditions and resource leaks in multi-threaded environments.
+    - **Correctness**: Ensures that `async with GigaChat()` fully cleans up the object regardless of how it was used (sync or async).
+    - **Stability**: Using `RLock` prevents deadlocks when internal methods call public methods that also require the lock.
+- **Status**: Resolved.

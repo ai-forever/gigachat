@@ -193,20 +193,24 @@ class GigaChatSyncClient(_BaseClient):
         super().__init__(**kwargs)
         self.assistants = AssistantsSyncClient(self)
         self.threads = ThreadsSyncClient(self)
-        self._sync_token_lock = threading.Lock()
+        self._sync_token_lock = threading.RLock()
         self._client_instance: Optional[httpx.Client] = None
         self._auth_client_instance: Optional[httpx.Client] = None
 
     @property
     def _client(self) -> httpx.Client:
         if self._client_instance is None:
-            self._client_instance = httpx.Client(**_get_kwargs(self._settings))
+            with self._sync_token_lock:
+                if self._client_instance is None:
+                    self._client_instance = httpx.Client(**_get_kwargs(self._settings))
         return self._client_instance
 
     @property
     def _auth_client(self) -> httpx.Client:
         if self._auth_client_instance is None:
-            self._auth_client_instance = httpx.Client(**_get_auth_kwargs(self._settings))
+            with self._sync_token_lock:
+                if self._auth_client_instance is None:
+                    self._auth_client_instance = httpx.Client(**_get_auth_kwargs(self._settings))
         return self._auth_client_instance
 
     def close(self) -> None:
@@ -570,3 +574,9 @@ class GigaChatAsyncClient(_BaseClient):
                 yield chunk
 
         return self._astream_decorator(_acall)
+
+
+class GigaChat(GigaChatSyncClient, GigaChatAsyncClient):
+    async def aclose(self) -> None:
+        self.close()
+        await super().aclose()
