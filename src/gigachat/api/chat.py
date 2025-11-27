@@ -1,15 +1,18 @@
 import json
-from http import HTTPStatus
 from typing import Any, AsyncIterator, Dict, Iterator, Optional
 
 import httpx
 
-from gigachat.api.utils import build_headers, build_response, build_x_headers, parse_chunk
+from gigachat.api.utils import (
+    EVENT_STREAM,
+    build_headers,
+    execute_request_async,
+    execute_request_sync,
+    execute_stream_async,
+    execute_stream_sync,
+)
 from gigachat.context import chat_url_cvar
-from gigachat.exceptions import AuthenticationError, ResponseError
 from gigachat.models.chat import Chat, ChatCompletion, ChatCompletionChunk
-
-EVENT_STREAM = "text/event-stream"
 
 
 def _get_chat_kwargs(
@@ -39,8 +42,7 @@ def chat_sync(
     access_token: Optional[str] = None,
 ) -> ChatCompletion:
     kwargs = _get_chat_kwargs(chat=chat, access_token=access_token)
-    response = client.request(**kwargs)
-    return build_response(response, ChatCompletion)
+    return execute_request_sync(client, kwargs, ChatCompletion)
 
 
 async def chat_async(
@@ -50,8 +52,7 @@ async def chat_async(
     access_token: Optional[str] = None,
 ) -> ChatCompletion:
     kwargs = _get_chat_kwargs(chat=chat, access_token=access_token)
-    response = await client.request(**kwargs)
-    return build_response(response, ChatCompletion)
+    return await execute_request_async(client, kwargs, ChatCompletion)
 
 
 def _get_stream_kwargs(
@@ -76,30 +77,6 @@ def _get_stream_kwargs(
     }
 
 
-def _check_content_type(response: httpx.Response) -> None:
-    content_type, _, _ = response.headers.get("content-type", "").partition(";")
-    if content_type != EVENT_STREAM:
-        raise httpx.TransportError(f"Expected response Content-Type to be '{EVENT_STREAM}', got {content_type!r}")
-
-
-def _check_response(response: httpx.Response) -> None:
-    if response.status_code == HTTPStatus.OK:
-        _check_content_type(response)
-    elif response.status_code == HTTPStatus.UNAUTHORIZED:
-        raise AuthenticationError(response.url, response.status_code, response.read(), response.headers)
-    else:
-        raise ResponseError(response.url, response.status_code, response.read(), response.headers)
-
-
-async def _acheck_response(response: httpx.Response) -> None:
-    if response.status_code == HTTPStatus.OK:
-        _check_content_type(response)
-    elif response.status_code == HTTPStatus.UNAUTHORIZED:
-        raise AuthenticationError(response.url, response.status_code, await response.aread(), response.headers)
-    else:
-        raise ResponseError(response.url, response.status_code, await response.aread(), response.headers)
-
-
 def stream_sync(
     client: httpx.Client,
     *,
@@ -107,26 +84,14 @@ def stream_sync(
     access_token: Optional[str] = None,
 ) -> Iterator[ChatCompletionChunk]:
     kwargs = _get_stream_kwargs(chat=chat, access_token=access_token)
-    with client.stream(**kwargs) as response:
-        _check_response(response)
-        x_headers = build_x_headers(response)
-        for line in response.iter_lines():
-            if chunk := parse_chunk(line, ChatCompletionChunk):
-                chunk.x_headers = x_headers
-                yield chunk
+    return execute_stream_sync(client, kwargs, ChatCompletionChunk)
 
 
-async def stream_async(
+def stream_async(
     client: httpx.AsyncClient,
     *,
     chat: Chat,
     access_token: Optional[str] = None,
 ) -> AsyncIterator[ChatCompletionChunk]:
     kwargs = _get_stream_kwargs(chat=chat, access_token=access_token)
-    async with client.stream(**kwargs) as response:
-        await _acheck_response(response)
-        x_headers = build_x_headers(response)
-        async for line in response.aiter_lines():
-            if chunk := parse_chunk(line, ChatCompletionChunk):
-                chunk.x_headers = x_headers
-                yield chunk
+    return execute_stream_async(client, kwargs, ChatCompletionChunk)

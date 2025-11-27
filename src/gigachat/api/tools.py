@@ -4,7 +4,7 @@ from typing import Any, Dict, List, Optional
 
 import httpx
 
-from gigachat.api.utils import build_headers, build_response
+from gigachat.api.utils import build_headers, execute_request_async, execute_request_sync
 from gigachat.exceptions import AuthenticationError, ResponseError
 from gigachat.models.tools import AICheckResult, Balance, OpenApiFunctions, TokensCount
 
@@ -86,8 +86,7 @@ def functions_convert_sync(
 ) -> OpenApiFunctions:
     """Конвертация описание функции в формате OpenAPI в gigachat функцию"""
     kwargs = _get_functions_convert_kwargs(openapi_function=openapi_function, access_token=access_token)
-    response = client.request(**kwargs)
-    return build_response(response, OpenApiFunctions)
+    return execute_request_sync(client, kwargs, OpenApiFunctions)
 
 
 async def functions_convert_async(
@@ -98,8 +97,7 @@ async def functions_convert_async(
 ) -> OpenApiFunctions:
     """Конвертация описание функции в формате OpenAPI в gigachat функцию"""
     kwargs = _get_functions_convert_kwargs(openapi_function=openapi_function, access_token=access_token)
-    response = await client.request(**kwargs)
-    return build_response(response, OpenApiFunctions)
+    return await execute_request_async(client, kwargs, OpenApiFunctions)
 
 
 def _get_ai_check_kwargs(
@@ -126,8 +124,7 @@ def ai_check_sync(
     access_token: Optional[str] = None,
 ) -> AICheckResult:
     kwargs = _get_ai_check_kwargs(input_=input_, model=model, access_token=access_token)
-    response = client.request(**kwargs)
-    return build_response(response, AICheckResult)
+    return execute_request_sync(client, kwargs, AICheckResult)
 
 
 async def ai_check_async(
@@ -138,8 +135,7 @@ async def ai_check_async(
     access_token: Optional[str] = None,
 ) -> AICheckResult:
     kwargs = _get_ai_check_kwargs(input_=input_, model=model, access_token=access_token)
-    response = await client.request(**kwargs)
-    return build_response(response, AICheckResult)
+    return await execute_request_async(client, kwargs, AICheckResult)
 
 
 def _get_balance_kwargs(
@@ -163,8 +159,7 @@ def get_balance_sync(
     """Метод для получения баланса доступных для использования токенов.
     Только для клиентов с предоплатой иначе http 403"""
     kwargs = _get_balance_kwargs(access_token=access_token)
-    response = client.request(**kwargs)
-    return build_response(response, Balance)
+    return execute_request_sync(client, kwargs, Balance)
 
 
 async def get_balance_async(
@@ -175,5 +170,4 @@ async def get_balance_async(
     """Метод для получения баланса доступных для использования токенов.
     Только для клиентов с предоплатой иначе http 403"""
     kwargs = _get_balance_kwargs(access_token=access_token)
-    response = await client.request(**kwargs)
-    return build_response(response, Balance)
+    return await execute_request_async(client, kwargs, Balance)

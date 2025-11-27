@@ -51,3 +51,21 @@
   - [x] Update `src/gigachat/models/__init__.py`
   - [x] Update imports in codebase
   - [x] Delete old files and directories
+
+## API Response Handling Consolidation
+- [x] Update `src/gigachat/api/utils.py` with generic request/stream helpers
+  - [x] Move `_check_response` and validation logic to utils
+  - [x] Create `execute_request_sync` and `execute_request_async`
+  - [x] Create `execute_stream_sync` and `execute_stream_async`
+- [x] Refactor `src/gigachat/api/chat.py` to use new utils
+- [x] Refactor `src/gigachat/api/threads.py` to use new utils
+- [x] Refactor `src/gigachat/api/assistants.py` to use new utils
+- [x] Refactor `src/gigachat/api/files.py` to use new utils
+- [x] Refactor `src/gigachat/api/models.py` to use new utils
+- [x] Refactor `src/gigachat/api/tools.py` to use new utils
+- [x] Refactor `src/gigachat/api/auth.py` to use new utils
+- [x] Refactor `src/gigachat/api/embeddings.py` to use new utils
+- [x] Fix AsyncIterator/Coroutine mismatch in stream_async wrappers
+  - [x] Update `src/gigachat/api/chat.py`: change `stream_async` to non-async def
+  - [x] Update `src/gigachat/api/threads.py`: change async stream methods to non-async def
+- [x] Verify all tests pass

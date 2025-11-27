@@ -5,7 +5,7 @@ from typing import Any, Dict, Literal, Optional
 import httpx
 
 from gigachat._types import FileTypes
-from gigachat.api.utils import build_headers, build_response, build_x_headers
+from gigachat.api.utils import build_headers, build_x_headers, execute_request_async, execute_request_sync
 from gigachat.exceptions import AuthenticationError, ResponseError
 from gigachat.models.files import DeletedFile, Image, UploadedFile, UploadedFiles
 
@@ -31,8 +31,7 @@ def get_file_sync(
 ) -> UploadedFile:
     """Возвращает объект с описанием указанного файла."""
     kwargs = _get_file_kwargs(file=file, access_token=access_token)
-    response = client.request(**kwargs)
-    return build_response(response, UploadedFile)
+    return execute_request_sync(client, kwargs, UploadedFile)
 
 
 async def get_file_async(
@@ -43,8 +42,7 @@ async def get_file_async(
 ) -> UploadedFile:
     """Возвращает объект с описанием указанного файла."""
     kwargs = _get_file_kwargs(file=file, access_token=access_token)
-    response = await client.request(**kwargs)
-    return build_response(response, UploadedFile)
+    return await execute_request_async(client, kwargs, UploadedFile)
 
 
 def _get_files_kwargs(
@@ -66,8 +64,7 @@ def get_files_sync(
 ) -> UploadedFiles:
     """Возвращает загруженные файлы"""
     kwargs = _get_files_kwargs(access_token=access_token)
-    response = client.request(**kwargs)
-    return build_response(response, UploadedFiles)
+    return execute_request_sync(client, kwargs, UploadedFiles)
 
 
 async def get_files_async(
@@ -77,8 +74,7 @@ async def get_files_async(
 ) -> UploadedFiles:
     """Возвращает загруженные файлы"""
     kwargs = _get_files_kwargs(access_token=access_token)
-    response = await client.request(**kwargs)
-    return build_response(response, UploadedFiles)
+    return await execute_request_async(client, kwargs, UploadedFiles)
 
 
 def _upload_file_kwargs(
@@ -105,8 +101,7 @@ def upload_file_sync(
     access_token: Optional[str] = None,
 ) -> UploadedFile:
     kwargs = _upload_file_kwargs(file=file, purpose=purpose, access_token=access_token)
-    response = client.request(**kwargs)
-    return build_response(response, UploadedFile)
+    return execute_request_sync(client, kwargs, UploadedFile)
 
 
 async def upload_file_async(
@@ -117,8 +112,7 @@ async def upload_file_async(
     access_token: Optional[str] = None,
 ) -> UploadedFile:
     kwargs = _upload_file_kwargs(file=file, purpose=purpose, access_token=access_token)
-    response = await client.request(**kwargs)
-    return build_response(response, UploadedFile)
+    return await execute_request_async(client, kwargs, UploadedFile)
 
 
 def _delete_file_kwargs(
@@ -142,8 +136,7 @@ def delete_file_sync(
     access_token: Optional[str] = None,
 ) -> DeletedFile:
     kwargs = _delete_file_kwargs(file=file, access_token=access_token)
-    response = client.request(**kwargs)
-    return build_response(response, DeletedFile)
+    return execute_request_sync(client, kwargs, DeletedFile)
 
 
 async def delete_file_async(
@@ -153,8 +146,7 @@ async def delete_file_async(
     access_token: Optional[str] = None,
 ) -> DeletedFile:
     kwargs = _delete_file_kwargs(file=file, access_token=access_token)
-    response = await client.request(**kwargs)
-    return build_response(response, DeletedFile)
+    return await execute_request_async(client, kwargs, DeletedFile)
 
 
 def _get_image_kwargs(

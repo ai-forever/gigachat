@@ -3,7 +3,7 @@ from typing import Any, Dict, List, Optional
 
 import httpx
 
-from gigachat.api.utils import build_headers, build_response
+from gigachat.api.utils import build_headers, execute_request_async, execute_request_sync
 from gigachat.models.embeddings import Embeddings
 
 
@@ -32,8 +32,7 @@ def embeddings_sync(
     access_token: Optional[str] = None,
 ) -> Embeddings:
     kwargs = _get_embeddings_kwargs(input_=input_, model=model, access_token=access_token)
-    response = client.request(**kwargs)
-    return build_response(response, Embeddings)
+    return execute_request_sync(client, kwargs, Embeddings)
 
 
 async def embeddings_async(
@@ -44,6 +43,4 @@ async def embeddings_async(
     access_token: Optional[str] = None,
 ) -> Embeddings:
     kwargs = _get_embeddings_kwargs(input_=input_, model=model, access_token=access_token)
-    response = await client.request(**kwargs)
-    return build_response(response, Embeddings)
-
+    return await execute_request_async(client, kwargs, Embeddings)

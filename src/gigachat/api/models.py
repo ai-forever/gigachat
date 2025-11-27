@@ -2,7 +2,7 @@ from typing import Any, Dict, Optional
 
 import httpx
 
-from gigachat.api.utils import build_headers, build_response
+from gigachat.api.utils import build_headers, execute_request_async, execute_request_sync
 from gigachat.models.models import Model, Models
 
 
@@ -26,8 +26,7 @@ def get_models_sync(
 ) -> Models:
     """Возвращает массив объектов с данными доступных моделей"""
     kwargs = _get_models_kwargs(access_token=access_token)
-    response = client.request(**kwargs)
-    return build_response(response, Models)
+    return execute_request_sync(client, kwargs, Models)
 
 
 async def get_models_async(
@@ -37,8 +36,7 @@ async def get_models_async(
 ) -> Models:
     """Возвращает массив объектов с данными доступных моделей"""
     kwargs = _get_models_kwargs(access_token=access_token)
-    response = await client.request(**kwargs)
-    return build_response(response, Models)
+    return await execute_request_async(client, kwargs, Models)
 
 
 def _get_model_kwargs(
@@ -63,8 +61,7 @@ def get_model_sync(
 ) -> Model:
     """Возвращает объект с описанием указанной модели"""
     kwargs = _get_model_kwargs(model=model, access_token=access_token)
-    response = client.request(**kwargs)
-    return build_response(response, Model)
+    return execute_request_sync(client, kwargs, Model)
 
 
 async def get_model_async(
@@ -75,6 +72,4 @@ async def get_model_async(
 ) -> Model:
     """Возвращает объект с описанием указанной модели"""
     kwargs = _get_model_kwargs(model=model, access_token=access_token)
-    response = await client.request(**kwargs)
-    return build_response(response, Model)
-
+    return await execute_request_async(client, kwargs, Model)

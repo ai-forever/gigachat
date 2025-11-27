@@ -89,3 +89,17 @@
     - **Consistency**: Aligns the models structure with the API layer structure.
     - **Cleanliness**: Reduces the number of files in `src/gigachat/models/` significantly.
 - **Status**: Resolved.
+
+## API Response Handling Consolidation
+- **Problem**: The API layer contained significant code duplication in handling HTTP responses (validating status codes, parsing content) and managing streaming responses (iterating over SSE events). This logic was repeated across multiple API modules (`chat.py`, `threads.py`, `assistants.py`, etc.).
+- **Solution**:
+  - **Implementation Details**:
+    - Centralized response validation (`_check_response`, `_acheck_response`) and generic request/stream execution helpers into `src/gigachat/api/utils.py`.
+    - Created `execute_request_sync`, `execute_request_async`, `execute_stream_sync`, and `execute_stream_async` functions to handle the boilerplate of making requests and parsing responses.
+    - Refactored all API modules (`chat.py`, `threads.py`, `assistants.py`, `files.py`, `models.py`, `tools.py`, `auth.py`, `embeddings.py`) to use these new helpers.
+    - Fixed an issue with `async def` stream wrappers returning coroutines instead of async iterators by changing them to regular `def` functions that return the generator object directly.
+  - **Why**:
+    - **Reduces Duplication**: Eliminates repetitive code for error handling and response parsing.
+    - **Consistency**: Ensures all endpoints handle HTTP errors (e.g., 401 Unauthorized) and content types uniformly.
+    - **Maintainability**: Future changes to response processing (e.g., handling 429 Rate Limits) only need to be applied in one place (`utils.py`).
+- **Status**: Resolved.

@@ -2,7 +2,7 @@ from typing import Any, Dict, List, Optional
 
 import httpx
 
-from gigachat.api.utils import build_headers, build_response
+from gigachat.api.utils import build_headers, execute_request_async, execute_request_sync
 from gigachat.models.assistants import (
     Assistant,
     AssistantDelete,
@@ -37,8 +37,7 @@ def get_assistants_sync(
 ) -> Assistants:
     """Возвращает массив объектов с данными доступных ассистентов"""
     kwargs = _get_assistants_kwargs(assistant_id=assistant_id, access_token=access_token)
-    response = client.request(**kwargs)
-    return build_response(response, Assistants)
+    return execute_request_sync(client, kwargs, Assistants)
 
 
 async def get_assistants_async(
@@ -49,8 +48,7 @@ async def get_assistants_async(
 ) -> Assistants:
     """Возвращает массив объектов с данными доступных ассистентов"""
     kwargs = _get_assistants_kwargs(assistant_id=assistant_id, access_token=access_token)
-    response = await client.request(**kwargs)
-    return build_response(response, Assistants)
+    return await execute_request_async(client, kwargs, Assistants)
 
 
 def _create_assistant_kwargs(
@@ -107,8 +105,7 @@ def create_assistant_sync(
         metadata=metadata,
         access_token=access_token,
     )
-    response = client.request(**kwargs)
-    return build_response(response, CreateAssistant)
+    return execute_request_sync(client, kwargs, CreateAssistant)
 
 
 async def create_assistant_async(
@@ -134,8 +131,7 @@ async def create_assistant_async(
         metadata=metadata,
         access_token=access_token,
     )
-    response = await client.request(**kwargs)
-    return build_response(response, CreateAssistant)
+    return await execute_request_async(client, kwargs, CreateAssistant)
 
 
 def _modify_assistant_kwargs(
@@ -192,8 +188,7 @@ def modify_assistant_sync(
         metadata=metadata,
         access_token=access_token,
     )
-    response = client.request(**kwargs)
-    return build_response(response, Assistant)
+    return execute_request_sync(client, kwargs, Assistant)
 
 
 async def modify_assistant_async(
@@ -218,8 +213,7 @@ async def modify_assistant_async(
         metadata=metadata,
         access_token=access_token,
     )
-    response = await client.request(**kwargs)
-    return build_response(response, Assistant)
+    return await execute_request_async(client, kwargs, Assistant)
 
 
 def _delete_assistant_kwargs(
@@ -246,8 +240,7 @@ def delete_assistant_sync(
     access_token: Optional[str] = None,
 ) -> AssistantDelete:
     kwargs = _delete_assistant_kwargs(assistant_id=assistant_id, access_token=access_token)
-    response = client.request(**kwargs)
-    return build_response(response, AssistantDelete)
+    return execute_request_sync(client, kwargs, AssistantDelete)
 
 
 async def delete_assistant_async(
@@ -257,8 +250,7 @@ async def delete_assistant_async(
     access_token: Optional[str] = None,
 ) -> AssistantDelete:
     kwargs = _delete_assistant_kwargs(assistant_id=assistant_id, access_token=access_token)
-    response = await client.request(**kwargs)
-    return build_response(response, AssistantDelete)
+    return await execute_request_async(client, kwargs, AssistantDelete)
 
 
 def _delete_assistant_file_kwargs(
@@ -288,8 +280,7 @@ def delete_assistant_file_sync(
     access_token: Optional[str] = None,
 ) -> AssistantFileDelete:
     kwargs = _delete_assistant_file_kwargs(assistant_id=assistant_id, file_id=file_id, access_token=access_token)
-    response = client.request(**kwargs)
-    return build_response(response, AssistantFileDelete)
+    return execute_request_sync(client, kwargs, AssistantFileDelete)
 
 
 async def delete_assistant_file_async(
@@ -300,5 +291,4 @@ async def delete_assistant_file_async(
     access_token: Optional[str] = None,
 ) -> AssistantFileDelete:
     kwargs = _delete_assistant_file_kwargs(assistant_id=assistant_id, file_id=file_id, access_token=access_token)
-    response = await client.request(**kwargs)
-    return build_response(response, AssistantFileDelete)
+    return await execute_request_async(client, kwargs, AssistantFileDelete)

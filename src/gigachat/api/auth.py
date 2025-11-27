@@ -7,7 +7,7 @@ from typing import Any, Dict
 
 import httpx
 
-from gigachat.api.utils import USER_AGENT, build_headers, build_response, build_x_headers
+from gigachat.api.utils import USER_AGENT, build_headers, build_x_headers, execute_request_async, execute_request_sync
 from gigachat.exceptions import AuthenticationError, ResponseError
 from gigachat.models.auth import AccessToken, Token
 
@@ -88,8 +88,7 @@ def token_sync(
     password: str,
 ) -> Token:
     kwargs = _get_token_kwargs(user=user, password=password)
-    response = client.request(**kwargs)
-    return build_response(response, Token)
+    return execute_request_sync(client, kwargs, Token)
 
 
 async def token_async(
@@ -99,6 +98,4 @@ async def token_async(
     password: str,
 ) -> Token:
     kwargs = _get_token_kwargs(user=user, password=password)
-    response = await client.request(**kwargs)
-    return build_response(response, Token)
-
+    return await execute_request_async(client, kwargs, Token)

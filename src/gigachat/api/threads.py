@@ -3,7 +3,13 @@ from typing import Any, AsyncIterator, Dict, Iterator, List, Optional
 
 import httpx
 
-from gigachat.api.utils import build_headers, build_response, build_x_headers, parse_chunk
+from gigachat.api.utils import (
+    build_headers,
+    execute_request_async,
+    execute_request_sync,
+    execute_stream_async,
+    execute_stream_sync,
+)
 from gigachat.exceptions import AuthenticationError, ResponseError
 from gigachat.models.chat import Messages
 from gigachat.models.threads import (
@@ -17,8 +23,6 @@ from gigachat.models.threads import (
     ThreadRunResult,
     Threads,
 )
-
-EVENT_STREAM = "text/event-stream"
 
 
 def _get_threads_kwargs(
@@ -59,8 +63,7 @@ def get_threads_sync(
         before=before,
         access_token=access_token,
     )
-    response = client.request(**kwargs)
-    return build_response(response, Threads)
+    return execute_request_sync(client, kwargs, Threads)
 
 
 async def get_threads_async(
@@ -78,8 +81,7 @@ async def get_threads_async(
         before=before,
         access_token=access_token,
     )
-    response = await client.request(**kwargs)
-    return build_response(response, Threads)
+    return await execute_request_async(client, kwargs, Threads)
 
 
 def _post_thread_kwargs(*, access_token: Optional[str] = None) -> Dict[str, Any]:
@@ -99,8 +101,7 @@ def post_thread_sync(
 ) -> Thread:
     """Создание треда"""
     kwargs = _post_thread_kwargs(access_token=access_token)
-    response = client.request(**kwargs)
-    return build_response(response, Thread)
+    return execute_request_sync(client, kwargs, Thread)
 
 
 async def post_thread_async(
@@ -110,8 +111,7 @@ async def post_thread_async(
 ) -> Thread:
     """Создание треда"""
     kwargs = _post_thread_kwargs(access_token=access_token)
-    response = await client.request(**kwargs)
-    return build_response(response, Thread)
+    return await execute_request_async(client, kwargs, Thread)
 
 
 def _retrieve_threads_kwargs(
@@ -138,8 +138,7 @@ def retrieve_threads_sync(
 ) -> Threads:
     """Получение перечня тредов по идентификаторам"""
     kwargs = _retrieve_threads_kwargs(threads_ids=threads_ids, access_token=access_token)
-    response = client.request(**kwargs)
-    return build_response(response, Threads)
+    return execute_request_sync(client, kwargs, Threads)
 
 
 async def retrieve_threads_async(
@@ -150,8 +149,7 @@ async def retrieve_threads_async(
 ) -> Threads:
     """Получение перечня тредов по идентификаторам"""
     kwargs = _retrieve_threads_kwargs(threads_ids=threads_ids, access_token=access_token)
-    response = await client.request(**kwargs)
-    return build_response(response, Threads)
+    return await execute_request_async(client, kwargs, Threads)
 
 
 def _delete_thread_kwargs(
@@ -225,8 +223,7 @@ def get_thread_run_sync(
 ) -> ThreadRunResult:
     """Получить результат run треда"""
     kwargs = _get_thread_run_kwargs(thread_id=thread_id, access_token=access_token)
-    response = client.request(**kwargs)
-    return build_response(response, ThreadRunResult)
+    return execute_request_sync(client, kwargs, ThreadRunResult)
 
 
 async def get_thread_run_async(
@@ -237,8 +234,7 @@ async def get_thread_run_async(
 ) -> ThreadRunResult:
     """Получить результат run треда"""
     kwargs = _get_thread_run_kwargs(thread_id=thread_id, access_token=access_token)
-    response = await client.request(**kwargs)
-    return build_response(response, ThreadRunResult)
+    return await execute_request_async(client, kwargs, ThreadRunResult)
 
 
 def _get_thread_messages_kwargs(
@@ -272,8 +268,7 @@ def get_thread_messages_sync(
 ) -> ThreadMessages:
     """Получение сообщений треда"""
     kwargs = _get_thread_messages_kwargs(thread_id=thread_id, limit=limit, before=before, access_token=access_token)
-    response = client.request(**kwargs)
-    return build_response(response, ThreadMessages)
+    return execute_request_sync(client, kwargs, ThreadMessages)
 
 
 async def get_thread_messages_async(
@@ -286,8 +281,7 @@ async def get_thread_messages_async(
 ) -> ThreadMessages:
     """Получение сообщений треда"""
     kwargs = _get_thread_messages_kwargs(thread_id=thread_id, limit=limit, before=before, access_token=access_token)
-    response = await client.request(**kwargs)
-    return build_response(response, ThreadMessages)
+    return await execute_request_async(client, kwargs, ThreadMessages)
 
 
 def _run_thread_kwargs(
@@ -324,8 +318,7 @@ def run_thread_sync(
         thread_options=thread_options,
         access_token=access_token,
     )
-    response = client.request(**kwargs)
-    return build_response(response, ThreadRunResponse)
+    return execute_request_sync(client, kwargs, ThreadRunResponse)
 
 
 async def run_thread_async(
@@ -343,8 +336,7 @@ async def run_thread_async(
         thread_options=thread_options,
         access_token=access_token,
     )
-    response = await client.request(**kwargs)
-    return build_response(response, ThreadRunResponse)
+    return await execute_request_async(client, kwargs, ThreadRunResponse)
 
 
 def _run_thread_stream_kwargs(
@@ -384,16 +376,10 @@ def run_thread_stream_sync(
         thread_options=thread_options,
         access_token=access_token,
     )
-    with client.stream(**kwargs) as response:
-        _check_response(response)
-        x_headers = build_x_headers(response)
-        for line in response.iter_lines():
-            if chunk := parse_chunk(line, ThreadCompletionChunk):
-                chunk.x_headers = x_headers
-                yield chunk
+    return execute_stream_sync(client, kwargs, ThreadCompletionChunk)
 
 
-async def run_thread_stream_async(
+def run_thread_stream_async(
     client: httpx.AsyncClient,
     *,
     thread_id: str,
@@ -408,13 +394,7 @@ async def run_thread_stream_async(
         thread_options=thread_options,
         access_token=access_token,
     )
-    async with client.stream(**kwargs) as response:
-        await _acheck_response(response)
-        x_headers = build_x_headers(response)
-        async for line in response.aiter_lines():
-            if chunk := parse_chunk(line, ThreadCompletionChunk):
-                chunk.x_headers = x_headers
-                yield chunk
+    return execute_stream_async(client, kwargs, ThreadCompletionChunk)
 
 
 def _add_thread_messages_kwargs(
@@ -458,8 +438,7 @@ def add_thread_messages_sync(
         assistant_id=assistant_id,
         access_token=access_token,
     )
-    response = client.request(**kwargs)
-    return build_response(response, ThreadMessagesResponse)
+    return execute_request_sync(client, kwargs, ThreadMessagesResponse)
 
 
 async def add_thread_messages_async(
@@ -479,8 +458,7 @@ async def add_thread_messages_async(
         assistant_id=assistant_id,
         access_token=access_token,
     )
-    response = await client.request(**kwargs)
-    return build_response(response, ThreadMessagesResponse)
+    return await execute_request_async(client, kwargs, ThreadMessagesResponse)
 
 
 def _run_thread_messages_kwargs(
@@ -533,8 +511,7 @@ def run_thread_messages_sync(
         thread_options=thread_options,
         access_token=access_token,
     )
-    response = client.request(**kwargs)
-    return build_response(response, ThreadCompletion)
+    return execute_request_sync(client, kwargs, ThreadCompletion)
 
 
 async def run_thread_messages_async(
@@ -556,8 +533,7 @@ async def run_thread_messages_async(
         thread_options=thread_options,
         access_token=access_token,
     )
-    response = await client.request(**kwargs)
-    return build_response(response, ThreadCompletion)
+    return await execute_request_async(client, kwargs, ThreadCompletion)
 
 
 def _rerun_thread_messages_kwargs(
@@ -596,8 +572,7 @@ def rerun_thread_messages_sync(
         thread_options=thread_options,
         access_token=access_token,
     )
-    response = client.request(**kwargs)
-    return build_response(response, ThreadCompletion)
+    return execute_request_sync(client, kwargs, ThreadCompletion)
 
 
 async def rerun_thread_messages_async(
@@ -613,8 +588,7 @@ async def rerun_thread_messages_async(
         thread_options=thread_options,
         access_token=access_token,
     )
-    response = await client.request(**kwargs)
-    return build_response(response, ThreadCompletion)
+    return await execute_request_async(client, kwargs, ThreadCompletion)
 
 
 def _run_thread_messages_stream_kwargs(
@@ -651,30 +625,6 @@ def _run_thread_messages_stream_kwargs(
     }
 
 
-def _check_content_type(response: httpx.Response) -> None:
-    content_type, _, _ = response.headers.get("content-type", "").partition(";")
-    if content_type != EVENT_STREAM:
-        raise httpx.TransportError(f"Expected response Content-Type to be '{EVENT_STREAM}', got {content_type!r}")
-
-
-def _check_response(response: httpx.Response) -> None:
-    if response.status_code == HTTPStatus.OK:
-        _check_content_type(response)
-    elif response.status_code == HTTPStatus.UNAUTHORIZED:
-        raise AuthenticationError(response.url, response.status_code, response.read(), response.headers)
-    else:
-        raise ResponseError(response.url, response.status_code, response.read(), response.headers)
-
-
-async def _acheck_response(response: httpx.Response) -> None:
-    if response.status_code == HTTPStatus.OK:
-        _check_content_type(response)
-    elif response.status_code == HTTPStatus.UNAUTHORIZED:
-        raise AuthenticationError(response.url, response.status_code, await response.aread(), response.headers)
-    else:
-        raise ResponseError(response.url, response.status_code, await response.aread(), response.headers)
-
-
 def run_thread_messages_stream_sync(
     client: httpx.Client,
     *,
@@ -695,16 +645,10 @@ def run_thread_messages_stream_sync(
         update_interval=update_interval,
         access_token=access_token,
     )
-    with client.stream(**kwargs) as response:
-        _check_response(response)
-        x_headers = build_x_headers(response)
-        for line in response.iter_lines():
-            if chunk := parse_chunk(line, ThreadCompletionChunk):
-                chunk.x_headers = x_headers
-                yield chunk
+    return execute_stream_sync(client, kwargs, ThreadCompletionChunk)
 
 
-async def run_thread_messages_stream_async(
+def run_thread_messages_stream_async(
     client: httpx.AsyncClient,
     *,
     messages: List[Messages],
@@ -724,13 +668,7 @@ async def run_thread_messages_stream_async(
         update_interval=update_interval,
         access_token=access_token,
     )
-    async with client.stream(**kwargs) as response:
-        await _acheck_response(response)
-        x_headers = build_x_headers(response)
-        async for line in response.aiter_lines():
-            if chunk := parse_chunk(line, ThreadCompletionChunk):
-                chunk.x_headers = x_headers
-                yield chunk
+    return execute_stream_async(client, kwargs, ThreadCompletionChunk)
 
 
 def _rerun_thread_messages_stream_kwargs(
@@ -774,16 +712,10 @@ def rerun_thread_messages_stream_sync(
         update_interval=update_interval,
         access_token=access_token,
     )
-    with client.stream(**kwargs) as response:
-        _check_response(response)
-        x_headers = build_x_headers(response)
-        for line in response.iter_lines():
-            if chunk := parse_chunk(line, ThreadCompletionChunk):
-                chunk.x_headers = x_headers
-                yield chunk
+    return execute_stream_sync(client, kwargs, ThreadCompletionChunk)
 
 
-async def rerun_thread_messages_stream_async(
+def rerun_thread_messages_stream_async(
     client: httpx.AsyncClient,
     *,
     thread_id: str,
@@ -798,10 +730,4 @@ async def rerun_thread_messages_stream_async(
         update_interval=update_interval,
         access_token=access_token,
     )
-    async with client.stream(**kwargs) as response:
-        await _acheck_response(response)
-        x_headers = build_x_headers(response)
-        async for line in response.aiter_lines():
-            if chunk := parse_chunk(line, ThreadCompletionChunk):
-                chunk.x_headers = x_headers
-                yield chunk
+    return execute_stream_async(client, kwargs, ThreadCompletionChunk)
