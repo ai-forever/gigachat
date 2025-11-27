@@ -25,3 +25,13 @@
   - [x] Rename file `src/gigachat/api/models_controller.py` to `src/gigachat/api/models.py`
   - [x] Update imports in `src/gigachat/client.py`
   - [x] Rename and update test `tests/unit_tests/gigachat/api/test_models.py`
+
+## Assistants and Threads API Consolidation
+- [x] Consolidate Assistants API
+  - [x] Merge `src/gigachat/api/assistants/*.py` into `src/gigachat/api/assistants.py`
+  - [x] Update `src/gigachat/assistants.py` to use new module
+  - [x] Delete `src/gigachat/api/assistants/`
+- [x] Consolidate Threads API
+  - [x] Merge `src/gigachat/api/threads/*.py` into `src/gigachat/api/threads.py`
+  - [x] Update `src/gigachat/threads.py` to use new module
+  - [x] Delete `src/gigachat/api/threads/`

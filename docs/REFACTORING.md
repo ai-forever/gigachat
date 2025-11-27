@@ -53,3 +53,16 @@
   - Updated imports in `src/gigachat/client.py` and tests to allow `gigachat.api.models` and `gigachat.models.models` to coexist.
   - **Why**: Ensures consistent naming across all API layer files (`api/<domain>.py`).
 - **Status**: Resolved.
+
+## Assistants and Threads API Consolidation
+- **Problem**: The `assistants` and `threads` API modules were fragmented into multiple files within `src/gigachat/api/assistants/` and `src/gigachat/api/threads/` directories, following an obsolete "one file per endpoint" pattern.
+- **Solution**:
+  - **Implementation Details**:
+    - Consolidated `src/gigachat/api/assistants/*.py` into a single module `src/gigachat/api/assistants.py`.
+    - Consolidated `src/gigachat/api/threads/*.py` into a single module `src/gigachat/api/threads.py`.
+    - Updated `src/gigachat/assistants.py` and `src/gigachat/threads.py` client wrappers to use the new consolidated modules.
+    - Removed the now empty `src/gigachat/api/assistants/` and `src/gigachat/api/threads/` directories.
+  - **Why**:
+    - **Consistency**: Aligns `assistants` and `threads` with the rest of the API layer (`chat.py`, `files.py`, etc.).
+    - **Maintainability**: Reduces file count and simplifies imports.
+- **Status**: Resolved.

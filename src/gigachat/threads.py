@@ -11,19 +11,7 @@ from typing import (
     Union,
 )
 
-from gigachat.api.threads import (
-    get_threads,
-    get_threads_messages,
-    get_threads_run,
-    post_thread_messages_rerun,
-    post_thread_messages_rerun_stream,
-    post_thread_messages_run,
-    post_thread_messages_run_stream,
-    post_threads_delete,
-    post_threads_messages,
-    post_threads_retrieve,
-    post_threads_run,
-)
+from gigachat.api import threads
 from gigachat.exceptions import AuthenticationError
 from gigachat.models import (
     Messages,
@@ -66,7 +54,7 @@ class ThreadsSyncClient:
     ) -> Threads:
         """Получение перечня тредов"""
         return self.base_client._decorator(
-            lambda: get_threads.sync(
+            lambda: threads.get_threads_sync(
                 self.base_client._client,
                 assistants_ids=assistants_ids,
                 limit=limit,
@@ -81,7 +69,7 @@ class ThreadsSyncClient:
     ) -> Threads:
         """Получение перечня тредов по идентификаторам"""
         return self.base_client._decorator(
-            lambda: post_threads_retrieve.sync(
+            lambda: threads.retrieve_threads_sync(
                 self.base_client._client,
                 threads_ids=threads_ids,
                 access_token=self.base_client.token,
@@ -92,7 +80,7 @@ class ThreadsSyncClient:
         """Удаляет тред"""
 
         return self.base_client._decorator(
-            lambda: post_threads_delete.sync(
+            lambda: threads.delete_thread_sync(
                 self.base_client._client,
                 thread_id=thread_id,
                 access_token=self.base_client.token,
@@ -104,7 +92,7 @@ class ThreadsSyncClient:
         warnings.warn("get_run is deprecated. Use get_messages instead", stacklevel=2)
 
         return self.base_client._decorator(
-            lambda: get_threads_run.sync(
+            lambda: threads.get_thread_run_sync(
                 self.base_client._client,
                 thread_id=thread_id,
                 access_token=self.base_client.token,
@@ -115,7 +103,7 @@ class ThreadsSyncClient:
         """Получение сообщений треда"""
 
         return self.base_client._decorator(
-            lambda: get_threads_messages.sync(
+            lambda: threads.get_thread_messages_sync(
                 self.base_client._client,
                 thread_id=thread_id,
                 limit=limit,
@@ -133,7 +121,7 @@ class ThreadsSyncClient:
         if thread_options is not None:
             thread_options = ThreadRunOptions.parse_obj(thread_options)
         return self.base_client._decorator(
-            lambda: post_threads_run.sync(
+            lambda: threads.run_thread_sync(
                 self.base_client._client,
                 thread_id=thread_id,
                 thread_options=thread_options,
@@ -151,7 +139,7 @@ class ThreadsSyncClient:
         """Добавление сообщений к треду без запуска"""
         parsed_messages = [_parse_message(message) for message in messages]
         return self.base_client._decorator(
-            lambda: post_threads_messages.sync(
+            lambda: threads.add_thread_messages_sync(
                 self.base_client._client,
                 messages=parsed_messages,
                 model=model,
@@ -176,7 +164,7 @@ class ThreadsSyncClient:
             thread_options = ThreadRunOptions.parse_obj(thread_options)
 
         return self.base_client._decorator(
-            lambda: post_thread_messages_run.sync(
+            lambda: threads.run_thread_messages_sync(
                 self.base_client._client,
                 messages=parsed_messages,
                 thread_id=thread_id,
@@ -197,7 +185,7 @@ class ThreadsSyncClient:
             thread_options = ThreadRunOptions.parse_obj(thread_options)
 
         return self.base_client._decorator(
-            lambda: post_thread_messages_rerun.sync(
+            lambda: threads.rerun_thread_messages_sync(
                 self.base_client._client,
                 thread_id=thread_id,
                 thread_options=thread_options,
@@ -223,7 +211,7 @@ class ThreadsSyncClient:
         if self.base_client._use_auth:
             if self.base_client._check_validity_token():
                 try:
-                    for chunk in post_thread_messages_run_stream.sync(
+                    for chunk in threads.run_thread_messages_stream_sync(
                         self.base_client._client,
                         messages=parsed_messages,
                         thread_id=thread_id,
@@ -240,7 +228,7 @@ class ThreadsSyncClient:
                     self.base_client._reset_token()
             self.base_client._update_token()
 
-        for chunk in post_thread_messages_run_stream.sync(
+        for chunk in threads.run_thread_messages_stream_sync(
             self.base_client._client,
             messages=parsed_messages,
             thread_id=thread_id,
@@ -265,7 +253,7 @@ class ThreadsSyncClient:
         if self.base_client._use_auth:
             if self.base_client._check_validity_token():
                 try:
-                    for chunk in post_thread_messages_rerun_stream.sync(
+                    for chunk in threads.rerun_thread_messages_stream_sync(
                         self.base_client._client,
                         thread_id=thread_id,
                         thread_options=thread_options,
@@ -279,7 +267,7 @@ class ThreadsSyncClient:
                     self.base_client._reset_token()
             self.base_client._update_token()
 
-        for chunk in post_thread_messages_rerun_stream.sync(
+        for chunk in threads.rerun_thread_messages_stream_sync(
             self.base_client._client,
             thread_id=thread_id,
             thread_options=thread_options,
@@ -302,7 +290,7 @@ class ThreadsAsyncClient:
         """Получение перечня тредов"""
 
         async def _acall() -> Threads:
-            return await get_threads.asyncio(
+            return await threads.get_threads_async(
                 self.base_client._aclient,
                 assistants_ids=assistants_ids,
                 limit=limit,
@@ -319,7 +307,7 @@ class ThreadsAsyncClient:
         """Получение перечня тредов по идентификаторам"""
 
         async def _acall() -> Threads:
-            return await post_threads_retrieve.asyncio(
+            return await threads.retrieve_threads_async(
                 self.base_client._aclient,
                 threads_ids=threads_ids,
                 access_token=self.base_client.token,
@@ -331,7 +319,7 @@ class ThreadsAsyncClient:
         """Удаляет тред"""
 
         async def _acall() -> bool:
-            return await post_threads_delete.asyncio(
+            return await threads.delete_thread_async(
                 self.base_client._aclient,
                 thread_id=thread_id,
                 access_token=self.base_client.token,
@@ -344,7 +332,7 @@ class ThreadsAsyncClient:
         warnings.warn("get_run is deprecated. Use get_messages instead", stacklevel=2)
 
         async def _acall() -> ThreadRunResult:
-            return await get_threads_run.asyncio(
+            return await threads.get_thread_run_async(
                 self.base_client._aclient,
                 thread_id=thread_id,
                 access_token=self.base_client.token,
@@ -358,7 +346,7 @@ class ThreadsAsyncClient:
         """Получение сообщений треда"""
 
         async def _acall() -> ThreadMessages:
-            return await get_threads_messages.asyncio(
+            return await threads.get_thread_messages_async(
                 self.base_client._aclient,
                 thread_id=thread_id,
                 limit=limit,
@@ -378,7 +366,7 @@ class ThreadsAsyncClient:
             thread_options = ThreadRunOptions.parse_obj(thread_options)
 
         async def _acall() -> ThreadRunResponse:
-            return await post_threads_run.asyncio(
+            return await threads.run_thread_async(
                 self.base_client._aclient,
                 thread_id=thread_id,
                 thread_options=thread_options,
@@ -398,7 +386,7 @@ class ThreadsAsyncClient:
         parsed_messages = [_parse_message(message) for message in messages]
 
         async def _acall() -> ThreadMessagesResponse:
-            return await post_threads_messages.asyncio(
+            return await threads.add_thread_messages_async(
                 self.base_client._aclient,
                 messages=parsed_messages,
                 model=model,
@@ -424,7 +412,7 @@ class ThreadsAsyncClient:
             thread_options = ThreadRunOptions.parse_obj(thread_options)
 
         async def _acall() -> ThreadCompletion:
-            return await post_thread_messages_run.asyncio(
+            return await threads.run_thread_messages_async(
                 self.base_client._aclient,
                 messages=parsed_messages,
                 thread_id=thread_id,
@@ -446,7 +434,7 @@ class ThreadsAsyncClient:
             thread_options = ThreadRunOptions.parse_obj(thread_options)
 
         async def _acall() -> ThreadCompletion:
-            return await post_thread_messages_rerun.asyncio(
+            return await threads.rerun_thread_messages_async(
                 self.base_client._aclient,
                 thread_id=thread_id,
                 thread_options=thread_options,
@@ -473,7 +461,7 @@ class ThreadsAsyncClient:
         if self.base_client._use_auth:
             if self.base_client._check_validity_token():
                 try:
-                    async for chunk in post_thread_messages_run_stream.asyncio(
+                    async for chunk in threads.run_thread_messages_stream_async(
                         self.base_client._aclient,
                         messages=parsed_messages,
                         thread_id=thread_id,
@@ -490,7 +478,7 @@ class ThreadsAsyncClient:
                     self.base_client._reset_token()
             await self.base_client._aupdate_token()
 
-        async for chunk in post_thread_messages_run_stream.asyncio(
+        async for chunk in threads.run_thread_messages_stream_async(
             self.base_client._aclient,
             messages=parsed_messages,
             thread_id=thread_id,
@@ -515,7 +503,7 @@ class ThreadsAsyncClient:
         if self.base_client._use_auth:
             if self.base_client._check_validity_token():
                 try:
-                    async for chunk in post_thread_messages_rerun_stream.asyncio(
+                    async for chunk in threads.rerun_thread_messages_stream_async(
                         self.base_client._aclient,
                         thread_id=thread_id,
                         thread_options=thread_options,
@@ -529,7 +517,7 @@ class ThreadsAsyncClient:
                     self.base_client._reset_token()
             await self.base_client._aupdate_token()
 
-        async for chunk in post_thread_messages_rerun_stream.asyncio(
+        async for chunk in threads.rerun_thread_messages_stream_async(
             self.base_client._aclient,
             thread_id=thread_id,
             thread_options=thread_options,

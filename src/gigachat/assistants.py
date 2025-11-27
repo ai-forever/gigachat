@@ -1,12 +1,6 @@
 from typing import TYPE_CHECKING, Any, Dict, List, Optional
 
-from gigachat.api.assistants import (
-    get_assistants,
-    post_assistant_delete,
-    post_assistant_files_delete,
-    post_assistant_modify,
-    post_assistants,
-)
+from gigachat.api import assistants
 from gigachat.models import Function
 from gigachat.models.assistants import (
     Assistant,
@@ -27,7 +21,7 @@ class AssistantsSyncClient:
     def get(self, assistant_id: Optional[str] = None) -> Assistants:
         """Возвращает список доступных ассистентов"""
         return self.base_client._decorator(
-            lambda: get_assistants.sync(
+            lambda: assistants.get_assistants_sync(
                 self.base_client._client,
                 assistant_id=assistant_id,
                 access_token=self.base_client.token,
@@ -46,7 +40,7 @@ class AssistantsSyncClient:
     ) -> CreateAssistant:
         """Создает ассистента"""
         return self.base_client._decorator(
-            lambda: post_assistants.sync(
+            lambda: assistants.create_assistant_sync(
                 self.base_client._client,
                 model=model,
                 name=name,
@@ -72,7 +66,7 @@ class AssistantsSyncClient:
         """Обновляет ассистента"""
 
         return self.base_client._decorator(
-            lambda: post_assistant_modify.sync(
+            lambda: assistants.modify_assistant_sync(
                 self.base_client._client,
                 assistant_id=assistant_id,
                 name=name,
@@ -88,7 +82,7 @@ class AssistantsSyncClient:
     def delete_file(self, assistant_id: str, file_id: str) -> AssistantFileDelete:
         """Удаляет файл ассистента"""
         return self.base_client._decorator(
-            lambda: post_assistant_files_delete.sync(
+            lambda: assistants.delete_assistant_file_sync(
                 self.base_client._client,
                 assistant_id=assistant_id,
                 file_id=file_id,
@@ -99,7 +93,7 @@ class AssistantsSyncClient:
     def delete(self, assistant_id: str) -> AssistantDelete:
         """Удаляет ассистента"""
         return self.base_client._decorator(
-            lambda: post_assistant_delete.sync(
+            lambda: assistants.delete_assistant_sync(
                 self.base_client._client,
                 assistant_id=assistant_id,
                 access_token=self.base_client.token,
@@ -115,7 +109,7 @@ class AssistantsAsyncClient:
         """Возвращает список доступных ассистентов"""
 
         async def _acall() -> Assistants:
-            return await get_assistants.asyncio(
+            return await assistants.get_assistants_async(
                 self.base_client._aclient,
                 assistant_id=assistant_id,
                 access_token=self.base_client.token,
@@ -136,7 +130,7 @@ class AssistantsAsyncClient:
         """Создает ассистента"""
 
         async def _acall() -> CreateAssistant:
-            return await post_assistants.asyncio(
+            return await assistants.create_assistant_async(
                 self.base_client._aclient,
                 model=model,
                 name=name,
@@ -163,7 +157,7 @@ class AssistantsAsyncClient:
         """Обновляет ассистента"""
 
         async def _acall() -> Assistant:
-            return await post_assistant_modify.asyncio(
+            return await assistants.modify_assistant_async(
                 self.base_client._aclient,
                 assistant_id=assistant_id,
                 name=name,
@@ -181,7 +175,7 @@ class AssistantsAsyncClient:
         """Удаляет файл ассистента"""
 
         async def _acall() -> AssistantFileDelete:
-            return await post_assistant_files_delete.asyncio(
+            return await assistants.delete_assistant_file_async(
                 self.base_client._aclient,
                 assistant_id=assistant_id,
                 file_id=file_id,
@@ -194,7 +188,7 @@ class AssistantsAsyncClient:
         """Удаляет ассистента"""
 
         async def _acall() -> AssistantDelete:
-            return await post_assistant_delete.asyncio(
+            return await assistants.delete_assistant_async(
                 self.base_client._aclient,
                 assistant_id=assistant_id,
                 access_token=self.base_client.token,
