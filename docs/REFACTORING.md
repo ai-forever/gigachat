@@ -103,3 +103,16 @@
     - **Consistency**: Ensures all endpoints handle HTTP errors (e.g., 401 Unauthorized) and content types uniformly.
     - **Maintainability**: Future changes to response processing (e.g., handling 429 Rate Limits) only need to be applied in one place (`utils.py`).
 - **Status**: Resolved.
+
+## Unit Test Consolidation
+- **Problem**: The unit tests were fragmented and inconsistent. `test_client.py` was a monolithic file >750 lines covering multiple domains. Some tests were loose files in `tests/unit_tests/gigachat/` while others were in `tests/unit_tests/gigachat/api/`.
+- **Solution**:
+  - **Implementation Details**:
+    - Broke down `test_client.py` into domain-specific test files: `test_client_chat.py`, `test_client_files.py` (merged `test_get_image.py`), `test_client_models.py`, `test_client_tools.py`, `test_client_embeddings.py`.
+    - Renamed `test_assistants.py` and `test_threads.py` to `test_client_assistants.py` and `test_client_threads.py` respectively.
+    - Cleaned up dead code (`test_models.py`).
+  - **Why**:
+    - **Maintainability**: Smaller, focused test files are easier to read and maintain.
+    - **Consistency**: Aligns the test structure with the recently refactored source code structure.
+    - **Clarity**: Distinctly separates High-Level Client tests (`test_client_*.py`) from Low-Level API tests (`api/test_*.py`).
+- **Status**: Resolved.

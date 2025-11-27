@@ -69,3 +69,16 @@
   - [x] Update `src/gigachat/api/chat.py`: change `stream_async` to non-async def
   - [x] Update `src/gigachat/api/threads.py`: change async stream methods to non-async def
 - [x] Verify all tests pass
+
+## Unit Test Consolidation
+- [x] Consolidate and Organize Unit Tests
+  - [x] Remove empty file `tests/unit_tests/gigachat/test_models.py`
+  - [x] Extract Chat tests from `test_client.py` to `test_client_chat.py`
+  - [x] Extract Files tests to `test_client_files.py` (merge `test_get_image.py`)
+  - [x] Extract Models tests from `test_client.py` to `test_client_models.py`
+  - [x] Extract Tools tests from `test_client.py` to `test_client_tools.py`
+  - [x] Extract Embeddings tests from `test_client.py` to `test_client_embeddings.py`
+  - [x] Rename `test_assistants.py` to `test_client_assistants.py`
+  - [x] Rename `test_threads.py` to `test_client_threads.py`
+  - [x] Clean up remaining base tests in `test_client.py`
+  - [x] Run all tests to ensure no regressions
