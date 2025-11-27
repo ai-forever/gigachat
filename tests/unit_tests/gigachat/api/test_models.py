@@ -2,7 +2,7 @@ import httpx
 import pytest
 from pytest_httpx import HTTPXMock
 
-from gigachat.api import models_controller
+from gigachat.api import models
 from gigachat.context import (
     agent_id_cvar,
     authorization_cvar,
@@ -38,7 +38,7 @@ def test_get_model_kwargs_context_vars() -> None:
     token_custom_headers_cvar = custom_headers_cvar.set({"custom_headers_cvar": "val"})
     token_chat_url_cvar = chat_url_cvar.set("/chat/completions")
 
-    assert models_controller._get_model_kwargs(model="model")
+    assert models._get_model_kwargs(model="model")
 
     authorization_cvar.reset(token_authorization_cvar)
     request_id_cvar.reset(token_request_id_cvar)
@@ -55,7 +55,7 @@ def test_get_model_sync(httpx_mock: HTTPXMock) -> None:
     httpx_mock.add_response(url=MODEL_URL, json=MODEL)
 
     with httpx.Client(base_url=BASE_URL) as client:
-        response = models_controller.get_model_sync(client, model="model")
+        response = models.get_model_sync(client, model="model")
 
     assert isinstance(response, Model)
 
@@ -65,7 +65,7 @@ def test_get_model_sync_value_error(httpx_mock: HTTPXMock) -> None:
 
     with httpx.Client(base_url=BASE_URL) as client:
         with pytest.raises(ValueError, match="3 validation errors for Model*"):
-            models_controller.get_model_sync(client, model="model")
+            models.get_model_sync(client, model="model")
 
 
 def test_get_model_sync_authentication_error(httpx_mock: HTTPXMock) -> None:
@@ -73,7 +73,7 @@ def test_get_model_sync_authentication_error(httpx_mock: HTTPXMock) -> None:
 
     with httpx.Client(base_url=BASE_URL) as client:
         with pytest.raises(AuthenticationError):
-            models_controller.get_model_sync(client, model="model")
+            models.get_model_sync(client, model="model")
 
 
 def test_get_model_sync_response_error(httpx_mock: HTTPXMock) -> None:
@@ -81,14 +81,14 @@ def test_get_model_sync_response_error(httpx_mock: HTTPXMock) -> None:
 
     with httpx.Client(base_url=BASE_URL) as client:
         with pytest.raises(ResponseError):
-            models_controller.get_model_sync(client, model="model")
+            models.get_model_sync(client, model="model")
 
 
 def test_get_model_sync_headers(httpx_mock: HTTPXMock) -> None:
     httpx_mock.add_response(url=MODEL_URL, json=MODEL)
 
     with httpx.Client(base_url=BASE_URL) as client:
-        response = models_controller.get_model_sync(
+        response = models.get_model_sync(
             client,
             model="model",
             access_token="access_token",
@@ -102,7 +102,7 @@ async def test_get_model_async(httpx_mock: HTTPXMock) -> None:
     httpx_mock.add_response(url=MODEL_URL, json=MODEL)
 
     async with httpx.AsyncClient(base_url=BASE_URL) as client:
-        response = await models_controller.get_model_async(client, model="model")
+        response = await models.get_model_async(client, model="model")
 
     assert isinstance(response, Model)
 
@@ -118,7 +118,7 @@ def test_get_models_kwargs_context_vars() -> None:
     token_custom_headers_cvar = custom_headers_cvar.set({"custom_headers_cvar": "val"})
     token_chat_url_cvar = chat_url_cvar.set("/chat/completions")
 
-    assert models_controller._get_models_kwargs()
+    assert models._get_models_kwargs()
 
     authorization_cvar.reset(token_authorization_cvar)
     request_id_cvar.reset(token_request_id_cvar)
@@ -135,7 +135,7 @@ def test_get_models_sync(httpx_mock: HTTPXMock) -> None:
     httpx_mock.add_response(url=MODELS_URL, json=MODELS)
 
     with httpx.Client(base_url=BASE_URL) as client:
-        response = models_controller.get_models_sync(client)
+        response = models.get_models_sync(client)
 
     assert isinstance(response, Models)
 
@@ -145,7 +145,7 @@ def test_get_models_sync_value_error(httpx_mock: HTTPXMock) -> None:
 
     with httpx.Client(base_url=BASE_URL) as client:
         with pytest.raises(ValueError, match="2 validation errors for Models*"):
-            models_controller.get_models_sync(client)
+            models.get_models_sync(client)
 
 
 def test_get_models_sync_authentication_error(httpx_mock: HTTPXMock) -> None:
@@ -153,7 +153,7 @@ def test_get_models_sync_authentication_error(httpx_mock: HTTPXMock) -> None:
 
     with httpx.Client(base_url=BASE_URL) as client:
         with pytest.raises(AuthenticationError):
-            models_controller.get_models_sync(client)
+            models.get_models_sync(client)
 
 
 def test_get_models_sync_response_error(httpx_mock: HTTPXMock) -> None:
@@ -161,14 +161,14 @@ def test_get_models_sync_response_error(httpx_mock: HTTPXMock) -> None:
 
     with httpx.Client(base_url=BASE_URL) as client:
         with pytest.raises(ResponseError):
-            models_controller.get_models_sync(client)
+            models.get_models_sync(client)
 
 
 def test_get_models_sync_headers(httpx_mock: HTTPXMock) -> None:
     httpx_mock.add_response(url=MODELS_URL, json=MODELS)
 
     with httpx.Client(base_url=BASE_URL) as client:
-        response = models_controller.get_models_sync(
+        response = models.get_models_sync(
             client,
             access_token="access_token",
         )
@@ -181,7 +181,7 @@ async def test_get_models_async(httpx_mock: HTTPXMock) -> None:
     httpx_mock.add_response(url=MODELS_URL, json=MODELS)
 
     async with httpx.AsyncClient(base_url=BASE_URL) as client:
-        response = await models_controller.get_models_async(client)
+        response = await models.get_models_async(client)
 
     assert isinstance(response, Models)
 

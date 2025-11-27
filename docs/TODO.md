@@ -19,3 +19,9 @@
   - [x] Group utility endpoints into `tools.py`
   - [x] Update `Client` to use new structure
   - [x] Cleanup old files
+
+## API Model Naming Consistency
+- [x] Rename `models_controller.py` to `models.py`
+  - [x] Rename file `src/gigachat/api/models_controller.py` to `src/gigachat/api/models.py`
+  - [x] Update imports in `src/gigachat/client.py`
+  - [x] Rename and update test `tests/unit_tests/gigachat/api/test_models.py`

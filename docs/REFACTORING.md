@@ -45,3 +45,11 @@
     - **Cohesion**: Related functionality is now located in a single file, making it easier to understand and maintain the domain logic.
     - **Navigability**: Reduced the number of files in `src/gigachat/api/` from ~20 to 5, making the project structure cleaner.
 - **Status**: Resolved. API layer consolidated.
+
+## API Model Naming Consistency
+- **Problem**: The file `src/gigachat/api/models_controller.py` had an inconsistent suffix `_controller` compared to other API modules (`chat.py`, `files.py`) to avoid conflict with `src/gigachat/models` package.
+- **Solution**:
+  - Renamed `src/gigachat/api/models_controller.py` to `src/gigachat/api/models.py`.
+  - Updated imports in `src/gigachat/client.py` and tests to allow `gigachat.api.models` and `gigachat.models.models` to coexist.
+  - **Why**: Ensures consistent naming across all API layer files (`api/<domain>.py`).
+- **Status**: Resolved.

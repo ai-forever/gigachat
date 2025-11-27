@@ -20,7 +20,7 @@ from typing import (
 import httpx
 
 from gigachat._types import FileTypes
-from gigachat.api import auth, chat, files, models_controller, tools
+from gigachat.api import auth, chat, files, models, tools
 from gigachat.assistants import AssistantsAsyncClient, AssistantsSyncClient
 from gigachat.context import authorization_cvar
 from gigachat.exceptions import AuthenticationError
@@ -279,13 +279,11 @@ class GigaChatSyncClient(_BaseClient):
 
     def get_models(self) -> Models:
         """Возвращает массив объектов с данными доступных моделей"""
-        return self._decorator(lambda: models_controller.get_models_sync(self._client, access_token=self.token))
+        return self._decorator(lambda: models.get_models_sync(self._client, access_token=self.token))
 
     def get_model(self, model: str) -> Model:
         """Возвращает объект с описанием указанной модели"""
-        return self._decorator(
-            lambda: models_controller.get_model_sync(self._client, model=model, access_token=self.token)
-        )
+        return self._decorator(lambda: models.get_model_sync(self._client, model=model, access_token=self.token))
 
     def get_image(self, file_id: str) -> Image:
         """Возвращает изображение в кодировке base64"""
@@ -455,7 +453,7 @@ class GigaChatAsyncClient(_BaseClient):
         """Возвращает массив объектов с данными доступных моделей"""
 
         async def _acall() -> Models:
-            return await models_controller.get_models_async(self._aclient, access_token=self.token)
+            return await models.get_models_async(self._aclient, access_token=self.token)
 
         return await self._adecorator(_acall)
 
@@ -471,7 +469,7 @@ class GigaChatAsyncClient(_BaseClient):
         """Возвращает объект с описанием указанной модели"""
 
         async def _acall() -> Model:
-            return await models_controller.get_model_async(self._aclient, model=model, access_token=self.token)
+            return await models.get_model_async(self._aclient, model=model, access_token=self.token)
 
         return await self._adecorator(_acall)
 
