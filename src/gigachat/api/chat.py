@@ -7,7 +7,7 @@ import httpx
 from gigachat.api.utils import build_headers, build_response, build_x_headers, parse_chunk
 from gigachat.context import chat_url_cvar
 from gigachat.exceptions import AuthenticationError, ResponseError
-from gigachat.models import Chat, ChatCompletion, ChatCompletionChunk
+from gigachat.models.chat import Chat, ChatCompletion, ChatCompletionChunk
 
 EVENT_STREAM = "text/event-stream"
 
@@ -130,4 +130,3 @@ async def stream_async(
             if chunk := parse_chunk(line, ChatCompletionChunk):
                 chunk.x_headers = x_headers
                 yield chunk
-

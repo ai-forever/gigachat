@@ -33,7 +33,7 @@ from gigachat.models import (
     UploadedFile,
     UploadedFiles,
 )
-from gigachat.models.balance import BalanceValue
+from gigachat.models.tools import BalanceValue
 from gigachat.settings import Settings
 
 from ...utils import get_bytes, get_json

@@ -9,7 +9,7 @@ import httpx
 
 from gigachat.api.utils import USER_AGENT, build_headers, build_response, build_x_headers
 from gigachat.exceptions import AuthenticationError, ResponseError
-from gigachat.models import AccessToken, Token
+from gigachat.models.auth import AccessToken, Token
 
 _logger = logging.getLogger(__name__)
 

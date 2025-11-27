@@ -5,8 +5,9 @@ import httpx
 
 from gigachat.api.utils import build_headers, build_response, build_x_headers, parse_chunk
 from gigachat.exceptions import AuthenticationError, ResponseError
-from gigachat.models import Messages
+from gigachat.models.chat import Messages
 from gigachat.models.threads import (
+    Thread,
     ThreadCompletion,
     ThreadCompletionChunk,
     ThreadMessages,
@@ -79,6 +80,38 @@ async def get_threads_async(
     )
     response = await client.request(**kwargs)
     return build_response(response, Threads)
+
+
+def _post_thread_kwargs(*, access_token: Optional[str] = None) -> Dict[str, Any]:
+    headers = build_headers(access_token)
+    return {
+        "method": "POST",
+        "url": "/threads",
+        "headers": headers,
+        "json": {},
+    }
+
+
+def post_thread_sync(
+    client: httpx.Client,
+    *,
+    access_token: Optional[str] = None,
+) -> Thread:
+    """Создание треда"""
+    kwargs = _post_thread_kwargs(access_token=access_token)
+    response = client.request(**kwargs)
+    return build_response(response, Thread)
+
+
+async def post_thread_async(
+    client: httpx.AsyncClient,
+    *,
+    access_token: Optional[str] = None,
+) -> Thread:
+    """Создание треда"""
+    kwargs = _post_thread_kwargs(access_token=access_token)
+    response = await client.request(**kwargs)
+    return build_response(response, Thread)
 
 
 def _retrieve_threads_kwargs(
@@ -260,6 +293,7 @@ async def get_thread_messages_async(
 def _run_thread_kwargs(
     *,
     thread_id: str,
+    assistant_id: Optional[str] = None,
     thread_options: Optional[ThreadRunOptions] = None,
     access_token: Optional[str] = None,
 ) -> Dict[str, Any]:
@@ -271,7 +305,7 @@ def _run_thread_kwargs(
         "method": "POST",
         "url": "/threads/run",
         "headers": headers,
-        "json": {**thread_options_dict, **{"thread_id": thread_id}},
+        "json": {**thread_options_dict, **{"thread_id": thread_id, "assistant_id": assistant_id}},
     }
 
 
@@ -279,11 +313,17 @@ def run_thread_sync(
     client: httpx.Client,
     *,
     thread_id: str,
+    assistant_id: Optional[str] = None,
     thread_options: Optional[ThreadRunOptions] = None,
     access_token: Optional[str] = None,
 ) -> ThreadRunResponse:
     """Получить результат run треда"""
-    kwargs = _run_thread_kwargs(thread_id=thread_id, thread_options=thread_options, access_token=access_token)
+    kwargs = _run_thread_kwargs(
+        thread_id=thread_id,
+        assistant_id=assistant_id,
+        thread_options=thread_options,
+        access_token=access_token,
+    )
     response = client.request(**kwargs)
     return build_response(response, ThreadRunResponse)
 
@@ -292,13 +332,89 @@ async def run_thread_async(
     client: httpx.AsyncClient,
     *,
     thread_id: str,
+    assistant_id: Optional[str] = None,
     thread_options: Optional[ThreadRunOptions] = None,
     access_token: Optional[str] = None,
 ) -> ThreadRunResponse:
     """Получить результат run треда"""
-    kwargs = _run_thread_kwargs(thread_id=thread_id, thread_options=thread_options, access_token=access_token)
+    kwargs = _run_thread_kwargs(
+        thread_id=thread_id,
+        assistant_id=assistant_id,
+        thread_options=thread_options,
+        access_token=access_token,
+    )
     response = await client.request(**kwargs)
     return build_response(response, ThreadRunResponse)
+
+
+def _run_thread_stream_kwargs(
+    *,
+    thread_id: str,
+    assistant_id: Optional[str] = None,
+    thread_options: Optional[ThreadRunOptions] = None,
+    access_token: Optional[str] = None,
+) -> Dict[str, Any]:
+    headers = build_headers(access_token)
+    thread_options_dict = {}
+    if thread_options:
+        thread_options_dict = thread_options.dict(exclude_none=True)
+    return {
+        "method": "POST",
+        "url": "/threads/run",
+        "headers": headers,
+        "json": {
+            **thread_options_dict,
+            **{"thread_id": thread_id, "assistant_id": assistant_id, "stream": True},
+        },
+    }
+
+
+def run_thread_stream_sync(
+    client: httpx.Client,
+    *,
+    thread_id: str,
+    assistant_id: Optional[str] = None,
+    thread_options: Optional[ThreadRunOptions] = None,
+    access_token: Optional[str] = None,
+) -> Iterator[ThreadCompletionChunk]:
+    """Запуск треда с возвратом потока"""
+    kwargs = _run_thread_stream_kwargs(
+        thread_id=thread_id,
+        assistant_id=assistant_id,
+        thread_options=thread_options,
+        access_token=access_token,
+    )
+    with client.stream(**kwargs) as response:
+        _check_response(response)
+        x_headers = build_x_headers(response)
+        for line in response.iter_lines():
+            if chunk := parse_chunk(line, ThreadCompletionChunk):
+                chunk.x_headers = x_headers
+                yield chunk
+
+
+async def run_thread_stream_async(
+    client: httpx.AsyncClient,
+    *,
+    thread_id: str,
+    assistant_id: Optional[str] = None,
+    thread_options: Optional[ThreadRunOptions] = None,
+    access_token: Optional[str] = None,
+) -> AsyncIterator[ThreadCompletionChunk]:
+    """Запуск треда с возвратом потока"""
+    kwargs = _run_thread_stream_kwargs(
+        thread_id=thread_id,
+        assistant_id=assistant_id,
+        thread_options=thread_options,
+        access_token=access_token,
+    )
+    async with client.stream(**kwargs) as response:
+        await _acheck_response(response)
+        x_headers = build_x_headers(response)
+        async for line in response.aiter_lines():
+            if chunk := parse_chunk(line, ThreadCompletionChunk):
+                chunk.x_headers = x_headers
+                yield chunk
 
 
 def _add_thread_messages_kwargs(
@@ -689,4 +805,3 @@ async def rerun_thread_messages_stream_async(
             if chunk := parse_chunk(line, ThreadCompletionChunk):
                 chunk.x_headers = x_headers
                 yield chunk
-

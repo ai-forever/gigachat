@@ -3,7 +3,6 @@ from typing import Any, Dict, List, Optional
 import httpx
 
 from gigachat.api.utils import build_headers, build_response
-from gigachat.models import Function
 from gigachat.models.assistants import (
     Assistant,
     AssistantDelete,
@@ -11,6 +10,7 @@ from gigachat.models.assistants import (
     Assistants,
     CreateAssistant,
 )
+from gigachat.models.chat import Function
 
 
 def _get_assistants_kwargs(
@@ -302,4 +302,3 @@ async def delete_assistant_file_async(
     kwargs = _delete_assistant_file_kwargs(assistant_id=assistant_id, file_id=file_id, access_token=access_token)
     response = await client.request(**kwargs)
     return build_response(response, AssistantFileDelete)
-

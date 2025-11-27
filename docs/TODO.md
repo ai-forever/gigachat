@@ -17,6 +17,7 @@
   - [x] Group model endpoints into `models_controller.py`
   - [x] Group auth endpoints into `auth.py`
   - [x] Group utility endpoints into `tools.py`
+  - [x] Separate embeddings API from `tools.py` into `src/gigachat/api/embeddings.py`
   - [x] Update `Client` to use new structure
   - [x] Cleanup old files
 
@@ -35,3 +36,18 @@
   - [x] Merge `src/gigachat/api/threads/*.py` into `src/gigachat/api/threads.py`
   - [x] Update `src/gigachat/threads.py` to use new module
   - [x] Delete `src/gigachat/api/threads/`
+
+## Pydantic Models Consolidation
+- [x] Consolidate Pydantic Models
+  - [x] Group chat models into `src/gigachat/models/chat.py`
+  - [x] Group file models into `src/gigachat/models/files.py`
+  - [x] Group model models into `src/gigachat/models/models.py`
+  - [x] Group auth models into `src/gigachat/models/auth.py`
+  - [x] Group tool models into `src/gigachat/models/tools.py`
+  - [x] Group embeddings models into `src/gigachat/models/embeddings.py`
+  - [x] Group assistants models into `src/gigachat/models/assistants.py`
+  - [x] Group threads models into `src/gigachat/models/threads.py`
+  - [x] Group common models into `src/gigachat/models/utils.py`
+  - [x] Update `src/gigachat/models/__init__.py`
+  - [x] Update imports in codebase
+  - [x] Delete old files and directories

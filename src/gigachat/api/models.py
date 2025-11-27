@@ -3,7 +3,7 @@ from typing import Any, Dict, Optional
 import httpx
 
 from gigachat.api.utils import build_headers, build_response
-from gigachat.models import Model, Models
+from gigachat.models.models import Model, Models
 
 
 def _get_models_kwargs(

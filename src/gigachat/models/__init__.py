@@ -1,42 +1,64 @@
-from gigachat.models.access_token import AccessToken
-from gigachat.models.ai_check_result import AICheckResult
-from gigachat.models.balance import Balance
-from gigachat.models.chat import Chat
-from gigachat.models.chat_completion import ChatCompletion
-from gigachat.models.chat_completion_chunk import ChatCompletionChunk
-from gigachat.models.choices import Choices
-from gigachat.models.choices_chunk import ChoicesChunk
-from gigachat.models.deleted_file import DeletedFile
-from gigachat.models.embedding import Embedding
-from gigachat.models.embeddings import Embeddings
-from gigachat.models.embeddings_usage import EmbeddingsUsage
-from gigachat.models.function import Function
-from gigachat.models.function_call import FunctionCall
-from gigachat.models.function_parameters import FunctionParameters
-from gigachat.models.image import Image
-from gigachat.models.messages import Messages
-from gigachat.models.messages_chunk import MessagesChunk
-from gigachat.models.messages_role import MessagesRole
-from gigachat.models.model import Model
-from gigachat.models.models import Models
-from gigachat.models.open_api_functions import OpenApiFunctions
-from gigachat.models.storage import Storage
-from gigachat.models.token import Token
-from gigachat.models.tokens_count import TokensCount
-from gigachat.models.uploaded_file import UploadedFile
-from gigachat.models.uploaded_files import UploadedFiles
-from gigachat.models.usage import Usage
-from gigachat.models.with_x_headers import WithXHeaders
+from gigachat.models import assistants, threads
+from gigachat.models.assistants import (
+    Assistant,
+    AssistantAttachment,
+    AssistantDelete,
+    AssistantFileDelete,
+    Assistants,
+    CreateAssistant,
+)
+from gigachat.models.auth import AccessToken, Token
+from gigachat.models.chat import (
+    Chat,
+    ChatCompletion,
+    ChatCompletionChunk,
+    Choices,
+    ChoicesChunk,
+    Function,
+    FunctionCall,
+    FunctionParameters,
+    Messages,
+    MessagesChunk,
+    MessagesRole,
+    Storage,
+    Usage,
+)
+from gigachat.models.embeddings import Embedding, Embeddings, EmbeddingsUsage
+from gigachat.models.files import DeletedFile, Image, UploadedFile, UploadedFiles
+from gigachat.models.models import Model, Models
+from gigachat.models.threads import (
+    Thread,
+    ThreadCompletion,
+    ThreadCompletionChunk,
+    ThreadMessage,
+    ThreadMessageAttachment,
+    ThreadMessageResponse,
+    ThreadMessages,
+    ThreadMessagesResponse,
+    ThreadRunOptions,
+    ThreadRunResponse,
+    ThreadRunResult,
+    Threads,
+    ThreadStatus,
+)
+from gigachat.models.tools import AICheckResult, Balance, OpenApiFunctions, TokensCount
+from gigachat.models.utils import WithXHeaders
 
 __all__ = (
     "AccessToken",
     "AICheckResult",
+    "Assistant",
+    "AssistantAttachment",
+    "AssistantDelete",
+    "AssistantFileDelete",
+    "Assistants",
     "Balance",
     "Chat",
     "ChatCompletion",
     "ChatCompletionChunk",
     "Choices",
     "ChoicesChunk",
+    "CreateAssistant",
     "DeletedFile",
     "Embedding",
     "Embeddings",
@@ -44,6 +66,7 @@ __all__ = (
     "Function",
     "FunctionCall",
     "FunctionParameters",
+    "Image",
     "Messages",
     "MessagesChunk",
     "MessagesRole",
@@ -51,13 +74,25 @@ __all__ = (
     "Models",
     "OpenApiFunctions",
     "Storage",
+    "Thread",
+    "ThreadCompletion",
+    "ThreadCompletionChunk",
+    "ThreadMessage",
+    "ThreadMessageAttachment",
+    "ThreadMessageResponse",
+    "ThreadMessages",
+    "ThreadMessagesResponse",
+    "ThreadRunOptions",
+    "ThreadRunResponse",
+    "ThreadRunResult",
+    "Threads",
+    "ThreadStatus",
     "Token",
     "TokensCount",
-    "Usage",
     "UploadedFile",
     "UploadedFiles",
-    "Image",
-    "threads",
-    "assistants",
+    "Usage",
     "WithXHeaders",
+    "assistants",
+    "threads",
 )

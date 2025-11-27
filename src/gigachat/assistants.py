@@ -1,7 +1,6 @@
 from typing import TYPE_CHECKING, Any, Dict, List, Optional
 
 from gigachat.api import assistants
-from gigachat.models import Function
 from gigachat.models.assistants import (
     Assistant,
     AssistantDelete,
@@ -9,6 +8,7 @@ from gigachat.models.assistants import (
     Assistants,
     CreateAssistant,
 )
+from gigachat.models.chat import Function
 
 if TYPE_CHECKING:
     from gigachat.client import GigaChatAsyncClient, GigaChatSyncClient

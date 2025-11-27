@@ -6,9 +6,7 @@ import httpx
 
 from gigachat.api.utils import build_headers, build_response
 from gigachat.exceptions import AuthenticationError, ResponseError
-from gigachat.models import AICheckResult, Embeddings, TokensCount
-from gigachat.models.balance import Balance
-from gigachat.models.open_api_functions import OpenApiFunctions
+from gigachat.models.tools import AICheckResult, Balance, OpenApiFunctions, TokensCount
 
 
 def _get_tokens_count_kwargs(
@@ -144,47 +142,6 @@ async def ai_check_async(
     return build_response(response, AICheckResult)
 
 
-def _get_embeddings_kwargs(
-    *,
-    input_: List[str],
-    model: str,
-    access_token: Optional[str] = None,
-) -> Dict[str, Any]:
-    headers = build_headers(access_token)
-    headers["Content-Type"] = "application/json"
-
-    return {
-        "method": "POST",
-        "url": "/embeddings",
-        "content": json.dumps({"input": input_, "model": model}, ensure_ascii=False),
-        "headers": headers,
-    }
-
-
-def embeddings_sync(
-    client: httpx.Client,
-    *,
-    input_: List[str],
-    model: str,
-    access_token: Optional[str] = None,
-) -> Embeddings:
-    kwargs = _get_embeddings_kwargs(input_=input_, model=model, access_token=access_token)
-    response = client.request(**kwargs)
-    return build_response(response, Embeddings)
-
-
-async def embeddings_async(
-    client: httpx.AsyncClient,
-    *,
-    input_: List[str],
-    model: str,
-    access_token: Optional[str] = None,
-) -> Embeddings:
-    kwargs = _get_embeddings_kwargs(input_=input_, model=model, access_token=access_token)
-    response = await client.request(**kwargs)
-    return build_response(response, Embeddings)
-
-
 def _get_balance_kwargs(
     *,
     access_token: Optional[str] = None,
@@ -220,4 +177,3 @@ async def get_balance_async(
     kwargs = _get_balance_kwargs(access_token=access_token)
     response = await client.request(**kwargs)
     return build_response(response, Balance)
-

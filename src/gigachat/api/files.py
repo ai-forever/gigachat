@@ -7,7 +7,7 @@ import httpx
 from gigachat._types import FileTypes
 from gigachat.api.utils import build_headers, build_response, build_x_headers
 from gigachat.exceptions import AuthenticationError, ResponseError
-from gigachat.models import DeletedFile, Image, UploadedFile, UploadedFiles
+from gigachat.models.files import DeletedFile, Image, UploadedFile, UploadedFiles
 
 
 def _get_file_kwargs(
@@ -203,4 +203,3 @@ async def get_image_async(
     kwargs = _get_image_kwargs(access_token=access_token, file_id=file_id)
     response = await client.request(**kwargs)
     return _build_image_response(response)
-

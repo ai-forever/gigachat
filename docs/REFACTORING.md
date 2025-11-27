@@ -61,8 +61,31 @@
     - Consolidated `src/gigachat/api/assistants/*.py` into a single module `src/gigachat/api/assistants.py`.
     - Consolidated `src/gigachat/api/threads/*.py` into a single module `src/gigachat/api/threads.py`.
     - Updated `src/gigachat/assistants.py` and `src/gigachat/threads.py` client wrappers to use the new consolidated modules.
+    - Fixed missing methods and ensured backward compatibility in `src/gigachat/threads.py` (e.g., `list`, `retrieve`, `delete`, `run_stream`, etc.) matching the new API structure.
     - Removed the now empty `src/gigachat/api/assistants/` and `src/gigachat/api/threads/` directories.
   - **Why**:
     - **Consistency**: Aligns `assistants` and `threads` with the rest of the API layer (`chat.py`, `files.py`, etc.).
     - **Maintainability**: Reduces file count and simplifies imports.
+- **Status**: Resolved.
+
+## Pydantic Models Consolidation
+- **Problem**: The Pydantic models in `src/gigachat/models/` were fragmented into many small files (one per class), making the directory cluttered and imports verbose.
+- **Solution**:
+  - **Implementation Details**:
+    - Grouped related models into domain-specific modules within `src/gigachat/models/`:
+      - `chat.py`: `Chat`, `ChatCompletion`, `Messages`, `Choices`, `Usage`, `Function`, `FunctionCall`, `Storage`, etc.
+      - `files.py`: `UploadedFile`, `UploadedFiles`, `DeletedFile`, `Image`.
+      - `models.py`: `Model`, `Models`.
+      - `auth.py`: `AccessToken`, `Token`.
+      - `tools.py`: `AICheckResult`, `Balance`, `TokensCount`, `OpenApiFunctions`.
+      - `embeddings.py`: `Embedding`, `Embeddings`, `EmbeddingsUsage`.
+      - `assistants.py`: `Assistant`, `AssistantAttachment`, `AssistantDelete`, etc.
+      - `threads.py`: `Thread`, `ThreadMessage`, `ThreadRunResult`, etc.
+      - `utils.py`: `WithXHeaders`.
+    - Separated embeddings API from `tools.py` into `src/gigachat/api/embeddings.py` to match the model structure.
+    - Updated `src/gigachat/models/__init__.py` to export from new locations.
+    - Removed fragmented files and directories.
+  - **Why**:
+    - **Consistency**: Aligns the models structure with the API layer structure.
+    - **Cleanliness**: Reduces the number of files in `src/gigachat/models/` significantly.
 - **Status**: Resolved.

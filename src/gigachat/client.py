@@ -20,30 +20,22 @@ from typing import (
 import httpx
 
 from gigachat._types import FileTypes
-from gigachat.api import auth, chat, files, models, tools
+from gigachat.api import auth, chat, embeddings, files, models, tools
 from gigachat.assistants import AssistantsAsyncClient, AssistantsSyncClient
 from gigachat.context import authorization_cvar
 from gigachat.exceptions import AuthenticationError
-from gigachat.models import (
-    AccessToken,
-    AICheckResult,
-    Balance,
+from gigachat.models.auth import AccessToken, Token
+from gigachat.models.chat import (
     Chat,
     ChatCompletion,
     ChatCompletionChunk,
-    DeletedFile,
-    Embeddings,
-    Image,
     Messages,
     MessagesRole,
-    Model,
-    Models,
-    OpenApiFunctions,
-    Token,
-    TokensCount,
-    UploadedFile,
-    UploadedFiles,
 )
+from gigachat.models.embeddings import Embeddings
+from gigachat.models.files import DeletedFile, Image, UploadedFile, UploadedFiles
+from gigachat.models.models import Model, Models
+from gigachat.models.tools import AICheckResult, Balance, OpenApiFunctions, TokensCount
 from gigachat.settings import Settings
 from gigachat.threads import ThreadsAsyncClient, ThreadsSyncClient
 
@@ -274,7 +266,7 @@ class GigaChatSyncClient(_BaseClient):
     def embeddings(self, texts: List[str], model: str = "Embeddings") -> Embeddings:
         """Возвращает эмбеддинги"""
         return self._decorator(
-            lambda: tools.embeddings_sync(self._client, access_token=self.token, input_=texts, model=model)
+            lambda: embeddings.embeddings_sync(self._client, access_token=self.token, input_=texts, model=model)
         )
 
     def get_models(self) -> Models:
@@ -445,7 +437,7 @@ class GigaChatAsyncClient(_BaseClient):
         """Возвращает эмбеддинги"""
 
         async def _acall() -> Embeddings:
-            return await tools.embeddings_async(self._aclient, access_token=self.token, input_=texts, model=model)
+            return await embeddings.embeddings_async(self._aclient, access_token=self.token, input_=texts, model=model)
 
         return await self._adecorator(_acall)
 
