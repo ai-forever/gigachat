@@ -109,10 +109,22 @@
 - **Solution**:
   - **Implementation Details**:
     - Broke down `test_client.py` into domain-specific test files: `test_client_chat.py`, `test_client_files.py` (merged `test_get_image.py`), `test_client_models.py`, `test_client_tools.py`, `test_client_embeddings.py`.
-    - Renamed `test_assistants.py` and `test_threads.py` to `test_client_assistants.py` and `test_client_threads.py` respectively.
+    - Renamed `test_assistants.py` to `test_client_assistants.py` and `test_threads.py` to `test_client_threads.py`.
     - Cleaned up dead code (`test_models.py`).
   - **Why**:
     - **Maintainability**: Smaller, focused test files are easier to read and maintain.
     - **Consistency**: Aligns the test structure with the recently refactored source code structure.
     - **Clarity**: Distinctly separates High-Level Client tests (`test_client_*.py`) from Low-Level API tests (`api/test_*.py`).
 - **Status**: Resolved.
+
+## Authentication and Stream Logic Improvements
+- **Problem**: The current authentication logic is reactive (waits for 401 error) rather than proactive (checking expiration), causing unnecessary failed requests. Additionally, streaming methods cannot use the standard `_decorator` for auth retries, leading to significant code duplication across `client.py` and `threads.py` (same try/except block repeated 6+ times).
+- **Solution (Stream Decorator & Proactive Auth)**:
+  - **Implementation Details**:
+    - **Proactive Auth**: Updated `_check_validity_token` to check `self._access_token.expires_at` against current time, refreshing before the token actually expires (1 minute buffer). Handled edge case `expires_at=0` (manual tokens) by treating them as valid until proven otherwise.
+    - **Stream Decorator**: Created `_stream_decorator` (sync) and `_astream_decorator` (async) in `client.py`. These decorators wrap the generator returned by streaming methods. They encapsulate the retry logic: try to yield from the generator, if `AuthenticationError` occurs, reset token, refresh token, and retry.
+    - **Refactoring**: Refactored `GigaChatSyncClient.stream`, `GigaChatAsyncClient.astream`, and all streaming methods in `ThreadsSyncClient` and `ThreadsAsyncClient` (`run_stream`, `run_messages_stream`, `rerun_messages_stream`) to use these new decorators. Removed approximately 100 lines of duplicated error handling code.
+  - **Why**:
+    - **Performance**: Proactive checks avoid the latency of a failed 401 request for most cases.
+    - **Maintainability**: Centralizing stream retry logic removes massive duplication and ensures consistent behavior across all streaming endpoints. Any future changes to retry logic only need to happen in the decorators.
+- **Status**: Resolved. All stream methods refactored and verified.

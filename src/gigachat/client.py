@@ -171,7 +171,14 @@ class _BaseClient:
         """Проверить время завершения действия токена"""
         if self._access_token:
             # _check_validity_token
-            return True
+            if self._access_token.expires_at == 0:
+                return True
+
+            import time
+
+            # Check if token expires within next 60 seconds
+            if self._access_token.expires_at > (time.time() * 1000) + 60000:
+                return True
         return False
 
     def _reset_token(self) -> None:
@@ -255,6 +262,18 @@ class GigaChatSyncClient(_BaseClient):
             self._update_token()
         return call()
 
+    def _stream_decorator(self, call: Callable[..., Iterator[T]]) -> Iterator[T]:
+        if self._use_auth:
+            if self._check_validity_token():
+                try:
+                    yield from call()
+                    return
+                except AuthenticationError:
+                    _logger.debug("AUTHENTICATION ERROR")
+                    self._reset_token()
+            self._update_token()
+        yield from call()
+
     def tokens_count(self, input_: List[str], model: Optional[str] = None) -> List[TokensCount]:
         """Возвращает объект с информацией о количестве токенов"""
         if not model:
@@ -334,19 +353,7 @@ class GigaChatSyncClient(_BaseClient):
         """Возвращает ответ модели с учетом переданных сообщений"""
         chat_data = _parse_chat(payload, self._settings)
 
-        if self._use_auth:
-            if self._check_validity_token():
-                try:
-                    for chunk in chat.stream_sync(self._client, chat=chat_data, access_token=self.token):
-                        yield chunk
-                    return
-                except AuthenticationError:
-                    _logger.debug("AUTHENTICATION ERROR")
-                    self._reset_token()
-            self._update_token()
-
-        for chunk in chat.stream_sync(self._client, chat=chat_data, access_token=self.token):
-            yield chunk
+        return self._stream_decorator(lambda: chat.stream_sync(self._client, chat=chat_data, access_token=self.token))
 
 
 class GigaChatAsyncClient(_BaseClient):
@@ -422,6 +429,20 @@ class GigaChatAsyncClient(_BaseClient):
                     self._reset_token()
             await self._aupdate_token()
         return await acall()
+
+    async def _astream_decorator(self, acall: Callable[..., AsyncIterator[T]]) -> AsyncIterator[T]:
+        if self._use_auth:
+            if self._check_validity_token():
+                try:
+                    async for chunk in acall():
+                        yield chunk
+                    return
+                except AuthenticationError:
+                    _logger.debug("AUTHENTICATION ERROR")
+                    self._reset_token()
+            await self._aupdate_token()
+        async for chunk in acall():
+            yield chunk
 
     async def atokens_count(self, input_: List[str], model: Optional[str] = None) -> List[TokensCount]:
         """Возвращает объект с информацией о количестве токенов"""
@@ -540,20 +561,12 @@ class GigaChatAsyncClient(_BaseClient):
 
         return await self._adecorator(_acall)
 
-    async def astream(self, payload: Union[Chat, Dict[str, Any], str]) -> AsyncIterator[ChatCompletionChunk]:
+    def astream(self, payload: Union[Chat, Dict[str, Any], str]) -> AsyncIterator[ChatCompletionChunk]:
         """Возвращает ответ модели с учетом переданных сообщений"""
         chat_data = _parse_chat(payload, self._settings)
 
-        if self._use_auth:
-            if self._check_validity_token():
-                try:
-                    async for chunk in chat.stream_async(self._aclient, chat=chat_data, access_token=self.token):
-                        yield chunk
-                    return
-                except AuthenticationError:
-                    _logger.debug("AUTHENTICATION ERROR")
-                    self._reset_token()
-            await self._aupdate_token()
+        async def _acall() -> AsyncIterator[ChatCompletionChunk]:
+            async for chunk in chat.stream_async(self._aclient, chat=chat_data, access_token=self.token):
+                yield chunk
 
-        async for chunk in chat.stream_async(self._aclient, chat=chat_data, access_token=self.token):
-            yield chunk
+        return self._astream_decorator(_acall)

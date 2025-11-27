@@ -82,3 +82,11 @@
   - [x] Rename `test_threads.py` to `test_client_threads.py`
   - [x] Clean up remaining base tests in `test_client.py`
   - [x] Run all tests to ensure no regressions
+
+## Authentication and Stream Logic Improvements
+- [x] Refactor Authentication and Stream Logic
+  - [x] Proactive Token Expiration Check (`_check_validity_token`)
+  - [x] Implement `_stream_decorator` in `GigaChatSyncClient`
+  - [x] Implement `_astream_decorator` in `GigaChatAsyncClient`
+  - [x] Refactor `stream` methods to use stream decorators
+  - [x] Verify refactoring

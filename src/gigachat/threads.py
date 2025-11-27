@@ -183,31 +183,15 @@ class ThreadsSyncClient:
             thread_options = options
             warnings.warn("Argument 'options' is deprecated, use 'thread_options'", DeprecationWarning, stacklevel=2)
 
-        if self._client._use_auth:
-            if self._client._check_validity_token():
-                try:
-                    for chunk in threads.run_thread_stream_sync(
-                        self._client._client,
-                        thread_id=thread_id,
-                        assistant_id=assistant_id,
-                        thread_options=thread_options,
-                        access_token=self._client.token,
-                    ):
-                        yield chunk
-                    return
-                except AuthenticationError:
-                    _logger.debug("AUTHENTICATION ERROR")
-                    self._client._reset_token()
-            self._client._update_token()
-
-        for chunk in threads.run_thread_stream_sync(
-            self._client._client,
-            thread_id=thread_id,
-            assistant_id=assistant_id,
-            thread_options=thread_options,
-            access_token=self._client.token,
-        ):
-            yield chunk
+        return self._client._stream_decorator(
+            lambda: threads.run_thread_stream_sync(
+                self._client._client,
+                thread_id=thread_id,
+                assistant_id=assistant_id,
+                thread_options=thread_options,
+                access_token=self._client.token,
+            )
+        )
 
     def run_messages(
         self,
@@ -257,37 +241,18 @@ class ThreadsSyncClient:
     ) -> Iterator[ThreadCompletionChunk]:
         """Запуск сообщений в стриме"""
         messages_ = [_parse_message(message) for message in messages]
-        if self._client._use_auth:
-            if self._client._check_validity_token():
-                try:
-                    for chunk in threads.run_thread_messages_stream_sync(
-                        self._client._client,
-                        messages=messages_,
-                        thread_id=thread_id,
-                        assistant_id=assistant_id,
-                        model=model,
-                        thread_options=thread_options,
-                        update_interval=update_interval,
-                        access_token=self._client.token,
-                    ):
-                        yield chunk
-                    return
-                except AuthenticationError:
-                    _logger.debug("AUTHENTICATION ERROR")
-                    self._client._reset_token()
-            self._client._update_token()
-
-        for chunk in threads.run_thread_messages_stream_sync(
-            self._client._client,
-            messages=messages_,
-            thread_id=thread_id,
-            assistant_id=assistant_id,
-            model=model,
-            thread_options=thread_options,
-            update_interval=update_interval,
-            access_token=self._client.token,
-        ):
-            yield chunk
+        return self._client._stream_decorator(
+            lambda: threads.run_thread_messages_stream_sync(
+                self._client._client,
+                messages=messages_,
+                thread_id=thread_id,
+                assistant_id=assistant_id,
+                model=model,
+                thread_options=thread_options,
+                update_interval=update_interval,
+                access_token=self._client.token,
+            )
+        )
 
     def rerun_messages_stream(
         self,
@@ -296,31 +261,15 @@ class ThreadsSyncClient:
         update_interval: Optional[int] = None,
     ) -> Iterator[ThreadCompletionChunk]:
         """Перегенерация сообщений в стриме"""
-        if self._client._use_auth:
-            if self._client._check_validity_token():
-                try:
-                    for chunk in threads.rerun_thread_messages_stream_sync(
-                        self._client._client,
-                        thread_id=thread_id,
-                        thread_options=thread_options,
-                        update_interval=update_interval,
-                        access_token=self._client.token,
-                    ):
-                        yield chunk
-                    return
-                except AuthenticationError:
-                    _logger.debug("AUTHENTICATION ERROR")
-                    self._client._reset_token()
-            self._client._update_token()
-
-        for chunk in threads.rerun_thread_messages_stream_sync(
-            self._client._client,
-            thread_id=thread_id,
-            thread_options=thread_options,
-            update_interval=update_interval,
-            access_token=self._client.token,
-        ):
-            yield chunk
+        return self._client._stream_decorator(
+            lambda: threads.rerun_thread_messages_stream_sync(
+                self._client._client,
+                thread_id=thread_id,
+                thread_options=thread_options,
+                update_interval=update_interval,
+                access_token=self._client.token,
+            )
+        )
 
 
 class ThreadsAsyncClient:
@@ -470,7 +419,7 @@ class ThreadsAsyncClient:
 
         return await self._client._adecorator(_acall)
 
-    async def run_stream(
+    def run_stream(
         self,
         thread_id: str,
         assistant_id: Optional[str] = None,
@@ -483,31 +432,17 @@ class ThreadsAsyncClient:
             thread_options = options
             warnings.warn("Argument 'options' is deprecated, use 'thread_options'", DeprecationWarning, stacklevel=2)
 
-        if self._client._use_auth:
-            if self._client._check_validity_token():
-                try:
-                    async for chunk in threads.run_thread_stream_async(
-                        self._client._aclient,
-                        thread_id=thread_id,
-                        assistant_id=assistant_id,
-                        thread_options=thread_options,
-                        access_token=self._client.token,
-                    ):
-                        yield chunk
-                    return
-                except AuthenticationError:
-                    _logger.debug("AUTHENTICATION ERROR")
-                    self._client._reset_token()
-            await self._client._aupdate_token()
+        async def _acall() -> AsyncIterator[ThreadCompletionChunk]:
+            async for chunk in threads.run_thread_stream_async(
+                self._client._aclient,
+                thread_id=thread_id,
+                assistant_id=assistant_id,
+                thread_options=thread_options,
+                access_token=self._client.token,
+            ):
+                yield chunk
 
-        async for chunk in threads.run_thread_stream_async(
-            self._client._aclient,
-            thread_id=thread_id,
-            assistant_id=assistant_id,
-            thread_options=thread_options,
-            access_token=self._client.token,
-        ):
-            yield chunk
+        return self._client._astream_decorator(_acall)
 
     async def run_messages(
         self,
@@ -550,7 +485,7 @@ class ThreadsAsyncClient:
 
         return await self._client._adecorator(_acall)
 
-    async def run_messages_stream(
+    def run_messages_stream(
         self,
         messages: List[Union[Messages, str, Dict[str, Any]]],
         thread_id: Optional[str] = None,
@@ -561,67 +496,38 @@ class ThreadsAsyncClient:
     ) -> AsyncIterator[ThreadCompletionChunk]:
         """Запуск сообщений в стриме"""
         messages_ = [_parse_message(message) for message in messages]
-        if self._client._use_auth:
-            if self._client._check_validity_token():
-                try:
-                    async for chunk in threads.run_thread_messages_stream_async(
-                        self._client._aclient,
-                        messages=messages_,
-                        thread_id=thread_id,
-                        assistant_id=assistant_id,
-                        model=model,
-                        thread_options=thread_options,
-                        update_interval=update_interval,
-                        access_token=self._client.token,
-                    ):
-                        yield chunk
-                    return
-                except AuthenticationError:
-                    _logger.debug("AUTHENTICATION ERROR")
-                    self._client._reset_token()
-            await self._client._aupdate_token()
 
-        async for chunk in threads.run_thread_messages_stream_async(
-            self._client._aclient,
-            messages=messages_,
-            thread_id=thread_id,
-            assistant_id=assistant_id,
-            model=model,
-            thread_options=thread_options,
-            update_interval=update_interval,
-            access_token=self._client.token,
-        ):
-            yield chunk
+        async def _acall() -> AsyncIterator[ThreadCompletionChunk]:
+            async for chunk in threads.run_thread_messages_stream_async(
+                self._client._aclient,
+                messages=messages_,
+                thread_id=thread_id,
+                assistant_id=assistant_id,
+                model=model,
+                thread_options=thread_options,
+                update_interval=update_interval,
+                access_token=self._client.token,
+            ):
+                yield chunk
 
-    async def rerun_messages_stream(
+        return self._client._astream_decorator(_acall)
+
+    def rerun_messages_stream(
         self,
         thread_id: str,
         thread_options: Optional[ThreadRunOptions] = None,
         update_interval: Optional[int] = None,
     ) -> AsyncIterator[ThreadCompletionChunk]:
         """Перегенерация сообщений в стриме"""
-        if self._client._use_auth:
-            if self._client._check_validity_token():
-                try:
-                    async for chunk in threads.rerun_thread_messages_stream_async(
-                        self._client._aclient,
-                        thread_id=thread_id,
-                        thread_options=thread_options,
-                        update_interval=update_interval,
-                        access_token=self._client.token,
-                    ):
-                        yield chunk
-                    return
-                except AuthenticationError:
-                    _logger.debug("AUTHENTICATION ERROR")
-                    self._client._reset_token()
-            await self._client._aupdate_token()
 
-        async for chunk in threads.rerun_thread_messages_stream_async(
-            self._client._aclient,
-            thread_id=thread_id,
-            thread_options=thread_options,
-            update_interval=update_interval,
-            access_token=self._client.token,
-        ):
-            yield chunk
+        async def _acall() -> AsyncIterator[ThreadCompletionChunk]:
+            async for chunk in threads.rerun_thread_messages_stream_async(
+                self._client._aclient,
+                thread_id=thread_id,
+                thread_options=thread_options,
+                update_interval=update_interval,
+                access_token=self._client.token,
+            ):
+                yield chunk
+
+        return self._client._astream_decorator(_acall)
