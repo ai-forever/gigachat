@@ -2,11 +2,14 @@
 name = "gigachat"
 version = "0.1.43"
 description = "GigaChat. Python-library for GigaChat API"
-authors = ["Konstantin Krestnikov <rai220@gmail.com>", "Sergey Malyshev <in1t@ya.ru>"]
+authors = [
+    "Konstantin Krestnikov <rai220@gmail.com>",
+    "Sergey Malyshev <in1t@ya.ru>",
+]
 license = "MIT"
 readme = "README.md"
 repository = "https://github.com/ai-forever/gigachat"
-packages = [{include = "gigachat", from = "src"}]
+packages = [{ include = "gigachat", from = "src" }]
 
 [tool.poetry.dependencies]
 python = "^3.8"
@@ -18,8 +21,8 @@ black = "^23.12.1"
 mypy = "^1.8.0"
 pytest = "^7.4.3"
 pytest-httpx = [
-    {version = "<=0.22.0", python = "~3.8"},
-    {version = "^0.26.0", python = "^3.9"}
+    { version = "<=0.22.0", python = "~3.8" },
+    { version = "^0.26.0", python = "^3.9" },
 ]
 pytest-asyncio = "^0.21.1"
 coverage = "<=7.3.0"
@@ -36,7 +39,19 @@ line-length = 120
 target-version = ["py38"]
 
 [tool.ruff]
-extend-select = [ "A", "B", "C4", "C90", "I", "Q", "PERF", "PT", "RUF100", "UP", "W"]
+extend-select = [
+    "A",
+    "B",
+    "C4",
+    "C90",
+    "I",
+    "Q",
+    "PERF",
+    "PT",
+    "RUF100",
+    "UP",
+    "W",
+]
 line-length = 120
 src = ["src"]
 target-version = "py38"
@@ -47,7 +62,6 @@ max-complexity = 10
 [tool.mypy]
 plugins = "pydantic.mypy"
 strict = true
-exclude = "src/gigachat/pydantic_v1"
 
 [tool.pytest.ini_options]
 pythonpath = ["src"]

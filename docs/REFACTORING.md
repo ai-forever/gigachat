@@ -142,3 +142,17 @@
     - **Correctness**: Ensures that `async with GigaChat()` fully cleans up the object regardless of how it was used (sync or async).
     - **Stability**: Using `RLock` prevents deadlocks when internal methods call public methods that also require the lock.
 - **Status**: Resolved.
+
+## Pydantic Compatibility Layer Hardening
+- **Problem**: `gigachat` uses a Pydantic compatibility layer (`src/gigachat/pydantic_v1/__init__.py`) with `import *` and explicit exclusion from `mypy` checks. This creates a blind spot for type safety and hides potential compatibility issues. Fully upgrading to Pydantic 2+ is not yet safe due to ecosystem fragmentation (dependencies like LangChain v0.2 pinned to Pydantic 1.x) and public API usage of V1 methods (e.g. `model.dict()`).
+- **Solution (Hardening)**:
+  - **Implementation Details**:
+    - **Refactor Init**: Replace `import *` in `src/gigachat/pydantic_v1/__init__.py` with explicit exports (`BaseModel`, `Field`, `BaseSettings`, `root_validator`) to support static analysis.
+    - **Enable Type Checking**: Removed `exclude = "src/gigachat/pydantic_v1"` from `pyproject.toml` to enable `mypy` validation.
+    - **Cleanup**: Deleted unused proxy files `src/gigachat/pydantic_v1/main.py` and `dataclasses.py`.
+    - **Fix Typing**: Resolved type errors in compatibility layer and `src/gigachat/models/chat.py`. Cleaned up unused ignores in `utils.py`.
+  - **Why**:
+    - **Safety**: Ensures the compatibility layer is robust and correctly typed.
+    - **Preparedness**: Makes future migration to native Pydantic 2 easier by strictly defining the V1 interface usage.
+    - **Developer Experience**: Improves IDE autocompletion and error checking.
+- **Status**: Resolved.

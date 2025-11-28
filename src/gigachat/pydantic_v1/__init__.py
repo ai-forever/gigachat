@@ -12,12 +12,21 @@ from importlib import metadata
 # * This change is easier to roll out and roll back.
 
 try:
-    from pydantic.v1 import *  # noqa: F403
+    from pydantic.v1 import BaseModel, BaseSettings, Field, root_validator, validator
 except ImportError:
-    from pydantic import *  # noqa: F403
+    from pydantic import BaseModel, BaseSettings, Field, root_validator, validator  # type: ignore
 
 
 try:
     _PYDANTIC_MAJOR_VERSION: int = int(metadata.version("pydantic").split(".")[0])
 except metadata.PackageNotFoundError:
     _PYDANTIC_MAJOR_VERSION = 0
+
+__all__ = [
+    "BaseModel",
+    "BaseSettings",
+    "Field",
+    "root_validator",
+    "validator",
+    "_PYDANTIC_MAJOR_VERSION",
+]

@@ -130,7 +130,7 @@ def execute_stream_sync(client: httpx.Client, kwargs: Dict[str, Any], model_clas
         for line in response.iter_lines():
             if chunk := parse_chunk(line, model_class):
                 if hasattr(chunk, "x_headers"):
-                    chunk.x_headers = x_headers  # type: ignore
+                    chunk.x_headers = x_headers
                 yield chunk
 
 
@@ -143,5 +143,5 @@ async def execute_stream_async(
         async for line in response.aiter_lines():
             if chunk := parse_chunk(line, model_class):
                 if hasattr(chunk, "x_headers"):
-                    chunk.x_headers = x_headers  # type: ignore
+                    chunk.x_headers = x_headers
                 yield chunk

@@ -111,7 +111,7 @@ class Function(BaseModel):
     """Список возвращаемых параметров функции"""
 
     @root_validator(pre=True)
-    def _fix_title_and_parameters(cls, values):
+    def _fix_title_and_parameters(cls, values: Dict[str, Any]) -> Dict[str, Any]:
         """Pydantic adapter (title -> name), (parameters -> properties)"""
         if isinstance(values, dict):
             values = dict(values)
@@ -229,7 +229,7 @@ class Chat(BaseModel):
     """Флаги, включающие особенные фичи"""
     storage: Optional[Storage] = None
     """Данные для хранения контекста на стороне GigaChat"""
-    additional_fields: Optional[dict] = None
+    additional_fields: Optional[Dict[str, Any]] = None
     """Дополнительные поля, которые прокидываются в API /chat/completions"""
     reasoning_effort: Optional[Literal["low", "medium", "high"]] = None
     """Глубина рассуждений"""

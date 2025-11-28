@@ -97,3 +97,9 @@
   - [x] Implement thread-safe lazy initialization (Double-Checked Locking)
   - [x] Update `GigaChat.aclose()` to close both sync and async clients
   - [x] Add tests for thread safety and cleanup
+
+## Pydantic Compatibility Layer Hardening
+- [x] Harden and Type-Check Pydantic Compatibility Layer
+  - [x] Refactor `src/gigachat/pydantic_v1/__init__.py` for explicit exports
+  - [x] Enable mypy for `pydantic_v1` in `pyproject.toml`
+  - [x] Fix type errors in compatibility layer and models
