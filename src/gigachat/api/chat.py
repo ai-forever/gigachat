@@ -41,6 +41,7 @@ def chat_sync(
     chat: Chat,
     access_token: Optional[str] = None,
 ) -> ChatCompletion:
+    """Return a model response based on the provided messages."""
     kwargs = _get_chat_kwargs(chat=chat, access_token=access_token)
     return execute_request_sync(client, kwargs, ChatCompletion)
 
@@ -51,6 +52,7 @@ async def chat_async(
     chat: Chat,
     access_token: Optional[str] = None,
 ) -> ChatCompletion:
+    """Return a model response based on the provided messages."""
     kwargs = _get_chat_kwargs(chat=chat, access_token=access_token)
     return await execute_request_async(client, kwargs, ChatCompletion)
 
@@ -83,6 +85,7 @@ def stream_sync(
     chat: Chat,
     access_token: Optional[str] = None,
 ) -> Iterator[ChatCompletionChunk]:
+    """Return a model response based on the provided messages (streaming)."""
     kwargs = _get_stream_kwargs(chat=chat, access_token=access_token)
     return execute_stream_sync(client, kwargs, ChatCompletionChunk)
 
@@ -93,5 +96,6 @@ def stream_async(
     chat: Chat,
     access_token: Optional[str] = None,
 ) -> AsyncIterator[ChatCompletionChunk]:
+    """Return a model response based on the provided messages (streaming)."""
     kwargs = _get_stream_kwargs(chat=chat, access_token=access_token)
     return execute_stream_async(client, kwargs, ChatCompletionChunk)

@@ -77,7 +77,7 @@ def _get_async_auth_client(instance: Any) -> AsyncAuthClientProtocol:
 
 
 def with_auth(func: Callable[..., T]) -> Callable[..., T]:
-    """Decorator for synchronous authenticated requests."""
+    """Decorate synchronous authenticated requests."""
 
     @functools.wraps(func)
     def wrapper(self: Any, *args: Any, **kwargs: Any) -> T:
@@ -96,7 +96,7 @@ def with_auth(func: Callable[..., T]) -> Callable[..., T]:
 
 
 def with_auth_stream(func: Callable[..., Iterator[T]]) -> Callable[..., Iterator[T]]:
-    """Decorator for synchronous streaming requests."""
+    """Decorate synchronous streaming requests."""
 
     @functools.wraps(func)
     def wrapper(self: Any, *args: Any, **kwargs: Any) -> Iterator[T]:
@@ -116,7 +116,7 @@ def with_auth_stream(func: Callable[..., Iterator[T]]) -> Callable[..., Iterator
 
 
 def awith_auth(func: Callable[..., Awaitable[T]]) -> Callable[..., Awaitable[T]]:
-    """Decorator for asynchronous authenticated requests."""
+    """Decorate asynchronous authenticated requests."""
 
     @functools.wraps(func)
     async def wrapper(self: Any, *args: Any, **kwargs: Any) -> T:
@@ -135,7 +135,7 @@ def awith_auth(func: Callable[..., Awaitable[T]]) -> Callable[..., Awaitable[T]]
 
 
 def awith_auth_stream(func: Callable[..., AsyncIterator[T]]) -> Callable[..., AsyncIterator[T]]:
-    """Decorator for asynchronous streaming requests."""
+    """Decorate asynchronous streaming requests."""
 
     @functools.wraps(func)
     async def wrapper(self: Any, *args: Any, **kwargs: Any) -> AsyncIterator[T]:

@@ -12,19 +12,19 @@ SCOPE = "GIGACHAT_API_PERS"
 
 class Settings(BaseSettings):
     base_url: str = BASE_URL
-    """Адрес относительно которого выполняются запросы"""
+    """Address against which requests are executed."""
     auth_url: str = AUTH_URL
-    """Адрес для запроса токена доступа OAuth 2.0"""
+    """Address for requesting OAuth 2.0 access token."""
     credentials: Optional[str] = None
-    """Авторизационные данные"""
+    """Authorization data."""
     scope: str = SCOPE
-    """Версия API, к которой предоставляется доступ"""
+    """API version to which access is provided."""
     access_token: Optional[str] = None
-    """JWE токен"""
+    """JWE token."""
     model: Optional[str] = None
-    """Название модели, от которой нужно получить ответ"""
+    """Name of the model to receive a response from."""
     profanity_check: Optional[bool] = None
-    """Параметр цензуры"""
+    """Censorship parameter."""
 
     user: Optional[str] = None
     password: Optional[str] = None
@@ -41,7 +41,7 @@ class Settings(BaseSettings):
     key_file_password: Optional[str] = None
     flags: Optional[List[str]] = None
     max_connections: Optional[int] = None
-    """Максимальное количество одновременных соединений к API GigaChat"""
+    """Maximum number of simultaneous connections to the GigaChat API."""
 
     class Config:
         env_prefix = ENV_PREFIX

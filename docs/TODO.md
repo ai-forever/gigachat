@@ -123,14 +123,14 @@
   - [x] Remove old `_decorator`, `_adecorator`, `_stream_decorator`, and `_astream_decorator` helper methods from client classes
 
 ## Documentation Standardization
-- [ ] Translate and Standardize Documentation
-  - [ ] Translate docstrings in `src/gigachat/models/` to English
-  - [ ] Translate docstrings in `src/gigachat/api/` to English
-  - [ ] Translate docstrings in `src/gigachat/client.py`, `threads.py`, `assistants.py` to English
-  - [ ] Standardize docstring formatting (Google style)
+- [x] Translate and Standardize Documentation
+  - [x] Translate docstrings in `src/gigachat/models/` to English
+  - [x] Translate docstrings in `src/gigachat/api/` to English
+  - [x] Translate docstrings in `src/gigachat/client.py`, `threads.py`, `assistants.py` to English
+  - [x] Standardize docstring formatting (Google style)
+  - [x] Enforce imperative mood in docstrings (e.g. "Return" instead of "Returns")
+  - [x] Enable Ruff rule D401 to enforce imperative mood
 
 ## Explicit API Exports
-- [ ] Add Explicit `__all__` Exports
-  - [ ] Update `src/gigachat/api/__init__.py` with `__all__`
-  - [ ] Update `src/gigachat/api/assistants/__init__.py` with `__all__`
-  - [ ] Update `src/gigachat/api/threads/__init__.py` with `__all__`
+- [x] Add Explicit `__all__` Exports
+  - [x] Update `src/gigachat/api/__init__.py` with `__all__`

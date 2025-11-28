@@ -25,6 +25,7 @@ EVENT_STREAM = "text/event-stream"
 
 
 def build_headers(access_token: Optional[str] = None) -> Dict[str, str]:
+    """Build headers for the request."""
     headers = {}
 
     if access_token:
@@ -58,6 +59,7 @@ T = TypeVar("T", bound=BaseModel)
 
 
 def parse_chunk(line: str, model_class: Type[T]) -> Optional[T]:
+    """Parse a single line of SSE event data."""
     try:
         name, _, value = line.partition(": ")
         if name == "data":
@@ -73,6 +75,7 @@ def parse_chunk(line: str, model_class: Type[T]) -> Optional[T]:
 
 
 def build_x_headers(response: httpx.Response) -> Dict[str, Optional[str]]:
+    """Extract X-Headers from response."""
     return {
         "x-request-id": response.headers.get("x-request-id"),
         "x-session-id": response.headers.get("x-session-id"),
@@ -105,6 +108,7 @@ async def _acheck_response(response: httpx.Response) -> None:
 
 
 def build_response(response: httpx.Response, model_class: Type[T]) -> T:
+    """Parse successful response into Pydantic model or raise error."""
     if response.status_code == HTTPStatus.OK:
         return model_class(x_headers=build_x_headers(response), **response.json())
     elif response.status_code == HTTPStatus.UNAUTHORIZED:
@@ -114,16 +118,19 @@ def build_response(response: httpx.Response, model_class: Type[T]) -> T:
 
 
 def execute_request_sync(client: httpx.Client, kwargs: Dict[str, Any], model_class: Type[T]) -> T:
+    """Execute sync request and parse response."""
     response = client.request(**kwargs)
     return build_response(response, model_class)
 
 
 async def execute_request_async(client: httpx.AsyncClient, kwargs: Dict[str, Any], model_class: Type[T]) -> T:
+    """Execute async request and parse response."""
     response = await client.request(**kwargs)
     return build_response(response, model_class)
 
 
 def execute_stream_sync(client: httpx.Client, kwargs: Dict[str, Any], model_class: Type[T]) -> Iterator[T]:
+    """Execute sync streaming request and yield parsed chunks."""
     with client.stream(**kwargs) as response:
         _check_response(response)
         x_headers = build_x_headers(response)
@@ -137,6 +144,7 @@ def execute_stream_sync(client: httpx.Client, kwargs: Dict[str, Any], model_clas
 async def execute_stream_async(
     client: httpx.AsyncClient, kwargs: Dict[str, Any], model_class: Type[T]
 ) -> AsyncIterator[T]:
+    """Execute async streaming request and yield parsed chunks."""
     async with client.stream(**kwargs) as response:
         await _acheck_response(response)
         x_headers = build_x_headers(response)

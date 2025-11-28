@@ -5,31 +5,31 @@ from gigachat.pydantic_v1 import BaseModel, Field
 
 
 class EmbeddingsUsage(BaseModel):
-    """Данные об использовании модели"""
+    """Usage statistics for embeddings."""
 
     prompt_tokens: int
-    """Количество токенов во входящем сообщении"""
+    """Number of tokens in the input text."""
 
 
 class Embedding(BaseModel):
-    """Ответ модели"""
+    """Embedding object."""
 
     embedding: List[float]
-    """Эмбеддинг"""
+    """Embedding vector."""
     usage: EmbeddingsUsage
-    """Данные об использовании модели"""
+    """Usage statistics."""
     index: int
-    """Индекс эмбеддинга в массиве"""
+    """Index of the embedding in the list."""
     object_: str = Field(alias="object")
-    """Название объекта"""
+    """Object type."""
 
 
 class Embeddings(WithXHeaders):
-    """Ответ модели"""
+    """Embeddings response."""
 
     data: List[Embedding]
-    """Массив ответов эмбеддера"""
+    """List of embedding objects."""
     model: Optional[str] = None
-    """Название модели с помощью которой нужно вычислить эмбеддинги"""
+    """Model name used for embedding generation."""
     object_: str = Field(alias="object")
-    """Название вызываемого метода"""
+    """Object type."""

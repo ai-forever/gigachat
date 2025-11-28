@@ -24,7 +24,7 @@ def get_models_sync(
     *,
     access_token: Optional[str] = None,
 ) -> Models:
-    """Возвращает массив объектов с данными доступных моделей"""
+    """Return a list of available models."""
     kwargs = _get_models_kwargs(access_token=access_token)
     return execute_request_sync(client, kwargs, Models)
 
@@ -34,7 +34,7 @@ async def get_models_async(
     *,
     access_token: Optional[str] = None,
 ) -> Models:
-    """Возвращает массив объектов с данными доступных моделей"""
+    """Return a list of available models."""
     kwargs = _get_models_kwargs(access_token=access_token)
     return await execute_request_async(client, kwargs, Models)
 
@@ -59,7 +59,7 @@ def get_model_sync(
     model: str,
     access_token: Optional[str] = None,
 ) -> Model:
-    """Возвращает объект с описанием указанной модели"""
+    """Return a description of a specific model."""
     kwargs = _get_model_kwargs(model=model, access_token=access_token)
     return execute_request_sync(client, kwargs, Model)
 
@@ -70,6 +70,6 @@ async def get_model_async(
     model: str,
     access_token: Optional[str] = None,
 ) -> Model:
-    """Возвращает объект с описанием указанной модели"""
+    """Return a description of a specific model."""
     kwargs = _get_model_kwargs(model=model, access_token=access_token)
     return await execute_request_async(client, kwargs, Model)

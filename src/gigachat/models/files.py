@@ -5,40 +5,42 @@ from gigachat.pydantic_v1 import Field
 
 
 class UploadedFile(WithXHeaders):
-    """Информация о загруженном файле"""
+    """Information about an uploaded file."""
 
     id_: str = Field(alias="id")
-    """Идентификатор файла, на который можно ссылаться в API """
+    """File identifier."""
     object_: str = Field(alias="object")
-    """Тип объекта"""
+    """Object type."""
     bytes_: int = Field(alias="bytes")
-    """Размер файла в байтах"""
+    """File size in bytes."""
     created_at: int
-    """Время создания файла в Unix-time формате"""
+    """Creation timestamp (Unix time)."""
     filename: str
-    """Имя файла"""
+    """Name of the file."""
     purpose: str
-    """Предполагаемое назначение файла."""
+    """Intended purpose of the file."""
     access_policy: Optional[str] = None
-    """Доступность файла"""
+    """Access policy."""
 
 
 class UploadedFiles(WithXHeaders):
+    """List of uploaded files."""
+
     data: List[UploadedFile]
-    """Список загруженных файлов"""
+    """List of file objects."""
 
 
 class DeletedFile(WithXHeaders):
-    """Информация об удаленном файле"""
+    """Information about a deleted file."""
 
     id_: str = Field(alias="id")
-    """Идентификатор файла """
+    """File identifier."""
     deleted: bool
-    """Признак удаления файла"""
+    """Deletion status. True if deleted."""
 
 
 class Image(WithXHeaders):
-    """Изображение"""
+    """Image content."""
 
     content: str
-    """Изображение в base64 кодировке"""
+    """Base64 encoded image data."""

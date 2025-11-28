@@ -189,3 +189,23 @@
     - **Separation of Concerns**: Authentication logic is now isolated in its own module, adhering to the Single Responsibility Principle.
     - **Flexibility**: The Protocol-based approach allows any future client-like object to easily opt-in to authentication handling without inheritance.
 - **Status**: Resolved.
+
+## Documentation Standardization
+- **Problem**: The documentation for models, API methods, and client wrappers was inconsistent, with a mix of Russian and English docstrings, and lacked a standard format.
+- **Solution**:
+  - **Implementation Details**:
+    - **Translation**: Translated all docstrings in `src/gigachat/models/`, `src/gigachat/api/`, and client files (`client.py`, `threads.py`, `assistants.py`) to English.
+    - **Standardization**: Applied Google Python Style Guide formatting to all docstrings.
+    - **Imperative Mood**: Enforced imperative mood (e.g., "Return..." instead of "Returns...") for all function and method docstrings to maintain consistency. Enabled Ruff rule `D401` to prevent regressions.
+  - **Why**:
+    - **Consistency**: Ensures a uniform developer experience across the entire library.
+    - **Accessibility**: English documentation makes the library accessible to a broader audience.
+    - **Clarity**: Standardized formatting and imperative mood improve readability and professionalism.
+- **Status**: Resolved.
+
+## Explicit API Exports
+- **Problem**: The `src/gigachat/api/__init__.py` file did not have an `__all__` definition, relying on implicit exports or just exposing everything.
+- **Solution**:
+  - Added explicit `__all__` in `src/gigachat/api/__init__.py` covering all submodules (`assistants`, `auth`, `chat`, `embeddings`, `files`, `models`, `threads`, `tools`, `utils`).
+  - **Why**: Defines a clear public interface for the API layer.
+- **Status**: Resolved.

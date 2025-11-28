@@ -6,70 +6,70 @@ from gigachat.pydantic_v1 import BaseModel
 
 
 class AssistantAttachment(BaseModel):
-    """Файл"""
+    """File attached to an assistant."""
 
     file_id: str
-    """Идентификатор файла прикрепленного к ассистенту"""
+    """Identifier of the file attached to the assistant."""
     name: str
-    """Имя файла прикрепленного к ассистенту"""
+    """Name of the file attached to the assistant."""
 
 
 class Assistant(BaseModel):
-    """Ассистент"""
+    """Assistant object."""
 
     model: str
-    """Идентификатор модели, которую необходимо использовать."""
+    """ID of the model to be used."""
     assistant_id: str
-    """Идентификатор созданного ассистента. UUIDv4"""
+    """The ID of the assistant (UUIDv4)."""
     name: Optional[str]
-    """Имя ассистента, которое было передано в запросе"""
+    """The name of the assistant."""
     description: Optional[str]
-    """Описание ассистента, которое было передано в запросе"""
+    """The description of the assistant."""
     instructions: Optional[str]
-    """Инструкция для ассистента, которое было передано в запросе"""
+    """The system instructions that the assistant uses."""
     created_at: int
-    """Время создания ассистента в Unix-time формате"""
+    """The time at which the assistant was created (Unix timestamp)."""
     updated_at: int
-    """Время изменения ассистента в Unix-time формате"""
+    """The time at which the assistant was last updated (Unix timestamp)."""
     files: Optional[List[AssistantAttachment]]
-    """Файлы прикрепленные к ассистенту """
+    """Files attached to the assistant."""
     metadata: Optional[Dict[str, Any]]
-    """Дополнительная информация"""
+    """Set of 16 key-value pairs that can be attached to an object."""
     threads_count: Optional[int]
-    """Количество тредов клиента взаимодействующих с этим ассистентом"""
+    """Number of threads interacting with this assistant."""
     functions: Optional[List[Function]]
-    """Описания функций, с которыми может работать ассистент"""
+    """List of functions available to the assistant."""
 
 
 class Assistants(WithXHeaders):
-    """Доступные ассистенты"""
+    """List of assistants."""
 
     data: List[Assistant]
-    """Массив объектов с данными доступных ассистентов"""
+    """List of assistant objects."""
 
 
 class AssistantDelete(WithXHeaders):
-    """Информация об удаленном ассистенте"""
+    """Assistant deletion response."""
 
     assistant_id: str
-    """Идентификатор  ассистента"""
+    """The ID of the assistant."""
     deleted: bool
-    """Признак удаления. Если true - ассистент удален"""
+    """Deletion status. True if deleted."""
 
 
 class AssistantFileDelete(WithXHeaders):
-    """Информация об удаленном файле"""
+    """Assistant file deletion response."""
 
     file_id: str
-    """Идентификатор прикрепленного к ассистенту файла"""
+    """The ID of the file."""
     deleted: bool
-    """Признак удаления. Если true - файл удален из ассистента"""
+    """Deletion status. True if deleted."""
 
 
 class CreateAssistant(WithXHeaders):
-    """Информация о созданном ассистенте"""
+    """Response for assistant creation."""
 
     assistant_id: str
-    """Идентификатор созданного ассистента. UUIDv4"""
+    """The ID of the created assistant (UUIDv4)."""
     created_at: int
-    """Время создания ассистента в Unix-time формате"""
+    """The time at which the assistant was created (Unix timestamp)."""

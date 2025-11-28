@@ -53,6 +53,7 @@ def _build_auth_response(response: httpx.Response) -> AccessToken:
 
 
 def auth_sync(client: httpx.Client, *, url: str, credentials: str, scope: str) -> AccessToken:
+    """Return an access token."""
     _validate_credentials(credentials)
     kwargs = _get_auth_kwargs(url=url, credentials=credentials, scope=scope)
     response = client.request(**kwargs)
@@ -60,6 +61,7 @@ def auth_sync(client: httpx.Client, *, url: str, credentials: str, scope: str) -
 
 
 async def auth_async(client: httpx.AsyncClient, *, url: str, credentials: str, scope: str) -> AccessToken:
+    """Return an access token."""
     _validate_credentials(credentials)
     kwargs = _get_auth_kwargs(url=url, credentials=credentials, scope=scope)
     response = await client.request(**kwargs)
@@ -87,6 +89,7 @@ def token_sync(
     user: str,
     password: str,
 ) -> Token:
+    """Return a token."""
     kwargs = _get_token_kwargs(user=user, password=password)
     return execute_request_sync(client, kwargs, Token)
 
@@ -97,5 +100,6 @@ async def token_async(
     user: str,
     password: str,
 ) -> Token:
+    """Return a token."""
     kwargs = _get_token_kwargs(user=user, password=password)
     return await execute_request_async(client, kwargs, Token)

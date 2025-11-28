@@ -35,7 +35,7 @@ def get_assistants_sync(
     assistant_id: Optional[str] = None,
     access_token: Optional[str] = None,
 ) -> Assistants:
-    """Возвращает массив объектов с данными доступных ассистентов"""
+    """Get list of assistants."""
     kwargs = _get_assistants_kwargs(assistant_id=assistant_id, access_token=access_token)
     return execute_request_sync(client, kwargs, Assistants)
 
@@ -46,7 +46,7 @@ async def get_assistants_async(
     assistant_id: Optional[str] = None,
     access_token: Optional[str] = None,
 ) -> Assistants:
-    """Возвращает массив объектов с данными доступных ассистентов"""
+    """Get list of assistants."""
     kwargs = _get_assistants_kwargs(assistant_id=assistant_id, access_token=access_token)
     return await execute_request_async(client, kwargs, Assistants)
 
@@ -94,7 +94,7 @@ def create_assistant_sync(
     metadata: Optional[Dict[str, Any]] = None,
     access_token: Optional[str] = None,
 ) -> CreateAssistant:
-    """Создание ассистента"""
+    """Create assistant."""
     kwargs = _create_assistant_kwargs(
         model=model,
         name=name,
@@ -120,7 +120,7 @@ async def create_assistant_async(
     metadata: Optional[Dict[str, Any]] = None,
     access_token: Optional[str] = None,
 ) -> CreateAssistant:
-    """Создание ассистента"""
+    """Create assistant."""
     kwargs = _create_assistant_kwargs(
         model=model,
         name=name,
@@ -178,6 +178,7 @@ def modify_assistant_sync(
     metadata: Optional[Dict[str, Any]] = None,
     access_token: Optional[str] = None,
 ) -> Assistant:
+    """Modify assistant."""
     kwargs = _modify_assistant_kwargs(
         assistant_id=assistant_id,
         name=name,
@@ -203,6 +204,7 @@ async def modify_assistant_async(
     metadata: Optional[Dict[str, Any]] = None,
     access_token: Optional[str] = None,
 ) -> Assistant:
+    """Modify assistant."""
     kwargs = _modify_assistant_kwargs(
         assistant_id=assistant_id,
         name=name,
@@ -239,6 +241,7 @@ def delete_assistant_sync(
     assistant_id: str,
     access_token: Optional[str] = None,
 ) -> AssistantDelete:
+    """Delete assistant."""
     kwargs = _delete_assistant_kwargs(assistant_id=assistant_id, access_token=access_token)
     return execute_request_sync(client, kwargs, AssistantDelete)
 
@@ -249,6 +252,7 @@ async def delete_assistant_async(
     assistant_id: str,
     access_token: Optional[str] = None,
 ) -> AssistantDelete:
+    """Delete assistant."""
     kwargs = _delete_assistant_kwargs(assistant_id=assistant_id, access_token=access_token)
     return await execute_request_async(client, kwargs, AssistantDelete)
 
@@ -279,6 +283,7 @@ def delete_assistant_file_sync(
     file_id: str,
     access_token: Optional[str] = None,
 ) -> AssistantFileDelete:
+    """Delete assistant file."""
     kwargs = _delete_assistant_file_kwargs(assistant_id=assistant_id, file_id=file_id, access_token=access_token)
     return execute_request_sync(client, kwargs, AssistantFileDelete)
 
@@ -290,5 +295,6 @@ async def delete_assistant_file_async(
     file_id: str,
     access_token: Optional[str] = None,
 ) -> AssistantFileDelete:
+    """Delete assistant file."""
     kwargs = _delete_assistant_file_kwargs(assistant_id=assistant_id, file_id=file_id, access_token=access_token)
     return await execute_request_async(client, kwargs, AssistantFileDelete)

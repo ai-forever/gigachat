@@ -5,20 +5,20 @@ from gigachat.pydantic_v1 import Field
 
 
 class Model(WithXHeaders):
-    """Описание модели"""
+    """Model description."""
 
     id_: str = Field(alias="id")
-    """Название модели"""
+    """Model identifier (name)."""
     object_: str = Field(alias="object")
-    """Тип сущности в ответе, например, модель"""
+    """Object type."""
     owned_by: str
-    """Владелец модели"""
+    """Owner of the model."""
 
 
 class Models(WithXHeaders):
-    """Доступные модели"""
+    """List of available models."""
 
     data: List[Model]
-    """Массив объектов с данными доступных моделей"""
+    """List of model objects."""
     object_: str = Field(alias="object")
-    """Тип сущности в ответе, например, список"""
+    """Object type."""

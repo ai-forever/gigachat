@@ -45,7 +45,7 @@ GIGACHAT_MODEL = "GigaChat"
 
 
 def _get_kwargs(settings: Settings) -> Dict[str, Any]:
-    """Настройки для подключения к API GIGACHAT"""
+    """Return settings for connecting to the GigaChat API."""
     kwargs = {
         "base_url": settings.base_url,
         "verify": settings.verify_ssl_certs,
@@ -67,7 +67,7 @@ def _get_kwargs(settings: Settings) -> Dict[str, Any]:
 
 
 def _get_auth_kwargs(settings: Settings) -> Dict[str, Any]:
-    """Настройки для подключения к серверу авторизации OAuth 2.0"""
+    """Return settings for connecting to the OAuth 2.0 authorization server."""
     kwargs = {
         "verify": settings.verify_ssl_certs,
         "timeout": httpx.Timeout(settings.timeout),
@@ -166,7 +166,7 @@ class _BaseClient:
         return bool(self._settings.credentials or (self._settings.user and self._settings.password))
 
     def _check_validity_token(self) -> bool:
-        """Проверить время завершения действия токена"""
+        """Check if the token is valid (not expired)."""
         if self._access_token:
             # _check_validity_token
             if self._access_token.expires_at == 0:
@@ -180,12 +180,12 @@ class _BaseClient:
         return False
 
     def _reset_token(self) -> None:
-        """Сбросить токен"""
+        """Reset the token."""
         self._access_token = None
 
 
 class GigaChatSyncClient(_BaseClient):
-    """Синхронный клиент GigaChat"""
+    """Synchronous GigaChat client."""
 
     def __init__(self, **kwargs: Any) -> None:
         super().__init__(**kwargs)
@@ -255,29 +255,29 @@ class GigaChatSyncClient(_BaseClient):
 
     @with_auth
     def tokens_count(self, input_: List[str], model: Optional[str] = None) -> List[TokensCount]:
-        """Возвращает объект с информацией о количестве токенов"""
+        """Return the number of tokens in a string."""
         if not model:
             model = self._settings.model or GIGACHAT_MODEL
         return tools.tokens_count_sync(self._client, input_=input_, model=model, access_token=self.token)
 
     @with_auth
     def embeddings(self, texts: List[str], model: str = "Embeddings") -> Embeddings:
-        """Возвращает эмбеддинги"""
+        """Return embeddings."""
         return embeddings.embeddings_sync(self._client, access_token=self.token, input_=texts, model=model)
 
     @with_auth
     def get_models(self) -> Models:
-        """Возвращает массив объектов с данными доступных моделей"""
+        """Return a list of available models."""
         return models.get_models_sync(self._client, access_token=self.token)
 
     @with_auth
     def get_model(self, model: str) -> Model:
-        """Возвращает объект с описанием указанной модели"""
+        """Return a description of a specific model."""
         return models.get_model_sync(self._client, model=model, access_token=self.token)
 
     @with_auth
     def get_image(self, file_id: str) -> Image:
-        """Возвращает изображение в кодировке base64"""
+        """Return an image in base64 encoding."""
         return files.get_image_sync(self._client, file_id=file_id, access_token=self.token)
 
     @with_auth
@@ -286,17 +286,17 @@ class GigaChatSyncClient(_BaseClient):
         file: FileTypes,
         purpose: Literal["general", "assistant"] = "general",
     ) -> UploadedFile:
-        """Загружает файл"""
+        """Upload a file."""
         return files.upload_file_sync(self._client, file=file, purpose=purpose, access_token=self.token)
 
     @with_auth
     def get_file(self, file: str) -> UploadedFile:
-        """Получает информацию о файле"""
+        """Return information about a file."""
         return files.get_file_sync(self._client, file=file, access_token=self.token)
 
     @with_auth
     def get_files(self) -> UploadedFiles:
-        """Получает загруженные файлы"""
+        """Return a list of uploaded files."""
         return files.get_files_sync(self._client, access_token=self.token)
 
     @with_auth
@@ -304,41 +304,44 @@ class GigaChatSyncClient(_BaseClient):
         self,
         file: str,
     ) -> DeletedFile:
-        """Удаляет файл"""
+        """Delete a file."""
         return files.delete_file_sync(self._client, file=file, access_token=self.token)
 
     @with_auth
     def chat(self, payload: Union[Chat, Dict[str, Any], str]) -> ChatCompletion:
-        """Возвращает ответ модели с учетом переданных сообщений"""
+        """Return a model response based on the provided messages."""
         chat_data = _parse_chat(payload, self._settings)
         return chat.chat_sync(self._client, chat=chat_data, access_token=self.token)
 
     @with_auth
     def get_balance(self) -> Balance:
-        """Метод для получения баланса доступных для использования токенов.
-        Только для клиентов с предоплатой иначе http 403"""
+        """
+        Return the balance of available tokens.
+
+        Only for prepaid clients, otherwise HTTP 403.
+        """
         return tools.get_balance_sync(self._client, access_token=self.token)
 
     @with_auth
     def openapi_function_convert(self, openapi_function: str) -> OpenApiFunctions:
-        """Конвертация описание функции в формате OpenAPI в gigachat функцию"""
+        """Convert an OpenAPI function description to a GigaChat function."""
         return tools.functions_convert_sync(self._client, openapi_function=openapi_function, access_token=self.token)
 
     @with_auth
     def check_ai(self, text: str, model: str) -> AICheckResult:
-        """Проверяет переданный текст на наличие содержимого, сгенерированного с помощью нейросетевых моделей."""
+        """Check the provided text for content generated by AI models."""
         return tools.ai_check_sync(self._client, input_=text, model=model, access_token=self.token)
 
     @with_auth_stream
     def stream(self, payload: Union[Chat, Dict[str, Any], str]) -> Iterator[ChatCompletionChunk]:
-        """Возвращает ответ модели с учетом переданных сообщений"""
+        """Return a model response based on the provided messages (streaming)."""
         chat_data = _parse_chat(payload, self._settings)
 
         yield from chat.stream_sync(self._client, chat=chat_data, access_token=self.token)
 
 
 class GigaChatAsyncClient(_BaseClient):
-    """Асинхронный клиент GigaChat"""
+    """Asynchronous GigaChat client."""
 
     def __init__(self, **kwargs: Any) -> None:
         super().__init__(**kwargs)
@@ -402,7 +405,7 @@ class GigaChatAsyncClient(_BaseClient):
 
     @awith_auth
     async def atokens_count(self, input_: List[str], model: Optional[str] = None) -> List[TokensCount]:
-        """Возвращает объект с информацией о количестве токенов"""
+        """Return the number of tokens in a string."""
         if not model:
             model = self._settings.model or GIGACHAT_MODEL
 
@@ -410,31 +413,31 @@ class GigaChatAsyncClient(_BaseClient):
 
     @awith_auth
     async def aembeddings(self, texts: List[str], model: str = "Embeddings") -> Embeddings:
-        """Возвращает эмбеддинги"""
+        """Return embeddings."""
 
         return await embeddings.embeddings_async(self._aclient, access_token=self.token, input_=texts, model=model)
 
     @awith_auth
     async def aget_models(self) -> Models:
-        """Возвращает массив объектов с данными доступных моделей"""
+        """Return a list of available models."""
 
         return await models.get_models_async(self._aclient, access_token=self.token)
 
     @awith_auth
     async def aget_image(self, file_id: str) -> Image:
-        """Возвращает изображение в кодировке base64"""
+        """Return an image in base64 encoding."""
 
         return await files.get_image_async(self._aclient, file_id=file_id, access_token=self.token)
 
     @awith_auth
     async def aget_model(self, model: str) -> Model:
-        """Возвращает объект с описанием указанной модели"""
+        """Return a description of a specific model."""
 
         return await models.get_model_async(self._aclient, model=model, access_token=self.token)
 
     @awith_auth
     async def achat(self, payload: Union[Chat, Dict[str, Any], str]) -> ChatCompletion:
-        """Возвращает ответ модели с учетом переданных сообщений"""
+        """Return a model response based on the provided messages."""
         chat_data = _parse_chat(payload, self._settings)
 
         return await chat.chat_async(self._aclient, chat=chat_data, access_token=self.token)
@@ -445,19 +448,19 @@ class GigaChatAsyncClient(_BaseClient):
         file: FileTypes,
         purpose: Literal["general", "assistant"] = "general",
     ) -> UploadedFile:
-        """Загружает файл"""
+        """Upload a file."""
 
         return await files.upload_file_async(self._aclient, file=file, purpose=purpose, access_token=self.token)
 
     @awith_auth
     async def aget_file(self, file: str) -> UploadedFile:
-        """Получает информацию о файле"""
+        """Return information about a file."""
 
         return await files.get_file_async(self._aclient, file=file, access_token=self.token)
 
     @awith_auth
     async def aget_files(self) -> UploadedFiles:
-        """Получает загруженные файлы"""
+        """Return a list of uploaded files."""
 
         return await files.get_files_async(self._aclient, access_token=self.token)
 
@@ -466,20 +469,23 @@ class GigaChatAsyncClient(_BaseClient):
         self,
         file: str,
     ) -> DeletedFile:
-        """Удаляет файл"""
+        """Delete a file."""
 
         return await files.delete_file_async(self._aclient, file=file, access_token=self.token)
 
     @awith_auth
     async def aget_balance(self) -> Balance:
-        """Метод для получения баланса доступных для использования токенов.
-        Только для клиентов с предоплатой иначе http 403"""
+        """
+        Return the balance of available tokens.
+
+        Only for prepaid clients, otherwise HTTP 403.
+        """
 
         return await tools.get_balance_async(self._aclient, access_token=self.token)
 
     @awith_auth
     async def aopenapi_function_convert(self, openapi_function: str) -> OpenApiFunctions:
-        """Конвертация описание функции в формате OpenAPI в gigachat функцию"""
+        """Convert an OpenAPI function description to a GigaChat function."""
 
         return await tools.functions_convert_async(
             self._aclient, openapi_function=openapi_function, access_token=self.token
@@ -487,13 +493,13 @@ class GigaChatAsyncClient(_BaseClient):
 
     @awith_auth
     async def acheck_ai(self, text: str, model: str) -> AICheckResult:
-        """Проверяет переданный текст на наличие содержимого, сгенерированного с помощью нейросетевых моделей."""
+        """Check the provided text for content generated by AI models."""
 
         return await tools.ai_check_async(self._aclient, input_=text, model=model, access_token=self.token)
 
     @awith_auth_stream
     def astream(self, payload: Union[Chat, Dict[str, Any], str]) -> AsyncIterator[ChatCompletionChunk]:
-        """Возвращает ответ модели с учетом переданных сообщений"""
+        """Return a model response based on the provided messages (streaming)."""
         chat_data = _parse_chat(payload, self._settings)
 
         async def _acall() -> AsyncIterator[ChatCompletionChunk]:

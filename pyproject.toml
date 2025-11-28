@@ -44,6 +44,7 @@ extend-select = [
     "B",
     "C4",
     "C90",
+    "D401",
     "I",
     "Q",
     "PERF",

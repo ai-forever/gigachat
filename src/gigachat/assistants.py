@@ -21,7 +21,7 @@ class AssistantsSyncClient:
 
     @with_auth
     def get(self, assistant_id: Optional[str] = None) -> Assistants:
-        """Возвращает список доступных ассистентов"""
+        """Return a list of available assistants."""
         return assistants.get_assistants_sync(
             self.base_client._client,
             assistant_id=assistant_id,
@@ -39,7 +39,7 @@ class AssistantsSyncClient:
         functions: Optional[List[Function]] = None,
         metadata: Optional[Dict[str, Any]] = None,
     ) -> CreateAssistant:
-        """Создает ассистента"""
+        """Create an assistant."""
         return assistants.create_assistant_sync(
             self.base_client._client,
             model=model,
@@ -63,7 +63,7 @@ class AssistantsSyncClient:
         functions: Optional[List[Function]] = None,
         metadata: Optional[Dict[str, Any]] = None,
     ) -> Assistant:
-        """Обновляет ассистента"""
+        """Update an assistant."""
 
         return assistants.modify_assistant_sync(
             self.base_client._client,
@@ -79,7 +79,7 @@ class AssistantsSyncClient:
 
     @with_auth
     def delete_file(self, assistant_id: str, file_id: str) -> AssistantFileDelete:
-        """Удаляет файл ассистента"""
+        """Delete an assistant file."""
         return assistants.delete_assistant_file_sync(
             self.base_client._client,
             assistant_id=assistant_id,
@@ -89,7 +89,7 @@ class AssistantsSyncClient:
 
     @with_auth
     def delete(self, assistant_id: str) -> AssistantDelete:
-        """Удаляет ассистента"""
+        """Delete an assistant."""
         return assistants.delete_assistant_sync(
             self.base_client._client,
             assistant_id=assistant_id,
@@ -103,7 +103,7 @@ class AssistantsAsyncClient:
 
     @awith_auth
     async def get(self, assistant_id: Optional[str] = None) -> Assistants:
-        """Возвращает список доступных ассистентов"""
+        """Return a list of available assistants."""
 
         return await assistants.get_assistants_async(
             self.base_client._aclient,
@@ -122,7 +122,7 @@ class AssistantsAsyncClient:
         functions: Optional[List[Function]] = None,
         metadata: Optional[Dict[str, Any]] = None,
     ) -> CreateAssistant:
-        """Создает ассистента"""
+        """Create an assistant."""
 
         return await assistants.create_assistant_async(
             self.base_client._aclient,
@@ -147,7 +147,7 @@ class AssistantsAsyncClient:
         functions: Optional[List[Function]] = None,
         metadata: Optional[Dict[str, Any]] = None,
     ) -> Assistant:
-        """Обновляет ассистента"""
+        """Update an assistant."""
 
         return await assistants.modify_assistant_async(
             self.base_client._aclient,
@@ -163,7 +163,7 @@ class AssistantsAsyncClient:
 
     @awith_auth
     async def delete_file(self, assistant_id: str, file_id: str) -> AssistantFileDelete:
-        """Удаляет файл ассистента"""
+        """Delete an assistant file."""
 
         return await assistants.delete_assistant_file_async(
             self.base_client._aclient,
@@ -174,7 +174,7 @@ class AssistantsAsyncClient:
 
     @awith_auth
     async def delete(self, assistant_id: str) -> AssistantDelete:
-        """Удаляет ассистента"""
+        """Delete an assistant."""
 
         return await assistants.delete_assistant_async(
             self.base_client._aclient,

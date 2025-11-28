@@ -2,18 +2,18 @@ from gigachat.models.utils import WithXHeaders
 
 
 class AccessToken(WithXHeaders):
-    """Токен доступа"""
+    """Access token information."""
 
     access_token: str
-    """Сгенерированный Access Token"""
+    """Generated Access Token."""
     expires_at: int
-    """Unix-время завершения действия Access Token в миллисекундах"""
+    """Unix timestamp (in milliseconds) when the Access Token expires."""
 
 
 class Token(WithXHeaders):
-    """Токен доступа"""
+    """Raw token response."""
 
     tok: str
-    """Сгенерированный Access Token"""
+    """Generated Access Token."""
     exp: int
-    """Unix-время завершения действия Access Token в миллисекундах"""
+    """Unix timestamp (in milliseconds) when the Access Token expires."""

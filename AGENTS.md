@@ -19,6 +19,11 @@ GigaChat. Python-library for GigaChat API.
 - Use `ruff` for linting
 - Use `mypy` in strict mode (plugin: pydantic.mypy)
 - Do not add comments to the refactored code, only if it is completely necessary
+- **Documentation**:
+  - Language: English.
+  - Style: Google Python Style Guide.
+  - Mood: Imperative mood for functions/methods (e.g., "Return..." not "Returns...").
+  - Detail: Explicitly state constraints, ranges, and allowed values for fields.
 
 ## Refactoring Documentation
 - **Progress Tracking**: Refer to `docs/TODO.md` for the current status of refactoring tasks.

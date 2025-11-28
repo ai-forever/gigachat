@@ -56,7 +56,7 @@ def get_threads_sync(
     before: Optional[int] = None,
     access_token: Optional[str] = None,
 ) -> Threads:
-    """Получение перечня тредов"""
+    """Get list of threads."""
     kwargs = _get_threads_kwargs(
         assistants_ids=assistants_ids,
         limit=limit,
@@ -74,7 +74,7 @@ async def get_threads_async(
     before: Optional[int] = None,
     access_token: Optional[str] = None,
 ) -> Threads:
-    """Получение перечня тредов"""
+    """Get list of threads."""
     kwargs = _get_threads_kwargs(
         assistants_ids=assistants_ids,
         limit=limit,
@@ -99,7 +99,7 @@ def post_thread_sync(
     *,
     access_token: Optional[str] = None,
 ) -> Thread:
-    """Создание треда"""
+    """Create thread."""
     kwargs = _post_thread_kwargs(access_token=access_token)
     return execute_request_sync(client, kwargs, Thread)
 
@@ -109,7 +109,7 @@ async def post_thread_async(
     *,
     access_token: Optional[str] = None,
 ) -> Thread:
-    """Создание треда"""
+    """Create thread."""
     kwargs = _post_thread_kwargs(access_token=access_token)
     return await execute_request_async(client, kwargs, Thread)
 
@@ -136,7 +136,7 @@ def retrieve_threads_sync(
     threads_ids: List[str],
     access_token: Optional[str] = None,
 ) -> Threads:
-    """Получение перечня тредов по идентификаторам"""
+    """Retrieve threads by IDs."""
     kwargs = _retrieve_threads_kwargs(threads_ids=threads_ids, access_token=access_token)
     return execute_request_sync(client, kwargs, Threads)
 
@@ -147,7 +147,7 @@ async def retrieve_threads_async(
     threads_ids: List[str],
     access_token: Optional[str] = None,
 ) -> Threads:
-    """Получение перечня тредов по идентификаторам"""
+    """Retrieve threads by IDs."""
     kwargs = _retrieve_threads_kwargs(threads_ids=threads_ids, access_token=access_token)
     return await execute_request_async(client, kwargs, Threads)
 
@@ -183,7 +183,7 @@ def delete_thread_sync(
     thread_id: str,
     access_token: Optional[str] = None,
 ) -> bool:
-    """Удаляет тред"""
+    """Delete thread."""
     kwargs = _delete_thread_kwargs(thread_id=thread_id, access_token=access_token)
     response = client.request(**kwargs)
     return _build_delete_response(response)
@@ -195,7 +195,7 @@ async def delete_thread_async(
     thread_id: str,
     access_token: Optional[str] = None,
 ) -> bool:
-    """Удаляет тред"""
+    """Delete thread."""
     kwargs = _delete_thread_kwargs(thread_id=thread_id, access_token=access_token)
     response = await client.request(**kwargs)
     return _build_delete_response(response)
@@ -221,7 +221,7 @@ def get_thread_run_sync(
     thread_id: str,
     access_token: Optional[str] = None,
 ) -> ThreadRunResult:
-    """Получить результат run треда"""
+    """Get thread run status."""
     kwargs = _get_thread_run_kwargs(thread_id=thread_id, access_token=access_token)
     return execute_request_sync(client, kwargs, ThreadRunResult)
 
@@ -232,7 +232,7 @@ async def get_thread_run_async(
     thread_id: str,
     access_token: Optional[str] = None,
 ) -> ThreadRunResult:
-    """Получить результат run треда"""
+    """Get thread run status."""
     kwargs = _get_thread_run_kwargs(thread_id=thread_id, access_token=access_token)
     return await execute_request_async(client, kwargs, ThreadRunResult)
 
@@ -266,7 +266,7 @@ def get_thread_messages_sync(
     before: Optional[int] = None,
     access_token: Optional[str] = None,
 ) -> ThreadMessages:
-    """Получение сообщений треда"""
+    """Get thread messages."""
     kwargs = _get_thread_messages_kwargs(thread_id=thread_id, limit=limit, before=before, access_token=access_token)
     return execute_request_sync(client, kwargs, ThreadMessages)
 
@@ -279,7 +279,7 @@ async def get_thread_messages_async(
     before: Optional[int] = None,
     access_token: Optional[str] = None,
 ) -> ThreadMessages:
-    """Получение сообщений треда"""
+    """Get thread messages."""
     kwargs = _get_thread_messages_kwargs(thread_id=thread_id, limit=limit, before=before, access_token=access_token)
     return await execute_request_async(client, kwargs, ThreadMessages)
 
@@ -311,7 +311,7 @@ def run_thread_sync(
     thread_options: Optional[ThreadRunOptions] = None,
     access_token: Optional[str] = None,
 ) -> ThreadRunResponse:
-    """Получить результат run треда"""
+    """Run thread."""
     kwargs = _run_thread_kwargs(
         thread_id=thread_id,
         assistant_id=assistant_id,
@@ -329,7 +329,7 @@ async def run_thread_async(
     thread_options: Optional[ThreadRunOptions] = None,
     access_token: Optional[str] = None,
 ) -> ThreadRunResponse:
-    """Получить результат run треда"""
+    """Run thread."""
     kwargs = _run_thread_kwargs(
         thread_id=thread_id,
         assistant_id=assistant_id,
@@ -369,7 +369,7 @@ def run_thread_stream_sync(
     thread_options: Optional[ThreadRunOptions] = None,
     access_token: Optional[str] = None,
 ) -> Iterator[ThreadCompletionChunk]:
-    """Запуск треда с возвратом потока"""
+    """Run thread with streaming."""
     kwargs = _run_thread_stream_kwargs(
         thread_id=thread_id,
         assistant_id=assistant_id,
@@ -387,7 +387,7 @@ def run_thread_stream_async(
     thread_options: Optional[ThreadRunOptions] = None,
     access_token: Optional[str] = None,
 ) -> AsyncIterator[ThreadCompletionChunk]:
-    """Запуск треда с возвратом потока"""
+    """Run thread with streaming."""
     kwargs = _run_thread_stream_kwargs(
         thread_id=thread_id,
         assistant_id=assistant_id,
@@ -430,7 +430,7 @@ def add_thread_messages_sync(
     assistant_id: Optional[str] = None,
     access_token: Optional[str] = None,
 ) -> ThreadMessagesResponse:
-    """Добавление сообщений к треду без запуска"""
+    """Add messages to thread."""
     kwargs = _add_thread_messages_kwargs(
         messages=messages,
         model=model,
@@ -450,7 +450,7 @@ async def add_thread_messages_async(
     assistant_id: Optional[str] = None,
     access_token: Optional[str] = None,
 ) -> ThreadMessagesResponse:
-    """Добавление сообщений к треду без запуска"""
+    """Add messages to thread."""
     kwargs = _add_thread_messages_kwargs(
         messages=messages,
         model=model,
@@ -502,7 +502,7 @@ def run_thread_messages_sync(
     thread_options: Optional[ThreadRunOptions] = None,
     access_token: Optional[str] = None,
 ) -> ThreadCompletion:
-    """Добавление сообщений к треду с запуском"""
+    """Add messages and run thread."""
     kwargs = _run_thread_messages_kwargs(
         messages=messages,
         thread_id=thread_id,
@@ -524,7 +524,7 @@ async def run_thread_messages_async(
     thread_options: Optional[ThreadRunOptions] = None,
     access_token: Optional[str] = None,
 ) -> ThreadCompletion:
-    """Добавление сообщений к треду с запуском"""
+    """Add messages and run thread."""
     kwargs = _run_thread_messages_kwargs(
         messages=messages,
         thread_id=thread_id,
@@ -566,7 +566,7 @@ def rerun_thread_messages_sync(
     thread_options: Optional[ThreadRunOptions] = None,
     access_token: Optional[str] = None,
 ) -> ThreadCompletion:
-    """Перегенерация ответа модели"""
+    """Rerun thread messages."""
     kwargs = _rerun_thread_messages_kwargs(
         thread_id=thread_id,
         thread_options=thread_options,
@@ -582,7 +582,7 @@ async def rerun_thread_messages_async(
     thread_options: Optional[ThreadRunOptions] = None,
     access_token: Optional[str] = None,
 ) -> ThreadCompletion:
-    """Перегенерация ответа модели"""
+    """Rerun thread messages."""
     kwargs = _rerun_thread_messages_kwargs(
         thread_id=thread_id,
         thread_options=thread_options,
@@ -636,6 +636,7 @@ def run_thread_messages_stream_sync(
     update_interval: Optional[int] = None,
     access_token: Optional[str] = None,
 ) -> Iterator[ThreadCompletionChunk]:
+    """Add messages and run thread with streaming."""
     kwargs = _run_thread_messages_stream_kwargs(
         messages=messages,
         thread_id=thread_id,
@@ -659,6 +660,7 @@ def run_thread_messages_stream_async(
     update_interval: Optional[int] = None,
     access_token: Optional[str] = None,
 ) -> AsyncIterator[ThreadCompletionChunk]:
+    """Add messages and run thread with streaming."""
     kwargs = _run_thread_messages_stream_kwargs(
         messages=messages,
         thread_id=thread_id,
@@ -705,7 +707,7 @@ def rerun_thread_messages_stream_sync(
     update_interval: Optional[int] = None,
     access_token: Optional[str] = None,
 ) -> Iterator[ThreadCompletionChunk]:
-    """Перегенерация ответа модели"""
+    """Rerun thread messages with streaming."""
     kwargs = _rerun_thread_messages_stream_kwargs(
         thread_id=thread_id,
         thread_options=thread_options,
@@ -723,7 +725,7 @@ def rerun_thread_messages_stream_async(
     update_interval: Optional[int] = None,
     access_token: Optional[str] = None,
 ) -> AsyncIterator[ThreadCompletionChunk]:
-    """Перегенерация ответа модели"""
+    """Rerun thread messages with streaming."""
     kwargs = _rerun_thread_messages_stream_kwargs(
         thread_id=thread_id,
         thread_options=thread_options,

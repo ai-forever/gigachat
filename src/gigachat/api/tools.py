@@ -44,7 +44,7 @@ def tokens_count_sync(
     model: str,
     access_token: Optional[str] = None,
 ) -> List[TokensCount]:
-    """Возвращает объект с информацией о количестве токенов"""
+    """Count tokens in input text."""
     kwargs = _get_tokens_count_kwargs(input_=input_, model=model, access_token=access_token)
     response = client.request(**kwargs)
     return _build_tokens_count_response(response)
@@ -57,7 +57,7 @@ async def tokens_count_async(
     model: str,
     access_token: Optional[str] = None,
 ) -> List[TokensCount]:
-    """Возвращает объект с информацией о количестве токенов"""
+    """Count tokens in input text."""
     kwargs = _get_tokens_count_kwargs(input_=input_, model=model, access_token=access_token)
     response = await client.request(**kwargs)
     return _build_tokens_count_response(response)
@@ -84,7 +84,7 @@ def functions_convert_sync(
     openapi_function: str,
     access_token: Optional[str] = None,
 ) -> OpenApiFunctions:
-    """Конвертация описание функции в формате OpenAPI в gigachat функцию"""
+    """Convert OpenAPI function definition to GigaChat format."""
     kwargs = _get_functions_convert_kwargs(openapi_function=openapi_function, access_token=access_token)
     return execute_request_sync(client, kwargs, OpenApiFunctions)
 
@@ -95,7 +95,7 @@ async def functions_convert_async(
     openapi_function: str,
     access_token: Optional[str] = None,
 ) -> OpenApiFunctions:
-    """Конвертация описание функции в формате OpenAPI в gigachat функцию"""
+    """Convert OpenAPI function definition to GigaChat format."""
     kwargs = _get_functions_convert_kwargs(openapi_function=openapi_function, access_token=access_token)
     return await execute_request_async(client, kwargs, OpenApiFunctions)
 
@@ -123,6 +123,7 @@ def ai_check_sync(
     model: str,
     access_token: Optional[str] = None,
 ) -> AICheckResult:
+    """Check text for AI-generated content."""
     kwargs = _get_ai_check_kwargs(input_=input_, model=model, access_token=access_token)
     return execute_request_sync(client, kwargs, AICheckResult)
 
@@ -134,6 +135,7 @@ async def ai_check_async(
     model: str,
     access_token: Optional[str] = None,
 ) -> AICheckResult:
+    """Check text for AI-generated content."""
     kwargs = _get_ai_check_kwargs(input_=input_, model=model, access_token=access_token)
     return await execute_request_async(client, kwargs, AICheckResult)
 
@@ -142,6 +144,7 @@ def _get_balance_kwargs(
     *,
     access_token: Optional[str] = None,
 ) -> Dict[str, Any]:
+    """Return keyword arguments for get_balance request."""
     headers = build_headers(access_token)
 
     return {
@@ -156,8 +159,11 @@ def get_balance_sync(
     *,
     access_token: Optional[str] = None,
 ) -> Balance:
-    """Метод для получения баланса доступных для использования токенов.
-    Только для клиентов с предоплатой иначе http 403"""
+    """
+    Return the balance of available tokens.
+
+    Only for prepaid clients, otherwise HTTP 403.
+    """
     kwargs = _get_balance_kwargs(access_token=access_token)
     return execute_request_sync(client, kwargs, Balance)
 
@@ -167,7 +173,10 @@ async def get_balance_async(
     *,
     access_token: Optional[str] = None,
 ) -> Balance:
-    """Метод для получения баланса доступных для использования токенов.
-    Только для клиентов с предоплатой иначе http 403"""
+    """
+    Return the balance of available tokens.
+
+    Only for prepaid clients, otherwise HTTP 403.
+    """
     kwargs = _get_balance_kwargs(access_token=access_token)
     return await execute_request_async(client, kwargs, Balance)

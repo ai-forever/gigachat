@@ -29,7 +29,7 @@ def get_file_sync(
     file: str,
     access_token: Optional[str] = None,
 ) -> UploadedFile:
-    """Возвращает объект с описанием указанного файла."""
+    """Return information about a file."""
     kwargs = _get_file_kwargs(file=file, access_token=access_token)
     return execute_request_sync(client, kwargs, UploadedFile)
 
@@ -40,7 +40,7 @@ async def get_file_async(
     file: str,
     access_token: Optional[str] = None,
 ) -> UploadedFile:
-    """Возвращает объект с описанием указанного файла."""
+    """Return information about a file."""
     kwargs = _get_file_kwargs(file=file, access_token=access_token)
     return await execute_request_async(client, kwargs, UploadedFile)
 
@@ -62,7 +62,7 @@ def get_files_sync(
     *,
     access_token: Optional[str] = None,
 ) -> UploadedFiles:
-    """Возвращает загруженные файлы"""
+    """Return a list of uploaded files."""
     kwargs = _get_files_kwargs(access_token=access_token)
     return execute_request_sync(client, kwargs, UploadedFiles)
 
@@ -72,7 +72,7 @@ async def get_files_async(
     *,
     access_token: Optional[str] = None,
 ) -> UploadedFiles:
-    """Возвращает загруженные файлы"""
+    """Return a list of uploaded files."""
     kwargs = _get_files_kwargs(access_token=access_token)
     return await execute_request_async(client, kwargs, UploadedFiles)
 
@@ -100,6 +100,7 @@ def upload_file_sync(
     purpose: Literal["general", "assistant"] = "general",
     access_token: Optional[str] = None,
 ) -> UploadedFile:
+    """Upload a file."""
     kwargs = _upload_file_kwargs(file=file, purpose=purpose, access_token=access_token)
     return execute_request_sync(client, kwargs, UploadedFile)
 
@@ -111,6 +112,7 @@ async def upload_file_async(
     purpose: Literal["general", "assistant"] = "general",
     access_token: Optional[str] = None,
 ) -> UploadedFile:
+    """Upload a file."""
     kwargs = _upload_file_kwargs(file=file, purpose=purpose, access_token=access_token)
     return await execute_request_async(client, kwargs, UploadedFile)
 
@@ -135,6 +137,7 @@ def delete_file_sync(
     file: str,
     access_token: Optional[str] = None,
 ) -> DeletedFile:
+    """Delete a file."""
     kwargs = _delete_file_kwargs(file=file, access_token=access_token)
     return execute_request_sync(client, kwargs, DeletedFile)
 
@@ -145,6 +148,7 @@ async def delete_file_async(
     file: str,
     access_token: Optional[str] = None,
 ) -> DeletedFile:
+    """Delete a file."""
     kwargs = _delete_file_kwargs(file=file, access_token=access_token)
     return await execute_request_async(client, kwargs, DeletedFile)
 
@@ -179,7 +183,7 @@ def get_image_sync(
     file_id: str,
     access_token: Optional[str] = None,
 ) -> Image:
-    """Возвращает изображение в base64 кодировке"""
+    """Return an image in base64 encoding."""
     kwargs = _get_image_kwargs(access_token=access_token, file_id=file_id)
     response = client.request(**kwargs)
     return _build_image_response(response)
@@ -191,7 +195,7 @@ async def get_image_async(
     file_id: str,
     access_token: Optional[str] = None,
 ) -> Image:
-    """Возвращает изображение в base64 кодировке"""
+    """Return an image in base64 encoding."""
     kwargs = _get_image_kwargs(access_token=access_token, file_id=file_id)
     response = await client.request(**kwargs)
     return _build_image_response(response)

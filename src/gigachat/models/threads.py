@@ -15,7 +15,7 @@ from gigachat.pydantic_v1 import BaseModel, Field
 
 
 class ThreadStatus(str, Enum):
-    """Статус треда"""
+    """Status of the thread run."""
 
     IN_PROGRESS = "in_progress"
     READY = "ready"
@@ -24,173 +24,173 @@ class ThreadStatus(str, Enum):
 
 
 class Thread(BaseModel):
-    """Тред"""
+    """Thread object."""
 
     id_: str = Field(alias="id")
-    """Идентификатор треда"""
+    """The identifier, which can be referenced in API endpoints."""
     assistant_id: Optional[str]
-    """Идентификатор ассистента. Передается при первом сообщении в сессию"""
+    """The ID of the assistant. Passed with the first message."""
     model: str
-    """Алиас модели из Table.threads или из Table.assistants,
-    если прикреплен assistant_id"""
+    """Model alias."""
     created_at: int
-    """Дата создания сессии в Unix-time формате"""
+    """The time at which the thread was created (Unix timestamp)."""
     updated_at: int
-    """Дата последней активности в сессии в Unix-time формате.
-    Активностью считается добавление в сессию сообщения, run сессии"""
+    """The time at which the thread was last updated (Unix timestamp)."""
     run_lock: bool
-    """Текущий статус запуска сессии"""
+    """Current run status of the thread."""
     status: ThreadStatus
-    """Статус запуска"""
+    """Thread status."""
 
 
 class Threads(WithXHeaders):
-    """Треды"""
+    """List of threads."""
 
     threads: List[Thread]
-    """Массив тредов клиента"""
+    """List of thread objects."""
 
 
 class ThreadCompletion(WithXHeaders):
-    """Ответ модели"""
+    """Thread completion response."""
 
     object_: str = Field(alias="object")
-    """Название вызываемого метода"""
+    """Object type."""
     model: str
-    """Название модели, которая вернула ответ"""
+    """Model used for generation."""
     thread_id: str
-    """Идентификатор треда"""
+    """Thread ID."""
     message_id: str
-    """Идентификатор сообщения ответа модели"""
+    """Message ID."""
     created: int
-    """Дата и время создания ответа в формате Unix time"""
+    """Creation timestamp (Unix time)."""
     usage: Usage
-    """Данные об использовании модели"""
+    """Usage statistics."""
     message: Messages
-    """Массив ответов модели"""
+    """Generated message."""
     finish_reason: str
-    """Причина завершения гипотезы"""
+    """Reason why the generation finished."""
 
 
 class ThreadCompletionChunk(WithXHeaders):
-    """Ответ модели"""
+    """Thread completion stream chunk."""
 
     object_: str = Field(alias="object")
-    """Название вызываемого метода"""
+    """Object type."""
     model: str
-    """Название модели, которая вернула ответ"""
+    """Model used for generation."""
     thread_id: str
-    """Идентификатор треда"""
+    """Thread ID."""
     message_id: str
-    """Идентификатор сообщения ответа модели"""
+    """Message ID."""
     created: int
-    """Дата и время создания ответа в формате Unix time"""
+    """Creation timestamp (Unix time)."""
     usage: Usage
-    """Данные об использовании модели"""
+    """Usage statistics."""
     choices: List[ChoicesChunk]
-    """Массив ответов модели в потоке"""
+    """List of completion choice chunks."""
 
 
 class ThreadMessageAttachment(BaseModel):
-    """Файл"""
+    """Attachment in a thread message."""
 
     file_id: str
-    """Индентификатор предзагруженного ранее файла"""
+    """File identifier."""
     name: str
-    """Наименование файла"""
+    """File name."""
 
 
 class ThreadMessage(BaseModel):
-    """Сообщение"""
+    """Thread message."""
 
     message_id: str
-    """Идентификатор сообщения"""
+    """Message identifier."""
     role: MessagesRole
-    """Роль автора сообщения"""
+    """Role of the message author."""
     content: str = ""
-    """Текст сообщения"""
+    """Content of the message."""
     attachments: Optional[List[ThreadMessageAttachment]] = []
-    """Идентификаторы предзагруженных ранее файлов"""
+    """List of attachments."""
     created_at: int
-    """Дата создания сообщения в Unix-time формате"""
+    """Creation timestamp (Unix time)."""
     function_call: Optional[FunctionCall] = None
-    """Вызов функции"""
+    """Function call."""
     finish_reason: Optional[str] = None
-    """Причина завершения гипотезы"""
+    """Finish reason."""
 
     class Config:
         use_enum_values = True
 
 
 class ThreadMessages(WithXHeaders):
-    """Сообщения треда"""
+    """List of thread messages."""
 
     thread_id: str
-    """Идентификатор треда"""
+    """Thread identifier."""
     messages: List[ThreadMessage]
-    """Сообщения"""
+    """List of messages."""
 
 
 class ThreadMessageResponse(BaseModel):
+    """Response for message creation."""
+
     created_at: int
-    """Время создания сообщения в Unix-time формате"""
+    """Creation timestamp (Unix time)."""
     message_id: str
-    """Идентификатор созданного сообщения"""
+    """Message identifier."""
 
 
 class ThreadMessagesResponse(WithXHeaders):
+    """Response for messages creation."""
+
     thread_id: str
-    """Идентификатор треда"""
+    """Thread identifier."""
     messages: List[ThreadMessageResponse]
-    """Созданные сообщения"""
+    """List of created messages."""
 
 
 class ThreadRunOptions(BaseModel):
-    """Параметры запроса"""
+    """Options for running a thread."""
 
     temperature: Optional[float] = None
-    """Температура выборки в диапазоне от ноля до двух"""
+    """Sampling temperature (range: 0.0 < temperature ≤ 2.0)."""
     top_p: Optional[float] = None
-    """Альтернатива параметру температуры"""
+    """Nucleus sampling parameter."""
     limit: Optional[int] = None
-    """Максимальное количество сообщений исторического контекста, которые посылаются в модель в запросе
-    Если параметр не передан, считаем что необходимо отправить весь контекст"""
+    """Max context messages to send. If not set, sends all context."""
     max_tokens: Optional[int] = None
-    """Максимальное количество токенов, которые будут использованы для создания ответов"""
+    """Max tokens to generate."""
     repetition_penalty: Optional[float] = None
-    """Количество повторений слов.
-    Значение 1.0 - ничего не менять (нейтральное значение),
-    от 0 до 1 - повторять уже сказанные слова,
-    от 1 и далее стараться не использовать сказанные слова. Допустимое значение > 0"""
+    """Repetition penalty (allowed values: >0; 1.0 = neutral, >1.0 = reduce repetition, <1.0 = increase repetition)."""
     profanity_check: Optional[bool] = None
-    """Параметр цензуры"""
+    """Enable profanity filtering."""
     flags: Optional[List[str]] = None
-    """Флаги, включающие особенные фичи"""
+    """Feature flags."""
     function_call: Optional[Union[Literal["auto", "none"], ChatFunctionCall]] = None
-    """Правила вызова функций"""
+    """Function call strategy."""
     functions: Optional[List[Function]] = None
-    """Набор функций, которые могут быть вызваны моделью"""
+    """List of available functions."""
 
 
 class ThreadRunResponse(WithXHeaders):
+    """Response for starting a thread run."""
+
     status: ThreadStatus
-    """Статус запуска"""
+    """Run status."""
     thread_id: str
-    """Идентификатор запущенного треда"""
+    """Thread identifier."""
     created_at: int
-    """Время запуска сессии в Unix-time формате"""
+    """Start timestamp (Unix time)."""
 
 
 class ThreadRunResult(WithXHeaders):
-    """Run треда"""
+    """Result of a thread run status check."""
 
     status: ThreadStatus
-    """Статус запуска"""
+    """Run status."""
     thread_id: str
-    """Идентификатор треда"""
+    """Thread identifier."""
     updated_at: int
-    """Время обновления статуса run-a в Unix-time формате"""
+    """Last update timestamp (Unix time)."""
     model: str
-    """Модель"""
+    """Model name."""
     messages: Optional[List[ThreadMessage]] = None
-    """Сообщения"""
+    """Messages generated during the run."""

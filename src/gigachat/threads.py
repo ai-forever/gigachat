@@ -53,7 +53,7 @@ class ThreadsSyncClient:
         limit: Optional[int] = None,
         before: Optional[int] = None,
     ) -> Threads:
-        """Получение списка тредов"""
+        """Return a list of threads."""
         return threads.get_threads_sync(
             self._client._client,
             assistants_ids=assistants_ids,
@@ -68,24 +68,24 @@ class ThreadsSyncClient:
         limit: Optional[int] = None,
         before: Optional[int] = None,
     ) -> Threads:
-        """Alias for get_threads"""
+        """Alias for get_threads."""
         return self.get_threads(assistants_ids=assistants_ids, limit=limit, before=before)
 
     @with_auth
     def create_thread(self) -> str:
-        """Создание треда"""
+        """Create a thread."""
         return threads.post_thread_sync(self._client._client, access_token=self._client.token).id_
 
     @with_auth
     def retrieve(self, threads_ids: List[str]) -> Threads:
-        """Получение списка тредов по идентификаторам"""
+        """Return a list of threads by their IDs."""
         return threads.retrieve_threads_sync(
             self._client._client, threads_ids=threads_ids, access_token=self._client.token
         )
 
     @with_auth
     def delete(self, thread_id: str) -> bool:
-        """Удаление треда"""
+        """Delete a thread."""
         return threads.delete_thread_sync(self._client._client, thread_id=thread_id, access_token=self._client.token)
 
     @with_auth
@@ -95,7 +95,7 @@ class ThreadsSyncClient:
         limit: Optional[int] = None,
         before: Optional[int] = None,
     ) -> ThreadMessages:
-        """Получение списка сообщений треда"""
+        """Return a list of messages in a thread."""
         return threads.get_thread_messages_sync(
             self._client._client,
             thread_id=thread_id,
@@ -106,7 +106,7 @@ class ThreadsSyncClient:
 
     @with_auth
     def add_message(self, thread_id: str, message: Union[Messages, str, Dict[str, Any]]) -> ThreadMessagesResponse:
-        """Добавление сообщения в тред"""
+        """Add a message to a thread."""
         message_ = _parse_message(message)
         return threads.add_thread_messages_sync(
             self._client._client,
@@ -119,7 +119,7 @@ class ThreadsSyncClient:
     def add_messages(
         self, thread_id: Optional[str] = None, messages: Optional[List[Union[Messages, str, Dict[str, Any]]]] = None
     ) -> ThreadMessagesResponse:
-        """Добавление сообщений в тред"""
+        """Add multiple messages to a thread."""
         if messages is None:
             messages = []
         messages_ = [_parse_message(message) for message in messages]
@@ -139,7 +139,7 @@ class ThreadsSyncClient:
         # Backwards compatibility args (if needed by user code, though run signature in test uses named args)
         options: Optional[ThreadRunOptions] = None,
     ) -> ThreadRunResponse:
-        """Запуск треда"""
+        """Run a thread."""
         if options and not thread_options:
             thread_options = options
             warnings.warn("Argument 'options' is deprecated, use 'thread_options'", DeprecationWarning, stacklevel=2)
@@ -154,7 +154,7 @@ class ThreadsSyncClient:
 
     @with_auth
     def get_run(self, thread_id: str) -> ThreadRunResult:
-        """Получение статуса запуска треда"""
+        """Return the status of a thread run."""
         return threads.get_thread_run_sync(self._client._client, thread_id=thread_id, access_token=self._client.token)
 
     @with_auth_stream
@@ -166,7 +166,7 @@ class ThreadsSyncClient:
         # Backwards compatibility
         options: Optional[ThreadRunOptions] = None,
     ) -> Iterator[ThreadCompletionChunk]:
-        """Запуск треда с возвратом потока"""
+        """Run a thread with streaming response."""
         if options and not thread_options:
             thread_options = options
             warnings.warn("Argument 'options' is deprecated, use 'thread_options'", DeprecationWarning, stacklevel=2)
@@ -188,7 +188,7 @@ class ThreadsSyncClient:
         model: Optional[str] = None,
         thread_options: Optional[ThreadRunOptions] = None,
     ) -> ThreadCompletion:
-        """Запуск сообщений"""
+        """Run messages."""
         messages_ = [_parse_message(message) for message in messages]
         return threads.run_thread_messages_sync(
             self._client._client,
@@ -206,7 +206,7 @@ class ThreadsSyncClient:
         thread_id: str,
         thread_options: Optional[ThreadRunOptions] = None,
     ) -> ThreadCompletion:
-        """Перегенерация сообщений"""
+        """Regenerate messages."""
         return threads.rerun_thread_messages_sync(
             self._client._client,
             thread_id=thread_id,
@@ -224,7 +224,7 @@ class ThreadsSyncClient:
         thread_options: Optional[ThreadRunOptions] = None,
         update_interval: Optional[int] = None,
     ) -> Iterator[ThreadCompletionChunk]:
-        """Запуск сообщений в стриме"""
+        """Run messages with streaming response."""
         messages_ = [_parse_message(message) for message in messages]
         yield from threads.run_thread_messages_stream_sync(
             self._client._client,
@@ -244,7 +244,7 @@ class ThreadsSyncClient:
         thread_options: Optional[ThreadRunOptions] = None,
         update_interval: Optional[int] = None,
     ) -> Iterator[ThreadCompletionChunk]:
-        """Перегенерация сообщений в стриме"""
+        """Regenerate messages with streaming response."""
         yield from threads.rerun_thread_messages_stream_sync(
             self._client._client,
             thread_id=thread_id,
@@ -265,7 +265,7 @@ class ThreadsAsyncClient:
         limit: Optional[int] = None,
         before: Optional[int] = None,
     ) -> Threads:
-        """Получение списка тредов"""
+        """Return a list of threads."""
 
         return await threads.get_threads_async(
             self._client._aclient,
@@ -281,18 +281,18 @@ class ThreadsAsyncClient:
         limit: Optional[int] = None,
         before: Optional[int] = None,
     ) -> Threads:
-        """Alias for get_threads"""
+        """Alias for get_threads."""
         return await self.get_threads(assistants_ids=assistants_ids, limit=limit, before=before)
 
     @awith_auth
     async def create_thread(self) -> str:
-        """Создание треда"""
+        """Create a thread."""
 
         return (await threads.post_thread_async(self._client._aclient, access_token=self._client.token)).id_
 
     @awith_auth
     async def retrieve(self, threads_ids: List[str]) -> Threads:
-        """Получение списка тредов по идентификаторам"""
+        """Return a list of threads by their IDs."""
 
         return await threads.retrieve_threads_async(
             self._client._aclient, threads_ids=threads_ids, access_token=self._client.token
@@ -300,7 +300,7 @@ class ThreadsAsyncClient:
 
     @awith_auth
     async def delete(self, thread_id: str) -> bool:
-        """Удаление треда"""
+        """Delete a thread."""
 
         return await threads.delete_thread_async(
             self._client._aclient, thread_id=thread_id, access_token=self._client.token
@@ -313,7 +313,7 @@ class ThreadsAsyncClient:
         limit: Optional[int] = None,
         before: Optional[int] = None,
     ) -> ThreadMessages:
-        """Получение списка сообщений треда"""
+        """Return a list of messages in a thread."""
 
         return await threads.get_thread_messages_async(
             self._client._aclient,
@@ -327,7 +327,7 @@ class ThreadsAsyncClient:
     async def add_message(
         self, thread_id: str, message: Union[Messages, str, Dict[str, Any]]
     ) -> ThreadMessagesResponse:
-        """Добавление сообщения в тред"""
+        """Add a message to a thread."""
         message_ = _parse_message(message)
 
         return await threads.add_thread_messages_async(
@@ -341,7 +341,7 @@ class ThreadsAsyncClient:
     async def add_messages(
         self, thread_id: Optional[str] = None, messages: Optional[List[Union[Messages, str, Dict[str, Any]]]] = None
     ) -> ThreadMessagesResponse:
-        """Добавление сообщений в тред"""
+        """Add multiple messages to a thread."""
         if messages is None:
             messages = []
         messages_ = [_parse_message(message) for message in messages]
@@ -362,7 +362,7 @@ class ThreadsAsyncClient:
         # Backwards compatibility
         options: Optional[ThreadRunOptions] = None,
     ) -> ThreadRunResponse:
-        """Запуск треда"""
+        """Run a thread."""
         if options and not thread_options:
             thread_options = options
             warnings.warn("Argument 'options' is deprecated, use 'thread_options'", DeprecationWarning, stacklevel=2)
@@ -377,7 +377,7 @@ class ThreadsAsyncClient:
 
     @awith_auth
     async def get_run(self, thread_id: str) -> ThreadRunResult:
-        """Получение статуса запуска треда"""
+        """Return the status of a thread run."""
 
         return await threads.get_thread_run_async(
             self._client._aclient, thread_id=thread_id, access_token=self._client.token
@@ -392,7 +392,7 @@ class ThreadsAsyncClient:
         # Backwards compatibility
         options: Optional[ThreadRunOptions] = None,
     ) -> AsyncIterator[ThreadCompletionChunk]:
-        """Запуск треда с возвратом потока"""
+        """Run a thread with streaming response."""
         if options and not thread_options:
             thread_options = options
             warnings.warn("Argument 'options' is deprecated, use 'thread_options'", DeprecationWarning, stacklevel=2)
@@ -414,7 +414,7 @@ class ThreadsAsyncClient:
         model: Optional[str] = None,
         thread_options: Optional[ThreadRunOptions] = None,
     ) -> ThreadCompletion:
-        """Запуск сообщений"""
+        """Run messages."""
         messages_ = [_parse_message(message) for message in messages]
 
         return await threads.run_thread_messages_async(
@@ -433,7 +433,7 @@ class ThreadsAsyncClient:
         thread_id: str,
         thread_options: Optional[ThreadRunOptions] = None,
     ) -> ThreadCompletion:
-        """Перегенерация сообщений"""
+        """Regenerate messages."""
 
         return await threads.rerun_thread_messages_async(
             self._client._aclient,
@@ -452,7 +452,7 @@ class ThreadsAsyncClient:
         thread_options: Optional[ThreadRunOptions] = None,
         update_interval: Optional[int] = None,
     ) -> AsyncIterator[ThreadCompletionChunk]:
-        """Запуск сообщений в стриме"""
+        """Run messages with streaming response."""
         messages_ = [_parse_message(message) for message in messages]
 
         return threads.run_thread_messages_stream_async(
@@ -473,7 +473,7 @@ class ThreadsAsyncClient:
         thread_options: Optional[ThreadRunOptions] = None,
         update_interval: Optional[int] = None,
     ) -> AsyncIterator[ThreadCompletionChunk]:
-        """Перегенерация сообщений в стриме"""
+        """Regenerate messages with streaming response."""
 
         return threads.rerun_thread_messages_stream_async(
             self._client._aclient,

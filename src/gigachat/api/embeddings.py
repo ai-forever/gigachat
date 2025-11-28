@@ -31,6 +31,7 @@ def embeddings_sync(
     model: str,
     access_token: Optional[str] = None,
 ) -> Embeddings:
+    """Return embeddings."""
     kwargs = _get_embeddings_kwargs(input_=input_, model=model, access_token=access_token)
     return execute_request_sync(client, kwargs, Embeddings)
 
@@ -42,5 +43,6 @@ async def embeddings_async(
     model: str,
     access_token: Optional[str] = None,
 ) -> Embeddings:
+    """Return embeddings."""
     kwargs = _get_embeddings_kwargs(input_=input_, model=model, access_token=access_token)
     return await execute_request_async(client, kwargs, Embeddings)
