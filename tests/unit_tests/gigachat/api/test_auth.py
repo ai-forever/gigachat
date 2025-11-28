@@ -12,7 +12,7 @@ from gigachat.context import (
     session_id_cvar,
     trace_id_cvar,
 )
-from gigachat.exceptions import AuthenticationError, ResponseError
+from gigachat.exceptions import AuthenticationError, BadRequestError, ResponseError
 from gigachat.models import AccessToken, Token
 
 from ....utils import get_json
@@ -54,8 +54,11 @@ def test_auth_sync_response_error(httpx_mock: HTTPXMock) -> None:
     httpx_mock.add_response(url=AUTH_URL, status_code=400)
 
     with httpx.Client() as client:
-        with pytest.raises(ResponseError):
+        with pytest.raises(BadRequestError) as exc_info:
             auth.auth_sync(client, url=AUTH_URL, credentials="credentials", scope="scope")
+
+    assert exc_info.value.status_code == 400
+    assert str(exc_info.value.url) == AUTH_URL
 
 
 def test_auth_sync_headers(httpx_mock: HTTPXMock) -> None:
@@ -131,8 +134,11 @@ def test_token_sync_response_error(httpx_mock: HTTPXMock) -> None:
     httpx_mock.add_response(url=TOKEN_URL, status_code=400)
 
     with httpx.Client(base_url=BASE_URL) as client:
-        with pytest.raises(ResponseError):
+        with pytest.raises(BadRequestError) as exc_info:
             auth.token_sync(client, user="user", password="password")
+
+    assert exc_info.value.status_code == 400
+    assert str(exc_info.value.url) == TOKEN_URL
 
 
 def test_token_sync_headers(httpx_mock: HTTPXMock) -> None:
@@ -156,4 +162,3 @@ async def test_token_async(httpx_mock: HTTPXMock) -> None:
         response = await auth.token_async(client, user="user", password="password")
 
     assert isinstance(response, Token)
-

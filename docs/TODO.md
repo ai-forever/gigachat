@@ -142,3 +142,13 @@
   - [x] Refactor `ThreadsSyncClient` and `ThreadsAsyncClient` to use `_base_client` instead of `_client`
   - [x] Simplify auth decorators logic (remove legacy checks)
   - [x] Verify tests pass
+
+## Exception Handling Improvements
+- [x] Improve Exception Handling
+  - [x] Refactor `ResponseError` to support structured attributes (`status_code`, `url`, `content`, `headers`)
+  - [x] Implement `__str__` for `ResponseError`
+  - [x] Implement specific exception subclasses: `BadRequestError` (400), `AuthenticationError` (401), `ForbiddenError` (403), `NotFoundError` (404), `UnprocessableEntityError` (422), `RateLimitError` (429), `ServerError` (5xx)
+  - [x] Add helper properties to exceptions (e.g., `RateLimitError.retry_after`)
+  - [x] Update `src/gigachat/api/utils.py` to raise specific exceptions
+  - [x] Create unit tests `tests/unit_tests/gigachat/test_exceptions.py`
+  - [x] Update existing tests

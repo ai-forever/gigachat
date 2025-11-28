@@ -14,7 +14,7 @@ from gigachat.context import (
     session_id_cvar,
     trace_id_cvar,
 )
-from gigachat.exceptions import AuthenticationError, ResponseError
+from gigachat.exceptions import AuthenticationError, BadRequestError, ResponseError
 from gigachat.models import Model, Models
 
 from ....utils import get_json
@@ -80,8 +80,11 @@ def test_get_model_sync_response_error(httpx_mock: HTTPXMock) -> None:
     httpx_mock.add_response(url=MODEL_URL, status_code=400)
 
     with httpx.Client(base_url=BASE_URL) as client:
-        with pytest.raises(ResponseError):
+        with pytest.raises(BadRequestError) as exc_info:
             models.get_model_sync(client, model="model")
+
+    assert exc_info.value.status_code == 400
+    assert str(exc_info.value.url) == MODEL_URL
 
 
 def test_get_model_sync_headers(httpx_mock: HTTPXMock) -> None:
@@ -160,8 +163,11 @@ def test_get_models_sync_response_error(httpx_mock: HTTPXMock) -> None:
     httpx_mock.add_response(url=MODELS_URL, status_code=400)
 
     with httpx.Client(base_url=BASE_URL) as client:
-        with pytest.raises(ResponseError):
+        with pytest.raises(BadRequestError) as exc_info:
             models.get_models_sync(client)
+
+    assert exc_info.value.status_code == 400
+    assert str(exc_info.value.url) == MODELS_URL
 
 
 def test_get_models_sync_headers(httpx_mock: HTTPXMock) -> None:
@@ -184,4 +190,3 @@ async def test_get_models_async(httpx_mock: HTTPXMock) -> None:
         response = await models.get_models_async(client)
 
     assert isinstance(response, Models)
-

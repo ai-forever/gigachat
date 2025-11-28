@@ -19,7 +19,7 @@ from gigachat.context import (
     session_id_cvar,
     trace_id_cvar,
 )
-from gigachat.exceptions import AuthenticationError, ResponseError
+from gigachat.exceptions import AuthenticationError, BadRequestError, ResponseError
 from gigachat.models import Chat, ChatCompletion, ChatCompletionChunk
 
 from ....utils import get_bytes, get_json
@@ -126,8 +126,11 @@ def test_chat_sync_response_error(httpx_mock: HTTPXMock) -> None:
     httpx_mock.add_response(url=MOCK_URL, status_code=400)
 
     with httpx.Client(base_url=BASE_URL) as client:
-        with pytest.raises(ResponseError):
+        with pytest.raises(BadRequestError) as exc_info:
             chat.chat_sync(client, chat=CHAT)
+
+    assert exc_info.value.status_code == 400
+    assert str(exc_info.value.url) == MOCK_URL
 
 
 def test_chat_sync_headers(httpx_mock: HTTPXMock) -> None:
@@ -268,8 +271,11 @@ def test_stream_sync_response_error(httpx_mock: HTTPXMock) -> None:
     httpx_mock.add_response(url=MOCK_URL, status_code=400)
 
     with httpx.Client(base_url=BASE_URL) as client:
-        with pytest.raises(ResponseError):
+        with pytest.raises(BadRequestError) as exc_info:
             list(chat.stream_sync(client, chat=CHAT))
+
+    assert exc_info.value.status_code == 400
+    assert str(exc_info.value.url) == MOCK_URL
 
 
 def test_stream_sync_headers(httpx_mock: HTTPXMock) -> None:
@@ -315,4 +321,3 @@ async def test_stream_async_additional_fields(httpx_mock: HTTPXMock) -> None:
     requests = httpx_mock.get_requests()
     request_content = json.loads(requests[0].content.decode("utf-8"))
     assert request_content["additional_field"] == "val"
-

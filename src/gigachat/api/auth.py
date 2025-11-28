@@ -7,8 +7,14 @@ from typing import Any, Dict
 
 import httpx
 
-from gigachat.api.utils import USER_AGENT, build_headers, build_x_headers, execute_request_async, execute_request_sync
-from gigachat.exceptions import AuthenticationError, ResponseError
+from gigachat.api.utils import (
+    USER_AGENT,
+    _raise_for_status,
+    build_headers,
+    build_x_headers,
+    execute_request_async,
+    execute_request_sync,
+)
 from gigachat.models.auth import AccessToken, Token
 
 _logger = logging.getLogger(__name__)
@@ -46,10 +52,8 @@ def _build_auth_response(response: httpx.Response) -> AccessToken:
             )
         else:
             return AccessToken(x_headers=build_x_headers(response), **json_data)
-    elif response.status_code == HTTPStatus.UNAUTHORIZED:
-        raise AuthenticationError(response.url, response.status_code, response.content, response.headers)
     else:
-        raise ResponseError(response.url, response.status_code, response.content, response.headers)
+        _raise_for_status(response.url, response.status_code, response.content, response.headers)
 
 
 def auth_sync(client: httpx.Client, *, url: str, credentials: str, scope: str) -> AccessToken:

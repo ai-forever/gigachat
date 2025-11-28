@@ -223,3 +223,25 @@
     - **Clarity**: Distinguishes the parent GigaChat client (`_base_client`) from the underlying HTTP client (`_client`).
     - **Convention**: Adheres to Python's "weak internal use" underscore prefix convention.
 - **Status**: Resolved.
+
+## Exception Handling Improvements
+- **Problem**: The current exception handling is minimal (`ResponseError` inherits from `Exception` without `__init__` parameters), making it difficult for users to access error details like status codes, response bodies, or headers without manual parsing of `e.args`. Additionally, there are no specific exception classes for common HTTP errors (e.g., `RateLimitError`, `BadRequestError`).
+- **Solution**:
+  - **Implementation Details**:
+    - Update `ResponseError` to store `status_code`, `content`, `headers`, and `url` as attributes.
+    - Implement `__str__` for human-readable error messages.
+    - Create specific exception subclasses for common HTTP status codes:
+      - `BadRequestError` (400)
+      - `AuthenticationError` (401)
+      - `ForbiddenError` (403)
+      - `NotFoundError` (404)
+      - `UnprocessableEntityError` (422)
+      - `RateLimitError` (429) - with `retry_after` property
+      - `ServerError` (5xx)
+    - Update `api/utils.py` to raise these specific exceptions based on status codes.
+    - Add new unit tests in `tests/unit_tests/gigachat/test_exceptions.py` and update existing tests.
+  - **Why**:
+    - **Developer Experience**: Provides structured access to error details, eliminating the need for `e.args` parsing.
+    - **Robustness**: Enables users to implement cleaner retry logic and specific error handling (e.g., catching `RateLimitError` separate from `AuthenticationError`).
+    - **Standardization**: Aligns with Python best practices and other popular API clients.
+- **Status**: Resolved.

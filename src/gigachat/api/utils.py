@@ -1,6 +1,6 @@
 import logging
 from http import HTTPStatus
-from typing import Any, AsyncIterator, Dict, Iterator, Optional, Type, TypeVar
+from typing import Any, AsyncIterator, Dict, Iterator, NoReturn, Optional, Type, TypeVar, Union
 
 import httpx
 
@@ -15,7 +15,16 @@ from gigachat.context import (
     session_id_cvar,
     trace_id_cvar,
 )
-from gigachat.exceptions import AuthenticationError, ResponseError
+from gigachat.exceptions import (
+    AuthenticationError,
+    BadRequestError,
+    ForbiddenError,
+    NotFoundError,
+    RateLimitError,
+    ResponseError,
+    ServerError,
+    UnprocessableEntityError,
+)
 from gigachat.pydantic_v1 import BaseModel
 
 _logger = logging.getLogger(__name__)
@@ -89,32 +98,45 @@ def _check_content_type(response: httpx.Response) -> None:
         raise httpx.TransportError(f"Expected response Content-Type to be '{EVENT_STREAM}', got {content_type!r}")
 
 
+def _raise_for_status(url: Union[httpx.URL, str], status_code: int, content: bytes, headers: httpx.Headers) -> NoReturn:
+    if status_code == HTTPStatus.BAD_REQUEST:
+        raise BadRequestError(url, status_code, content, headers)
+    elif status_code == HTTPStatus.UNAUTHORIZED:
+        raise AuthenticationError(url, status_code, content, headers)
+    elif status_code == HTTPStatus.FORBIDDEN:
+        raise ForbiddenError(url, status_code, content, headers)
+    elif status_code == HTTPStatus.NOT_FOUND:
+        raise NotFoundError(url, status_code, content, headers)
+    elif status_code == HTTPStatus.UNPROCESSABLE_ENTITY:
+        raise UnprocessableEntityError(url, status_code, content, headers)
+    elif status_code == HTTPStatus.TOO_MANY_REQUESTS:
+        raise RateLimitError(url, status_code, content, headers)
+    elif 500 <= status_code < 600:
+        raise ServerError(url, status_code, content, headers)
+    else:
+        raise ResponseError(url, status_code, content, headers)
+
+
 def _check_response(response: httpx.Response) -> None:
     if response.status_code == HTTPStatus.OK:
         _check_content_type(response)
-    elif response.status_code == HTTPStatus.UNAUTHORIZED:
-        raise AuthenticationError(response.url, response.status_code, response.read(), response.headers)
     else:
-        raise ResponseError(response.url, response.status_code, response.read(), response.headers)
+        _raise_for_status(response.url, response.status_code, response.read(), response.headers)
 
 
 async def _acheck_response(response: httpx.Response) -> None:
     if response.status_code == HTTPStatus.OK:
         _check_content_type(response)
-    elif response.status_code == HTTPStatus.UNAUTHORIZED:
-        raise AuthenticationError(response.url, response.status_code, await response.aread(), response.headers)
     else:
-        raise ResponseError(response.url, response.status_code, await response.aread(), response.headers)
+        _raise_for_status(response.url, response.status_code, await response.aread(), response.headers)
 
 
 def build_response(response: httpx.Response, model_class: Type[T]) -> T:
     """Parse successful response into Pydantic model or raise error."""
     if response.status_code == HTTPStatus.OK:
         return model_class(x_headers=build_x_headers(response), **response.json())
-    elif response.status_code == HTTPStatus.UNAUTHORIZED:
-        raise AuthenticationError(response.url, response.status_code, response.content, response.headers)
     else:
-        raise ResponseError(response.url, response.status_code, response.content, response.headers)
+        _raise_for_status(response.url, response.status_code, response.content, response.headers)
 
 
 def execute_request_sync(client: httpx.Client, kwargs: Dict[str, Any], model_class: Type[T]) -> T:
