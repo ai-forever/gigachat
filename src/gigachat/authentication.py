@@ -54,10 +54,8 @@ def _get_auth_client(instance: Any) -> AuthClientProtocol:
     """Resolve the synchronous auth client from the instance."""
     if isinstance(instance, AuthClientProtocol):
         return instance
-    if hasattr(instance, "_client") and isinstance(instance._client, AuthClientProtocol):
-        return instance._client
-    if hasattr(instance, "base_client") and isinstance(instance.base_client, AuthClientProtocol):
-        return instance.base_client
+    if hasattr(instance, "_base_client") and isinstance(instance._base_client, AuthClientProtocol):
+        return instance._base_client
     raise ValueError(f"Could not resolve AuthClientProtocol from {instance}")
 
 
@@ -65,10 +63,8 @@ def _get_async_auth_client(instance: Any) -> AsyncAuthClientProtocol:
     """Resolve the asynchronous auth client from the instance."""
     if isinstance(instance, AsyncAuthClientProtocol):
         return instance
-    if hasattr(instance, "_client") and isinstance(instance._client, AsyncAuthClientProtocol):
-        return instance._client
-    if hasattr(instance, "base_client") and isinstance(instance.base_client, AsyncAuthClientProtocol):
-        return instance.base_client
+    if hasattr(instance, "_base_client") and isinstance(instance._base_client, AsyncAuthClientProtocol):
+        return instance._base_client
     raise ValueError(f"Could not resolve AsyncAuthClientProtocol from {instance}")
 
 

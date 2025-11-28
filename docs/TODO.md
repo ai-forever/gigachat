@@ -134,3 +134,11 @@
 ## Explicit API Exports
 - [x] Add Explicit `__all__` Exports
   - [x] Update `src/gigachat/api/__init__.py` with `__all__`
+
+## Client Internal Attribute Consistency
+- [x] Standardize Internal Client Reference
+  - [x] Update `src/gigachat/authentication.py` to support `_base_client`
+  - [x] Refactor `AssistantsSyncClient` and `AssistantsAsyncClient` to use `_base_client` instead of `base_client`
+  - [x] Refactor `ThreadsSyncClient` and `ThreadsAsyncClient` to use `_base_client` instead of `_client`
+  - [x] Simplify auth decorators logic (remove legacy checks)
+  - [x] Verify tests pass

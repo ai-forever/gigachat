@@ -17,15 +17,15 @@ if TYPE_CHECKING:
 
 class AssistantsSyncClient:
     def __init__(self, base_client: "GigaChatSyncClient"):
-        self.base_client = base_client
+        self._base_client = base_client
 
     @_with_auth
     def get(self, assistant_id: Optional[str] = None) -> Assistants:
         """Return a list of available assistants."""
         return assistants.get_assistants_sync(
-            self.base_client._client,
+            self._base_client._client,
             assistant_id=assistant_id,
-            access_token=self.base_client.token,
+            access_token=self._base_client.token,
         )
 
     @_with_auth
@@ -41,7 +41,7 @@ class AssistantsSyncClient:
     ) -> CreateAssistant:
         """Create an assistant."""
         return assistants.create_assistant_sync(
-            self.base_client._client,
+            self._base_client._client,
             model=model,
             name=name,
             description=description,
@@ -49,7 +49,7 @@ class AssistantsSyncClient:
             file_ids=file_ids,
             functions=functions,
             metadata=metadata,
-            access_token=self.base_client.token,
+            access_token=self._base_client.token,
         )
 
     @_with_auth
@@ -66,7 +66,7 @@ class AssistantsSyncClient:
         """Update an assistant."""
 
         return assistants.modify_assistant_sync(
-            self.base_client._client,
+            self._base_client._client,
             assistant_id=assistant_id,
             name=name,
             description=description,
@@ -74,41 +74,41 @@ class AssistantsSyncClient:
             file_ids=file_ids,
             functions=functions,
             metadata=metadata,
-            access_token=self.base_client.token,
+            access_token=self._base_client.token,
         )
 
     @_with_auth
     def delete_file(self, assistant_id: str, file_id: str) -> AssistantFileDelete:
         """Delete an assistant file."""
         return assistants.delete_assistant_file_sync(
-            self.base_client._client,
+            self._base_client._client,
             assistant_id=assistant_id,
             file_id=file_id,
-            access_token=self.base_client.token,
+            access_token=self._base_client.token,
         )
 
     @_with_auth
     def delete(self, assistant_id: str) -> AssistantDelete:
         """Delete an assistant."""
         return assistants.delete_assistant_sync(
-            self.base_client._client,
+            self._base_client._client,
             assistant_id=assistant_id,
-            access_token=self.base_client.token,
+            access_token=self._base_client.token,
         )
 
 
 class AssistantsAsyncClient:
     def __init__(self, base_client: "GigaChatAsyncClient"):
-        self.base_client = base_client
+        self._base_client = base_client
 
     @_awith_auth
     async def get(self, assistant_id: Optional[str] = None) -> Assistants:
         """Return a list of available assistants."""
 
         return await assistants.get_assistants_async(
-            self.base_client._aclient,
+            self._base_client._aclient,
             assistant_id=assistant_id,
-            access_token=self.base_client.token,
+            access_token=self._base_client.token,
         )
 
     @_awith_auth
@@ -125,7 +125,7 @@ class AssistantsAsyncClient:
         """Create an assistant."""
 
         return await assistants.create_assistant_async(
-            self.base_client._aclient,
+            self._base_client._aclient,
             model=model,
             name=name,
             description=description,
@@ -133,7 +133,7 @@ class AssistantsAsyncClient:
             file_ids=file_ids,
             functions=functions,
             metadata=metadata,
-            access_token=self.base_client.token,
+            access_token=self._base_client.token,
         )
 
     @_awith_auth
@@ -150,7 +150,7 @@ class AssistantsAsyncClient:
         """Update an assistant."""
 
         return await assistants.modify_assistant_async(
-            self.base_client._aclient,
+            self._base_client._aclient,
             assistant_id=assistant_id,
             name=name,
             description=description,
@@ -158,7 +158,7 @@ class AssistantsAsyncClient:
             file_ids=file_ids,
             functions=functions,
             metadata=metadata,
-            access_token=self.base_client.token,
+            access_token=self._base_client.token,
         )
 
     @_awith_auth
@@ -166,10 +166,10 @@ class AssistantsAsyncClient:
         """Delete an assistant file."""
 
         return await assistants.delete_assistant_file_async(
-            self.base_client._aclient,
+            self._base_client._aclient,
             assistant_id=assistant_id,
             file_id=file_id,
-            access_token=self.base_client.token,
+            access_token=self._base_client.token,
         )
 
     @_awith_auth
@@ -177,7 +177,7 @@ class AssistantsAsyncClient:
         """Delete an assistant."""
 
         return await assistants.delete_assistant_async(
-            self.base_client._aclient,
+            self._base_client._aclient,
             assistant_id=assistant_id,
-            access_token=self.base_client.token,
+            access_token=self._base_client.token,
         )

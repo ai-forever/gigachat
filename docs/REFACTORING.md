@@ -210,3 +210,16 @@
   - **Why**: Defines a clear public interface for the API layer.
 - **Status**: Resolved.
 
+## Client Internal Attribute Consistency
+- **Problem**: The sub-clients (`ThreadsSyncClient`, `AssistantsSyncClient`, and their async counterparts) use inconsistent naming to reference the parent `GigaChat` client (`_client` vs `base_client`). This creates confusion (as `_client` also refers to the `httpx` client) and requires complex logic in the authentication decorator to resolve the auth provider.
+- **Solution**:
+  - **Implementation Details**:
+    - Standardize on `_base_client` for all sub-clients.
+    - Update `authentication.py` to resolve auth client via `_base_client`.
+    - Refactor `threads.py` and `assistants.py` to use the new attribute name.
+    - Simplify auth decorators logic (remove legacy checks).
+  - **Why**:
+    - **Consistency**: Uniform naming convention across the codebase.
+    - **Clarity**: Distinguishes the parent GigaChat client (`_base_client`) from the underlying HTTP client (`_client`).
+    - **Convention**: Adheres to Python's "weak internal use" underscore prefix convention.
+- **Status**: Resolved.
