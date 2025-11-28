@@ -156,3 +156,17 @@
     - **Preparedness**: Makes future migration to native Pydantic 2 easier by strictly defining the V1 interface usage.
     - **Developer Experience**: Improves IDE autocompletion and error checking.
 - **Status**: Resolved.
+
+## Linting and Code Quality Improvements
+- **Problem**: The project had accumulated linting warnings (`ruff`) that were blocking a "clean" build state. Specifically, `src/gigachat/__init__.py` had unused imports (F401), `src/gigachat/threads.py` had unused imports (F401) and shadowed builtins (A003), and the `pydantic_v1` compatibility layer was excluded from coverage reports, hiding potential testing gaps.
+- **Solution (Fix Linting Errors)**:
+  - **Implementation Details**:
+    - **Fix Imports**: Added `__all__` to `src/gigachat/__init__.py` to correctly export client classes. Removed unused `AuthenticationError` import from `src/gigachat/threads.py`.
+    - **Suppress Warnings**: Added `# noqa: A003` to `list()` methods in `src/gigachat/threads.py` to explicitly allow shadowing the `list` builtin, preserving the API.
+    - **Enable Coverage**: Removed `omit = ["*/pydantic_v1/*"]` from `pyproject.toml` to enable coverage reporting for the compatibility layer.
+    - **Verify**: Ran `ruff` and `mypy` to ensure no errors remained.
+  - **Why**:
+    - **Cleanliness**: Ensures the codebase is free of linter warnings, making it easier to spot real issues in the future.
+    - **Correctness**: Explicit exports in `__init__.py` improve IDE support and prevent "unused import" false positives.
+    - **Visibility**: Enabling coverage for `pydantic_v1` ensures that this critical compatibility layer is actually being tested.
+- **Status**: Resolved.

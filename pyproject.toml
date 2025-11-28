@@ -70,7 +70,6 @@ xfail_strict = true
 [tool.coverage.run]
 branch = true
 source = ["src"]
-omit = ["*/pydantic_v1/*"]
 
 [tool.coverage.report]
 exclude_lines = [

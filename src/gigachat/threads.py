@@ -12,7 +12,6 @@ from typing import (
 )
 
 from gigachat.api import threads
-from gigachat.exceptions import AuthenticationError
 from gigachat.models.chat import (
     Messages,
     MessagesRole,
@@ -63,7 +62,7 @@ class ThreadsSyncClient:
             )
         )
 
-    def list(
+    def list(  # noqa: A003
         self,
         assistants_ids: Optional[List[str]] = None,
         limit: Optional[int] = None,
@@ -295,7 +294,7 @@ class ThreadsAsyncClient:
 
         return await self._client._adecorator(_acall)
 
-    async def list(
+    async def list(  # noqa: A003
         self,
         assistants_ids: Optional[List[str]] = None,
         limit: Optional[int] = None,

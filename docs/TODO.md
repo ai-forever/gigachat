@@ -103,3 +103,11 @@
   - [x] Refactor `src/gigachat/pydantic_v1/__init__.py` for explicit exports
   - [x] Enable mypy for `pydantic_v1` in `pyproject.toml`
   - [x] Fix type errors in compatibility layer and models
+
+## Linting and Code Quality Improvements
+- [x] Fix Linting Errors and Enable Full Coverage
+  - [x] Fix F401 errors in `src/gigachat/__init__.py` (add `__all__`)
+  - [x] Fix F401 errors in `src/gigachat/threads.py` (remove unused imports)
+  - [x] Suppress A003 errors in `src/gigachat/threads.py` for `list` methods
+  - [x] Enable coverage for `src/gigachat/pydantic_v1/` in `pyproject.toml`
+  - [x] Verify clean run of `ruff` and `mypy`
