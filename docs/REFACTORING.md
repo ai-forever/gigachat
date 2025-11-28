@@ -170,3 +170,22 @@
     - **Correctness**: Explicit exports in `__init__.py` improve IDE support and prevent "unused import" false positives.
     - **Visibility**: Enabling coverage for `pydantic_v1` ensures that this critical compatibility layer is actually being tested.
 - **Status**: Resolved.
+
+## Authentication Refactoring (Decorators)
+- **Problem**: The client classes (`GigaChatSyncClient`, `GigaChatAsyncClient`, `Threads*`, `Assistants*`) contained significant boilerplate and code duplication for authentication retries. Every API method manually wrapped its call in a lambda using a generic helper method (`_decorator`). This made the code noisy and tightly coupled the authentication retry logic (checking token validity, handling 401s) to the client classes.
+- **Solution (Decorators & Protocols)**:
+  - **Implementation Details**:
+    - **New Module**: Created `src/gigachat/authentication.py` to house all authentication logic.
+    - **Protocols**: Defined `AuthClientProtocol` and `AsyncAuthClientProtocol` using `typing.Protocol` and `@runtime_checkable`. This allows the decorators to interact with any client object that has the required auth methods (`_update_token`, etc.) without circular imports or rigid inheritance.
+    - **Decorators**: Implemented 4 standard Python decorators:
+      - `@with_auth`: For synchronous request-response methods.
+      - `@with_auth_stream`: For synchronous streaming methods (generators).
+      - `@awith_auth`: For asynchronous request-response methods.
+      - `@awith_auth_stream`: For asynchronous streaming methods (async generators).
+    - **Refactoring**: Replaced the manual `lambda` wrappers in `client.py`, `threads.py`, and `assistants.py` with these clean decorators.
+    - **Dynamic Resolution**: Used helper functions `_get_auth_client` to dynamically find the authentication provider (self, self._client, or self.base_client), enabling the same decorator to work across all client types.
+  - **Why**:
+    - **Cleaner Code**: Removes hundreds of instances of boilerplate wrapper code (`return self._decorator(lambda: ...)`).
+    - **Separation of Concerns**: Authentication logic is now isolated in its own module, adhering to the Single Responsibility Principle.
+    - **Flexibility**: The Protocol-based approach allows any future client-like object to easily opt-in to authentication handling without inheritance.
+- **Status**: Resolved.

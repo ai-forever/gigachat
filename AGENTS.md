@@ -31,7 +31,6 @@ GigaChat. Python-library for GigaChat API.
   - Includes detailed analysis of issues and approved solutions.
   - **Workflow**:
     - Before implementing each todo item list, get approval.
-    - **Task Breakdown**: In `docs/TODO.md`, break down high-level issues into granular, checkable sub-tasks (e.g., "Fix F401", "Suppress A003", "Verify checks") to track detailed progress.
     - After implementation, summarize results.
   - **After solving each issue**:
     - Add detailed information about the solution (why and how it was implemented in such way) to `docs/REFACTORING.md`.

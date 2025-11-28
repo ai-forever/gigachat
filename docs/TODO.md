@@ -111,3 +111,26 @@
   - [x] Suppress A003 errors in `src/gigachat/threads.py` for `list` methods
   - [x] Enable coverage for `src/gigachat/pydantic_v1/` in `pyproject.toml`
   - [x] Verify clean run of `ruff` and `mypy`
+
+## Authentication Refactoring (Decorators)
+- [x] Refactor Authentication to use Decorators
+  - [x] Create `src/gigachat/authentication.py` to house authentication logic
+  - [x] Implement Sync decorators: `@_with_auth` and `@_with_auth_stream`
+  - [x] Implement Async decorators: `@_awith_auth` and `@_awith_auth_stream`
+  - [x] Refactor `GigaChatSyncClient` and `GigaChatAsyncClient` to use new decorators
+  - [x] Refactor `ThreadsSyncClient` and `ThreadsAsyncClient` to use new decorators
+  - [x] Refactor `AssistantsSyncClient` and `AssistantsAsyncClient` to use new decorators
+  - [x] Remove old `_decorator`, `_adecorator`, `_stream_decorator`, and `_astream_decorator` helper methods from client classes
+
+## Documentation Standardization
+- [ ] Translate and Standardize Documentation
+  - [ ] Translate docstrings in `src/gigachat/models/` to English
+  - [ ] Translate docstrings in `src/gigachat/api/` to English
+  - [ ] Translate docstrings in `src/gigachat/client.py`, `threads.py`, `assistants.py` to English
+  - [ ] Standardize docstring formatting (Google style)
+
+## Explicit API Exports
+- [ ] Add Explicit `__all__` Exports
+  - [ ] Update `src/gigachat/api/__init__.py` with `__all__`
+  - [ ] Update `src/gigachat/api/assistants/__init__.py` with `__all__`
+  - [ ] Update `src/gigachat/api/threads/__init__.py` with `__all__`
