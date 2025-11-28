@@ -502,10 +502,6 @@ class GigaChatAsyncClient(_BaseClient):
         """Return a model response based on the provided messages (streaming)."""
         chat_data = _parse_chat(payload, self._settings)
 
-        async def _acall() -> AsyncIterator[ChatCompletionChunk]:
-            async for chunk in chat.stream_async(self._aclient, chat=chat_data, access_token=self.token):
-                yield chunk
-
         # NOTE: using yield from here doesn't work as expected with async generators in the same way
         # so we just return the result of the generator call which is the iterator
         return chat.stream_async(self._aclient, chat=chat_data, access_token=self.token)
