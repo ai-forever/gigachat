@@ -12,7 +12,7 @@ from typing import (
 )
 
 from gigachat.api import threads
-from gigachat.authentication import awith_auth, awith_auth_stream, with_auth, with_auth_stream
+from gigachat.authentication import _awith_auth, _awith_auth_stream, _with_auth, _with_auth_stream
 from gigachat.models.chat import (
     Messages,
     MessagesRole,
@@ -46,7 +46,7 @@ class ThreadsSyncClient:
     def __init__(self, base_client: "GigaChatSyncClient"):
         self._client = base_client
 
-    @with_auth
+    @_with_auth
     def get_threads(
         self,
         assistants_ids: Optional[List[str]] = None,
@@ -71,24 +71,24 @@ class ThreadsSyncClient:
         """Alias for get_threads."""
         return self.get_threads(assistants_ids=assistants_ids, limit=limit, before=before)
 
-    @with_auth
+    @_with_auth
     def create_thread(self) -> str:
         """Create a thread."""
         return threads.post_thread_sync(self._client._client, access_token=self._client.token).id_
 
-    @with_auth
+    @_with_auth
     def retrieve(self, threads_ids: List[str]) -> Threads:
         """Return a list of threads by their IDs."""
         return threads.retrieve_threads_sync(
             self._client._client, threads_ids=threads_ids, access_token=self._client.token
         )
 
-    @with_auth
+    @_with_auth
     def delete(self, thread_id: str) -> bool:
         """Delete a thread."""
         return threads.delete_thread_sync(self._client._client, thread_id=thread_id, access_token=self._client.token)
 
-    @with_auth
+    @_with_auth
     def get_messages(
         self,
         thread_id: str,
@@ -104,7 +104,7 @@ class ThreadsSyncClient:
             access_token=self._client.token,
         )
 
-    @with_auth
+    @_with_auth
     def add_message(self, thread_id: str, message: Union[Messages, str, Dict[str, Any]]) -> ThreadMessagesResponse:
         """Add a message to a thread."""
         message_ = _parse_message(message)
@@ -115,7 +115,7 @@ class ThreadsSyncClient:
             access_token=self._client.token,
         )
 
-    @with_auth
+    @_with_auth
     def add_messages(
         self, thread_id: Optional[str] = None, messages: Optional[List[Union[Messages, str, Dict[str, Any]]]] = None
     ) -> ThreadMessagesResponse:
@@ -130,7 +130,7 @@ class ThreadsSyncClient:
             access_token=self._client.token,
         )
 
-    @with_auth
+    @_with_auth
     def run(
         self,
         thread_id: str,
@@ -152,12 +152,12 @@ class ThreadsSyncClient:
             access_token=self._client.token,
         )
 
-    @with_auth
+    @_with_auth
     def get_run(self, thread_id: str) -> ThreadRunResult:
         """Return the status of a thread run."""
         return threads.get_thread_run_sync(self._client._client, thread_id=thread_id, access_token=self._client.token)
 
-    @with_auth_stream
+    @_with_auth_stream
     def run_stream(
         self,
         thread_id: str,
@@ -179,7 +179,7 @@ class ThreadsSyncClient:
             access_token=self._client.token,
         )
 
-    @with_auth
+    @_with_auth
     def run_messages(
         self,
         messages: List[Union[Messages, str, Dict[str, Any]]],
@@ -200,7 +200,7 @@ class ThreadsSyncClient:
             access_token=self._client.token,
         )
 
-    @with_auth
+    @_with_auth
     def rerun_messages(
         self,
         thread_id: str,
@@ -214,7 +214,7 @@ class ThreadsSyncClient:
             access_token=self._client.token,
         )
 
-    @with_auth_stream
+    @_with_auth_stream
     def run_messages_stream(
         self,
         messages: List[Union[Messages, str, Dict[str, Any]]],
@@ -237,7 +237,7 @@ class ThreadsSyncClient:
             access_token=self._client.token,
         )
 
-    @with_auth_stream
+    @_with_auth_stream
     def rerun_messages_stream(
         self,
         thread_id: str,
@@ -258,7 +258,7 @@ class ThreadsAsyncClient:
     def __init__(self, base_client: "GigaChatAsyncClient"):
         self._client = base_client
 
-    @awith_auth
+    @_awith_auth
     async def get_threads(
         self,
         assistants_ids: Optional[List[str]] = None,
@@ -284,13 +284,13 @@ class ThreadsAsyncClient:
         """Alias for get_threads."""
         return await self.get_threads(assistants_ids=assistants_ids, limit=limit, before=before)
 
-    @awith_auth
+    @_awith_auth
     async def create_thread(self) -> str:
         """Create a thread."""
 
         return (await threads.post_thread_async(self._client._aclient, access_token=self._client.token)).id_
 
-    @awith_auth
+    @_awith_auth
     async def retrieve(self, threads_ids: List[str]) -> Threads:
         """Return a list of threads by their IDs."""
 
@@ -298,7 +298,7 @@ class ThreadsAsyncClient:
             self._client._aclient, threads_ids=threads_ids, access_token=self._client.token
         )
 
-    @awith_auth
+    @_awith_auth
     async def delete(self, thread_id: str) -> bool:
         """Delete a thread."""
 
@@ -306,7 +306,7 @@ class ThreadsAsyncClient:
             self._client._aclient, thread_id=thread_id, access_token=self._client.token
         )
 
-    @awith_auth
+    @_awith_auth
     async def get_messages(
         self,
         thread_id: str,
@@ -323,7 +323,7 @@ class ThreadsAsyncClient:
             access_token=self._client.token,
         )
 
-    @awith_auth
+    @_awith_auth
     async def add_message(
         self, thread_id: str, message: Union[Messages, str, Dict[str, Any]]
     ) -> ThreadMessagesResponse:
@@ -337,7 +337,7 @@ class ThreadsAsyncClient:
             access_token=self._client.token,
         )
 
-    @awith_auth
+    @_awith_auth
     async def add_messages(
         self, thread_id: Optional[str] = None, messages: Optional[List[Union[Messages, str, Dict[str, Any]]]] = None
     ) -> ThreadMessagesResponse:
@@ -353,7 +353,7 @@ class ThreadsAsyncClient:
             access_token=self._client.token,
         )
 
-    @awith_auth
+    @_awith_auth
     async def run(
         self,
         thread_id: str,
@@ -375,7 +375,7 @@ class ThreadsAsyncClient:
             access_token=self._client.token,
         )
 
-    @awith_auth
+    @_awith_auth
     async def get_run(self, thread_id: str) -> ThreadRunResult:
         """Return the status of a thread run."""
 
@@ -383,7 +383,7 @@ class ThreadsAsyncClient:
             self._client._aclient, thread_id=thread_id, access_token=self._client.token
         )
 
-    @awith_auth_stream
+    @_awith_auth_stream
     def run_stream(
         self,
         thread_id: str,
@@ -405,7 +405,7 @@ class ThreadsAsyncClient:
             access_token=self._client.token,
         )
 
-    @awith_auth
+    @_awith_auth
     async def run_messages(
         self,
         messages: List[Union[Messages, str, Dict[str, Any]]],
@@ -427,7 +427,7 @@ class ThreadsAsyncClient:
             access_token=self._client.token,
         )
 
-    @awith_auth
+    @_awith_auth
     async def rerun_messages(
         self,
         thread_id: str,
@@ -442,7 +442,7 @@ class ThreadsAsyncClient:
             access_token=self._client.token,
         )
 
-    @awith_auth_stream
+    @_awith_auth_stream
     def run_messages_stream(
         self,
         messages: List[Union[Messages, str, Dict[str, Any]]],
@@ -466,7 +466,7 @@ class ThreadsAsyncClient:
             access_token=self._client.token,
         )
 
-    @awith_auth_stream
+    @_awith_auth_stream
     def rerun_messages_stream(
         self,
         thread_id: str,

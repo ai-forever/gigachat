@@ -178,10 +178,10 @@
     - **New Module**: Created `src/gigachat/authentication.py` to house all authentication logic.
     - **Protocols**: Defined `AuthClientProtocol` and `AsyncAuthClientProtocol` using `typing.Protocol` and `@runtime_checkable`. This allows the decorators to interact with any client object that has the required auth methods (`_update_token`, etc.) without circular imports or rigid inheritance.
     - **Decorators**: Implemented 4 standard Python decorators:
-      - `@with_auth`: For synchronous request-response methods.
-      - `@with_auth_stream`: For synchronous streaming methods (generators).
-      - `@awith_auth`: For asynchronous request-response methods.
-      - `@awith_auth_stream`: For asynchronous streaming methods (async generators).
+      - `@_with_auth`: For synchronous request-response methods.
+      - `@_with_auth_stream`: For synchronous streaming methods (generators).
+      - `@_awith_auth`: For asynchronous request-response methods.
+      - `@_awith_auth_stream`: For asynchronous streaming methods (async generators).
     - **Refactoring**: Replaced the manual `lambda` wrappers in `client.py`, `threads.py`, and `assistants.py` with these clean decorators.
     - **Dynamic Resolution**: Used helper functions `_get_auth_client` to dynamically find the authentication provider (self, self._client, or self.base_client), enabling the same decorator to work across all client types.
   - **Why**:
@@ -209,3 +209,4 @@
   - Added explicit `__all__` in `src/gigachat/api/__init__.py` covering all submodules (`assistants`, `auth`, `chat`, `embeddings`, `files`, `models`, `threads`, `tools`, `utils`).
   - **Why**: Defines a clear public interface for the API layer.
 - **Status**: Resolved.
+

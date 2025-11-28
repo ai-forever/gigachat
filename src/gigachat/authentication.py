@@ -7,10 +7,6 @@ from gigachat.exceptions import AuthenticationError
 __all__ = [
     "AuthClientProtocol",
     "AsyncAuthClientProtocol",
-    "with_auth",
-    "with_auth_stream",
-    "awith_auth",
-    "awith_auth_stream",
 ]
 
 _logger = logging.getLogger(__name__)
@@ -76,7 +72,7 @@ def _get_async_auth_client(instance: Any) -> AsyncAuthClientProtocol:
     raise ValueError(f"Could not resolve AsyncAuthClientProtocol from {instance}")
 
 
-def with_auth(func: Callable[..., T]) -> Callable[..., T]:
+def _with_auth(func: Callable[..., T]) -> Callable[..., T]:
     """Decorate synchronous authenticated requests."""
 
     @functools.wraps(func)
@@ -95,7 +91,7 @@ def with_auth(func: Callable[..., T]) -> Callable[..., T]:
     return wrapper
 
 
-def with_auth_stream(func: Callable[..., Iterator[T]]) -> Callable[..., Iterator[T]]:
+def _with_auth_stream(func: Callable[..., Iterator[T]]) -> Callable[..., Iterator[T]]:
     """Decorate synchronous streaming requests."""
 
     @functools.wraps(func)
@@ -115,7 +111,7 @@ def with_auth_stream(func: Callable[..., Iterator[T]]) -> Callable[..., Iterator
     return wrapper
 
 
-def awith_auth(func: Callable[..., Awaitable[T]]) -> Callable[..., Awaitable[T]]:
+def _awith_auth(func: Callable[..., Awaitable[T]]) -> Callable[..., Awaitable[T]]:
     """Decorate asynchronous authenticated requests."""
 
     @functools.wraps(func)
@@ -134,7 +130,7 @@ def awith_auth(func: Callable[..., Awaitable[T]]) -> Callable[..., Awaitable[T]]
     return wrapper
 
 
-def awith_auth_stream(func: Callable[..., AsyncIterator[T]]) -> Callable[..., AsyncIterator[T]]:
+def _awith_auth_stream(func: Callable[..., AsyncIterator[T]]) -> Callable[..., AsyncIterator[T]]:
     """Decorate asynchronous streaming requests."""
 
     @functools.wraps(func)

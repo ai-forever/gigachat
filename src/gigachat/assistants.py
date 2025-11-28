@@ -1,7 +1,7 @@
 from typing import TYPE_CHECKING, Any, Dict, List, Optional
 
 from gigachat.api import assistants
-from gigachat.authentication import awith_auth, with_auth
+from gigachat.authentication import _awith_auth, _with_auth
 from gigachat.models.assistants import (
     Assistant,
     AssistantDelete,
@@ -19,7 +19,7 @@ class AssistantsSyncClient:
     def __init__(self, base_client: "GigaChatSyncClient"):
         self.base_client = base_client
 
-    @with_auth
+    @_with_auth
     def get(self, assistant_id: Optional[str] = None) -> Assistants:
         """Return a list of available assistants."""
         return assistants.get_assistants_sync(
@@ -28,7 +28,7 @@ class AssistantsSyncClient:
             access_token=self.base_client.token,
         )
 
-    @with_auth
+    @_with_auth
     def create(
         self,
         model: str,
@@ -52,7 +52,7 @@ class AssistantsSyncClient:
             access_token=self.base_client.token,
         )
 
-    @with_auth
+    @_with_auth
     def update(
         self,
         assistant_id: str,
@@ -77,7 +77,7 @@ class AssistantsSyncClient:
             access_token=self.base_client.token,
         )
 
-    @with_auth
+    @_with_auth
     def delete_file(self, assistant_id: str, file_id: str) -> AssistantFileDelete:
         """Delete an assistant file."""
         return assistants.delete_assistant_file_sync(
@@ -87,7 +87,7 @@ class AssistantsSyncClient:
             access_token=self.base_client.token,
         )
 
-    @with_auth
+    @_with_auth
     def delete(self, assistant_id: str) -> AssistantDelete:
         """Delete an assistant."""
         return assistants.delete_assistant_sync(
@@ -101,7 +101,7 @@ class AssistantsAsyncClient:
     def __init__(self, base_client: "GigaChatAsyncClient"):
         self.base_client = base_client
 
-    @awith_auth
+    @_awith_auth
     async def get(self, assistant_id: Optional[str] = None) -> Assistants:
         """Return a list of available assistants."""
 
@@ -111,7 +111,7 @@ class AssistantsAsyncClient:
             access_token=self.base_client.token,
         )
 
-    @awith_auth
+    @_awith_auth
     async def create(
         self,
         model: str,
@@ -136,7 +136,7 @@ class AssistantsAsyncClient:
             access_token=self.base_client.token,
         )
 
-    @awith_auth
+    @_awith_auth
     async def update(
         self,
         assistant_id: str,
@@ -161,7 +161,7 @@ class AssistantsAsyncClient:
             access_token=self.base_client.token,
         )
 
-    @awith_auth
+    @_awith_auth
     async def delete_file(self, assistant_id: str, file_id: str) -> AssistantFileDelete:
         """Delete an assistant file."""
 
@@ -172,7 +172,7 @@ class AssistantsAsyncClient:
             access_token=self.base_client.token,
         )
 
-    @awith_auth
+    @_awith_auth
     async def delete(self, assistant_id: str) -> AssistantDelete:
         """Delete an assistant."""
 
