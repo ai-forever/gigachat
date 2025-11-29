@@ -1,6 +1,19 @@
 from contextvars import ContextVar
 from typing import Dict, Optional
 
+__all__ = [
+    "authorization_cvar",
+    "client_id_cvar",
+    "request_id_cvar",
+    "session_id_cvar",
+    "service_id_cvar",
+    "operation_id_cvar",
+    "trace_id_cvar",
+    "agent_id_cvar",
+    "custom_headers_cvar",
+    "chat_url_cvar",
+]
+
 authorization_cvar: ContextVar[Optional[str]] = ContextVar("authorization_cvar", default=None)
 """Authorization information using JWE."""
 client_id_cvar: ContextVar[Optional[str]] = ContextVar("client_id_cvar", default=None)

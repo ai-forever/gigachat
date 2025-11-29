@@ -260,3 +260,36 @@
     - **Ecosystem Alignment**: Ensures full compatibility with modern libraries like LangChain.
     - **Maintainability**: Removes technical debt associated with the V1 compatibility shim.
 - **Status**: Resolved. Migrated to native Pydantic V2.
+
+## Public API Exports
+- **Problem**: The package's `src/gigachat/__init__.py` only exports client classes (`GigaChat`, `GigaChatSyncClient`, `GigaChatAsyncClient`). This forces users to use verbose, implementation-aware imports for commonly needed types:
+  - Exceptions: `from gigachat.exceptions import AuthenticationError, RateLimitError`
+  - Models: `from gigachat.models.chat import Chat, Messages, MessagesRole`
+  - Context variables: `from gigachat.context import session_id_cvar`
+  
+  This creates several issues:
+  - **Poor Discoverability**: Users cannot discover available types via IDE autocomplete on `from gigachat import`.
+  - **Verbose Imports**: Every script requires multiple import statements from internal modules.
+  - **Hidden Features**: The exception hierarchy (with `RateLimitError.retry_after`) and context variables for request tracing are effectively invisible to users.
+  - **Unclear Public API**: Without explicit exports, users may accidentally depend on internal implementation details.
+
+- **Solution (Tiered Public API Exports)**:
+  - **Proposed Implementation**:
+    - **Tier 1 (Essential)**: Export types fundamental to basic usage:
+      - Exceptions: `GigaChatException`, `ResponseError`, `AuthenticationError`, `RateLimitError`
+      - Core Models: `Chat`, `Messages`, `MessagesRole`, `ChatCompletion`, `ChatCompletionChunk`
+    - **Tier 2 (Recommended)**: Export commonly needed types:
+      - Additional Exceptions: `BadRequestError`, `ForbiddenError`, `NotFoundError`, `ServerError`
+      - Function Calling: `Function`, `FunctionCall`, `FunctionParameters`
+      - Response Components: `Choices`, `Usage`
+      - Files/Embeddings: `Embeddings`, `Image`, `Model`, `Models`
+      - Context Variables: `session_id_cvar`, `request_id_cvar`, `custom_headers_cvar`
+    - **Not Exported**: Internal types remain accessible via submodule imports (`AccessToken`, `Token`, `WithXHeaders`, `Settings`, `Storage`, etc.)
+    - Add explicit `__all__` to `src/gigachat/exceptions.py` and `src/gigachat/context.py` for clean re-exports.
+  - **Why**:
+    - **Developer Experience**: Enables clean single-line imports: `from gigachat import GigaChat, Chat, AuthenticationError`.
+    - **Discoverability**: IDE autocomplete reveals available types when typing `from gigachat import `.
+    - **API Contract**: Explicit `__all__` defines the public API boundary, making it clear what users can rely on.
+    - **Unlocks Previous Work**: Makes the exception hierarchy (from "Exception Handling Improvements") and context variables actually usable.
+    - **Backwards Compatible**: Purely additive change; existing imports continue to work.
+- **Status**: Pending.

@@ -2,6 +2,18 @@ from typing import Optional, Union
 
 import httpx
 
+__all__ = [
+    "GigaChatException",
+    "ResponseError",
+    "BadRequestError",
+    "AuthenticationError",
+    "ForbiddenError",
+    "NotFoundError",
+    "UnprocessableEntityError",
+    "RateLimitError",
+    "ServerError",
+]
+
 
 class GigaChatException(Exception):
     """Base exception for GigaChat library."""

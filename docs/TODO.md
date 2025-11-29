@@ -161,3 +161,19 @@
   - [x] Migrate settings in `src/gigachat/settings.py` to `pydantic-settings`
   - [x] Update client and API layer to use V2 methods (`model_dump`, `model_validate`)
   - [x] Update tests to support V2
+
+## Public API Exports
+- [ ] Expand Package Public API
+  - [x] Add `__all__` to `src/gigachat/exceptions.py`
+  - [x] Add `__all__` to `src/gigachat/context.py`
+  - [x] Update `src/gigachat/__init__.py`: import exceptions (Tier 1: `GigaChatException`, `ResponseError`, `AuthenticationError`, `RateLimitError`)
+  - [x] Update `src/gigachat/__init__.py`: import exceptions (Tier 2: `BadRequestError`, `ForbiddenError`, `NotFoundError`, `ServerError`)
+  - [x] Update `src/gigachat/__init__.py`: import core chat models (`Chat`, `Messages`, `MessagesRole`, `ChatCompletion`, `ChatCompletionChunk`)
+  - [x] Update `src/gigachat/__init__.py`: import function calling models (`Function`, `FunctionCall`, `FunctionParameters`)
+  - [x] Update `src/gigachat/__init__.py`: import response models (`Choices`, `Usage`)
+  - [x] Update `src/gigachat/__init__.py`: import file/embedding models (`Embeddings`, `Image`, `Model`, `Models`)
+  - [x] Update `src/gigachat/__init__.py`: import context variables (`session_id_cvar`, `request_id_cvar`, `custom_headers_cvar`)
+  - [x] Update `src/gigachat/__init__.py`: define comprehensive `__all__` list
+  - [x] Run `ruff check` to verify no linting errors
+  - [x] Run `mypy` to verify type checking passes
+  - [x] Run `pytest` to verify no test regressions
