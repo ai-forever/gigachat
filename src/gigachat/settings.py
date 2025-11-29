@@ -1,5 +1,5 @@
 import ssl
-from typing import List, Optional
+from typing import List, Optional, Tuple
 
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
@@ -42,5 +42,12 @@ class Settings(BaseSettings):
     flags: Optional[List[str]] = None
     max_connections: Optional[int] = None
     """Maximum number of simultaneous connections to the GigaChat API."""
+
+    max_retries: int = 0
+    """Maximum number of retries for transient errors. Default is 0 (disabled)."""
+    retry_backoff_factor: float = 0.5
+    """Backoff factor for retry delays."""
+    retry_on_status_codes: Tuple[int, ...] = (429, 500, 502, 503, 504)
+    """HTTP status codes that trigger a retry."""
 
     model_config = SettingsConfigDict(env_prefix=ENV_PREFIX)

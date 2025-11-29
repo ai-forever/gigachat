@@ -19,7 +19,7 @@ from gigachat.context import (
     session_id_cvar,
     trace_id_cvar,
 )
-from gigachat.exceptions import AuthenticationError, BadRequestError, ResponseError
+from gigachat.exceptions import AuthenticationError, BadRequestError
 from gigachat.models import Chat, ChatCompletion, ChatCompletionChunk
 
 from ....utils import get_bytes, get_json

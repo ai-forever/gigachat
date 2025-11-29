@@ -163,7 +163,7 @@
   - [x] Update tests to support V2
 
 ## Public API Exports
-- [ ] Expand Package Public API
+- [x] Expand Package Public API
   - [x] Add `__all__` to `src/gigachat/exceptions.py`
   - [x] Add `__all__` to `src/gigachat/context.py`
   - [x] Update `src/gigachat/__init__.py`: import exceptions (Tier 1: `GigaChatException`, `ResponseError`, `AuthenticationError`, `RateLimitError`)
@@ -177,3 +177,25 @@
   - [x] Run `ruff check` to verify no linting errors
   - [x] Run `mypy` to verify type checking passes
   - [x] Run `pytest` to verify no test regressions
+
+## Automatic Retry Mechanism
+- [x] Implement Automatic Retry Mechanism
+  - [x] Add retry settings to `Settings` class (`max_retries`, `retry_backoff_factor`, `retry_on_status_codes`)
+  - [x] Update `_BaseClient.__init__` to accept and pass retry settings
+  - [x] Create `src/gigachat/retry.py` module with `_get_retry_settings` helper
+  - [x] Implement `_calculate_backoff()` with exponential backoff, jitter, and Retry-After support
+  - [x] Implement `@_with_retry` decorator for sync request-response methods
+  - [x] Implement `@_with_retry_stream` decorator for sync streaming methods
+  - [x] Implement `@_awith_retry` decorator for async request-response methods
+  - [x] Implement `@_awith_retry_stream` decorator for async streaming methods
+  - [x] Apply `@_with_retry` to `GigaChatSyncClient` methods
+  - [x] Apply `@_with_retry_stream` to `GigaChatSyncClient.stream` method
+  - [x] Apply `@_awith_retry` to `GigaChatAsyncClient` methods
+  - [x] Apply `@_awith_retry_stream` to `GigaChatAsyncClient.astream` method
+  - [x] Apply retry decorators to `ThreadsSyncClient` methods
+  - [x] Apply retry decorators to `ThreadsAsyncClient` methods
+  - [x] Apply retry decorators to `AssistantsSyncClient` methods
+  - [x] Apply retry decorators to `AssistantsAsyncClient` methods
+  - [x] Create `tests/unit_tests/gigachat/test_retry.py` with unit tests for retry logic
+  - [x] Run `ruff check`, `mypy`, and `pytest` to verify no regressions
+  - [x] Update `docs/REFACTORING.md` with implementation details

@@ -292,4 +292,42 @@
     - **API Contract**: Explicit `__all__` defines the public API boundary, making it clear what users can rely on.
     - **Unlocks Previous Work**: Makes the exception hierarchy (from "Exception Handling Improvements") and context variables actually usable.
     - **Backwards Compatible**: Purely additive change; existing imports continue to work.
-- **Status**: Pending.
+- **Status**: Resolved.
+
+## Automatic Retry Mechanism
+- **Problem**: The library raises `RateLimitError` (429) and `ServerError` (5xx) immediately without any automatic retry capability. While `RateLimitError.retry_after` property exists, users must manually implement retry logic with exponential backoff. This is tedious and error-prone, especially for transient failures that would succeed on retry.
+- **Solution (New Retry Decorator Layer)**:
+  - **Implementation Details**:
+    - **Settings**: Add new optional settings to `Settings` class:
+      - `max_retries: int = 0` (disabled by default to avoid retry amplification with LangChain)
+      - `retry_backoff_factor: float = 0.5`
+      - `retry_on_status_codes: Tuple[int, ...] = (429, 500, 502, 503, 504)`
+    - **New Module**: Create `src/gigachat/retry.py` with dedicated retry decorators:
+      - `@_with_retry`: For synchronous request-response methods
+      - `@_with_retry_stream`: For synchronous streaming methods (generators)
+      - `@_awith_retry`: For asynchronous request-response methods
+      - `@_awith_retry_stream`: For asynchronous streaming methods (async generators)
+    - **Backoff Strategy**: Implement `_calculate_backoff()` with:
+      - Exponential backoff: `base_delay * 2^attempt`
+      - Jitter: Random 0-0.5s added to prevent thundering herd
+      - Respect `RateLimitError.retry_after` when available
+      - Maximum delay cap of 60 seconds
+    - **Decorator Stacking**: Apply retry decorators on top of auth decorators:
+      ```python
+      @_with_retry   # Outer: handles transient errors (429, 5xx)
+      @_with_auth    # Inner: handles authentication (401)
+      def chat(self, payload): ...
+      ```
+    - **Settings Resolution**: Use `_get_retry_settings()` helper to resolve settings from any client type (direct client or sub-clients via `_base_client`).
+  - **Why**:
+    - **Separation of Concerns**: Retry logic is isolated from authentication logic, following Single Responsibility Principle.
+    - **Composable**: Decorators can be stacked and applied selectively.
+    - **No Breaking Changes**: Purely additive; `max_retries=0` default preserves current behavior.
+    - **No New Dependencies**: Built from scratch (~80 LOC) instead of adding tenacity dependency.
+    - **LangChain Compatible**: Disabled by default to avoid retry amplification when used with `langchain-gigachat`.
+    - **Consistent Pattern**: Follows the same decorator pattern established for authentication.
+  - **Design Decisions**:
+    - **Default Disabled**: `max_retries=0` is safe for nested usage with LangChain's own retry mechanism.
+    - **Build vs. Library**: Built from scratch to avoid adding dependencies and version conflicts.
+    - **No Protocol Needed**: Unlike auth decorators, retry only reads settings (no method calls), so a simple `_get_retry_settings()` helper suffices.
+- **Status**: Resolved. Retry decorators implemented and applied to all client methods in `GigaChatSyncClient`, `GigaChatAsyncClient`, `ThreadsSyncClient`, `ThreadsAsyncClient`, `AssistantsSyncClient`, and `AssistantsAsyncClient`. Unit tests added in `tests/unit_tests/gigachat/test_retry.py`.

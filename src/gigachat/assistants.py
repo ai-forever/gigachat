@@ -10,6 +10,7 @@ from gigachat.models.assistants import (
     CreateAssistant,
 )
 from gigachat.models.chat import Function
+from gigachat.retry import _awith_retry, _with_retry
 
 if TYPE_CHECKING:
     from gigachat.client import GigaChatAsyncClient, GigaChatSyncClient
@@ -19,6 +20,7 @@ class AssistantsSyncClient:
     def __init__(self, base_client: "GigaChatSyncClient"):
         self._base_client = base_client
 
+    @_with_retry
     @_with_auth
     def get(self, assistant_id: Optional[str] = None) -> Assistants:
         """Return a list of available assistants."""
@@ -28,6 +30,7 @@ class AssistantsSyncClient:
             access_token=self._base_client.token,
         )
 
+    @_with_retry
     @_with_auth
     def create(
         self,
@@ -52,6 +55,7 @@ class AssistantsSyncClient:
             access_token=self._base_client.token,
         )
 
+    @_with_retry
     @_with_auth
     def update(
         self,
@@ -77,6 +81,7 @@ class AssistantsSyncClient:
             access_token=self._base_client.token,
         )
 
+    @_with_retry
     @_with_auth
     def delete_file(self, assistant_id: str, file_id: str) -> AssistantFileDelete:
         """Delete an assistant file."""
@@ -87,6 +92,7 @@ class AssistantsSyncClient:
             access_token=self._base_client.token,
         )
 
+    @_with_retry
     @_with_auth
     def delete(self, assistant_id: str) -> AssistantDelete:
         """Delete an assistant."""
@@ -101,6 +107,7 @@ class AssistantsAsyncClient:
     def __init__(self, base_client: "GigaChatAsyncClient"):
         self._base_client = base_client
 
+    @_awith_retry
     @_awith_auth
     async def get(self, assistant_id: Optional[str] = None) -> Assistants:
         """Return a list of available assistants."""
@@ -111,6 +118,7 @@ class AssistantsAsyncClient:
             access_token=self._base_client.token,
         )
 
+    @_awith_retry
     @_awith_auth
     async def create(
         self,
@@ -136,6 +144,7 @@ class AssistantsAsyncClient:
             access_token=self._base_client.token,
         )
 
+    @_awith_retry
     @_awith_auth
     async def update(
         self,
@@ -161,6 +170,7 @@ class AssistantsAsyncClient:
             access_token=self._base_client.token,
         )
 
+    @_awith_retry
     @_awith_auth
     async def delete_file(self, assistant_id: str, file_id: str) -> AssistantFileDelete:
         """Delete an assistant file."""
@@ -172,6 +182,7 @@ class AssistantsAsyncClient:
             access_token=self._base_client.token,
         )
 
+    @_awith_retry
     @_awith_auth
     async def delete(self, assistant_id: str) -> AssistantDelete:
         """Delete an assistant."""
