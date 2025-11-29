@@ -1,6 +1,8 @@
 from enum import Enum
 from typing import List, Literal, Optional, Union
 
+from pydantic import BaseModel, ConfigDict, Field
+
 from gigachat.models.chat import (
     ChatFunctionCall,
     ChoicesChunk,
@@ -11,7 +13,6 @@ from gigachat.models.chat import (
     Usage,
 )
 from gigachat.models.utils import WithXHeaders
-from gigachat.pydantic_v1 import BaseModel, Field
 
 
 class ThreadStatus(str, Enum):
@@ -28,7 +29,7 @@ class Thread(BaseModel):
 
     id_: str = Field(alias="id")
     """The identifier, which can be referenced in API endpoints."""
-    assistant_id: Optional[str]
+    assistant_id: Optional[str] = None
     """The ID of the assistant. Passed with the first message."""
     model: str
     """Model alias."""
@@ -116,8 +117,7 @@ class ThreadMessage(BaseModel):
     finish_reason: Optional[str] = None
     """Finish reason."""
 
-    class Config:
-        use_enum_values = True
+    model_config = ConfigDict(use_enum_values=True)
 
 
 class ThreadMessages(WithXHeaders):

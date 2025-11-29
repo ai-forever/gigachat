@@ -152,3 +152,12 @@
   - [x] Update `src/gigachat/api/utils.py` to raise specific exceptions
   - [x] Create unit tests `tests/unit_tests/gigachat/test_exceptions.py`
   - [x] Update existing tests
+
+## Pydantic V2 Migration
+- [x] Migrate to Pydantic V2
+  - [x] Update dependencies in `pyproject.toml` (`pydantic >= 2`, `pydantic-settings`)
+  - [x] Remove `pydantic_v1` compatibility layer
+  - [x] Migrate models in `src/gigachat/models/` to V2 syntax
+  - [x] Migrate settings in `src/gigachat/settings.py` to `pydantic-settings`
+  - [x] Update client and API layer to use V2 methods (`model_dump`, `model_validate`)
+  - [x] Update tests to support V2

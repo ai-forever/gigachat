@@ -294,7 +294,7 @@ def _run_thread_kwargs(
     headers = build_headers(access_token)
     thread_options_dict = {}
     if thread_options:
-        thread_options_dict = thread_options.dict(exclude_none=True)
+        thread_options_dict = thread_options.model_dump(exclude_none=True)
     return {
         "method": "POST",
         "url": "/threads/run",
@@ -349,7 +349,7 @@ def _run_thread_stream_kwargs(
     headers = build_headers(access_token)
     thread_options_dict = {}
     if thread_options:
-        thread_options_dict = thread_options.dict(exclude_none=True)
+        thread_options_dict = thread_options.model_dump(exclude_none=True)
     return {
         "method": "POST",
         "url": "/threads/run",
@@ -415,7 +415,7 @@ def _add_thread_messages_kwargs(
             "thread_id": thread_id,
             "model": model,
             "assistant_id": assistant_id,
-            "messages": [message.dict() for message in messages],
+            "messages": [message.model_dump() for message in messages],
         },
         "headers": headers,
     }
@@ -473,7 +473,7 @@ def _run_thread_messages_kwargs(
     headers = build_headers(access_token)
     thread_options_dict = {}
     if thread_options:
-        thread_options_dict = thread_options.dict(exclude_none=True, by_alias=True, exclude={"stream"})
+        thread_options_dict = thread_options.model_dump(exclude_none=True, by_alias=True, exclude={"stream"})
     if thread_id is not None or assistant_id is not None:
         model = None
     return {
@@ -486,7 +486,7 @@ def _run_thread_messages_kwargs(
                 "thread_id": thread_id,
                 "assistant_id": assistant_id,
                 "model": model,
-                "messages": [message.dict(exclude_none=True) for message in messages],
+                "messages": [message.model_dump(exclude_none=True) for message in messages],
             },
         },
     }
@@ -545,7 +545,7 @@ def _rerun_thread_messages_kwargs(
     headers = build_headers(access_token)
     thread_options_dict = {}
     if thread_options:
-        thread_options_dict = thread_options.dict(exclude_none=True, by_alias=True, exclude={"stream"})
+        thread_options_dict = thread_options.model_dump(exclude_none=True, by_alias=True, exclude={"stream"})
     return {
         "method": "POST",
         "url": "/threads/messages/rerun",
@@ -606,7 +606,7 @@ def _run_thread_messages_stream_kwargs(
     if assistant_id is not None or thread_id is not None:
         model = None
     if thread_options:
-        thread_options_dict = thread_options.dict(exclude_none=True)
+        thread_options_dict = thread_options.model_dump(exclude_none=True)
     return {
         "method": "POST",
         "url": "/threads/messages/run",
@@ -617,7 +617,7 @@ def _run_thread_messages_stream_kwargs(
                 "thread_id": thread_id,
                 "assistant_id": assistant_id,
                 "model": model,
-                "messages": [message.dict(exclude_none=True) for message in messages],
+                "messages": [message.model_dump(exclude_none=True) for message in messages],
                 "update_interval": update_interval,
                 "stream": True,
             },
@@ -683,7 +683,7 @@ def _rerun_thread_messages_stream_kwargs(
     headers = build_headers(access_token)
     thread_options_dict = {}
     if thread_options:
-        thread_options_dict = thread_options.dict(exclude_none=True)
+        thread_options_dict = thread_options.model_dump(exclude_none=True)
     return {
         "method": "POST",
         "url": "/threads/messages/rerun",

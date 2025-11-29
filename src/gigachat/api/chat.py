@@ -22,7 +22,7 @@ def _get_chat_kwargs(
 ) -> Dict[str, Any]:
     headers = build_headers(access_token)
     headers["Content-Type"] = "application/json"
-    json_data = chat.dict(exclude_none=True, by_alias=True, exclude={"stream"})
+    json_data = chat.model_dump(exclude_none=True, by_alias=True, exclude={"stream"})
     fields = json_data.pop("additional_fields", None)
 
     if fields:
@@ -66,7 +66,7 @@ def _get_stream_kwargs(
     headers["Accept"] = EVENT_STREAM
     headers["Cache-Control"] = "no-store"
     headers["Content-Type"] = "application/json"
-    json_data = chat.dict(exclude_none=True, by_alias=True)
+    json_data = chat.model_dump(exclude_none=True, by_alias=True)
     fields = json_data.pop("additional_fields", None)
     if fields:
         json_data = {**json_data, **fields}

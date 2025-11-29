@@ -1,7 +1,8 @@
 from typing import List
 
+from pydantic import Field
+
 from gigachat.models.utils import WithXHeaders
-from gigachat.pydantic_v1 import Field
 
 
 class Model(WithXHeaders):

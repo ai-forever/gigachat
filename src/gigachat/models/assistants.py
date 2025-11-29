@@ -1,8 +1,9 @@
 from typing import Any, Dict, List, Optional
 
+from pydantic import BaseModel
+
 from gigachat.models.chat import Function
 from gigachat.models.utils import WithXHeaders
-from gigachat.pydantic_v1 import BaseModel
 
 
 class AssistantAttachment(BaseModel):
@@ -21,23 +22,23 @@ class Assistant(BaseModel):
     """ID of the model to be used."""
     assistant_id: str
     """The ID of the assistant (UUIDv4)."""
-    name: Optional[str]
+    name: Optional[str] = None
     """The name of the assistant."""
-    description: Optional[str]
+    description: Optional[str] = None
     """The description of the assistant."""
-    instructions: Optional[str]
+    instructions: Optional[str] = None
     """The system instructions that the assistant uses."""
     created_at: int
     """The time at which the assistant was created (Unix timestamp)."""
     updated_at: int
     """The time at which the assistant was last updated (Unix timestamp)."""
-    files: Optional[List[AssistantAttachment]]
+    files: Optional[List[AssistantAttachment]] = None
     """Files attached to the assistant."""
-    metadata: Optional[Dict[str, Any]]
+    metadata: Optional[Dict[str, Any]] = None
     """Set of 16 key-value pairs that can be attached to an object."""
-    threads_count: Optional[int]
+    threads_count: Optional[int] = None
     """Number of threads interacting with this assistant."""
-    functions: Optional[List[Function]]
+    functions: Optional[List[Function]] = None
     """List of functions available to the assistant."""
 
 

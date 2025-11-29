@@ -83,7 +83,7 @@ def _parse_chat(payload: Union[Chat, Dict[str, Any], str], settings: Settings) -
     if isinstance(payload, str):
         chat = Chat(messages=[Messages(role=MessagesRole.USER, content=payload)])
     else:
-        chat = Chat.parse_obj(payload)
+        chat = Chat.model_validate(payload)
     using_assistant = chat.storage is not None and (chat.storage.assistant_id or chat.storage.thread_id)
     if not using_assistant and chat.model is None:
         chat.model = settings.model or GIGACHAT_MODEL

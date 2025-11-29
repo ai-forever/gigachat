@@ -1,8 +1,9 @@
 from typing import List, Literal, Optional
 
+from pydantic import BaseModel, Field
+
 from gigachat.models.chat import Function
 from gigachat.models.utils import WithXHeaders
-from gigachat.pydantic_v1 import BaseModel, Field
 
 
 class AICheckResult(BaseModel):

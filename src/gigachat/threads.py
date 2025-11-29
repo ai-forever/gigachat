@@ -36,7 +36,7 @@ def _parse_message(message: Union[Messages, str, Dict[str, Any]]) -> Messages:
     if isinstance(message, str):
         return Messages(role=MessagesRole.USER, content=message)
     else:
-        return Messages.parse_obj(message)
+        return Messages.model_validate(message)
 
 
 _logger = logging.getLogger(__name__)

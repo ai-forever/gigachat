@@ -3,6 +3,7 @@ from http import HTTPStatus
 from typing import Any, AsyncIterator, Dict, Iterator, NoReturn, Optional, Type, TypeVar, Union
 
 import httpx
+from pydantic import BaseModel
 
 from gigachat.context import (
     agent_id_cvar,
@@ -25,7 +26,6 @@ from gigachat.exceptions import (
     ServerError,
     UnprocessableEntityError,
 )
-from gigachat.pydantic_v1 import BaseModel
 
 _logger = logging.getLogger(__name__)
 
@@ -75,7 +75,7 @@ def parse_chunk(line: str, model_class: Type[T]) -> Optional[T]:
             if value == "[DONE]":
                 return None
             else:
-                return model_class.parse_raw(value)
+                return model_class.model_validate_json(value)
     except Exception as e:
         _logger.error("Error parsing chunk from server: %s, raw value: %s", e, line)
         raise e

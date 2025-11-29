@@ -245,3 +245,18 @@
     - **Robustness**: Enables users to implement cleaner retry logic and specific error handling (e.g., catching `RateLimitError` separate from `AuthenticationError`).
     - **Standardization**: Aligns with Python best practices and other popular API clients.
 - **Status**: Resolved.
+
+## Pydantic V2 Migration
+- **Problem**: The project relies on Pydantic V1 compatibility layers, which are slower, less maintained, and increasingly out of step with the Python ecosystem (including key integrations like LangChain v0.3+ which are Pydantic V2-native).
+- **Solution (Native Pydantic V2)**:
+  - **Implementation Details**:
+    - **Dependencies**: Updated `pyproject.toml` to require `pydantic >= 2` and added `pydantic-settings`.
+    - **Cleanup**: Removed `src/gigachat/pydantic_v1` compatibility layer and leftover empty directories.
+    - **Models**: Migrated all models in `src/gigachat/models/` to native V2 syntax (using `model_config`, `@model_validator`).
+    - **Settings**: Migrated `Settings` to use `pydantic-settings`.
+    - **API/Client**: Updated code to use V2 methods (`model_dump`, `model_validate`) instead of V1 methods (`dict`, `parse_obj`).
+  - **Why**:
+    - **Performance**: Pydantic V2 is significantly faster (5-50x) for validation and serialization.
+    - **Ecosystem Alignment**: Ensures full compatibility with modern libraries like LangChain.
+    - **Maintainability**: Removes technical debt associated with the V1 compatibility shim.
+- **Status**: Resolved. Migrated to native Pydantic V2.

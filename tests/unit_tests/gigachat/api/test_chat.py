@@ -27,7 +27,7 @@ from ....utils import get_bytes, get_json
 BASE_URL = "http://testserver/api"
 MOCK_URL = f"{BASE_URL}/chat/completions"
 
-CHAT = Chat.parse_obj(get_json("chat.json"))
+CHAT = Chat.model_validate(get_json("chat.json"))
 CHAT_COMPLETION = get_json("chat_completion.json")
 CHAT_COMPLETION_STREAM = get_bytes("chat_completion.stream")
 HEADERS_STREAM = {"Content-Type": "text/event-stream"}
@@ -97,7 +97,7 @@ def test_chat_sync_additional_fields(httpx_mock: HTTPXMock) -> None:
 
     json_data = get_json("chat.json")
     json_data["additional_fields"] = {"additional_field": "val"}
-    chat_data = Chat.parse_obj(json_data)
+    chat_data = Chat.model_validate(json_data)
 
     with httpx.Client(base_url=BASE_URL) as client:
         chat.chat_sync(client, chat=chat_data)
@@ -162,7 +162,7 @@ async def test_chat_async_additional_fields(httpx_mock: HTTPXMock) -> None:
 
     json_data = get_json("chat.json")
     json_data["additional_fields"] = {"additional_field": "val"}
-    chat_data = Chat.parse_obj(json_data)
+    chat_data = Chat.model_validate(json_data)
 
     async with httpx.AsyncClient(base_url=BASE_URL) as client:
         await chat.chat_async(client, chat=chat_data)
@@ -229,7 +229,7 @@ def test_stream_sync_additional_fields(httpx_mock: HTTPXMock) -> None:
     httpx_mock.add_response(url=MOCK_URL, content=CHAT_COMPLETION_STREAM, headers=HEADERS_STREAM)
     json_data = get_json("chat.json")
     json_data["additional_fields"] = {"additional_field": "val"}
-    chat_data = Chat.parse_obj(json_data)
+    chat_data = Chat.model_validate(json_data)
 
     with httpx.Client(base_url=BASE_URL) as client:
         list(chat.stream_sync(client, chat=chat_data))
@@ -312,7 +312,7 @@ async def test_stream_async_additional_fields(httpx_mock: HTTPXMock) -> None:
     httpx_mock.add_response(url=MOCK_URL, content=CHAT_COMPLETION_STREAM, headers=HEADERS_STREAM)
     json_data = get_json("chat.json")
     json_data["additional_fields"] = {"additional_field": "val"}
-    chat_data = Chat.parse_obj(json_data)
+    chat_data = Chat.model_validate(json_data)
 
     async with httpx.AsyncClient(base_url=BASE_URL) as client:
         async for _chunk in chat.stream_async(client, chat=chat_data):

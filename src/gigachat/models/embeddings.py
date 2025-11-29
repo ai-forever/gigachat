@@ -1,7 +1,8 @@
 from typing import List, Optional
 
+from pydantic import BaseModel, Field
+
 from gigachat.models.utils import WithXHeaders
-from gigachat.pydantic_v1 import BaseModel, Field
 
 
 class EmbeddingsUsage(BaseModel):

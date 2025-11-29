@@ -1,7 +1,7 @@
 import ssl
 from typing import List, Optional
 
-from gigachat.pydantic_v1 import BaseSettings
+from pydantic_settings import BaseSettings, SettingsConfigDict
 
 ENV_PREFIX = "GIGACHAT_"
 
@@ -43,5 +43,4 @@ class Settings(BaseSettings):
     max_connections: Optional[int] = None
     """Maximum number of simultaneous connections to the GigaChat API."""
 
-    class Config:
-        env_prefix = ENV_PREFIX
+    model_config = SettingsConfigDict(env_prefix=ENV_PREFIX)

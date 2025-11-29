@@ -72,7 +72,7 @@ def _create_assistant_kwargs(
         "metadata": metadata,
     }
     if functions is not None:
-        data["functions"] = [function.dict(exclude_none=True, by_alias=True) for function in functions]
+        data["functions"] = [function.model_dump(exclude_none=True, by_alias=True) for function in functions]
 
     return {
         "method": "POST",
@@ -156,7 +156,7 @@ def _modify_assistant_kwargs(
         "metadata": metadata,
     }
     if functions is not None:
-        data["functions"] = [function.dict(exclude_none=True, by_alias=True) for function in functions]
+        data["functions"] = [function.model_dump(exclude_none=True, by_alias=True) for function in functions]
 
     return {
         "method": "POST",

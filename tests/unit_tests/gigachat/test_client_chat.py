@@ -26,8 +26,8 @@ TOKEN_URL = f"{BASE_URL}/token"
 
 ACCESS_TOKEN = get_json("access_token.json")
 TOKEN = get_json("token.json")
-CHAT = Chat.parse_obj(get_json("chat.json"))
-CHAT_FUNCTION = Chat.parse_obj(get_json("chat_function.json"))
+CHAT = Chat.model_validate(get_json("chat.json"))
+CHAT_FUNCTION = Chat.model_validate(get_json("chat_function.json"))
 CHAT_COMPLETION = get_json("chat_completion.json")
 CHAT_COMPLETION_FUNCTION = get_json("chat_completion_function.json")
 CHAT_COMPLETION_STREAM = get_bytes("chat_completion.stream")
@@ -428,4 +428,3 @@ async def test_astream_update_token(httpx_mock: HTTPXMock) -> None:
             _ = [chunk async for chunk in client.astream(CHAT)]
         assert client.token
         assert client.token != access_token
-
