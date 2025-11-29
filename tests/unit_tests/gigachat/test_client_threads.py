@@ -51,7 +51,7 @@ def test_get_threads(httpx_mock: HTTPXMock) -> None:
     assert len(response.threads) == 3
 
 
-@pytest.mark.asyncio()
+@pytest.mark.asyncio
 async def test_aget_threads(httpx_mock: HTTPXMock) -> None:
     httpx_mock.add_response(url=GET_THREADS_URL, json=GET_THREADS)
     async with GigaChatAsyncClient(base_url=BASE_URL) as client:
@@ -70,7 +70,7 @@ def test_post_threads_retrieve(httpx_mock: HTTPXMock) -> None:
     assert len(response.threads) == 1
 
 
-@pytest.mark.asyncio()
+@pytest.mark.asyncio
 async def test_apost_threads_retrieve(httpx_mock: HTTPXMock) -> None:
     httpx_mock.add_response(url=POST_THREADS_RETRIEVE_URL, json=POST_THREADS_RETRIEVE)
     async with GigaChatAsyncClient(base_url=BASE_URL) as client:
@@ -89,7 +89,7 @@ def test_get_threads_messages(httpx_mock: HTTPXMock) -> None:
     assert len(response.messages) == 2
 
 
-@pytest.mark.asyncio()
+@pytest.mark.asyncio
 async def test_aget_threads_messages(httpx_mock: HTTPXMock) -> None:
     httpx_mock.add_response(url=GET_THREADS_MESSAGES_URL, json=GET_THREADS_MESSAGES)
     async with GigaChatAsyncClient(base_url=BASE_URL) as client:
@@ -108,7 +108,7 @@ def test_get_threads_run(httpx_mock: HTTPXMock) -> None:
     assert len(response.messages) == 2  # type: ignore
 
 
-@pytest.mark.asyncio()
+@pytest.mark.asyncio
 async def test_aget_threads_run(httpx_mock: HTTPXMock) -> None:
     httpx_mock.add_response(url=GET_THREADS_RUN_URL, json=GET_THREADS_RUN)
     async with GigaChatAsyncClient(base_url=BASE_URL) as client:
@@ -126,7 +126,7 @@ def test_post_thread_messages_rerun(httpx_mock: HTTPXMock) -> None:
     assert isinstance(response, ThreadCompletion)
 
 
-@pytest.mark.asyncio()
+@pytest.mark.asyncio
 async def test_apost_thread_messages_rerun(httpx_mock: HTTPXMock) -> None:
     httpx_mock.add_response(url=POST_THREAD_MESSAGES_RERUN_URL, json=POST_THREAD_MESSAGES_RERUN)
     async with GigaChatAsyncClient(base_url=BASE_URL) as client:
@@ -145,7 +145,7 @@ def test_post_thread_messages_run(httpx_mock: HTTPXMock) -> None:
     assert isinstance(response, ThreadCompletion)
 
 
-@pytest.mark.asyncio()
+@pytest.mark.asyncio
 async def test_apost_thread_messages_run(httpx_mock: HTTPXMock) -> None:
     httpx_mock.add_response(url=POST_THREAD_MESSAGES_RUN_URL, json=POST_THREAD_MESSAGES_RUN)
     async with GigaChatAsyncClient(base_url=BASE_URL) as client:
@@ -162,7 +162,7 @@ def test_post_thread_messages(httpx_mock: HTTPXMock) -> None:
     assert isinstance(response, ThreadMessagesResponse)
 
 
-@pytest.mark.asyncio()
+@pytest.mark.asyncio
 async def test_apost_thread_messages(httpx_mock: HTTPXMock) -> None:
     httpx_mock.add_response(url=POST_THREADS_MESSAGES_URL, json=POST_THREADS_MESSAGES)
     async with GigaChatAsyncClient(base_url=BASE_URL) as client:
@@ -179,7 +179,7 @@ def test_post_threads_run(httpx_mock: HTTPXMock) -> None:
     assert isinstance(response, ThreadRunResponse)
 
 
-@pytest.mark.asyncio()
+@pytest.mark.asyncio
 async def test_apost_threads_run(httpx_mock: HTTPXMock) -> None:
     httpx_mock.add_response(url=POST_THREADS_RUN_URL, json=POST_THREADS_RUN)
     async with GigaChatAsyncClient(base_url=BASE_URL) as client:
@@ -196,7 +196,7 @@ def test_post_threads_delete(httpx_mock: HTTPXMock) -> None:
     assert isinstance(response, bool)
 
 
-@pytest.mark.asyncio()
+@pytest.mark.asyncio
 async def test_apost_threads_delete(httpx_mock: HTTPXMock) -> None:
     httpx_mock.add_response(url=POST_THREADS_DELETE_URL, content=POST_THREADS_DELETE)
     async with GigaChatAsyncClient(base_url=BASE_URL) as client:
@@ -220,7 +220,7 @@ def test_post_thread_messages_rerun_stream(httpx_mock: HTTPXMock) -> None:
     assert len(response) == 73
 
 
-@pytest.mark.asyncio()
+@pytest.mark.asyncio
 async def test_apost_thread_messages_rerun_stream(httpx_mock: HTTPXMock) -> None:
     httpx_mock.add_response(
         url=POST_THREAD_MESSAGES_RERUN_URL,
@@ -254,7 +254,7 @@ def test_post_thread_messages_run_stream(httpx_mock: HTTPXMock) -> None:
     assert len(response) == 2
 
 
-@pytest.mark.asyncio()
+@pytest.mark.asyncio
 async def test_apost_thread_messages_run_stream(httpx_mock: HTTPXMock) -> None:
     httpx_mock.add_response(
         url=POST_THREAD_MESSAGES_RUN_URL,

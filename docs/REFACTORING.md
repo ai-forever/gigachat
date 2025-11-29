@@ -266,7 +266,7 @@
   - Exceptions: `from gigachat.exceptions import AuthenticationError, RateLimitError`
   - Models: `from gigachat.models.chat import Chat, Messages, MessagesRole`
   - Context variables: `from gigachat.context import session_id_cvar`
-  
+
   This creates several issues:
   - **Poor Discoverability**: Users cannot discover available types via IDE autocomplete on `from gigachat import`.
   - **Verbose Imports**: Every script requires multiple import statements from internal modules.
@@ -331,3 +331,20 @@
     - **Build vs. Library**: Built from scratch to avoid adding dependencies and version conflicts.
     - **No Protocol Needed**: Unlike auth decorators, retry only reads settings (no method calls), so a simple `_get_retry_settings()` helper suffices.
 - **Status**: Resolved. Retry decorators implemented and applied to all client methods in `GigaChatSyncClient`, `GigaChatAsyncClient`, `ThreadsSyncClient`, `ThreadsAsyncClient`, `AssistantsSyncClient`, and `AssistantsAsyncClient`. Unit tests added in `tests/unit_tests/gigachat/test_retry.py`.
+
+## Migrate to uv + Ruff
+- **Problem**: The current development workflow uses `poetry` (package management), `black` (formatting), and `ruff` (linting). This fragmentation leads to slower operations and requires maintaining multiple tool configurations. `poetry` resolution can be slow, and using separate tools for linting and formatting increases complexity.
+- **Solution (Consolidated Toolchain)**:
+  - **Tooling**:
+    - **uv**: Replace `poetry` with `uv` for fast package management, dependency resolution, and virtual environment handling.
+    - **ruff**: Use `ruff` for *both* linting and formatting, replacing `black`.
+  - **Implementation Details**:
+    - **Phase 1 (Format)**: Update `ruff` configuration to handle formatting (replaces `black`). Remove `black` dependency.
+    - **Phase 2 (Migrate)**: Run `migrate-to-uv` to convert `pyproject.toml` to PEP 621 standard. Replace `poetry.lock` with `uv.lock`.
+    - **Phase 3 (Hooks)**: Update pre-commit hooks to use `ruff-pre-commit` and `uv` commands.
+    - **Phase 4 (Docs)**: Update documentation and CI/CD pipelines to reflect new commands (`uv sync`, `uv run`).
+  - **Why**:
+    - **Performance**: `uv` is significantly faster (10-100x) than Poetry.
+    - **Simplicity**: Unifies formatting and linting under a single tool (`ruff`), reducing dependencies.
+    - **Standards**: Adopts PEP 621 (`[project]` table) and PEP 735 (`[dependency-groups]`) for a modern, standardized project structure.
+- **Status**: Resolved. Migrated to uv and Ruff.

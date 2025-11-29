@@ -59,7 +59,7 @@ def test_check_ai(httpx_mock: HTTPXMock) -> None:
     assert isinstance(response, AICheckResult)
 
 
-@pytest.mark.asyncio()
+@pytest.mark.asyncio
 async def test_atokens_count(httpx_mock: HTTPXMock) -> None:
     httpx_mock.add_response(url=TOKENS_COUNT_URL, json=TOKENS_COUNT)
 
@@ -71,7 +71,7 @@ async def test_atokens_count(httpx_mock: HTTPXMock) -> None:
         assert isinstance(row, TokensCount)
 
 
-@pytest.mark.asyncio()
+@pytest.mark.asyncio
 async def test_abalance(httpx_mock: HTTPXMock) -> None:
     httpx_mock.add_response(url=BALANCE_URL, json=BALANCE)
 
@@ -82,7 +82,7 @@ async def test_abalance(httpx_mock: HTTPXMock) -> None:
         assert isinstance(row, BalanceValue)
 
 
-@pytest.mark.asyncio()
+@pytest.mark.asyncio
 async def test_aconvert_functions(httpx_mock: HTTPXMock) -> None:
     httpx_mock.add_response(url=CONVERT_FUNCTIONS_URL, json=CONVERT_FUNCTIONS)
 
@@ -93,11 +93,10 @@ async def test_aconvert_functions(httpx_mock: HTTPXMock) -> None:
         assert isinstance(row, Function)
 
 
-@pytest.mark.asyncio()
+@pytest.mark.asyncio
 async def test_acheck_ai(httpx_mock: HTTPXMock) -> None:
     httpx_mock.add_response(url=AI_CHECK_URL, json=AI_CHECK)
 
     async with GigaChatAsyncClient(base_url=BASE_URL) as client:
         response = await client.acheck_ai(text="", model="")
     assert isinstance(response, AICheckResult)
-

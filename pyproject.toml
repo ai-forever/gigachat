@@ -1,65 +1,81 @@
-[tool.poetry]
+[project]
 name = "gigachat"
 version = "0.1.43"
 description = "GigaChat. Python-library for GigaChat API"
 authors = [
-    "Konstantin Krestnikov <rai220@gmail.com>",
-    "Sergey Malyshev <in1t@ya.ru>",
+    { name = "Konstantin Krestnikov", email = "rai220@gmail.com" },
+    { name = "Sergey Malyshev", email = "in1t@ya.ru" },
 ]
-license = "MIT"
+requires-python = ">=3.8,<4"
 readme = "README.md"
-repository = "https://github.com/ai-forever/gigachat"
-packages = [{ include = "gigachat", from = "src" }]
+license = "MIT"
+dependencies = ["pydantic>=2.0,<3", "pydantic-settings>=2.0,<3", "httpx<1"]
 
-[tool.poetry.dependencies]
-python = "^3.8"
-pydantic = "^2.0"
-pydantic-settings = "^2.0"
-httpx = "<1"
+[project.urls]
+Repository = "https://github.com/ai-forever/gigachat"
 
-[tool.poetry.group.dev.dependencies]
-black = "^23.12.1"
-mypy = "^1.8.0"
-pytest = "^7.4.3"
-pytest-httpx = [
-    { version = "<=0.22.0", python = "~3.8" },
-    { version = "^0.26.0", python = "^3.9" },
+[dependency-groups]
+dev = [
+    "mypy>=1.8.0,<2",
+    "pytest>=7.4.3,<8",
+    "pytest-httpx<=0.22.0 ; python_version >= '3.8' and python_version < '3.9'",
+    "pytest-httpx>=0.26.0,<0.27 ; python_version >= '3.9' and python_version < '4'",
+    "pytest-asyncio>=0.21.1,<0.22",
+    "coverage<=7.3.0",
+    "pytest-mock>=3.12.0,<4",
+    "ruff>=0.8.0,<0.9",
+    "pre-commit>=3.5.0",
 ]
-pytest-asyncio = "^0.21.1"
-coverage = "<=7.3.0"
-pytest-mock = "^3.12.0"
-ruff = "^0.0.291"
+
+[tool.hatch.build.targets.sdist]
+include = ["src/gigachat"]
+
+[tool.hatch.build.targets.wheel]
+include = ["src/gigachat"]
+
+[tool.hatch.build.targets.wheel.sources]
+"src/gigachat" = "gigachat"
 
 [build-system]
-requires = ["poetry-core"]
-build-backend = "poetry.core.masonry.api"
-
-[tool.black]
-color = true
-line-length = 120
-target-version = ["py38"]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
 
 [tool.ruff]
-extend-select = [
+line-length = 120
+src = ["src"]
+target-version = "py38"
+exclude = [".venv", "htmlcov", ".mypy_cache", ".pytest_cache", "*.ipynb"]
+
+[tool.ruff.lint]
+select = [
     "A",
     "B",
     "C4",
     "C90",
     "D401",
+    "E",
+    "F",
     "I",
-    "Q",
     "PERF",
     "PT",
+    "Q",
     "RUF100",
     "UP",
     "W",
 ]
-line-length = 120
-src = ["src"]
-target-version = "py38"
 
-[tool.ruff.mccabe]
+[tool.ruff.lint.mccabe]
 max-complexity = 10
+
+[tool.ruff.lint.isort]
+known-first-party = ["gigachat"]
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"
+skip-magic-trailing-comma = false
+line-ending = "auto"
+docstring-code-format = true
 
 [tool.mypy]
 plugins = "pydantic.mypy"

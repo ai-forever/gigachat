@@ -32,7 +32,7 @@ def test_get_model(httpx_mock: HTTPXMock) -> None:
     assert isinstance(response, Model)
 
 
-@pytest.mark.asyncio()
+@pytest.mark.asyncio
 async def test_aget_models(httpx_mock: HTTPXMock) -> None:
     httpx_mock.add_response(url=MODELS_URL, json=MODELS)
 
@@ -42,7 +42,7 @@ async def test_aget_models(httpx_mock: HTTPXMock) -> None:
     assert isinstance(response, Models)
 
 
-@pytest.mark.asyncio()
+@pytest.mark.asyncio
 async def test_aget_model(httpx_mock: HTTPXMock) -> None:
     httpx_mock.add_response(url=MODEL_URL, json=MODEL)
 
@@ -50,4 +50,3 @@ async def test_aget_model(httpx_mock: HTTPXMock) -> None:
         response = await client.aget_model("model")
 
     assert isinstance(response, Model)
-

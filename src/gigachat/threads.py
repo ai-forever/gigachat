@@ -64,7 +64,7 @@ class ThreadsSyncClient:
             access_token=self._base_client.token,
         )
 
-    def list(  # noqa: A003
+    def list(
         self,
         assistants_ids: Optional[List[str]] = None,
         limit: Optional[int] = None,
@@ -295,7 +295,7 @@ class ThreadsAsyncClient:
             access_token=self._base_client.token,
         )
 
-    async def list(  # noqa: A003
+    async def list(
         self,
         assistants_ids: Optional[List[str]] = None,
         limit: Optional[int] = None,

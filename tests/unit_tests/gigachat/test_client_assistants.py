@@ -36,7 +36,7 @@ def test_get_assistants(httpx_mock: HTTPXMock) -> None:
     assert len(response.data) == 2
 
 
-@pytest.mark.asyncio()
+@pytest.mark.asyncio
 async def test_aget_assistants(httpx_mock: HTTPXMock) -> None:
     httpx_mock.add_response(url=GET_ASSISTANTS_URL, json=GET_ASSISTANTS)
     async with GigaChatAsyncClient(base_url=BASE_URL) as client:
@@ -55,7 +55,7 @@ def test_post_assistants(httpx_mock: HTTPXMock) -> None:
     assert response.assistant_id == "111"
 
 
-@pytest.mark.asyncio()
+@pytest.mark.asyncio
 async def test_apost_assistants(httpx_mock: HTTPXMock) -> None:
     httpx_mock.add_response(url=POST_ASSISTANTS_URL, json=POST_ASSISTANTS)
     async with GigaChatAsyncClient(base_url=BASE_URL) as client:
@@ -73,7 +73,7 @@ def test_post_assistant_modify(httpx_mock: HTTPXMock) -> None:
     assert isinstance(response, Assistant)
 
 
-@pytest.mark.asyncio()
+@pytest.mark.asyncio
 async def test_apost_assistant_modify(httpx_mock: HTTPXMock) -> None:
     httpx_mock.add_response(url=POST_ASSISTANT_MODIFY_URL, json=POST_ASSISTANT_MODIFY)
     async with GigaChatAsyncClient(base_url=BASE_URL) as client:
@@ -90,7 +90,7 @@ def test_post_assistant_files_delete(httpx_mock: HTTPXMock) -> None:
     assert isinstance(response, AssistantFileDelete)
 
 
-@pytest.mark.asyncio()
+@pytest.mark.asyncio
 async def test_apost_assistant_files_delete(httpx_mock: HTTPXMock) -> None:
     httpx_mock.add_response(url=POST_ASSISTANT_FILES_DELETE_URL, json=POST_ASSISTANT_FILES_DELETE)
     async with GigaChatAsyncClient(base_url=BASE_URL) as client:
@@ -107,7 +107,7 @@ def test_post_assistant_delete(httpx_mock: HTTPXMock) -> None:
     assert isinstance(response, AssistantDelete)
 
 
-@pytest.mark.asyncio()
+@pytest.mark.asyncio
 async def test_apost_assistant_delete(httpx_mock: HTTPXMock) -> None:
     httpx_mock.add_response(url=POST_ASSISTANT_DELETE_URL, json=POST_ASSISTANT_DELETE)
     async with GigaChatAsyncClient(base_url=BASE_URL) as client:

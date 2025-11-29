@@ -64,7 +64,7 @@ def test_get_image(httpx_mock: HTTPXMock) -> None:
     assert isinstance(response, Image)
 
 
-@pytest.mark.asyncio()
+@pytest.mark.asyncio
 async def test_aupload_file(httpx_mock: HTTPXMock) -> None:
     httpx_mock.add_response(url=FILES_URL, json=FILES)
 
@@ -74,7 +74,7 @@ async def test_aupload_file(httpx_mock: HTTPXMock) -> None:
     assert isinstance(response, UploadedFile)
 
 
-@pytest.mark.asyncio()
+@pytest.mark.asyncio
 async def test_aget_file(httpx_mock: HTTPXMock) -> None:
     httpx_mock.add_response(url=GET_FILE_URL, json=GET_FILE)
 
@@ -83,7 +83,7 @@ async def test_aget_file(httpx_mock: HTTPXMock) -> None:
     assert isinstance(response, UploadedFile)
 
 
-@pytest.mark.asyncio()
+@pytest.mark.asyncio
 async def test_aget_files(httpx_mock: HTTPXMock) -> None:
     httpx_mock.add_response(url=GET_FILES_URL, json=GET_FILES)
 
@@ -93,7 +93,7 @@ async def test_aget_files(httpx_mock: HTTPXMock) -> None:
     assert len(response.data) == 2
 
 
-@pytest.mark.asyncio()
+@pytest.mark.asyncio
 async def test_adelete_file(httpx_mock: HTTPXMock) -> None:
     httpx_mock.add_response(url=FILE_DELETE_URL, json=FILE_DELETE)
 
@@ -102,11 +102,10 @@ async def test_adelete_file(httpx_mock: HTTPXMock) -> None:
     assert isinstance(response, DeletedFile)
 
 
-@pytest.mark.asyncio()
+@pytest.mark.asyncio
 async def test_aget_image(httpx_mock: HTTPXMock) -> None:
     httpx_mock.add_response(url=IMAGE_URL, content=IMAGE)
     async with GigaChatAsyncClient(base_url=BASE_URL, model="model") as client:
         response = await client.aget_image(file_id="img_file")
 
     assert isinstance(response, Image)
-

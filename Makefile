@@ -7,17 +7,17 @@ help:
 		sort | \
 		awk 'BEGIN {FS = ".PHONY: |## "}; {printf "\033[36m%-19s\033[0m %s\n", $$2, $$3}'
 
-.PHONY: .poetry
-.poetry:
-	@poetry -V || echo 'Please install Poetry: https://python-poetry.org/docs/#installing-with-the-official-installer'
+.PHONY: .uv
+.uv:
+	@uv --version || echo 'Please install uv: https://docs.astral.sh/uv/getting-started/installation/'
 
 .PHONY: .pre-commit
 .pre-commit:
 	@pre-commit -V || echo 'Please install pre-commit: https://pre-commit.com/'
 
 .PHONY: install  ## Install the package, dependencies, and pre-commit for local development
-install: .poetry .pre-commit
-	poetry install
+install: .uv .pre-commit
+	uv sync --group dev
 	pre-commit install --install-hooks
 
 .PHONY: clean  ## Clear local caches and build artifacts
@@ -37,31 +37,40 @@ clean:
 
 .PHONY: fmt  ## Auto-format python source files
 fmt:
-	poetry run black src tests
-	poetry run ruff --fix src tests
+	uv run ruff format src tests
+	uv run ruff check --fix src tests
 
 .PHONY: lint  ## Lint python source files
 lint:
-	poetry run ruff src tests
-	poetry run black --check --diff src tests
+	uv run ruff check src tests
+	uv run ruff format --check src tests
 
 .PHONY: mypy  ## Perform type-checking
 mypy:
-	poetry run mypy src tests
+	uv run mypy src tests
 
 .PHONY: test  ## Run tests and generate a coverage report
 test:
-	poetry run coverage run -m pytest -v
-	poetry run coverage report
+	uv run coverage run -m pytest -v
+	uv run coverage report
 
 .PHONY: htmlcov  ## Open html coverage report
 htmlcov: test
-	poetry run coverage html
+	uv run coverage html
 	open htmlcov/index.html
 	#explorer "htmlcov\index.html" &
 
 .PHONY: all  ## Run the standard set of checks performed in CI
 all: lint mypy test
+
+.PHONY: lock  ## Update lockfile
+lock:
+	uv lock
+
+.PHONY: update  ## Update dependencies
+update:
+	uv lock --upgrade
+	uv sync --group dev
 
 .PHONY: pre  ## Run pre-commit on all the files in the repo
 pre:

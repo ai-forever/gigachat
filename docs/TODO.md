@@ -199,3 +199,21 @@
   - [x] Create `tests/unit_tests/gigachat/test_retry.py` with unit tests for retry logic
   - [x] Run `ruff check`, `mypy`, and `pytest` to verify no regressions
   - [x] Update `docs/REFACTORING.md` with implementation details
+
+## Migrate to uv + Ruff
+- [x] Migrate to uv + Ruff (lint+format) + mypy
+  - [x] Phase 1: Replace Black with Ruff Format
+    - [x] Update `pyproject.toml`: new `[tool.ruff]` structure (`lint`, `format`)
+    - [x] Remove `[tool.black]` and black dependency
+    - [x] Update `Makefile` to use `ruff format`
+    - [x] Run `ruff format` on codebase
+  - [x] Phase 2: Migrate Package Manager (Poetry → uv)
+    - [x] Run `uvx migrate-to-uv`
+    - [x] Configure `pyproject.toml` (PEP 621, PEP 735)
+    - [x] Replace `poetry.lock` with `uv.lock`
+    - [x] Update `Makefile` to use `uv run`
+  - [x] Phase 3: Update Pre-commit Configuration
+    - [x] Add `ruff-pre-commit` hooks
+    - [x] Update mypy hook to use `uv run`
+  - [x] Phase 4: Documentation Updates
+    - [x] Update `AGENTS.md`

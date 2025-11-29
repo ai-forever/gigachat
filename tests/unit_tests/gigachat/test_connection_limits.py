@@ -50,7 +50,7 @@ def test_sync_client_with_max_connections(httpx_mock: HTTPXMock) -> None:
     assert isinstance(response, ChatCompletion)
 
 
-@pytest.mark.asyncio()
+@pytest.mark.asyncio
 async def test_async_client_with_max_connections(httpx_mock: HTTPXMock) -> None:
     """Test that GigaChatAsyncClient properly applies max_connections"""
     httpx_mock.add_response(url=CHAT_URL, json=CHAT_COMPLETION)
@@ -62,7 +62,7 @@ async def test_async_client_with_max_connections(httpx_mock: HTTPXMock) -> None:
     assert isinstance(response, ChatCompletion)
 
 
-@pytest.mark.asyncio()
+@pytest.mark.asyncio
 async def test_concurrent_requests_respect_max_connections(httpx_mock: HTTPXMock) -> None:
     """Test that concurrent requests respect max_connections limit"""
     for _ in range(10):

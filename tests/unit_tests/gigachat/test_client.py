@@ -81,13 +81,13 @@ def test__update_token() -> None:
         client._update_token()
 
 
-@pytest.mark.asyncio()
+@pytest.mark.asyncio
 async def test__aupdate_token() -> None:
     async with GigaChatAsyncClient(base_url=BASE_URL) as client:
         await client._aupdate_token()
 
 
-@pytest.mark.asyncio()
+@pytest.mark.asyncio
 async def test_aget_token_credentials(httpx_mock: HTTPXMock) -> None:
     httpx_mock.add_response(url=AUTH_URL, json=ACCESS_TOKEN)
 

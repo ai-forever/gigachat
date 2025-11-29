@@ -100,7 +100,7 @@ def test_get_model_sync_headers(httpx_mock: HTTPXMock) -> None:
     assert isinstance(response, Model)
 
 
-@pytest.mark.asyncio()
+@pytest.mark.asyncio
 async def test_get_model_async(httpx_mock: HTTPXMock) -> None:
     httpx_mock.add_response(url=MODEL_URL, json=MODEL)
 
@@ -182,7 +182,7 @@ def test_get_models_sync_headers(httpx_mock: HTTPXMock) -> None:
     assert isinstance(response, Models)
 
 
-@pytest.mark.asyncio()
+@pytest.mark.asyncio
 async def test_get_models_async(httpx_mock: HTTPXMock) -> None:
     httpx_mock.add_response(url=MODELS_URL, json=MODELS)
 

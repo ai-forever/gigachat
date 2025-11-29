@@ -4,18 +4,18 @@
 GigaChat. Python-library for GigaChat API.
 
 ## Setup Commands
-- Install dependencies: `poetry install`
-- Activate shell: `poetry shell`
+- Install dependencies: `uv sync`
+- Activate shell: `source .venv/bin/activate`
 
 ## Build and Test Commands
-- Run tests: `poetry run pytest`
-- Lint code: `poetry run ruff check src`
-- Format code: `poetry run black src`
-- Type check: `poetry run mypy src`
+- Run tests: `uv run pytest`
+- Lint code: `uv run ruff check src`
+- Format code: `uv run ruff format src`
+- Type check: `uv run mypy src`
 
 ## Code Style Guidelines
 - Max line length: 120
-- Use `black` for formatting
+- Use `ruff` for formatting
 - Use `ruff` for linting
 - Use `mypy` in strict mode (plugin: pydantic.mypy)
 - Do not add comments to the refactored code, only if it is completely necessary
@@ -52,4 +52,3 @@ GigaChat. Python-library for GigaChat API.
 
 ## Documentation Updates
 - Update only existing docs: `docs/REFACTORING.md`, `docs/TODO.md`, and `AGENTS.md`.
-

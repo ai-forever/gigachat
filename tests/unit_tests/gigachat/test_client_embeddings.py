@@ -22,7 +22,7 @@ def test_embeddings(httpx_mock: HTTPXMock) -> None:
         assert isinstance(row, Embedding)
 
 
-@pytest.mark.asyncio()
+@pytest.mark.asyncio
 async def test_aembeddings(httpx_mock: HTTPXMock) -> None:
     httpx_mock.add_response(url=EMBEDDINGS_URL, json=EMBEDDINGS)
 
@@ -31,4 +31,3 @@ async def test_aembeddings(httpx_mock: HTTPXMock) -> None:
     assert isinstance(response, Embeddings)
     for row in response.data:
         assert isinstance(row, Embedding)
-

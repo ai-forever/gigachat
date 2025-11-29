@@ -15,7 +15,12 @@ from gigachat.models import Chat, Function, FunctionParameters, Messages, Messag
 
 
 def search_ddg(search_query):
-    """Поиск в DuckDuckGo. Полезен, когда нужно ответить на вопросы о текущих событиях. Входными данными должен быть поисковый запрос."""
+    """
+    Поиск в DuckDuckGo.
+
+    Полезен, когда нужно ответить на вопросы о текущих событиях.
+    Входными данными должен быть поисковый запрос.
+    """
     return DDGS().text(search_query, max_results=10)
 
 

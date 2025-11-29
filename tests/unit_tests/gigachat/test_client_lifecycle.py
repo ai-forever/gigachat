@@ -7,7 +7,7 @@ import pytest
 from gigachat import GigaChat
 
 
-def test_lazy_init_sync():
+def test_lazy_init_sync() -> None:
     """Test that synchronous client usage does not create async clients."""
     with GigaChat() as giga:
         assert giga._client is not None
@@ -16,8 +16,8 @@ def test_lazy_init_sync():
         assert giga._auth_aclient_instance is None
 
 
-@pytest.mark.asyncio()
-async def test_lazy_init_async():
+@pytest.mark.asyncio
+async def test_lazy_init_async() -> None:
     """Test that asynchronous client usage does not create sync clients."""
     async with GigaChat() as giga:
         assert giga._aclient is not None
@@ -26,7 +26,7 @@ async def test_lazy_init_async():
         assert giga._auth_client_instance is None
 
 
-def test_lazy_init_manual_close():
+def test_lazy_init_manual_close() -> None:
     """Test that manual close only closes initialized clients."""
     giga = GigaChat()
 
@@ -44,7 +44,7 @@ def test_lazy_init_manual_close():
     assert giga._auth_aclient_instance is None
 
 
-def test_thread_safety_init():
+def test_thread_safety_init() -> None:
     """Test that multiple threads initializing the client result in only one instance."""
     giga = GigaChat()
 
@@ -52,7 +52,7 @@ def test_thread_safety_init():
     with patch("gigachat.client.httpx.Client") as mock_client_cls:
         mock_client_cls.return_value = MagicMock()
 
-        def access_client():
+        def access_client() -> None:
             _ = giga._client
 
         threads = [threading.Thread(target=access_client) for _ in range(10)]
@@ -66,8 +66,8 @@ def test_thread_safety_init():
         assert giga._client_instance is not None
 
 
-@pytest.mark.asyncio()
-async def test_hybrid_cleanup_in_async_context():
+@pytest.mark.asyncio
+async def test_hybrid_cleanup_in_async_context() -> None:
     """Test that aclose() cleans up both sync and async clients if both were used."""
     giga = GigaChat()
 
@@ -89,8 +89,8 @@ async def test_hybrid_cleanup_in_async_context():
     mock_async_client.aclose.assert_called_once()
 
 
-@pytest.mark.asyncio()
-async def test_hybrid_cleanup_partial_usage():
+@pytest.mark.asyncio
+async def test_hybrid_cleanup_partial_usage() -> None:
     """Test that aclose() doesn't fail if sync client wasn't initialized."""
     giga = GigaChat()
 

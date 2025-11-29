@@ -146,7 +146,7 @@ def test_chat_sync_headers(httpx_mock: HTTPXMock) -> None:
     assert isinstance(response, ChatCompletion)
 
 
-@pytest.mark.asyncio()
+@pytest.mark.asyncio
 async def test_chat_async(httpx_mock: HTTPXMock) -> None:
     httpx_mock.add_response(url=MOCK_URL, json=CHAT_COMPLETION)
 
@@ -156,7 +156,7 @@ async def test_chat_async(httpx_mock: HTTPXMock) -> None:
     assert isinstance(response, ChatCompletion)
 
 
-@pytest.mark.asyncio()
+@pytest.mark.asyncio
 async def test_chat_async_additional_fields(httpx_mock: HTTPXMock) -> None:
     httpx_mock.add_response(url=MOCK_URL, json=CHAT_COMPLETION)
 
@@ -185,9 +185,9 @@ def test_headers_in_request(httpx_mock: HTTPXMock) -> None:
     custom_headers_cvar.reset(token_custom_headers_cvar)
 
 
-@pytest.mark.asyncio()
+@pytest.mark.asyncio
 async def test_headers_in_async_request(httpx_mock: HTTPXMock) -> None:
-    async def call_with_headers(client: httpx.AsyncClient, headers: dict) -> None:
+    async def call_with_headers(client: httpx.AsyncClient, headers: dict[str, str]) -> None:
         token_custom_headers_cvar = custom_headers_cvar.set(headers)
         await chat.chat_async(client, chat=CHAT)
         custom_headers_cvar.reset(token_custom_headers_cvar)
@@ -295,7 +295,7 @@ def test_stream_sync_headers(httpx_mock: HTTPXMock) -> None:
     assert response[2].choices[0].finish_reason == "stop"
 
 
-@pytest.mark.asyncio()
+@pytest.mark.asyncio
 async def test_stream_async(httpx_mock: HTTPXMock) -> None:
     httpx_mock.add_response(url=MOCK_URL, content=CHAT_COMPLETION_STREAM, headers=HEADERS_STREAM)
 
@@ -307,7 +307,7 @@ async def test_stream_async(httpx_mock: HTTPXMock) -> None:
     assert response[2].choices[0].finish_reason == "stop"
 
 
-@pytest.mark.asyncio()
+@pytest.mark.asyncio
 async def test_stream_async_additional_fields(httpx_mock: HTTPXMock) -> None:
     httpx_mock.add_response(url=MOCK_URL, content=CHAT_COMPLETION_STREAM, headers=HEADERS_STREAM)
     json_data = get_json("chat.json")

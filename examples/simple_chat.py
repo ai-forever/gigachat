@@ -1,4 +1,5 @@
 """Пример работы с чатом"""
+
 from gigachat import GigaChat
 from gigachat.models import Chat, Messages, MessagesRole
 
@@ -6,7 +7,7 @@ payload = Chat(
     messages=[
         Messages(
             role=MessagesRole.SYSTEM,
-            content="Ты внимательный бот-психолог, который помогает пользователю решить его проблемы."
+            content="Ты внимательный бот-психолог, который помогает пользователю решить его проблемы.",
         )
     ],
     temperature=0.7,

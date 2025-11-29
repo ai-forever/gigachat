@@ -75,7 +75,7 @@ def test_auth_sync_headers(httpx_mock: HTTPXMock) -> None:
     assert isinstance(response, AccessToken)
 
 
-@pytest.mark.asyncio()
+@pytest.mark.asyncio
 async def test_auth_async(httpx_mock: HTTPXMock) -> None:
     httpx_mock.add_response(url=AUTH_URL, json=ACCESS_TOKEN)
 
@@ -154,7 +154,7 @@ def test_token_sync_headers(httpx_mock: HTTPXMock) -> None:
     assert isinstance(response, Token)
 
 
-@pytest.mark.asyncio()
+@pytest.mark.asyncio
 async def test_token_async(httpx_mock: HTTPXMock) -> None:
     httpx_mock.add_response(url=TOKEN_URL, json=TOKEN)
 

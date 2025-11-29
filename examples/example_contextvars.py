@@ -1,4 +1,5 @@
 """Пример перенаправления заголовков запроса в GigaChat"""
+
 # pip install python-dotenv
 import asyncio
 

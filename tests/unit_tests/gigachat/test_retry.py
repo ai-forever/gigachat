@@ -1,4 +1,4 @@
-from typing import AsyncIterator, Iterator
+from typing import Any, AsyncIterator, Iterator
 from unittest.mock import AsyncMock, Mock, patch
 
 import httpx
@@ -134,18 +134,18 @@ class MockSyncClient:
         self.call_count = 0
 
     @_with_retry
-    def request(self, *args, **kwargs):
+    def request(self, *args: Any, **kwargs: Any) -> str:
         self.call_count += 1
         return "success"
 
     @_with_retry
-    def failing_request(self, error):
+    def failing_request(self, error: Exception) -> None:
         self.call_count += 1
         raise error
 
 
 @patch("gigachat.retry.time.sleep")
-def test_sync_retry_success(mock_sleep) -> None:
+def test_sync_retry_success(mock_sleep: Any) -> None:
     client = MockSyncClient(max_retries=3)
     result = client.request()
     assert result == "success"
@@ -154,14 +154,14 @@ def test_sync_retry_success(mock_sleep) -> None:
 
 
 @patch("gigachat.retry.time.sleep")
-def test_sync_retry_rate_limit(mock_sleep) -> None:
+def test_sync_retry_rate_limit(mock_sleep: Any) -> None:
     client = MockSyncClient(max_retries=2)
     error = RateLimitError(url="test", status_code=429, content=b"", headers=None)
 
     # Mock side effect: fail twice, then succeed
     call_count = 0
 
-    def side_effect(self, *args, **kwargs):
+    def side_effect(self: Any, *args: Any, **kwargs: Any) -> str:
         nonlocal call_count
         call_count += 1
         if call_count <= 2:
@@ -180,7 +180,7 @@ def test_sync_retry_rate_limit(mock_sleep) -> None:
 
 
 @patch("gigachat.retry.time.sleep")
-def test_sync_retry_max_retries_exceeded(mock_sleep) -> None:
+def test_sync_retry_max_retries_exceeded(mock_sleep: Any) -> None:
     client = MockSyncClient(max_retries=2)
     error = ServerError(url="test", status_code=500, content=b"", headers=None)
 
@@ -192,7 +192,7 @@ def test_sync_retry_max_retries_exceeded(mock_sleep) -> None:
 
 
 @patch("gigachat.retry.time.sleep")
-def test_sync_retry_non_retryable_error(mock_sleep) -> None:
+def test_sync_retry_non_retryable_error(mock_sleep: Any) -> None:
     client = MockSyncClient(max_retries=3)
     # 400 Bad Request is not retryable by default
     error = ResponseError(url="test", status_code=400, content=b"", headers=None)
@@ -205,14 +205,18 @@ def test_sync_retry_non_retryable_error(mock_sleep) -> None:
 
 
 @patch("gigachat.retry.time.sleep")
-def test_sync_retry_transport_error(mock_sleep) -> None:
-    client = MockSyncClient(max_retries=1)
+def test_sync_retry_transport_error(mock_sleep: Any) -> None:
     error = httpx.TransportError("Connection failed")
 
-    with pytest.raises(httpx.TransportError):
-        client.failing_request(error)
+    # We need a client that matches the expected interface or just reuse MockSyncClient
+    # The original test used MockSyncClient but cast explicitly or implied it?
+    # Wait, the original test used MockSyncClient.
+    client_sync = MockSyncClient(max_retries=1)
 
-    assert client.call_count == 2
+    with pytest.raises(httpx.TransportError):
+        client_sync.failing_request(error)
+
+    assert client_sync.call_count == 2
     assert mock_sleep.call_count == 1
 
 
@@ -225,20 +229,20 @@ class MockSyncStreamClient:
         self.call_count = 0
 
     @_with_retry_stream
-    def stream(self, *args, **kwargs) -> Iterator[str]:
+    def stream(self, *args: Any, **kwargs: Any) -> Iterator[str]:
         self.call_count += 1
         yield "chunk1"
         yield "chunk2"
 
     @_with_retry_stream
-    def failing_stream(self, error):
+    def failing_stream(self, error: Exception) -> Iterator[str]:
         self.call_count += 1
         raise error
         yield "chunk1"  # unreachable
 
 
 @patch("gigachat.retry.time.sleep")
-def test_sync_stream_retry_success(mock_sleep) -> None:
+def test_sync_stream_retry_success(mock_sleep: Any) -> None:
     client = MockSyncStreamClient(max_retries=3)
     result = list(client.stream())
     assert result == ["chunk1", "chunk2"]
@@ -247,14 +251,14 @@ def test_sync_stream_retry_success(mock_sleep) -> None:
 
 
 @patch("gigachat.retry.time.sleep")
-def test_sync_stream_retry_failure(mock_sleep) -> None:
+def test_sync_stream_retry_failure(mock_sleep: Any) -> None:
     client = MockSyncStreamClient(max_retries=2)
     error = RateLimitError(url="test", status_code=429, content=b"", headers=None)
 
     # Redefine failing_stream to simulate retry success
     call_count = 0
 
-    def side_effect(self, *args, **kwargs):
+    def side_effect(self: Any, *args: Any, **kwargs: Any) -> Iterator[str]:
         nonlocal call_count
         call_count += 1
         if call_count <= 2:
@@ -279,17 +283,17 @@ class MockAsyncClient:
         self.call_count = 0
 
     @_awith_retry
-    async def request(self, *args, **kwargs):
+    async def request(self, *args: Any, **kwargs: Any) -> str:
         self.call_count += 1
         return "success"
 
     @_awith_retry
-    async def failing_request(self, error):
+    async def failing_request(self, error: Exception) -> None:
         self.call_count += 1
         raise error
 
 
-@pytest.mark.asyncio()
+@pytest.mark.asyncio
 async def test_async_retry_success() -> None:
     with patch("asyncio.sleep", new_callable=AsyncMock) as mock_sleep:
         client = MockAsyncClient(max_retries=3)
@@ -299,7 +303,7 @@ async def test_async_retry_success() -> None:
         mock_sleep.assert_not_called()
 
 
-@pytest.mark.asyncio()
+@pytest.mark.asyncio
 async def test_async_retry_failure() -> None:
     with patch("asyncio.sleep", new_callable=AsyncMock) as mock_sleep:
         client = MockAsyncClient(max_retries=2)
@@ -307,7 +311,7 @@ async def test_async_retry_failure() -> None:
 
         call_count = 0
 
-        async def side_effect(self, *args, **kwargs):
+        async def side_effect(self: Any, *args: Any, **kwargs: Any) -> str:
             nonlocal call_count
             call_count += 1
             if call_count <= 2:
@@ -332,19 +336,19 @@ class MockAsyncStreamClient:
         self.call_count = 0
 
     @_awith_retry_stream
-    async def stream(self, *args, **kwargs) -> AsyncIterator[str]:
+    async def stream(self, *args: Any, **kwargs: Any) -> AsyncIterator[str]:
         self.call_count += 1
         yield "chunk1"
         yield "chunk2"
 
     @_awith_retry_stream
-    async def failing_stream(self, error):
+    async def failing_stream(self, error: Exception) -> AsyncIterator[str]:
         self.call_count += 1
         raise error
         yield "chunk1"  # unreachable
 
 
-@pytest.mark.asyncio()
+@pytest.mark.asyncio
 async def test_async_stream_retry_success() -> None:
     with patch("asyncio.sleep", new_callable=AsyncMock) as mock_sleep:
         client = MockAsyncStreamClient(max_retries=3)
@@ -354,7 +358,7 @@ async def test_async_stream_retry_success() -> None:
         mock_sleep.assert_not_called()
 
 
-@pytest.mark.asyncio()
+@pytest.mark.asyncio
 async def test_async_stream_retry_failure() -> None:
     with patch("asyncio.sleep", new_callable=AsyncMock) as mock_sleep:
         client = MockAsyncStreamClient(max_retries=2)
@@ -362,7 +366,7 @@ async def test_async_stream_retry_failure() -> None:
 
         call_count = 0
 
-        async def side_effect(self, *args, **kwargs):
+        async def side_effect(self: Any, *args: Any, **kwargs: Any) -> AsyncIterator[str]:
             nonlocal call_count
             call_count += 1
             if call_count <= 2:

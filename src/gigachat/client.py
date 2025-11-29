@@ -17,6 +17,7 @@ from typing import (
 )
 
 import httpx
+from typing_extensions import Self
 
 from gigachat._types import FileTypes
 from gigachat.api import auth, chat, embeddings, files, models, tools
@@ -225,7 +226,7 @@ class GigaChatSyncClient(_BaseClient):
         if self._auth_client_instance:
             self._auth_client_instance.close()
 
-    def __enter__(self) -> "GigaChatSyncClient":
+    def __enter__(self) -> Self:
         return self
 
     def __exit__(self, *exc: Any) -> None:
@@ -391,7 +392,7 @@ class GigaChatAsyncClient(_BaseClient):
         if self._auth_aclient_instance:
             await self._auth_aclient_instance.aclose()
 
-    async def __aenter__(self) -> "GigaChatAsyncClient":
+    async def __aenter__(self) -> Self:
         return self
 
     async def __aexit__(self, *exc: Any) -> None:
