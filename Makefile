@@ -51,8 +51,7 @@ mypy:
 
 .PHONY: test  ## Run tests and generate a coverage report
 test:
-	uv run coverage run -m pytest -v
-	uv run coverage report
+	uv run pytest -v --cov=src --cov-report=term-missing
 
 .PHONY: htmlcov  ## Open html coverage report
 htmlcov: test

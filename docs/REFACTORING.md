@@ -348,3 +348,34 @@
     - **Simplicity**: Unifies formatting and linting under a single tool (`ruff`), reducing dependencies.
     - **Standards**: Adopts PEP 621 (`[project]` table) and PEP 735 (`[dependency-groups]`) for a modern, standardized project structure.
 - **Status**: Resolved. Migrated to uv and Ruff.
+
+## CI/CD Workflow Implementation
+- **Problem**: The GitHub Actions workflow (`.github/workflows/gigachat.yml`) is a placeholder template that only prints "Hello, world!" and does not run any validation. This means:
+  - No automated linting, type checking, or testing on pull requests.
+  - All refactoring work has no regression protection.
+  - The README displays a CI badge that references a non-functional workflow.
+  - The new `uv` toolchain is not utilized in CI.
+- **Solution (Functional CI Pipeline)**:
+  - **Implementation Details**:
+    - **Local Tooling Update**:
+      - Added `pytest-cov` to dev dependencies in `pyproject.toml`.
+      - Updated `Makefile` test target to use `pytest --cov=src --cov-report=term-missing`.
+    - **CI Workflow** (`.github/workflows/gigachat.yml`):
+      - **Two Jobs**: Separated into `lint` (runs once) and `test` (runs on matrix).
+      - **uv Setup**: Use `astral-sh/setup-uv@v5` action with `enable-cache: true` and `cache-dependency-glob: "uv.lock"`.
+      - **Python Matrix**: Test on Python 3.8, 3.9, 3.10, 3.11, 3.12, 3.13 (stable) and 3.14 (with `continue-on-error: true` for early compatibility testing).
+      - **Lint Job** (Python 3.12):
+        1. `ruff format --check src tests` (format check first per best practice)
+        2. `ruff check src tests` (linting)
+        3. `mypy src tests` (type checking)
+      - **Test Job** (Matrix):
+        1. `pytest --cov=src --cov-report=term-missing --cov-report=xml`
+        2. Upload coverage to Codecov (Python 3.12 only, using `codecov/codecov-action@v4`)
+    - **Triggers**: Workflow runs on push to `main` and on pull requests to `main`.
+  - **Why**:
+    - **Regression Protection**: Automated validation catches issues before they reach the main branch.
+    - **Confidence**: Ensures all refactoring work (Pydantic V2, retry mechanism, exceptions, etc.) remains stable.
+    - **Consistency**: Local development (`make test`) and CI use the same tools and commands.
+    - **Speed**: `uv` is 10-100x faster than Poetry, making CI runs significantly quicker.
+    - **Efficiency**: Lint/type-check runs once (not 7x), while tests run on all Python versions.
+- **Status**: Resolved. CI/CD workflow implemented with linting, type checking, testing, caching, and coverage upload.

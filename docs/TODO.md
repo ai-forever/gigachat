@@ -217,3 +217,17 @@
     - [x] Update mypy hook to use `uv run`
   - [x] Phase 4: Documentation Updates
     - [x] Update `AGENTS.md`
+
+## CI/CD Workflow Implementation
+- [x] Implement CI/CD Workflow
+  - [x] Add `pytest-cov` to dev dependencies in `pyproject.toml`
+  - [x] Update `Makefile` test target to use `pytest --cov` with `term-missing` reporting
+  - [x] Rewrite `.github/workflows/gigachat.yml` placeholder with actual CI workflow
+  - [x] Add `uv` installation step using `astral-sh/setup-uv` action
+  - [x] Configure Python version matrix (3.8, 3.9, 3.10, 3.11, 3.12, 3.13, 3.14 with allow-failure)
+  - [x] Add linting job: `ruff format --check` and `ruff check` (format first, per best practice)
+  - [x] Add type checking job: `mypy src tests`
+  - [x] Add test job: `pytest --cov` with `term-missing` and `xml` coverage reporting
+  - [x] Configure dependency caching for `uv` to speed up builds
+  - [x] Add coverage report upload to Codecov (Python 3.12 only)
+  - [x] Verify workflow runs on push to main and pull requests
