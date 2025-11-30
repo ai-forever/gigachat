@@ -1,6 +1,5 @@
 import ssl
 
-import pytest
 from pytest_httpx import HTTPXMock
 from pytest_mock import MockerFixture
 
@@ -13,15 +12,12 @@ from gigachat.client import (
     _logger,
 )
 from gigachat.settings import Settings
-
-from ...utils import get_json
-
-BASE_URL = "http://base_url"
-AUTH_URL = "http://auth_url"
-
-ACCESS_TOKEN = get_json("access_token.json")
-
-CREDENTIALS = "NmIwNzhlODgtNDlkNC00ZjFmLTljMjMtYjFiZTZjMjVmNTRlOmU3NWJlNjVhLTk4YjAtNGY0Ni1iOWVhLTljMDkwZGE4YTk4MQ=="
+from tests.constants import (
+    ACCESS_TOKEN,
+    AUTH_URL,
+    BASE_URL,
+    CREDENTIALS,
+)
 
 
 def _make_ssl_context() -> ssl.SSLContext:
@@ -81,13 +77,11 @@ def test__update_token() -> None:
         client._update_token()
 
 
-@pytest.mark.asyncio
 async def test__aupdate_token() -> None:
     async with GigaChatAsyncClient(base_url=BASE_URL) as client:
         await client._aupdate_token()
 
 
-@pytest.mark.asyncio
 async def test_aget_token_credentials(httpx_mock: HTTPXMock) -> None:
     httpx_mock.add_response(url=AUTH_URL, json=ACCESS_TOKEN)
 

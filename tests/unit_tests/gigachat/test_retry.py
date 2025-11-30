@@ -293,7 +293,6 @@ class MockAsyncClient:
         raise error
 
 
-@pytest.mark.asyncio
 async def test_async_retry_success() -> None:
     with patch("asyncio.sleep", new_callable=AsyncMock) as mock_sleep:
         client = MockAsyncClient(max_retries=3)
@@ -303,7 +302,6 @@ async def test_async_retry_success() -> None:
         mock_sleep.assert_not_called()
 
 
-@pytest.mark.asyncio
 async def test_async_retry_failure() -> None:
     with patch("asyncio.sleep", new_callable=AsyncMock) as mock_sleep:
         client = MockAsyncClient(max_retries=2)
@@ -348,7 +346,6 @@ class MockAsyncStreamClient:
         yield "chunk1"  # unreachable
 
 
-@pytest.mark.asyncio
 async def test_async_stream_retry_success() -> None:
     with patch("asyncio.sleep", new_callable=AsyncMock) as mock_sleep:
         client = MockAsyncStreamClient(max_retries=3)
@@ -358,7 +355,6 @@ async def test_async_stream_retry_success() -> None:
         mock_sleep.assert_not_called()
 
 
-@pytest.mark.asyncio
 async def test_async_stream_retry_failure() -> None:
     with patch("asyncio.sleep", new_callable=AsyncMock) as mock_sleep:
         client = MockAsyncStreamClient(max_retries=2)

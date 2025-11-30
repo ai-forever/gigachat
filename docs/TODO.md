@@ -235,3 +235,34 @@
 - [x] Fix Python 3.8 compatibility issues
   - [x] Replace `type[...]` with `Type[...]` in `tests/unit_tests/gigachat/test_exceptions.py`
   - [x] Replace `dict[...]` with `Dict[...]` in `tests/unit_tests/gigachat/api/test_chat.py`
+
+## Test Suite Refactoring
+- [x] Module Naming Consistency
+  - [x] Rename `test_client.py` to `test_client_core.py`
+  - [x] Rename `test_connection_limits.py` to `test_client_connection_limits.py`
+- [x] Configuration Cleanup
+  - [x] Remove commented lines from `pyproject.toml` (`#show_missing`, `#skip_covered`)
+  - [x] Add `asyncio_mode = "auto"` to `[tool.pytest.ini_options]`
+  - [x] Remove `@pytest.mark.asyncio` decorators from all async tests (60 instances)
+- [x] Absolute Imports
+  - [x] Update `pythonpath` in `pyproject.toml` to include project root
+  - [x] Convert relative imports to absolute imports in all 12 test files
+- [x] Consolidate Constants and Fixtures
+  - [x] Create `tests/constants.py` with shared `BASE_URL`, `AUTH_URL`, `CREDENTIALS`
+  - [x] Update all test files to import from `tests/constants.py`
+  - [x] Add shared fixtures to `tests/unit_tests/conftest.py`
+- [x] Missing Test Coverage (API Layer)
+  - [x] Create `tests/unit_tests/gigachat/api/test_files.py`
+  - [x] Create `tests/unit_tests/gigachat/api/test_embeddings.py`
+  - [x] Create `tests/unit_tests/gigachat/api/test_tools.py`
+  - [x] Create `tests/unit_tests/gigachat/api/test_assistants.py`
+  - [x] Create `tests/unit_tests/gigachat/api/test_threads.py`
+  - [x] Create `tests/unit_tests/gigachat/api/test_utils.py`
+- [x] Missing Test Coverage (Core Modules)
+  - [x] Create `tests/unit_tests/gigachat/test_context.py`
+  - [x] Create `tests/unit_tests/gigachat/test_authentication.py`
+  - [x] Expand `test_settings.py` with comprehensive validation tests
+- [x] Missing Test Coverage (Models)
+  - [x] Create `tests/unit_tests/gigachat/models/` directory with model validation tests
+- [x] Verification
+  - [x] Run `ruff check`, `mypy`, and `pytest` to verify no regressions

@@ -1,24 +1,21 @@
 from typing import List
 
-import pytest
 from pytest_httpx import HTTPXMock
 
 from gigachat.client import GigaChatAsyncClient, GigaChatSyncClient
 from gigachat.models import AICheckResult, Balance, Function, OpenApiFunctions, TokensCount
 from gigachat.models.tools import BalanceValue
-
-from ...utils import get_json
-
-BASE_URL = "http://base_url"
-TOKENS_COUNT_URL = f"{BASE_URL}/tokens/count"
-BALANCE_URL = f"{BASE_URL}/balance"
-CONVERT_FUNCTIONS_URL = f"{BASE_URL}/functions/convert"
-AI_CHECK_URL = f"{BASE_URL}/ai/check"
-
-TOKENS_COUNT = get_json("tokens_count.json")
-BALANCE = get_json("balance.json")
-CONVERT_FUNCTIONS = get_json("convert_functions.json")
-AI_CHECK = get_json("ai_check.json")
+from tests.constants import (
+    AI_CHECK,
+    AI_CHECK_URL,
+    BALANCE,
+    BALANCE_URL,
+    BASE_URL,
+    CONVERT_FUNCTIONS,
+    CONVERT_FUNCTIONS_URL,
+    TOKENS_COUNT,
+    TOKENS_COUNT_URL,
+)
 
 
 def test_get_tokens_count(httpx_mock: HTTPXMock) -> None:
@@ -59,7 +56,6 @@ def test_check_ai(httpx_mock: HTTPXMock) -> None:
     assert isinstance(response, AICheckResult)
 
 
-@pytest.mark.asyncio
 async def test_atokens_count(httpx_mock: HTTPXMock) -> None:
     httpx_mock.add_response(url=TOKENS_COUNT_URL, json=TOKENS_COUNT)
 
@@ -71,7 +67,6 @@ async def test_atokens_count(httpx_mock: HTTPXMock) -> None:
         assert isinstance(row, TokensCount)
 
 
-@pytest.mark.asyncio
 async def test_abalance(httpx_mock: HTTPXMock) -> None:
     httpx_mock.add_response(url=BALANCE_URL, json=BALANCE)
 
@@ -82,7 +77,6 @@ async def test_abalance(httpx_mock: HTTPXMock) -> None:
         assert isinstance(row, BalanceValue)
 
 
-@pytest.mark.asyncio
 async def test_aconvert_functions(httpx_mock: HTTPXMock) -> None:
     httpx_mock.add_response(url=CONVERT_FUNCTIONS_URL, json=CONVERT_FUNCTIONS)
 
@@ -93,7 +87,6 @@ async def test_aconvert_functions(httpx_mock: HTTPXMock) -> None:
         assert isinstance(row, Function)
 
 
-@pytest.mark.asyncio
 async def test_acheck_ai(httpx_mock: HTTPXMock) -> None:
     httpx_mock.add_response(url=AI_CHECK_URL, json=AI_CHECK)
 

@@ -22,18 +22,16 @@ from gigachat.context import (
 )
 from gigachat.exceptions import AuthenticationError, BadRequestError
 from gigachat.models import Chat, ChatCompletion, ChatCompletionChunk
-
-from ....utils import get_bytes, get_json
-
-BASE_URL = "http://testserver/api"
-MOCK_URL = f"{BASE_URL}/chat/completions"
-
-CHAT = Chat.model_validate(get_json("chat.json"))
-CHAT_COMPLETION = get_json("chat_completion.json")
-CHAT_COMPLETION_STREAM = get_bytes("chat_completion.stream")
-HEADERS_STREAM = {"Content-Type": "text/event-stream"}
-
-X_CUSTOM_HEADER = "X-Custom-Header"
+from tests.constants import (
+    BASE_URL,
+    CHAT,
+    CHAT_COMPLETION,
+    CHAT_COMPLETION_STREAM,
+    HEADERS_STREAM,
+    MOCK_URL,
+    X_CUSTOM_HEADER,
+)
+from tests.utils import get_json
 
 
 def test_chat_kwargs_context_vars() -> None:
@@ -147,7 +145,6 @@ def test_chat_sync_headers(httpx_mock: HTTPXMock) -> None:
     assert isinstance(response, ChatCompletion)
 
 
-@pytest.mark.asyncio
 async def test_chat_async(httpx_mock: HTTPXMock) -> None:
     httpx_mock.add_response(url=MOCK_URL, json=CHAT_COMPLETION)
 
@@ -157,7 +154,6 @@ async def test_chat_async(httpx_mock: HTTPXMock) -> None:
     assert isinstance(response, ChatCompletion)
 
 
-@pytest.mark.asyncio
 async def test_chat_async_additional_fields(httpx_mock: HTTPXMock) -> None:
     httpx_mock.add_response(url=MOCK_URL, json=CHAT_COMPLETION)
 
@@ -186,7 +182,6 @@ def test_headers_in_request(httpx_mock: HTTPXMock) -> None:
     custom_headers_cvar.reset(token_custom_headers_cvar)
 
 
-@pytest.mark.asyncio
 async def test_headers_in_async_request(httpx_mock: HTTPXMock) -> None:
     async def call_with_headers(client: httpx.AsyncClient, headers: Dict[str, str]) -> None:
         token_custom_headers_cvar = custom_headers_cvar.set(headers)
@@ -296,7 +291,6 @@ def test_stream_sync_headers(httpx_mock: HTTPXMock) -> None:
     assert response[2].choices[0].finish_reason == "stop"
 
 
-@pytest.mark.asyncio
 async def test_stream_async(httpx_mock: HTTPXMock) -> None:
     httpx_mock.add_response(url=MOCK_URL, content=CHAT_COMPLETION_STREAM, headers=HEADERS_STREAM)
 
@@ -308,7 +302,6 @@ async def test_stream_async(httpx_mock: HTTPXMock) -> None:
     assert response[2].choices[0].finish_reason == "stop"
 
 
-@pytest.mark.asyncio
 async def test_stream_async_additional_fields(httpx_mock: HTTPXMock) -> None:
     httpx_mock.add_response(url=MOCK_URL, content=CHAT_COMPLETION_STREAM, headers=HEADERS_STREAM)
     json_data = get_json("chat.json")

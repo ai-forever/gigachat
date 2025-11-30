@@ -1,15 +1,8 @@
-import pytest
 from pytest_httpx import HTTPXMock
 
 from gigachat.client import GigaChatAsyncClient, GigaChatSyncClient
 from gigachat.models import Embedding, Embeddings
-
-from ...utils import get_json
-
-BASE_URL = "http://base_url"
-EMBEDDINGS_URL = f"{BASE_URL}/embeddings"
-
-EMBEDDINGS = get_json("embeddings.json")
+from tests.constants import BASE_URL, EMBEDDINGS, EMBEDDINGS_URL
 
 
 def test_embeddings(httpx_mock: HTTPXMock) -> None:
@@ -22,7 +15,6 @@ def test_embeddings(httpx_mock: HTTPXMock) -> None:
         assert isinstance(row, Embedding)
 
 
-@pytest.mark.asyncio
 async def test_aembeddings(httpx_mock: HTTPXMock) -> None:
     httpx_mock.add_response(url=EMBEDDINGS_URL, json=EMBEDDINGS)
 

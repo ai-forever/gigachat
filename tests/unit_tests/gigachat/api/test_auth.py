@@ -14,15 +14,13 @@ from gigachat.context import (
 )
 from gigachat.exceptions import AuthenticationError, BadRequestError
 from gigachat.models import AccessToken, Token
-
-from ....utils import get_json
-
-BASE_URL = "http://testserver/api"
-TOKEN_URL = f"{BASE_URL}/token"
-AUTH_URL = "http://testserver/foo"
-
-TOKEN = get_json("token.json")
-ACCESS_TOKEN = get_json("access_token.json")
+from tests.constants import (
+    ACCESS_TOKEN,
+    AUTH_URL,
+    BASE_URL,
+    TOKEN,
+    TOKEN_URL,
+)
 
 
 def test_auth_sync(httpx_mock: HTTPXMock) -> None:
@@ -75,7 +73,6 @@ def test_auth_sync_headers(httpx_mock: HTTPXMock) -> None:
     assert isinstance(response, AccessToken)
 
 
-@pytest.mark.asyncio
 async def test_auth_async(httpx_mock: HTTPXMock) -> None:
     httpx_mock.add_response(url=AUTH_URL, json=ACCESS_TOKEN)
 
@@ -154,7 +151,6 @@ def test_token_sync_headers(httpx_mock: HTTPXMock) -> None:
     assert isinstance(response, Token)
 
 
-@pytest.mark.asyncio
 async def test_token_async(httpx_mock: HTTPXMock) -> None:
     httpx_mock.add_response(url=TOKEN_URL, json=TOKEN)
 

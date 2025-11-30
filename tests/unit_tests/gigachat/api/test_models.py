@@ -16,15 +16,13 @@ from gigachat.context import (
 )
 from gigachat.exceptions import AuthenticationError, BadRequestError
 from gigachat.models import Model, Models
-
-from ....utils import get_json
-
-BASE_URL = "http://testserver/api"
-MODEL_URL = f"{BASE_URL}/models/model"
-MODELS_URL = f"{BASE_URL}/models"
-
-MODEL = get_json("model.json")
-MODELS = get_json("models.json")
+from tests.constants import (
+    BASE_URL,
+    MODEL,
+    MODEL_URL,
+    MODELS,
+    MODELS_URL,
+)
 
 
 def test_get_model_kwargs_context_vars() -> None:
@@ -100,7 +98,6 @@ def test_get_model_sync_headers(httpx_mock: HTTPXMock) -> None:
     assert isinstance(response, Model)
 
 
-@pytest.mark.asyncio
 async def test_get_model_async(httpx_mock: HTTPXMock) -> None:
     httpx_mock.add_response(url=MODEL_URL, json=MODEL)
 
@@ -182,7 +179,6 @@ def test_get_models_sync_headers(httpx_mock: HTTPXMock) -> None:
     assert isinstance(response, Models)
 
 
-@pytest.mark.asyncio
 async def test_get_models_async(httpx_mock: HTTPXMock) -> None:
     httpx_mock.add_response(url=MODELS_URL, json=MODELS)
 

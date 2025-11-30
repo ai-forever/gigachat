@@ -386,3 +386,27 @@
     - Replaced `dict[str, str]` with `Dict[str, str]` (from `typing`) in `tests/unit_tests/gigachat/api/test_chat.py`.
   - **Why**: Ensures the codebase is compatible with the project's minimum supported Python version (3.8).
 - **Status**: Resolved.
+
+## Test Suite Refactoring
+- **Problem**: The test suite has accumulated several inconsistencies and gaps:
+  1. **Inconsistent module naming**: Some client tests use `test_client_` prefix (e.g., `test_client_chat.py`) while others don't (e.g., `test_client.py`, `test_connection_limits.py`).
+  2. **Relative imports**: All 12 test files use relative imports (`from ...utils import get_json`) which are harder to read and fragile to restructuring.
+  3. **Configuration issues**: `pyproject.toml` has commented-out lines and missing `asyncio_mode = "auto"`, requiring `@pytest.mark.asyncio` on every async test (60 instances).
+  4. **Duplicated constants**: `BASE_URL`, `AUTH_URL`, `CREDENTIALS` are duplicated across many test files.
+  5. **Missing test coverage**: No API-level tests for `files.py`, `embeddings.py`, `tools.py`, `assistants.py`, `threads.py`. No tests for `context.py`, `authentication.py` decorators, or model validation.
+  6. **Double underscore convention**: 8 test functions use `test__function_name` to test private functions - this is acceptable and self-documenting.
+- **Solution (Comprehensive Test Refactoring)**:
+  - **Implementation Details**:
+    - **Naming**: Rename `test_client.py` → `test_client_core.py` and `test_connection_limits.py` → `test_client_connection_limits.py` for consistency with other client tests.
+    - **Imports**: Update `pythonpath` to include project root, convert all relative imports to absolute (`from tests.utils import get_json`).
+    - **Configuration**: Remove commented lines, add `asyncio_mode = "auto"`, remove redundant `@pytest.mark.asyncio` decorators.
+    - **Constants**: Create `tests/constants.py` with shared test constants, update all test files to import from it.
+    - **Fixtures**: Add shared fixtures to `conftest.py` (`base_url`, `mock_access_token`, `mock_credentials`).
+    - **Coverage**: Add missing API tests (`test_files.py`, `test_embeddings.py`, `test_tools.py`, `test_assistants.py`, `test_threads.py`, `test_utils.py`), core tests (`test_context.py`, `test_authentication.py`), expand `test_settings.py`, add model validation tests.
+  - **Why**:
+    - **Consistency**: Uniform naming conventions improve navigability and maintainability.
+    - **Readability**: Absolute imports are clearer and more explicit about dependencies.
+    - **DRY**: Centralized constants and fixtures reduce duplication and maintenance burden.
+    - **Coverage**: Complete API and core module tests ensure all refactored code is properly validated.
+    - **Developer Experience**: `asyncio_mode = "auto"` eliminates boilerplate and reduces test verbosity.
+- **Status**: Resolved. All test files renamed, configuration cleaned, imports converted to absolute, constants centralized in `tests/constants.py`, shared fixtures added to `conftest.py`, and comprehensive test coverage added for API layer (`test_files.py`, `test_embeddings.py`, `test_tools.py`, `test_assistants.py`, `test_threads.py`, `test_utils.py`), core modules (`test_context.py`, `test_authentication.py`, expanded `test_settings.py`), and models (`tests/unit_tests/gigachat/models/` with validation tests for chat, files, embeddings, assistants, threads, tools, and auth models). Test count increased from 186 to 333 tests. All `ruff check`, `mypy`, and `pytest` pass.

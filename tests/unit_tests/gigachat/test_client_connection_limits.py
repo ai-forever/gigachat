@@ -7,18 +7,11 @@ from pytest_httpx import HTTPXMock
 from gigachat.client import GigaChatAsyncClient, GigaChatSyncClient, _get_kwargs
 from gigachat.models import ChatCompletion
 from gigachat.settings import Settings
-
-from ...utils import get_json
-
-BASE_URL = "http://base_url"
-AUTH_URL = "http://auth_url"
-CHAT_URL = f"{BASE_URL}/chat/completions"
-TOKEN_URL = f"{BASE_URL}/token"
-
-ACCESS_TOKEN = get_json("access_token.json")
-CHAT_COMPLETION = get_json("chat_completion.json")
-TOKEN = get_json("token.json")
-CREDENTIALS = "NmIwNzhlODgtNDlkNC00ZjFmLTljMjMtYjFiZTZjMjVmNTRlOmU3NWJlNjVhLTk4YjAtNGY0Ni1iOWVhLTljMDkwZGE4YTk4MQ=="
+from tests.constants import (
+    BASE_URL,
+    CHAT_COMPLETION,
+    CHAT_URL,
+)
 
 
 def test_get_kwargs_with_max_connections() -> None:
@@ -50,7 +43,6 @@ def test_sync_client_with_max_connections(httpx_mock: HTTPXMock) -> None:
     assert isinstance(response, ChatCompletion)
 
 
-@pytest.mark.asyncio
 async def test_async_client_with_max_connections(httpx_mock: HTTPXMock) -> None:
     """Test that GigaChatAsyncClient properly applies max_connections"""
     httpx_mock.add_response(url=CHAT_URL, json=CHAT_COMPLETION)
@@ -62,7 +54,6 @@ async def test_async_client_with_max_connections(httpx_mock: HTTPXMock) -> None:
     assert isinstance(response, ChatCompletion)
 
 
-@pytest.mark.asyncio
 async def test_concurrent_requests_respect_max_connections(httpx_mock: HTTPXMock) -> None:
     """Test that concurrent requests respect max_connections limit"""
     for _ in range(10):

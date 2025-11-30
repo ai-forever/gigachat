@@ -2,8 +2,6 @@ import asyncio
 import threading
 from unittest.mock import MagicMock, patch
 
-import pytest
-
 from gigachat import GigaChat
 
 
@@ -16,7 +14,6 @@ def test_lazy_init_sync() -> None:
         assert giga._auth_aclient_instance is None
 
 
-@pytest.mark.asyncio
 async def test_lazy_init_async() -> None:
     """Test that asynchronous client usage does not create sync clients."""
     async with GigaChat() as giga:
@@ -66,7 +63,6 @@ def test_thread_safety_init() -> None:
         assert giga._client_instance is not None
 
 
-@pytest.mark.asyncio
 async def test_hybrid_cleanup_in_async_context() -> None:
     """Test that aclose() cleans up both sync and async clients if both were used."""
     giga = GigaChat()
@@ -89,7 +85,6 @@ async def test_hybrid_cleanup_in_async_context() -> None:
     mock_async_client.aclose.assert_called_once()
 
 
-@pytest.mark.asyncio
 async def test_hybrid_cleanup_partial_usage() -> None:
     """Test that aclose() doesn't fail if sync client wasn't initialized."""
     giga = GigaChat()

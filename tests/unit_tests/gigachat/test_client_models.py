@@ -1,17 +1,8 @@
-import pytest
 from pytest_httpx import HTTPXMock
 
 from gigachat.client import GigaChatAsyncClient, GigaChatSyncClient
 from gigachat.models import Model, Models
-
-from ...utils import get_json
-
-BASE_URL = "http://base_url"
-MODELS_URL = f"{BASE_URL}/models"
-MODEL_URL = f"{BASE_URL}/models/model"
-
-MODELS = get_json("models.json")
-MODEL = get_json("model.json")
+from tests.constants import BASE_URL, MODEL, MODEL_URL, MODELS, MODELS_URL
 
 
 def test_get_models(httpx_mock: HTTPXMock) -> None:
@@ -32,7 +23,6 @@ def test_get_model(httpx_mock: HTTPXMock) -> None:
     assert isinstance(response, Model)
 
 
-@pytest.mark.asyncio
 async def test_aget_models(httpx_mock: HTTPXMock) -> None:
     httpx_mock.add_response(url=MODELS_URL, json=MODELS)
 
@@ -42,7 +32,6 @@ async def test_aget_models(httpx_mock: HTTPXMock) -> None:
     assert isinstance(response, Models)
 
 
-@pytest.mark.asyncio
 async def test_aget_model(httpx_mock: HTTPXMock) -> None:
     httpx_mock.add_response(url=MODEL_URL, json=MODEL)
 

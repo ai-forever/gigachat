@@ -83,8 +83,9 @@ plugins = "pydantic.mypy"
 strict = true
 
 [tool.pytest.ini_options]
-pythonpath = ["src"]
+pythonpath = ["src", "."]
 xfail_strict = true
+asyncio_mode = "auto"
 
 [tool.coverage.run]
 branch = true
@@ -100,5 +101,3 @@ exclude_lines = [
     "@typing.overload",
     "assert_never",
 ]
-#show_missing = true
-#skip_covered = true
