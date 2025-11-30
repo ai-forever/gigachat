@@ -368,9 +368,7 @@
         1. `ruff format --check src tests` (format check first per best practice)
         2. `ruff check src tests` (linting)
         3. `mypy src tests` (type checking)
-      - **Test Job** (Matrix):
-        1. `pytest --cov=src --cov-report=term-missing --cov-report=xml`
-        2. Upload coverage to Codecov (Python 3.12 only, using `codecov/codecov-action@v4`)
+      - **Test Job** (Matrix): `pytest --cov=src --cov-report=term-missing --cov-report=xml`
     - **Triggers**: Workflow runs on push to `main` and on pull requests to `main`.
   - **Why**:
     - **Regression Protection**: Automated validation catches issues before they reach the main branch.

@@ -229,5 +229,4 @@
   - [x] Add type checking job: `mypy src tests`
   - [x] Add test job: `pytest --cov` with `term-missing` and `xml` coverage reporting
   - [x] Configure dependency caching for `uv` to speed up builds
-  - [x] Add coverage report upload to Codecov (Python 3.12 only)
   - [x] Verify workflow runs on push to main and pull requests

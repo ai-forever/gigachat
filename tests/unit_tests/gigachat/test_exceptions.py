@@ -1,3 +1,5 @@
+from typing import Type
+
 import httpx
 import pytest
 
@@ -70,7 +72,7 @@ def test_rate_limit_retry_after_none_headers() -> None:
         (418, ResponseError),  # Default
     ],
 )
-def test_raise_for_status_mapping(status_code: int, expected_exception: type[ResponseError]) -> None:
+def test_raise_for_status_mapping(status_code: int, expected_exception: Type[ResponseError]) -> None:
     url = "http://example.com"
     content = b"error"
     headers = httpx.Headers()
