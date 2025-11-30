@@ -230,3 +230,8 @@
   - [x] Add test job: `pytest --cov` with `term-missing` and `xml` coverage reporting
   - [x] Configure dependency caching for `uv` to speed up builds
   - [x] Verify workflow runs on push to main and pull requests
+
+## Python 3.8 Type Hint Compatibility
+- [x] Fix Python 3.8 compatibility issues
+  - [x] Replace `type[...]` with `Type[...]` in `tests/unit_tests/gigachat/test_exceptions.py`
+  - [x] Replace `dict[...]` with `Dict[...]` in `tests/unit_tests/gigachat/api/test_chat.py`

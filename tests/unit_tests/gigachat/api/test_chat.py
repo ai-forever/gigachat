@@ -1,6 +1,7 @@
 import asyncio
 import json
 import logging
+from typing import Dict
 
 import httpx
 import pytest
@@ -187,7 +188,7 @@ def test_headers_in_request(httpx_mock: HTTPXMock) -> None:
 
 @pytest.mark.asyncio
 async def test_headers_in_async_request(httpx_mock: HTTPXMock) -> None:
-    async def call_with_headers(client: httpx.AsyncClient, headers: dict[str, str]) -> None:
+    async def call_with_headers(client: httpx.AsyncClient, headers: Dict[str, str]) -> None:
         token_custom_headers_cvar = custom_headers_cvar.set(headers)
         await chat.chat_async(client, chat=CHAT)
         custom_headers_cvar.reset(token_custom_headers_cvar)

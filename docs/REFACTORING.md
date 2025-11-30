@@ -376,4 +376,13 @@
     - **Consistency**: Local development (`make test`) and CI use the same tools and commands.
     - **Speed**: `uv` is 10-100x faster than Poetry, making CI runs significantly quicker.
     - **Efficiency**: Lint/type-check runs once (not 7x), while tests run on all Python versions.
-- **Status**: Resolved. CI/CD workflow implemented with linting, type checking, testing, caching, and coverage upload.
+- **Status**: Resolved. CI/CD workflow implemented with linting, type checking, testing, and caching.
+
+## Python 3.8 Type Hint Compatibility Fixes
+- **Problem**: CI tests failed on Python 3.8 with `TypeError: 'type' object is not subscriptable` and `TypeError: 'dict' object is not subscriptable`. This is because generic aliases like `type[...]` and `dict[...]` were introduced in Python 3.9.
+- **Solution**:
+  - **Implementation Details**:
+    - Replaced `type[ResponseError]` with `Type[ResponseError]` (from `typing`) in `tests/unit_tests/gigachat/test_exceptions.py`.
+    - Replaced `dict[str, str]` with `Dict[str, str]` (from `typing`) in `tests/unit_tests/gigachat/api/test_chat.py`.
+  - **Why**: Ensures the codebase is compatible with the project's minimum supported Python version (3.8).
+- **Status**: Resolved.
