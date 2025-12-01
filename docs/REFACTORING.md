@@ -410,3 +410,28 @@
     - **Coverage**: Complete API and core module tests ensure all refactored code is properly validated.
     - **Developer Experience**: `asyncio_mode = "auto"` eliminates boilerplate and reduces test verbosity.
 - **Status**: Resolved. All test files renamed, configuration cleaned, imports converted to absolute, constants centralized in `tests/constants.py`, shared fixtures added to `conftest.py`, and comprehensive test coverage added for API layer (`test_files.py`, `test_embeddings.py`, `test_tools.py`, `test_assistants.py`, `test_threads.py`, `test_utils.py`), core modules (`test_context.py`, `test_authentication.py`, expanded `test_settings.py`), and models (`tests/unit_tests/gigachat/models/` with validation tests for chat, files, embeddings, assistants, threads, tools, and auth models). Test count increased from 186 to 333 tests. All `ruff check`, `mypy`, and `pytest` pass.
+
+## Unused `verbose` Setting Cleanup
+- **Problem**: The `verbose` setting exists in `Settings` class and is accepted as a parameter in `_BaseClient.__init__`, but it is **never used anywhere** in the codebase. All logging statements (`_logger.debug()`, `_logger.warning()`) execute unconditionally without checking this setting.
+  - Location: `src/gigachat/settings.py` line 35: `verbose: bool = False`
+  - Location: `src/gigachat/client.py` line 121: `verbose: Optional[bool] = None`
+  - **User Impact**: Users may set `verbose=True` expecting debug output, but nothing happens. This violates the principle of least surprise.
+- **Analysis**:
+  - The setting was likely intended to control logging verbosity but was never implemented.
+  - Existing debug logging uses standard Python `logging` module, which users can already configure via `logging.getLogger("gigachat").setLevel(logging.DEBUG)`.
+  - Keeping unused parameters in the public API creates confusion and technical debt.
+- **Solution (Remove Setting)**:
+  - **Approach**: Remove the `verbose` setting entirely rather than implementing it, because:
+    1. Users already have standard Python logging configuration as an alternative.
+    2. Removing dead code is cleaner than adding complexity for a feature that was never needed.
+    3. Minimal breaking change risk — the setting currently does nothing.
+  - **Implementation**:
+    - Remove `verbose: bool = False` from `src/gigachat/settings.py`.
+    - Remove `verbose: Optional[bool] = None` parameter from `_BaseClient.__init__` in `src/gigachat/client.py`.
+    - Remove `"verbose": verbose` from the kwargs dict in `_BaseClient.__init__`.
+    - Update tests if any reference the `verbose` parameter.
+  - **Why**:
+    - **API Hygiene**: Public APIs should not accept parameters that have no effect.
+    - **Clarity**: Removes confusion for users who might expect verbose mode to enable debug logging.
+    - **Simplicity**: Eliminates dead code without adding new complexity.
+- **Status**: Resolved. Removed `verbose` field from `Settings`, removed `verbose` parameter from `_BaseClient.__init__`, updated tests in `test_settings.py` to remove `verbose` assertions and repurpose `test_bool_conversion` to use `verify_ssl_certs`. All 333 tests pass.

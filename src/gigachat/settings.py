@@ -32,8 +32,6 @@ class Settings(BaseSettings):
     timeout: float = 30.0
     verify_ssl_certs: bool = True
 
-    verbose: bool = False
-
     ssl_context: Optional[ssl.SSLContext] = None
     ca_bundle_file: Optional[str] = None
     cert_file: Optional[str] = None

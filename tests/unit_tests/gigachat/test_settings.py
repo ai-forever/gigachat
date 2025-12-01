@@ -20,7 +20,6 @@ def test_defaults() -> None:
     assert settings.password is None
     assert settings.timeout == 30.0
     assert settings.verify_ssl_certs is True
-    assert settings.verbose is False
     assert settings.ssl_context is None
     assert settings.ca_bundle_file is None
     assert settings.cert_file is None
@@ -46,7 +45,6 @@ def test_env_override(monkeypatch: pytest.MonkeyPatch) -> None:
         "GIGACHAT_PASSWORD": "custom-password",
         "GIGACHAT_TIMEOUT": "60.0",
         "GIGACHAT_VERIFY_SSL_CERTS": "false",
-        "GIGACHAT_VERBOSE": "true",
         "GIGACHAT_CA_BUNDLE_FILE": "ca.pem",
         "GIGACHAT_CERT_FILE": "cert.pem",
         "GIGACHAT_KEY_FILE": "key.pem",
@@ -70,7 +68,6 @@ def test_env_override(monkeypatch: pytest.MonkeyPatch) -> None:
     assert settings.password == "custom-password"
     assert settings.timeout == 60.0
     assert settings.verify_ssl_certs is False
-    assert settings.verbose is True
     assert settings.ca_bundle_file == "ca.pem"
     assert settings.cert_file == "cert.pem"
     assert settings.key_file == "key.pem"
@@ -114,9 +111,9 @@ def test_ssl_context() -> None:
     ],
 )
 def test_bool_conversion(monkeypatch: pytest.MonkeyPatch, env_val: str, expected: bool) -> None:
-    monkeypatch.setenv("GIGACHAT_VERBOSE", env_val)
+    monkeypatch.setenv("GIGACHAT_VERIFY_SSL_CERTS", env_val)
     settings = Settings()
-    assert settings.verbose is expected
+    assert settings.verify_ssl_certs is expected
 
 
 def test_flags_parsing(monkeypatch: pytest.MonkeyPatch) -> None:
