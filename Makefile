@@ -53,11 +53,9 @@ mypy:
 test:
 	uv run pytest -v --cov=src --cov-report=term-missing
 
-.PHONY: htmlcov  ## Open html coverage report
-htmlcov: test
-	uv run coverage html
-	open htmlcov/index.html
-	#explorer "htmlcov\index.html" &
+.PHONY: htmlcov  ## Generate html coverage report
+htmlcov:
+	uv run pytest -v --cov=src --cov-report=html
 
 .PHONY: all  ## Run the standard set of checks performed in CI
 all: lint mypy test
