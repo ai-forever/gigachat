@@ -435,3 +435,16 @@
     - **Clarity**: Removes confusion for users who might expect verbose mode to enable debug logging.
     - **Simplicity**: Eliminates dead code without adding new complexity.
 - **Status**: Resolved. Removed `verbose` field from `Settings`, removed `verbose` parameter from `_BaseClient.__init__`, updated tests in `test_settings.py` to remove `verbose` assertions and repurpose `test_bool_conversion` to use `verify_ssl_certs`. All 333 tests pass.
+
+## Negative `max_retries` Edge Case Fix
+- **Problem**: The retry decorators in `src/gigachat/retry.py` checked `if max_retries == 0` to bypass retry logic, but did not handle negative values. If a user set `max_retries=-1` (via environment variable or code), the check would pass, and `range(max_retries + 1)` would produce an empty range, causing:
+  - For `_with_retry` and `_awith_retry`: Fall-through to unreachable safety code that would call the function anyway.
+  - For `_with_retry_stream` and `_awith_retry_stream`: Fall-through to code that returns `None` implicitly instead of yielding, breaking the iterator contract.
+- **Solution**:
+  - **Implementation**: Changed all 4 retry decorators to check `if max_retries <= 0` instead of `== 0`. This treats negative values identically to zero (disabled retries), executing the function once without entering the retry loop.
+  - **Tests**: Added `test_sync_retry_negative_max_retries` and `test_async_retry_negative_max_retries` to verify the behavior and prevent regression.
+  - **Why**:
+    - **Robustness**: Handles invalid input gracefully instead of exhibiting undefined behavior.
+    - **Bug Fix**: Prevents streaming decorators from returning `None` on negative values.
+    - **Code Clarity**: The previously "unreachable" safety code is now truly unreachable by explicit early return.
+- **Status**: Resolved. All 4 decorators updated, 2 tests added. All 335 tests pass.

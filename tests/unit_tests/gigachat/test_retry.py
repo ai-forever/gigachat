@@ -376,3 +376,22 @@ async def test_async_stream_retry_failure() -> None:
         assert result == ["chunk1"]
         assert call_count == 3
         assert mock_sleep.call_count == 2
+
+
+# --- Negative Max Retries Tests ---
+
+
+def test_sync_retry_negative_max_retries() -> None:
+    """Negative max_retries should be treated as disabled (same as 0)."""
+    client = MockSyncClient(max_retries=-1)
+    result = client.request()
+    assert result == "success"
+    assert client.call_count == 1  # Called exactly once, no retry loop
+
+
+async def test_async_retry_negative_max_retries() -> None:
+    """Negative max_retries should be treated as disabled (same as 0)."""
+    client = MockAsyncClient(max_retries=-1)
+    result = await client.request()
+    assert result == "success"
+    assert client.call_count == 1  # Called exactly once, no retry loop

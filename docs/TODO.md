@@ -275,3 +275,12 @@
   - [x] Remove `verbose` from kwargs dict in `_BaseClient.__init__`
   - [x] Update/remove tests in `tests/unit_tests/gigachat/test_settings.py` if needed
   - [x] Run `ruff check`, `mypy`, and `pytest` to verify no regressions
+
+## Negative `max_retries` Edge Case Fix
+- [x] Handle Negative `max_retries` Values in Retry Decorators
+  - [x] Update `_with_retry` to check `max_retries <= 0` instead of `== 0`
+  - [x] Update `_with_retry_stream` to check `max_retries <= 0` instead of `== 0`
+  - [x] Update `_awith_retry` to check `max_retries <= 0` instead of `== 0`
+  - [x] Update `_awith_retry_stream` to check `max_retries <= 0` instead of `== 0`
+  - [x] Add tests for negative `max_retries` behavior in `test_retry.py`
+  - [x] Verify all tests pass

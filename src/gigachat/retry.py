@@ -49,7 +49,7 @@ def _with_retry(func: Callable[..., T]) -> Callable[..., T]:
         settings = _get_retry_settings(self)
         max_retries = settings.max_retries
 
-        if max_retries == 0:
+        if max_retries <= 0:
             return func(self, *args, **kwargs)
 
         backoff_factor = settings.retry_backoff_factor
@@ -85,7 +85,7 @@ def _with_retry_stream(func: Callable[..., Iterator[T]]) -> Callable[..., Iterat
         settings = _get_retry_settings(self)
         max_retries = settings.max_retries
 
-        if max_retries == 0:
+        if max_retries <= 0:
             yield from func(self, *args, **kwargs)
             return
 
@@ -124,7 +124,7 @@ def _awith_retry(func: Callable[..., Awaitable[T]]) -> Callable[..., Awaitable[T
         settings = _get_retry_settings(self)
         max_retries = settings.max_retries
 
-        if max_retries == 0:
+        if max_retries <= 0:
             return await func(self, *args, **kwargs)
 
         backoff_factor = settings.retry_backoff_factor
@@ -162,7 +162,7 @@ def _awith_retry_stream(func: Callable[..., AsyncIterator[T]]) -> Callable[..., 
         settings = _get_retry_settings(self)
         max_retries = settings.max_retries
 
-        if max_retries == 0:
+        if max_retries <= 0:
             async for chunk in func(self, *args, **kwargs):
                 yield chunk
             return
