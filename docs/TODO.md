@@ -282,5 +282,8 @@
   - [x] Update `_with_retry_stream` to check `max_retries <= 0` instead of `== 0`
   - [x] Update `_awith_retry` to check `max_retries <= 0` instead of `== 0`
   - [x] Update `_awith_retry_stream` to check `max_retries <= 0` instead of `== 0`
+  - [x] Remove dead code (`last_exception` variable and unreachable safety blocks)
+  - [x] Remove unused `Optional` import
+  - [x] Add `raise RuntimeError("Unreachable")` for type checker in non-generator decorators
   - [x] Add tests for negative `max_retries` behavior in `test_retry.py`
   - [x] Verify all tests pass

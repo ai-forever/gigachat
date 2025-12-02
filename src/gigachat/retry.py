@@ -3,7 +3,7 @@ import functools
 import logging
 import random
 import time
-from typing import Any, AsyncIterator, Awaitable, Callable, Iterator, Optional, Tuple, TypeVar, cast
+from typing import Any, AsyncIterator, Awaitable, Callable, Iterator, Tuple, TypeVar, cast
 
 import httpx
 
@@ -55,14 +55,10 @@ def _with_retry(func: Callable[..., T]) -> Callable[..., T]:
         backoff_factor = settings.retry_backoff_factor
         retry_codes = settings.retry_on_status_codes
 
-        last_exception: Optional[Exception] = None
-
         for attempt in range(max_retries + 1):
             try:
                 return func(self, *args, **kwargs)
             except Exception as e:  # noqa: PERF203
-                last_exception = e
-
                 if not _should_retry(e, retry_codes) or attempt == max_retries:
                     raise
 
@@ -70,9 +66,7 @@ def _with_retry(func: Callable[..., T]) -> Callable[..., T]:
                 _logger.debug("Retry attempt %d/%d after %.2fs due to %s", attempt + 1, max_retries, delay, repr(e))
                 time.sleep(delay)
 
-        if last_exception:
-            raise last_exception
-        return func(self, *args, **kwargs)
+        raise RuntimeError("Unreachable")  # pragma: no cover
 
     return wrapper
 
@@ -92,15 +86,11 @@ def _with_retry_stream(func: Callable[..., Iterator[T]]) -> Callable[..., Iterat
         backoff_factor = settings.retry_backoff_factor
         retry_codes = settings.retry_on_status_codes
 
-        last_exception: Optional[Exception] = None
-
         for attempt in range(max_retries + 1):
             try:
                 yield from func(self, *args, **kwargs)
                 return
             except Exception as e:  # noqa: PERF203
-                last_exception = e
-
                 if not _should_retry(e, retry_codes) or attempt == max_retries:
                     raise
 
@@ -109,9 +99,6 @@ def _with_retry_stream(func: Callable[..., Iterator[T]]) -> Callable[..., Iterat
                     "Retry stream attempt %d/%d after %.2fs due to %s", attempt + 1, max_retries, delay, repr(e)
                 )
                 time.sleep(delay)
-
-        if last_exception:
-            raise last_exception
 
     return wrapper
 
@@ -130,14 +117,10 @@ def _awith_retry(func: Callable[..., Awaitable[T]]) -> Callable[..., Awaitable[T
         backoff_factor = settings.retry_backoff_factor
         retry_codes = settings.retry_on_status_codes
 
-        last_exception: Optional[Exception] = None
-
         for attempt in range(max_retries + 1):
             try:
                 return await func(self, *args, **kwargs)
             except Exception as e:  # noqa: PERF203
-                last_exception = e
-
                 if not _should_retry(e, retry_codes) or attempt == max_retries:
                     raise
 
@@ -147,9 +130,7 @@ def _awith_retry(func: Callable[..., Awaitable[T]]) -> Callable[..., Awaitable[T
                 )
                 await asyncio.sleep(delay)
 
-        if last_exception:
-            raise last_exception
-        return await func(self, *args, **kwargs)
+        raise RuntimeError("Unreachable")  # pragma: no cover
 
     return wrapper
 
@@ -170,16 +151,12 @@ def _awith_retry_stream(func: Callable[..., AsyncIterator[T]]) -> Callable[..., 
         backoff_factor = settings.retry_backoff_factor
         retry_codes = settings.retry_on_status_codes
 
-        last_exception: Optional[Exception] = None
-
         for attempt in range(max_retries + 1):
             try:
                 async for chunk in func(self, *args, **kwargs):
                     yield chunk
                 return
             except Exception as e:  # noqa: PERF203
-                last_exception = e
-
                 if not _should_retry(e, retry_codes) or attempt == max_retries:
                     raise
 
@@ -192,8 +169,5 @@ def _awith_retry_stream(func: Callable[..., AsyncIterator[T]]) -> Callable[..., 
                     repr(e),
                 )
                 await asyncio.sleep(delay)
-
-        if last_exception:
-            raise last_exception
 
     return wrapper

@@ -442,9 +442,16 @@
   - For `_with_retry_stream` and `_awith_retry_stream`: Fall-through to code that returns `None` implicitly instead of yielding, breaking the iterator contract.
 - **Solution**:
   - **Implementation**: Changed all 4 retry decorators to check `if max_retries <= 0` instead of `== 0`. This treats negative values identically to zero (disabled retries), executing the function once without entering the retry loop.
+  - **Dead Code Removal**: After the fix, the safety code (`last_exception` variable and fallback blocks) became provably unreachable. Removed:
+    - `last_exception: Optional[Exception] = None` declarations
+    - `last_exception = e` assignments
+    - `if last_exception: raise last_exception` blocks
+    - Fallback `return func(...)` statements
+    - Unused `Optional` import
+  - **Type Checker Satisfaction**: Added `raise RuntimeError("Unreachable")  # pragma: no cover` after for loops in `_with_retry` and `_awith_retry`. This is required because mypy cannot statically prove the loop always exits via `return` or `raise`. Generator functions (`_with_retry_stream`, `_awith_retry_stream`) don't need this because generators can end implicitly.
   - **Tests**: Added `test_sync_retry_negative_max_retries` and `test_async_retry_negative_max_retries` to verify the behavior and prevent regression.
   - **Why**:
     - **Robustness**: Handles invalid input gracefully instead of exhibiting undefined behavior.
     - **Bug Fix**: Prevents streaming decorators from returning `None` on negative values.
-    - **Code Clarity**: The previously "unreachable" safety code is now truly unreachable by explicit early return.
-- **Status**: Resolved. All 4 decorators updated, 2 tests added. All 335 tests pass.
+    - **Code Clarity**: Removed 26 lines of dead code, making the retry logic easier to understand.
+- **Status**: Resolved. All 4 decorators updated, dead code removed, 2 tests added. File reduced from 200 to 174 lines. All 335 tests pass.
