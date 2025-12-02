@@ -455,3 +455,37 @@
     - **Bug Fix**: Prevents streaming decorators from returning `None` on negative values.
     - **Code Clarity**: Removed 26 lines of dead code, making the retry logic easier to understand.
 - **Status**: Resolved. All 4 decorators updated, dead code removed, 2 tests added. File reduced from 200 to 174 lines. All 335 tests pass.
+
+## GigaChat Constructor Argument Visibility
+- **Problem**: The `GigaChat` class inherits from `GigaChatSyncClient` and `GigaChatAsyncClient`, both of which use `**kwargs: Any` in their `__init__` methods. This hides all 22 supported parameters from IDE autocomplete and type checkers. Developers cannot see which arguments are available without reading source code or documentation.
+  - `_BaseClient.__init__` has explicit typed parameters (22 params)
+  - `GigaChatSyncClient.__init__(**kwargs: Any)` — hides signature
+  - `GigaChatAsyncClient.__init__(**kwargs: Any)` — hides signature
+  - `GigaChat` — no `__init__`, inherits hidden signatures
+- **Analysis of Options**:
+  1. **Explicit Signature Duplication**: Add full typed `__init__` to all 3 classes (`GigaChat`, `GigaChatSyncClient`, `GigaChatAsyncClient`). Pros: Universal IDE support, default values visible, works with all Python versions. Cons: Code duplication (~50 lines × 3 classes), maintenance burden when adding new params.
+  2. **TypedDict + Unpack (PEP 692)**: Define `GigaChatParams(TypedDict)` and use `**kwargs: Unpack[GigaChatParams]`. Pros: Single source of truth, less duplication. Cons: Requires duplication with `Settings` class, older IDEs may not support `Unpack`, no default values in TypedDict, unknown kwargs cause type errors.
+- **Solution (Explicit Signatures with kwargs passthrough)**:
+  - **Approach**: Add explicit typed `__init__` signatures to `GigaChatSyncClient`, `GigaChatAsyncClient`, and `GigaChat` with all 22 parameters plus `**kwargs: Any` for extensibility.
+  - **Implementation Details**:
+    - Add explicit `__init__` with all parameters to `GigaChatSyncClient` — passes params + `**kwargs` to `super().__init__()`.
+    - Add explicit `__init__` with all parameters to `GigaChatAsyncClient` — passes params + `**kwargs` to `super().__init__()`.
+    - Add explicit `__init__` with all parameters to `GigaChat` — passes params + `**kwargs` to `super().__init__()`.
+    - MRO ensures all `__init__` methods are called: `GigaChat` → `GigaChatSyncClient` → `GigaChatAsyncClient` → `_BaseClient`.
+    - `_BaseClient` continues to handle unknown kwargs (logs warning, passes to `Settings`).
+    - Add class-level docstrings with Args section documenting all parameters.
+  - **Why**:
+    - **IDE Support**: Developers see all 22 parameters with types and defaults in autocomplete.
+    - **Type Safety**: mypy validates constructor calls against explicit signatures.
+    - **Extensibility**: `**kwargs` allows passing additional/future parameters without code changes.
+    - **Compatibility**: Works with all Python versions (3.8+) and all IDEs.
+    - **Default Values**: Visible directly in signature, unlike TypedDict approach.
+  - **Naming Convention**:
+    - Use `**kwargs: Any` in child classes (`GigaChatSyncClient`, `GigaChatAsyncClient`, `GigaChat`) — standard Python convention for pass-through.
+    - Keep `**_unknown_kwargs: Any` only in `_BaseClient` — semantically correct as this is where kwargs are identified as unknown.
+    - Rationale: In child classes, kwargs are just being forwarded, not classified. Standard `**kwargs` is clearer for pass-through pattern.
+  - **Trade-offs**:
+    - Code duplication: ~50 lines × 3 classes = ~150 lines of signature duplication.
+    - When adding new parameter: must update 4 places (`_BaseClient`, `GigaChatSyncClient`, `GigaChatAsyncClient`, `GigaChat`).
+    - Mitigated by: all changes in single file (`client.py`), easy to spot inconsistencies during review.
+- **Status**: Resolved. Explicit `__init__` signatures added to all 3 client classes with full parameter lists and docstrings. Unit tests added in `tests/unit_tests/gigachat/test_client_constructor.py`. All 339 tests pass.

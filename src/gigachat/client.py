@@ -192,10 +192,84 @@ class _BaseClient:
 
 
 class GigaChatSyncClient(_BaseClient):
-    """Synchronous GigaChat client."""
+    """
+    Synchronous GigaChat client.
 
-    def __init__(self, **kwargs: Any) -> None:
-        super().__init__(**kwargs)
+    Args:
+        base_url: Address against which requests are executed.
+        auth_url: Address for requesting OAuth 2.0 access token.
+        credentials: Authorization data.
+        scope: API version to which access is provided.
+        access_token: JWE token.
+        model: Name of the model to receive a response from.
+        profanity_check: Censorship parameter.
+        user: User name for authorization.
+        password: Password for authorization.
+        timeout: Timeout for requests.
+        verify_ssl_certs: Check SSL certificates.
+        ca_bundle_file: Path to CA bundle file.
+        cert_file: Path to certificate file.
+        key_file: Path to key file.
+        key_file_password: Password for key file.
+        ssl_context: SSL context.
+        flags: Flags for GigaChat API.
+        max_connections: Maximum number of simultaneous connections to the GigaChat API.
+        max_retries: Maximum number of retries for transient errors.
+        retry_backoff_factor: Backoff factor for retry delays.
+        retry_on_status_codes: HTTP status codes that trigger a retry.
+        **kwargs: Additional keyword arguments passed to parent classes.
+    """
+
+    def __init__(
+        self,
+        *,
+        base_url: Optional[str] = None,
+        auth_url: Optional[str] = None,
+        credentials: Optional[str] = None,
+        scope: Optional[str] = None,
+        access_token: Optional[str] = None,
+        model: Optional[str] = None,
+        profanity_check: Optional[bool] = None,
+        user: Optional[str] = None,
+        password: Optional[str] = None,
+        timeout: Optional[float] = None,
+        verify_ssl_certs: Optional[bool] = None,
+        ca_bundle_file: Optional[str] = None,
+        cert_file: Optional[str] = None,
+        key_file: Optional[str] = None,
+        key_file_password: Optional[str] = None,
+        ssl_context: Optional[ssl.SSLContext] = None,
+        flags: Optional[List[str]] = None,
+        max_connections: Optional[int] = None,
+        max_retries: Optional[int] = None,
+        retry_backoff_factor: Optional[float] = None,
+        retry_on_status_codes: Optional[Tuple[int, ...]] = None,
+        **kwargs: Any,
+    ) -> None:
+        super().__init__(
+            base_url=base_url,
+            auth_url=auth_url,
+            credentials=credentials,
+            scope=scope,
+            access_token=access_token,
+            model=model,
+            profanity_check=profanity_check,
+            user=user,
+            password=password,
+            timeout=timeout,
+            verify_ssl_certs=verify_ssl_certs,
+            ca_bundle_file=ca_bundle_file,
+            cert_file=cert_file,
+            key_file=key_file,
+            key_file_password=key_file_password,
+            ssl_context=ssl_context,
+            flags=flags,
+            max_connections=max_connections,
+            max_retries=max_retries,
+            retry_backoff_factor=retry_backoff_factor,
+            retry_on_status_codes=retry_on_status_codes,
+            **kwargs,
+        )
         self.assistants = AssistantsSyncClient(self)
         self.threads = ThreadsSyncClient(self)
         self._sync_token_lock = threading.RLock()
@@ -362,10 +436,84 @@ class GigaChatSyncClient(_BaseClient):
 
 
 class GigaChatAsyncClient(_BaseClient):
-    """Asynchronous GigaChat client."""
+    """
+    Asynchronous GigaChat client.
 
-    def __init__(self, **kwargs: Any) -> None:
-        super().__init__(**kwargs)
+    Args:
+        base_url: Address against which requests are executed.
+        auth_url: Address for requesting OAuth 2.0 access token.
+        credentials: Authorization data.
+        scope: API version to which access is provided.
+        access_token: JWE token.
+        model: Name of the model to receive a response from.
+        profanity_check: Censorship parameter.
+        user: User name for authorization.
+        password: Password for authorization.
+        timeout: Timeout for requests.
+        verify_ssl_certs: Check SSL certificates.
+        ca_bundle_file: Path to CA bundle file.
+        cert_file: Path to certificate file.
+        key_file: Path to key file.
+        key_file_password: Password for key file.
+        ssl_context: SSL context.
+        flags: Flags for GigaChat API.
+        max_connections: Maximum number of simultaneous connections to the GigaChat API.
+        max_retries: Maximum number of retries for transient errors.
+        retry_backoff_factor: Backoff factor for retry delays.
+        retry_on_status_codes: HTTP status codes that trigger a retry.
+        **kwargs: Additional keyword arguments passed to parent classes.
+    """
+
+    def __init__(
+        self,
+        *,
+        base_url: Optional[str] = None,
+        auth_url: Optional[str] = None,
+        credentials: Optional[str] = None,
+        scope: Optional[str] = None,
+        access_token: Optional[str] = None,
+        model: Optional[str] = None,
+        profanity_check: Optional[bool] = None,
+        user: Optional[str] = None,
+        password: Optional[str] = None,
+        timeout: Optional[float] = None,
+        verify_ssl_certs: Optional[bool] = None,
+        ca_bundle_file: Optional[str] = None,
+        cert_file: Optional[str] = None,
+        key_file: Optional[str] = None,
+        key_file_password: Optional[str] = None,
+        ssl_context: Optional[ssl.SSLContext] = None,
+        flags: Optional[List[str]] = None,
+        max_connections: Optional[int] = None,
+        max_retries: Optional[int] = None,
+        retry_backoff_factor: Optional[float] = None,
+        retry_on_status_codes: Optional[Tuple[int, ...]] = None,
+        **kwargs: Any,
+    ) -> None:
+        super().__init__(
+            base_url=base_url,
+            auth_url=auth_url,
+            credentials=credentials,
+            scope=scope,
+            access_token=access_token,
+            model=model,
+            profanity_check=profanity_check,
+            user=user,
+            password=password,
+            timeout=timeout,
+            verify_ssl_certs=verify_ssl_certs,
+            ca_bundle_file=ca_bundle_file,
+            cert_file=cert_file,
+            key_file=key_file,
+            key_file_password=key_file_password,
+            ssl_context=ssl_context,
+            flags=flags,
+            max_connections=max_connections,
+            max_retries=max_retries,
+            retry_backoff_factor=retry_backoff_factor,
+            retry_on_status_codes=retry_on_status_codes,
+            **kwargs,
+        )
         self.a_assistants = AssistantsAsyncClient(self)
         self.a_threads = ThreadsAsyncClient(self)
         self._async_token_lock = asyncio.Lock()
@@ -543,6 +691,85 @@ class GigaChatAsyncClient(_BaseClient):
 
 
 class GigaChat(GigaChatSyncClient, GigaChatAsyncClient):
+    """
+    GigaChat client.
+
+    Args:
+        base_url: Address against which requests are executed.
+        auth_url: Address for requesting OAuth 2.0 access token.
+        credentials: Authorization data.
+        scope: API version to which access is provided.
+        access_token: JWE token.
+        model: Name of the model to receive a response from.
+        profanity_check: Censorship parameter.
+        user: User name for authorization.
+        password: Password for authorization.
+        timeout: Timeout for requests.
+        verify_ssl_certs: Check SSL certificates.
+        ca_bundle_file: Path to CA bundle file.
+        cert_file: Path to certificate file.
+        key_file: Path to key file.
+        key_file_password: Password for key file.
+        ssl_context: SSL context.
+        flags: Flags for GigaChat API.
+        max_connections: Maximum number of simultaneous connections to the GigaChat API.
+        max_retries: Maximum number of retries for transient errors.
+        retry_backoff_factor: Backoff factor for retry delays.
+        retry_on_status_codes: HTTP status codes that trigger a retry.
+        **kwargs: Additional keyword arguments passed to parent classes.
+    """
+
+    def __init__(
+        self,
+        *,
+        base_url: Optional[str] = None,
+        auth_url: Optional[str] = None,
+        credentials: Optional[str] = None,
+        scope: Optional[str] = None,
+        access_token: Optional[str] = None,
+        model: Optional[str] = None,
+        profanity_check: Optional[bool] = None,
+        user: Optional[str] = None,
+        password: Optional[str] = None,
+        timeout: Optional[float] = None,
+        verify_ssl_certs: Optional[bool] = None,
+        ca_bundle_file: Optional[str] = None,
+        cert_file: Optional[str] = None,
+        key_file: Optional[str] = None,
+        key_file_password: Optional[str] = None,
+        ssl_context: Optional[ssl.SSLContext] = None,
+        flags: Optional[List[str]] = None,
+        max_connections: Optional[int] = None,
+        max_retries: Optional[int] = None,
+        retry_backoff_factor: Optional[float] = None,
+        retry_on_status_codes: Optional[Tuple[int, ...]] = None,
+        **kwargs: Any,
+    ) -> None:
+        super().__init__(
+            base_url=base_url,
+            auth_url=auth_url,
+            credentials=credentials,
+            scope=scope,
+            access_token=access_token,
+            model=model,
+            profanity_check=profanity_check,
+            user=user,
+            password=password,
+            timeout=timeout,
+            verify_ssl_certs=verify_ssl_certs,
+            ca_bundle_file=ca_bundle_file,
+            cert_file=cert_file,
+            key_file=key_file,
+            key_file_password=key_file_password,
+            ssl_context=ssl_context,
+            flags=flags,
+            max_connections=max_connections,
+            max_retries=max_retries,
+            retry_backoff_factor=retry_backoff_factor,
+            retry_on_status_codes=retry_on_status_codes,
+            **kwargs,
+        )
+
     async def aclose(self) -> None:
         self.close()
         await super().aclose()

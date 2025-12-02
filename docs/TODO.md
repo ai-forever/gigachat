@@ -287,3 +287,31 @@
   - [x] Add `raise RuntimeError("Unreachable")` for type checker in non-generator decorators
   - [x] Add tests for negative `max_retries` behavior in `test_retry.py`
   - [x] Verify all tests pass
+
+## GigaChat Constructor Argument Visibility
+- [x] Add Explicit `__init__` Signatures for IDE Visibility
+  - [x] Implementation
+    - [x] Add explicit `__init__` to `GigaChatSyncClient` with all 22 params + `**kwargs: Any`
+    - [x] Pass all explicit params + `**kwargs` to `super().__init__()` in `GigaChatSyncClient`
+    - [x] Add explicit `__init__` to `GigaChatAsyncClient` with all 22 params + `**kwargs: Any`
+    - [x] Pass all explicit params + `**kwargs` to `super().__init__()` in `GigaChatAsyncClient`
+    - [x] Add explicit `__init__` to `GigaChat` with all 22 params + `**kwargs: Any`
+    - [x] Pass all explicit params + `**kwargs` to `super().__init__()` in `GigaChat`
+    - [x] Verify MRO chain: `GigaChat` → `GigaChatSyncClient` → `GigaChatAsyncClient` → `_BaseClient`
+  - [x] Documentation
+    - [x] Add class docstring with Args section to `GigaChatSyncClient`
+    - [x] Add class docstring with Args section to `GigaChatAsyncClient`
+    - [x] Add class docstring with Args section to `GigaChat`
+  - [x] Verification
+    - [x] Run `mypy` to verify type hints correctness
+    - [x] Run `ruff check` to verify no linting errors
+    - [x] Test IDE autocomplete for `GigaChat` constructor
+    - [x] Test IDE autocomplete for `GigaChatSyncClient` constructor
+    - [x] Test IDE autocomplete for `GigaChatAsyncClient` constructor
+    - [x] Verify unknown kwargs warning still works (pass unknown param, check log)
+  - [x] Testing
+    - [x] Add unit test for `GigaChat` with all explicit params
+    - [x] Add unit test for `GigaChat` with unknown kwargs (verify warning logged)
+    - [x] Run `pytest` to verify no test regressions (339 passed)
+  - [x] Finalization
+    - [x] Update `docs/REFACTORING.md` with final implementation details
