@@ -7,6 +7,25 @@ AUTH_URL = "http://auth_url"
 # Mock Credentials (valid base64)
 CREDENTIALS = "NmIwNzhlODgtNDlkNC00ZjFmLTljMjMtYjFiZTZjMjVmNTRlOmU3NWJlNjVhLTk4YjAtNGY0Ni1iOWVhLTljMDkwZGE4YTk4MQ=="
 
+# Token expiration timestamps (milliseconds)
+# 2000-01-01 00:00:00 UTC - always expired
+EXPIRES_AT_EXPIRED = 946684800000
+# 2100-01-01 00:00:00 UTC - always valid
+EXPIRES_AT_VALID = 4102444800000
+
+# Mock token string (same for all variants)
+MOCK_TOKEN_STRING = (
+    "eyJlbmMiOiJBMjU2Q0JDLUhTNTEyIiwiYWxnIjoiUlNBLU9BRVAtMjU2In0."
+    "DCXAAnwXjmRleOrIJcXDWbQwsP5UGSptcY3x5XXRkYZm6x3QkDQBL63DKQZzwrwmtuFbKajq6ULHuQhsmGax-l_"
+    "R6AhRkr7pWzJi1jpzCenq9PAN2UjF0BX_IiDRgmEExH6_2OtHaJ_7KbudukIOLEgxD9l8WcXFY992dgqLL6eK2n"
+    "nnUvyfmr4ITc9PWuAFsMIO6jweNFw0e9vRYEDkAbnv9EGR-w9CGwfBsHNWZwZlo7fyu07fkSfmqmGdBvU434434"
+    "4luNNrHwktSGOzNhpLhu0-0A3KI950vmp_37QY8isDi3epGU3HShdrBZkk70fdXxBKQA."
+    "MV2IksoyxTV_c-qm6hSXaQ.LUT4JqOzKqmFOR07-Asq7Fhqj_eYSTXcsJAK-JchmM1QUqhPLBXsUyXXh6ZcjsnN"
+    "7Q0QXzuBlSjaBWekgWANDirI6HP_MsEM4FxfJAOh73aowC700cEQPPYAxzPYG0d4bOqsZh8Ss57lJB2VM7M6Y2F"
+    "cG2hb5Q0i2zPskqSWxXejuCyr2uIlY7Fe4bu4NUqtCaKJVwqriVWLfbA0OzZyA0osDc42Ba0u1adFAdaZDCE."
+    "IlKOixP8hSUimEI2pdP118Tx0StZjcLdbSauE5R0YAA"
+)
+
 # URLs derived from BASE_URL
 CHAT_URL = f"{BASE_URL}/chat/completions"
 TOKEN_URL = f"{BASE_URL}/token"
@@ -38,9 +57,13 @@ POST_ASSISTANT_FILES_DELETE_URL = f"{BASE_URL}/assistants/files/delete"
 POST_ASSISTANT_DELETE_URL = f"{BASE_URL}/assistants/delete"
 MOCK_URL = f"{BASE_URL}/chat/completions"  # Alias for CHAT_URL in some tests
 
-# Test Data
-ACCESS_TOKEN = get_json("access_token.json")
-TOKEN = get_json("token.json")
+# Test Data - OAuth token variants (/oauth endpoint, access_token/expires_at format)
+OAUTH_TOKEN_VALID = {"access_token": MOCK_TOKEN_STRING, "expires_at": EXPIRES_AT_VALID}
+OAUTH_TOKEN_EXPIRED = {"access_token": MOCK_TOKEN_STRING, "expires_at": EXPIRES_AT_EXPIRED}
+
+# Test Data - Password auth token variants (/token endpoint, tok/exp format)
+PASSWORD_TOKEN_VALID = {"tok": MOCK_TOKEN_STRING, "exp": EXPIRES_AT_VALID}
+PASSWORD_TOKEN_EXPIRED = {"tok": MOCK_TOKEN_STRING, "exp": EXPIRES_AT_EXPIRED}
 CHAT = Chat.model_validate(get_json("chat.json"))
 CHAT_FUNCTION = Chat.model_validate(get_json("chat_function.json"))
 CHAT_COMPLETION = get_json("chat_completion.json")

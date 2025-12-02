@@ -339,3 +339,16 @@
   - [x] Add unit test: `aget_token()` with no auth configured returns None
   - [x] Run `ruff check`, `mypy`, and `pytest` to verify no regressions
   - [x] Update `docs/REFACTORING.md` with implementation details
+
+## Token Caching Test Fix
+- [x] Fix Token Caching Tests
+  - [x] Identify root cause: proactive auth check with expired test timestamps
+  - [x] Create explicit token test constants (`OAUTH_TOKEN_VALID`, `OAUTH_TOKEN_EXPIRED`, `PASSWORD_TOKEN_VALID`, `PASSWORD_TOKEN_EXPIRED`)
+  - [x] Add pytest fixtures for token test data in `conftest.py`
+  - [x] Add token reuse tests for OAuth credentials (sync and async)
+  - [x] Add token reuse tests for password auth (sync and async)
+  - [x] Add expired token refresh tests for OAuth credentials (sync and async)
+  - [x] Add expired token refresh tests for password auth (sync and async)
+  - [x] Refactor token tests to use fixtures
+  - [x] Delete unused JSON files (`access_token.json`, `token.json`)
+  - [x] Run `ruff check`, `mypy`, and `pytest` to verify no regressions (355 tests pass)

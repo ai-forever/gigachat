@@ -15,16 +15,16 @@ from gigachat.context import (
 from gigachat.exceptions import AuthenticationError, BadRequestError
 from gigachat.models import AccessToken, Token
 from tests.constants import (
-    ACCESS_TOKEN,
     AUTH_URL,
     BASE_URL,
-    TOKEN,
+    OAUTH_TOKEN_VALID,
+    PASSWORD_TOKEN_VALID,
     TOKEN_URL,
 )
 
 
 def test_auth_sync(httpx_mock: HTTPXMock) -> None:
-    httpx_mock.add_response(url=AUTH_URL, json=ACCESS_TOKEN)
+    httpx_mock.add_response(url=AUTH_URL, json=OAUTH_TOKEN_VALID)
 
     with httpx.Client() as client:
         response = auth.auth_sync(client, url=AUTH_URL, credentials="credentials", scope="scope")
@@ -60,7 +60,7 @@ def test_auth_sync_response_error(httpx_mock: HTTPXMock) -> None:
 
 
 def test_auth_sync_headers(httpx_mock: HTTPXMock) -> None:
-    httpx_mock.add_response(url=AUTH_URL, json=ACCESS_TOKEN)
+    httpx_mock.add_response(url=AUTH_URL, json=OAUTH_TOKEN_VALID)
 
     with httpx.Client() as client:
         response = auth.auth_sync(
@@ -74,7 +74,7 @@ def test_auth_sync_headers(httpx_mock: HTTPXMock) -> None:
 
 
 async def test_auth_async(httpx_mock: HTTPXMock) -> None:
-    httpx_mock.add_response(url=AUTH_URL, json=ACCESS_TOKEN)
+    httpx_mock.add_response(url=AUTH_URL, json=OAUTH_TOKEN_VALID)
 
     async with httpx.AsyncClient() as client:
         response = await auth.auth_async(client, url=AUTH_URL, credentials="credentials", scope="scope")
@@ -103,7 +103,7 @@ def test_token_kwargs_context_vars() -> None:
 
 
 def test_token_sync(httpx_mock: HTTPXMock) -> None:
-    httpx_mock.add_response(url=TOKEN_URL, json=TOKEN)
+    httpx_mock.add_response(url=TOKEN_URL, json=PASSWORD_TOKEN_VALID)
 
     with httpx.Client(base_url=BASE_URL) as client:
         response = auth.token_sync(client, user="user", password="password")
@@ -139,7 +139,7 @@ def test_token_sync_response_error(httpx_mock: HTTPXMock) -> None:
 
 
 def test_token_sync_headers(httpx_mock: HTTPXMock) -> None:
-    httpx_mock.add_response(url=TOKEN_URL, json=TOKEN)
+    httpx_mock.add_response(url=TOKEN_URL, json=PASSWORD_TOKEN_VALID)
 
     with httpx.Client(base_url=BASE_URL) as client:
         response = auth.token_sync(
@@ -152,7 +152,7 @@ def test_token_sync_headers(httpx_mock: HTTPXMock) -> None:
 
 
 async def test_token_async(httpx_mock: HTTPXMock) -> None:
-    httpx_mock.add_response(url=TOKEN_URL, json=TOKEN)
+    httpx_mock.add_response(url=TOKEN_URL, json=PASSWORD_TOKEN_VALID)
 
     async with httpx.AsyncClient(base_url=BASE_URL) as client:
         response = await auth.token_async(client, user="user", password="password")

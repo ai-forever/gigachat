@@ -531,3 +531,26 @@
   - Changing this behavior (e.g., renaming to `ensure_token()`) would be a breaking change.
   - **Decision**: Keep the current behavior; the implicit refresh is a documented feature, not a bug.
 - **Status**: Resolved. Changed `get_token()` and `aget_token()` return type to `Optional[AccessToken]`, removed unsafe `cast()` calls, added comprehensive docstrings. Added 10 unit tests covering OAuth, password, manual token, context variable, and no-auth scenarios for both sync and async methods. All 347 tests pass.
+
+## Token Caching Test Fix
+- **Problem**: The proactive authentication check introduced in "Authentication and Stream Logic Improvements" caused tests to fail when calling `.chat()` multiple times in a row. Each API call triggered a new token request instead of reusing the cached token. Root cause: test data files (`access_token.json`, `token.json`) contained `expires_at` timestamps from 2021, which the proactive check (`_check_validity_token`) correctly identified as expired.
+- **Solution (Explicit Token Test Data)**:
+  - **Implementation Details**:
+    - Removed JSON file-based token test data (`tests/data/access_token.json`, `tests/data/token.json`).
+    - Created explicit token constants in `tests/constants.py`:
+      - `OAUTH_TOKEN_VALID`: OAuth format with year 2100 expiry (always valid)
+      - `OAUTH_TOKEN_EXPIRED`: OAuth format with year 2000 expiry (always expired)
+      - `PASSWORD_TOKEN_VALID`: Password auth format with year 2100 expiry
+      - `PASSWORD_TOKEN_EXPIRED`: Password auth format with year 2000 expiry
+    - Added pytest fixtures in `tests/unit_tests/conftest.py` for URL and token test data.
+    - Added 8 new tests covering token caching behavior:
+      - `test_chat_credentials_token_reuse`: Valid OAuth token reused across calls
+      - `test_chat_credentials_expired_token_refresh`: Expired OAuth token triggers refresh
+      - `test_chat_user_password_token_reuse`: Valid password token reused
+      - `test_chat_user_password_expired_token_refresh`: Expired password token triggers refresh
+      - Async variants of all above tests
+  - **Why**:
+    - **Explicit over Implicit**: Hardcoded timestamps make test behavior predictable and self-documenting.
+    - **Both Scenarios Tested**: Valid tokens verify caching works; expired tokens verify refresh works.
+    - **Fixtures for Reusability**: Pytest fixtures provide clean injection of test data.
+- **Status**: Resolved. All 355 tests pass. `ruff check`, `ruff format`, and `mypy` pass.

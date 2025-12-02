@@ -14,11 +14,11 @@ from gigachat.client import (
 from gigachat.context import authorization_cvar
 from gigachat.settings import Settings
 from tests.constants import (
-    ACCESS_TOKEN,
     AUTH_URL,
     BASE_URL,
     CREDENTIALS,
-    TOKEN,
+    OAUTH_TOKEN_VALID,
+    PASSWORD_TOKEN_VALID,
     TOKEN_URL,
 )
 
@@ -59,7 +59,7 @@ def test__unknown_kwargs(mocker: MockerFixture) -> None:
 
 
 def test_get_token_credentials(httpx_mock: HTTPXMock) -> None:
-    httpx_mock.add_response(url=AUTH_URL, json=ACCESS_TOKEN)
+    httpx_mock.add_response(url=AUTH_URL, json=OAUTH_TOKEN_VALID)
 
     model = GigaChat(
         base_url=BASE_URL,
@@ -69,15 +69,15 @@ def test_get_token_credentials(httpx_mock: HTTPXMock) -> None:
     access_token = model.get_token()
 
     assert model._access_token is not None
-    assert model._access_token.access_token == ACCESS_TOKEN["access_token"]
-    assert model._access_token.expires_at == ACCESS_TOKEN["expires_at"]
+    assert model._access_token.access_token == OAUTH_TOKEN_VALID["access_token"]
+    assert model._access_token.expires_at == OAUTH_TOKEN_VALID["expires_at"]
     assert access_token is not None
-    assert access_token.access_token == ACCESS_TOKEN["access_token"]
-    assert access_token.expires_at == ACCESS_TOKEN["expires_at"]
+    assert access_token.access_token == OAUTH_TOKEN_VALID["access_token"]
+    assert access_token.expires_at == OAUTH_TOKEN_VALID["expires_at"]
 
 
 def test_get_token_password(httpx_mock: HTTPXMock) -> None:
-    httpx_mock.add_response(url=TOKEN_URL, json=TOKEN)
+    httpx_mock.add_response(url=TOKEN_URL, json=PASSWORD_TOKEN_VALID)
 
     model = GigaChat(
         base_url=BASE_URL,
@@ -87,11 +87,11 @@ def test_get_token_password(httpx_mock: HTTPXMock) -> None:
     access_token = model.get_token()
 
     assert model._access_token is not None
-    assert model._access_token.access_token == TOKEN["tok"]
-    assert model._access_token.expires_at == TOKEN["exp"]
+    assert model._access_token.access_token == PASSWORD_TOKEN_VALID["tok"]
+    assert model._access_token.expires_at == PASSWORD_TOKEN_VALID["exp"]
     assert access_token is not None
-    assert access_token.access_token == TOKEN["tok"]
-    assert access_token.expires_at == TOKEN["exp"]
+    assert access_token.access_token == PASSWORD_TOKEN_VALID["tok"]
+    assert access_token.expires_at == PASSWORD_TOKEN_VALID["exp"]
 
 
 def test_get_token_manual() -> None:
@@ -134,7 +134,7 @@ async def test__aupdate_token() -> None:
 
 
 async def test_aget_token_credentials(httpx_mock: HTTPXMock) -> None:
-    httpx_mock.add_response(url=AUTH_URL, json=ACCESS_TOKEN)
+    httpx_mock.add_response(url=AUTH_URL, json=OAUTH_TOKEN_VALID)
 
     model = GigaChat(
         base_url=BASE_URL,
@@ -144,15 +144,15 @@ async def test_aget_token_credentials(httpx_mock: HTTPXMock) -> None:
     access_token = await model.aget_token()
 
     assert model._access_token is not None
-    assert model._access_token.access_token == ACCESS_TOKEN["access_token"]
-    assert model._access_token.expires_at == ACCESS_TOKEN["expires_at"]
+    assert model._access_token.access_token == OAUTH_TOKEN_VALID["access_token"]
+    assert model._access_token.expires_at == OAUTH_TOKEN_VALID["expires_at"]
     assert access_token is not None
-    assert access_token.access_token == ACCESS_TOKEN["access_token"]
-    assert access_token.expires_at == ACCESS_TOKEN["expires_at"]
+    assert access_token.access_token == OAUTH_TOKEN_VALID["access_token"]
+    assert access_token.expires_at == OAUTH_TOKEN_VALID["expires_at"]
 
 
 async def test_aget_token_password(httpx_mock: HTTPXMock) -> None:
-    httpx_mock.add_response(url=TOKEN_URL, json=TOKEN)
+    httpx_mock.add_response(url=TOKEN_URL, json=PASSWORD_TOKEN_VALID)
 
     model = GigaChat(
         base_url=BASE_URL,
@@ -162,11 +162,11 @@ async def test_aget_token_password(httpx_mock: HTTPXMock) -> None:
     access_token = await model.aget_token()
 
     assert model._access_token is not None
-    assert model._access_token.access_token == TOKEN["tok"]
-    assert model._access_token.expires_at == TOKEN["exp"]
+    assert model._access_token.access_token == PASSWORD_TOKEN_VALID["tok"]
+    assert model._access_token.expires_at == PASSWORD_TOKEN_VALID["exp"]
     assert access_token is not None
-    assert access_token.access_token == TOKEN["tok"]
-    assert access_token.expires_at == TOKEN["exp"]
+    assert access_token.access_token == PASSWORD_TOKEN_VALID["tok"]
+    assert access_token.expires_at == PASSWORD_TOKEN_VALID["exp"]
 
 
 async def test_aget_token_manual() -> None:

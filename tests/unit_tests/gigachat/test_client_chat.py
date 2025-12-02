@@ -1,4 +1,4 @@
-from typing import Optional
+from typing import Any, Dict, Optional
 
 import pytest
 from pytest_httpx import HTTPXMock
@@ -17,7 +17,6 @@ from gigachat.models import (
 )
 from gigachat.settings import Settings
 from tests.constants import (
-    ACCESS_TOKEN,
     AUTH_URL,
     BASE_URL,
     CHAT,
@@ -28,7 +27,8 @@ from tests.constants import (
     CHAT_URL,
     CREDENTIALS,
     HEADERS_STREAM,
-    TOKEN,
+    OAUTH_TOKEN_VALID,
+    PASSWORD_TOKEN_VALID,
     TOKEN_URL,
 )
 
@@ -93,7 +93,7 @@ def test_chat_access_token(httpx_mock: HTTPXMock) -> None:
 
 
 def test_chat_credentials(httpx_mock: HTTPXMock) -> None:
-    httpx_mock.add_response(url=AUTH_URL, json=ACCESS_TOKEN)
+    httpx_mock.add_response(url=AUTH_URL, json=OAUTH_TOKEN_VALID)
     httpx_mock.add_response(url=CHAT_URL, json=CHAT_COMPLETION)
 
     with GigaChatSyncClient(base_url=BASE_URL, auth_url=AUTH_URL, credentials=CREDENTIALS) as client:
@@ -102,9 +102,93 @@ def test_chat_credentials(httpx_mock: HTTPXMock) -> None:
     assert isinstance(response, ChatCompletion)
 
 
+def test_chat_credentials_token_reuse(
+    httpx_mock: HTTPXMock,
+    base_url: str,
+    auth_url: str,
+    credentials: str,
+    chat_url: str,
+    oauth_token_valid: Dict[str, Any],
+) -> None:
+    """Verify that valid token is reused across multiple API calls (no duplicate auth requests)."""
+    httpx_mock.add_response(url=auth_url, json=oauth_token_valid)
+    httpx_mock.add_response(url=chat_url, json=CHAT_COMPLETION)
+    httpx_mock.add_response(url=chat_url, json=CHAT_COMPLETION)
+
+    with GigaChatSyncClient(base_url=base_url, auth_url=auth_url, credentials=credentials) as client:
+        response1 = client.chat(CHAT)
+        response2 = client.chat(CHAT)
+
+    assert isinstance(response1, ChatCompletion)
+    assert isinstance(response2, ChatCompletion)
+
+
+def test_chat_credentials_expired_token_refresh(
+    httpx_mock: HTTPXMock,
+    base_url: str,
+    auth_url: str,
+    credentials: str,
+    chat_url: str,
+    oauth_token_expired: Dict[str, Any],
+) -> None:
+    """Verify that expired token triggers new auth request for each API call."""
+    httpx_mock.add_response(url=auth_url, json=oauth_token_expired)
+    httpx_mock.add_response(url=auth_url, json=oauth_token_expired)
+    httpx_mock.add_response(url=chat_url, json=CHAT_COMPLETION)
+    httpx_mock.add_response(url=chat_url, json=CHAT_COMPLETION)
+
+    with GigaChatSyncClient(base_url=base_url, auth_url=auth_url, credentials=credentials) as client:
+        response1 = client.chat(CHAT)
+        response2 = client.chat(CHAT)
+
+    assert isinstance(response1, ChatCompletion)
+    assert isinstance(response2, ChatCompletion)
+
+
+def test_chat_user_password_token_reuse(
+    httpx_mock: HTTPXMock,
+    base_url: str,
+    token_url: str,
+    chat_url: str,
+    password_token_valid: Dict[str, Any],
+) -> None:
+    """Verify that valid token is reused with user/password auth."""
+    httpx_mock.add_response(url=token_url, json=password_token_valid)
+    httpx_mock.add_response(url=chat_url, json=CHAT_COMPLETION)
+    httpx_mock.add_response(url=chat_url, json=CHAT_COMPLETION)
+
+    with GigaChatSyncClient(base_url=base_url, user="user", password="password") as client:
+        response1 = client.chat(CHAT)
+        response2 = client.chat(CHAT)
+
+    assert isinstance(response1, ChatCompletion)
+    assert isinstance(response2, ChatCompletion)
+
+
+def test_chat_user_password_expired_token_refresh(
+    httpx_mock: HTTPXMock,
+    base_url: str,
+    token_url: str,
+    chat_url: str,
+    password_token_expired: Dict[str, Any],
+) -> None:
+    """Verify that expired token triggers refresh with user/password auth."""
+    httpx_mock.add_response(url=token_url, json=password_token_expired)
+    httpx_mock.add_response(url=token_url, json=password_token_expired)
+    httpx_mock.add_response(url=chat_url, json=CHAT_COMPLETION)
+    httpx_mock.add_response(url=chat_url, json=CHAT_COMPLETION)
+
+    with GigaChatSyncClient(base_url=base_url, user="user", password="password") as client:
+        response1 = client.chat(CHAT)
+        response2 = client.chat(CHAT)
+
+    assert isinstance(response1, ChatCompletion)
+    assert isinstance(response2, ChatCompletion)
+
+
 def test_chat_user_password(httpx_mock: HTTPXMock) -> None:
     httpx_mock.add_response(url=CHAT_URL, json=CHAT_COMPLETION)
-    httpx_mock.add_response(url=TOKEN_URL, json=TOKEN)
+    httpx_mock.add_response(url=TOKEN_URL, json=PASSWORD_TOKEN_VALID)
 
     with GigaChatSyncClient(base_url=BASE_URL, user="user", password="password") as client:
         response = client.chat(CHAT)
@@ -113,7 +197,7 @@ def test_chat_user_password(httpx_mock: HTTPXMock) -> None:
 
 
 def test_chat_authentication_error(httpx_mock: HTTPXMock) -> None:
-    httpx_mock.add_response(url=AUTH_URL, json=ACCESS_TOKEN)
+    httpx_mock.add_response(url=AUTH_URL, json=OAUTH_TOKEN_VALID)
     httpx_mock.add_response(url=CHAT_URL, status_code=401)
 
     with GigaChatSyncClient(base_url=BASE_URL, auth_url=AUTH_URL, credentials=CREDENTIALS) as client:
@@ -122,7 +206,7 @@ def test_chat_authentication_error(httpx_mock: HTTPXMock) -> None:
 
 
 def test_chat_update_token_credentials(httpx_mock: HTTPXMock) -> None:
-    httpx_mock.add_response(url=AUTH_URL, json=ACCESS_TOKEN)
+    httpx_mock.add_response(url=AUTH_URL, json=OAUTH_TOKEN_VALID)
     httpx_mock.add_response(url=CHAT_URL, status_code=401)
     access_token = "access_token"
 
@@ -141,7 +225,7 @@ def test_chat_update_token_credentials(httpx_mock: HTTPXMock) -> None:
 
 def test_chat_update_token_user_password(httpx_mock: HTTPXMock) -> None:
     httpx_mock.add_response(url=CHAT_URL, status_code=401)
-    httpx_mock.add_response(url=TOKEN_URL, json=TOKEN)
+    httpx_mock.add_response(url=TOKEN_URL, json=PASSWORD_TOKEN_VALID)
     access_token = "access_token"
 
     with GigaChatSyncClient(base_url=BASE_URL, access_token=access_token, user="user", password="password") as client:
@@ -166,7 +250,7 @@ def test_chat_update_token_false(httpx_mock: HTTPXMock) -> None:
 def test_chat_update_token_success(httpx_mock: HTTPXMock) -> None:
     httpx_mock.add_response(url=CHAT_URL, status_code=401)
     httpx_mock.add_response(url=CHAT_URL, json=CHAT_COMPLETION)
-    httpx_mock.add_response(url=TOKEN_URL, json=TOKEN)
+    httpx_mock.add_response(url=TOKEN_URL, json=PASSWORD_TOKEN_VALID)
     access_token = "access_token"
 
     with GigaChatSyncClient(base_url=BASE_URL, access_token=access_token, user="user", password="password") as client:
@@ -180,7 +264,7 @@ def test_chat_update_token_success(httpx_mock: HTTPXMock) -> None:
 
 def test_chat_update_token_error(httpx_mock: HTTPXMock) -> None:
     httpx_mock.add_response(url=CHAT_URL, status_code=401)
-    httpx_mock.add_response(url=TOKEN_URL, json=TOKEN)
+    httpx_mock.add_response(url=TOKEN_URL, json=PASSWORD_TOKEN_VALID)
     access_token = "access_token"
 
     with GigaChatSyncClient(base_url=BASE_URL, access_token=access_token, user="user", password="password") as client:
@@ -234,7 +318,7 @@ def test_stream_access_token(httpx_mock: HTTPXMock) -> None:
 
 
 def test_stream_authentication_error(httpx_mock: HTTPXMock) -> None:
-    httpx_mock.add_response(url=AUTH_URL, json=ACCESS_TOKEN)
+    httpx_mock.add_response(url=AUTH_URL, json=OAUTH_TOKEN_VALID)
     httpx_mock.add_response(url=CHAT_URL, status_code=401)
 
     with GigaChatSyncClient(base_url=BASE_URL, auth_url=AUTH_URL, credentials=CREDENTIALS) as client:
@@ -245,7 +329,7 @@ def test_stream_authentication_error(httpx_mock: HTTPXMock) -> None:
 def test_stream_update_token_success(httpx_mock: HTTPXMock) -> None:
     httpx_mock.add_response(url=CHAT_URL, status_code=401)
     httpx_mock.add_response(url=CHAT_URL, content=CHAT_COMPLETION_STREAM, headers=HEADERS_STREAM)
-    httpx_mock.add_response(url=TOKEN_URL, json=TOKEN)
+    httpx_mock.add_response(url=TOKEN_URL, json=PASSWORD_TOKEN_VALID)
     access_token = "access_token"
 
     with GigaChatSyncClient(base_url=BASE_URL, access_token=access_token, user="user", password="password") as client:
@@ -261,7 +345,7 @@ def test_stream_update_token_success(httpx_mock: HTTPXMock) -> None:
 
 def test_stream_update_token_error(httpx_mock: HTTPXMock) -> None:
     httpx_mock.add_response(url=CHAT_URL, status_code=401)
-    httpx_mock.add_response(url=TOKEN_URL, json=TOKEN)
+    httpx_mock.add_response(url=TOKEN_URL, json=PASSWORD_TOKEN_VALID)
     access_token = "access_token"
 
     with GigaChatSyncClient(base_url=BASE_URL, access_token=access_token, user="user", password="password") as client:
@@ -293,7 +377,7 @@ async def test_achat_access_token(httpx_mock: HTTPXMock) -> None:
 
 
 async def test_achat_credentials(httpx_mock: HTTPXMock) -> None:
-    httpx_mock.add_response(url=AUTH_URL, json=ACCESS_TOKEN)
+    httpx_mock.add_response(url=AUTH_URL, json=OAUTH_TOKEN_VALID)
     httpx_mock.add_response(url=CHAT_URL, json=CHAT_COMPLETION)
 
     async with GigaChatAsyncClient(base_url=BASE_URL, auth_url=AUTH_URL, credentials=CREDENTIALS) as client:
@@ -302,9 +386,93 @@ async def test_achat_credentials(httpx_mock: HTTPXMock) -> None:
     assert isinstance(response, ChatCompletion)
 
 
+async def test_achat_credentials_token_reuse(
+    httpx_mock: HTTPXMock,
+    base_url: str,
+    auth_url: str,
+    credentials: str,
+    chat_url: str,
+    oauth_token_valid: Dict[str, Any],
+) -> None:
+    """Verify that valid token is reused across multiple async API calls (no duplicate auth requests)."""
+    httpx_mock.add_response(url=auth_url, json=oauth_token_valid)
+    httpx_mock.add_response(url=chat_url, json=CHAT_COMPLETION)
+    httpx_mock.add_response(url=chat_url, json=CHAT_COMPLETION)
+
+    async with GigaChatAsyncClient(base_url=base_url, auth_url=auth_url, credentials=credentials) as client:
+        response1 = await client.achat(CHAT)
+        response2 = await client.achat(CHAT)
+
+    assert isinstance(response1, ChatCompletion)
+    assert isinstance(response2, ChatCompletion)
+
+
+async def test_achat_credentials_expired_token_refresh(
+    httpx_mock: HTTPXMock,
+    base_url: str,
+    auth_url: str,
+    credentials: str,
+    chat_url: str,
+    oauth_token_expired: Dict[str, Any],
+) -> None:
+    """Verify that expired token triggers new auth request for each async API call."""
+    httpx_mock.add_response(url=auth_url, json=oauth_token_expired)
+    httpx_mock.add_response(url=auth_url, json=oauth_token_expired)
+    httpx_mock.add_response(url=chat_url, json=CHAT_COMPLETION)
+    httpx_mock.add_response(url=chat_url, json=CHAT_COMPLETION)
+
+    async with GigaChatAsyncClient(base_url=base_url, auth_url=auth_url, credentials=credentials) as client:
+        response1 = await client.achat(CHAT)
+        response2 = await client.achat(CHAT)
+
+    assert isinstance(response1, ChatCompletion)
+    assert isinstance(response2, ChatCompletion)
+
+
+async def test_achat_user_password_token_reuse(
+    httpx_mock: HTTPXMock,
+    base_url: str,
+    token_url: str,
+    chat_url: str,
+    password_token_valid: Dict[str, Any],
+) -> None:
+    """Verify that valid token is reused with async user/password auth."""
+    httpx_mock.add_response(url=token_url, json=password_token_valid)
+    httpx_mock.add_response(url=chat_url, json=CHAT_COMPLETION)
+    httpx_mock.add_response(url=chat_url, json=CHAT_COMPLETION)
+
+    async with GigaChatAsyncClient(base_url=base_url, user="user", password="password") as client:
+        response1 = await client.achat(CHAT)
+        response2 = await client.achat(CHAT)
+
+    assert isinstance(response1, ChatCompletion)
+    assert isinstance(response2, ChatCompletion)
+
+
+async def test_achat_user_password_expired_token_refresh(
+    httpx_mock: HTTPXMock,
+    base_url: str,
+    token_url: str,
+    chat_url: str,
+    password_token_expired: Dict[str, Any],
+) -> None:
+    """Verify that expired token triggers refresh with async user/password auth."""
+    httpx_mock.add_response(url=token_url, json=password_token_expired)
+    httpx_mock.add_response(url=token_url, json=password_token_expired)
+    httpx_mock.add_response(url=chat_url, json=CHAT_COMPLETION)
+    httpx_mock.add_response(url=chat_url, json=CHAT_COMPLETION)
+
+    async with GigaChatAsyncClient(base_url=base_url, user="user", password="password") as client:
+        response1 = await client.achat(CHAT)
+        response2 = await client.achat(CHAT)
+
+    assert isinstance(response1, ChatCompletion)
+    assert isinstance(response2, ChatCompletion)
+
+
 async def test_achat_user_password(httpx_mock: HTTPXMock) -> None:
     httpx_mock.add_response(url=CHAT_URL, json=CHAT_COMPLETION)
-    httpx_mock.add_response(url=TOKEN_URL, json=TOKEN)
+    httpx_mock.add_response(url=TOKEN_URL, json=PASSWORD_TOKEN_VALID)
 
     async with GigaChatAsyncClient(base_url=BASE_URL, user="user", password="password") as client:
         response = await client.achat(CHAT)
@@ -313,7 +481,7 @@ async def test_achat_user_password(httpx_mock: HTTPXMock) -> None:
 
 
 async def test_achat_authentication_error(httpx_mock: HTTPXMock) -> None:
-    httpx_mock.add_response(url=AUTH_URL, json=ACCESS_TOKEN)
+    httpx_mock.add_response(url=AUTH_URL, json=OAUTH_TOKEN_VALID)
     httpx_mock.add_response(url=CHAT_URL, status_code=401)
 
     async with GigaChatAsyncClient(base_url=BASE_URL, auth_url=AUTH_URL, credentials=CREDENTIALS) as client:
@@ -333,7 +501,7 @@ async def test_achat_update_token_false(httpx_mock: HTTPXMock) -> None:
 
 
 async def test_achat_update_token_credentials(httpx_mock: HTTPXMock) -> None:
-    httpx_mock.add_response(url=AUTH_URL, json=ACCESS_TOKEN)
+    httpx_mock.add_response(url=AUTH_URL, json=OAUTH_TOKEN_VALID)
     httpx_mock.add_response(url=CHAT_URL, status_code=401)
     access_token = "access_token"
 
@@ -352,7 +520,7 @@ async def test_achat_update_token_credentials(httpx_mock: HTTPXMock) -> None:
 
 async def test_achat_update_token_user_password(httpx_mock: HTTPXMock) -> None:
     httpx_mock.add_response(url=CHAT_URL, status_code=401)
-    httpx_mock.add_response(url=TOKEN_URL, json=TOKEN)
+    httpx_mock.add_response(url=TOKEN_URL, json=PASSWORD_TOKEN_VALID)
     access_token = "access_token"
 
     async with GigaChatAsyncClient(
@@ -391,7 +559,7 @@ async def test_astream_access_token(httpx_mock: HTTPXMock) -> None:
 
 
 async def test_astream_authentication_error(httpx_mock: HTTPXMock) -> None:
-    httpx_mock.add_response(url=AUTH_URL, json=ACCESS_TOKEN)
+    httpx_mock.add_response(url=AUTH_URL, json=OAUTH_TOKEN_VALID)
     httpx_mock.add_response(url=CHAT_URL, status_code=401)
 
     async with GigaChatAsyncClient(base_url=BASE_URL, auth_url=AUTH_URL, credentials=CREDENTIALS) as client:
@@ -401,7 +569,7 @@ async def test_astream_authentication_error(httpx_mock: HTTPXMock) -> None:
 
 async def test_astream_update_token(httpx_mock: HTTPXMock) -> None:
     httpx_mock.add_response(url=CHAT_URL, status_code=401)
-    httpx_mock.add_response(url=TOKEN_URL, json=TOKEN)
+    httpx_mock.add_response(url=TOKEN_URL, json=PASSWORD_TOKEN_VALID)
     access_token = "access_token"
 
     async with GigaChatAsyncClient(
