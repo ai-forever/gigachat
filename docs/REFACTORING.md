@@ -489,3 +489,45 @@
     - When adding new parameter: must update 4 places (`_BaseClient`, `GigaChatSyncClient`, `GigaChatAsyncClient`, `GigaChat`).
     - Mitigated by: all changes in single file (`client.py`), easy to spot inconsistencies during review.
 - **Status**: Resolved. Explicit `__init__` signatures added to all 3 client classes with full parameter lists and docstrings. Unit tests added in `tests/unit_tests/gigachat/test_client_constructor.py`. All 339 tests pass.
+
+## `get_token()` Type Safety Fix
+- **Problem**: The `get_token()` and `aget_token()` methods have incorrect return types. They declare `AccessToken` as the return type but use `cast(AccessToken, self._access_token)` to hide the fact that `_access_token` can be `None`. This misleads type checkers and users.
+- **Root Cause Analysis**:
+  - The library supports **4 authentication methods**:
+    1. **OAuth 2.0** (`credentials` param): Token obtained via `auth.auth_sync()` → `_access_token` is set
+    2. **Password** (`user` + `password` params): Token obtained via `auth.token_sync()` → `_access_token` is set
+    3. **Manual Token** (`access_token` param): Token set in `__init__` with `expires_at=0` → `_access_token` is set
+    4. **Context Variable** (`authorization_cvar`): Token provided externally via context var → `_access_token` is **never set** (remains `None`)
+  - The `_use_auth` property returns `True` only for OAuth and Password auth; Manual Token and Context Variable auth have `_use_auth = False`.
+  - The `_update_token()` method has an early return when `authorization_cvar` is set, leaving `_access_token` unchanged (potentially `None`).
+  - When no authentication is configured at all, `_update_token()` does nothing, and `_access_token` stays `None`.
+- **Edge Cases Where `_access_token` is `None`**:
+  | Scenario | `_use_auth` | `authorization_cvar` | `_access_token` | API Calls Work? |
+  |----------|-------------|---------------------|-----------------|-----------------|
+  | OAuth configured | `True` | `None` | Set | ✅ |
+  | Password configured | `True` | `None` | Set | ✅ |
+  | Manual `access_token` | `False` | `None` | Set | ✅ |
+  | **Context var only** | `False` | Set | **`None`** | ✅ (via context var) |
+  | **No auth at all** | `False` | `None` | **`None`** | ❌ (API error - no Authorization header sent) |
+  | **OAuth + context var** | `True` | Set | **`None`** | ✅ (via context var) |
+- **Why Context Variable Auth Works with `_access_token = None`**:
+  - The `build_headers()` function in `api/utils.py` reads `authorization_cvar` and adds its value to the `Authorization` header if set.
+  - This overrides token-based auth, so API calls succeed even when `_access_token` is `None`.
+  - However, calling `get_token()` in this scenario would return `None` (cast hides this from type checker).
+- **Solution (Optional Return Type)**:
+  - Change return type of `get_token()` from `AccessToken` to `Optional[AccessToken]`.
+  - Change return type of `aget_token()` from `AccessToken` to `Optional[AccessToken]`.
+  - Remove `cast()` calls and return `self._access_token` directly.
+  - Update docstrings to document that `None` is returned when using context variable auth or when no auth is configured.
+  - **Why This Approach**:
+    - **Type Honesty**: Return type accurately reflects all possible states.
+    - **No Breaking Changes**: Users calling `get_token()` may already be prepared for `None` (or will get clear type checker warnings).
+    - **Public API Preserved**: The `get_token()` method is part of the public API and cannot be removed or renamed.
+    - **Context Var Users**: Users managing tokens via `authorization_cvar` should not call `get_token()` — returning `None` makes this explicit.
+- **Design Decision: Keep Implicit Token Refresh**:
+  - The `get_token()` method calls `_update_token()` internally, which may trigger a network request.
+  - This violates Command-Query Separation (CQS) — a "get" method should not have side effects.
+  - However, this is an established public API contract that users may depend on.
+  - Changing this behavior (e.g., renaming to `ensure_token()`) would be a breaking change.
+  - **Decision**: Keep the current behavior; the implicit refresh is a documented feature, not a bug.
+- **Status**: Resolved. Changed `get_token()` and `aget_token()` return type to `Optional[AccessToken]`, removed unsafe `cast()` calls, added comprehensive docstrings. Added 10 unit tests covering OAuth, password, manual token, context variable, and no-auth scenarios for both sync and async methods. All 347 tests pass.

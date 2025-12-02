@@ -11,12 +11,15 @@ from gigachat.client import (
     _get_kwargs,
     _logger,
 )
+from gigachat.context import authorization_cvar
 from gigachat.settings import Settings
 from tests.constants import (
     ACCESS_TOKEN,
     AUTH_URL,
     BASE_URL,
     CREDENTIALS,
+    TOKEN,
+    TOKEN_URL,
 )
 
 
@@ -68,8 +71,56 @@ def test_get_token_credentials(httpx_mock: HTTPXMock) -> None:
     assert model._access_token is not None
     assert model._access_token.access_token == ACCESS_TOKEN["access_token"]
     assert model._access_token.expires_at == ACCESS_TOKEN["expires_at"]
+    assert access_token is not None
     assert access_token.access_token == ACCESS_TOKEN["access_token"]
     assert access_token.expires_at == ACCESS_TOKEN["expires_at"]
+
+
+def test_get_token_password(httpx_mock: HTTPXMock) -> None:
+    httpx_mock.add_response(url=TOKEN_URL, json=TOKEN)
+
+    model = GigaChat(
+        base_url=BASE_URL,
+        user="user",
+        password="password",
+    )
+    access_token = model.get_token()
+
+    assert model._access_token is not None
+    assert model._access_token.access_token == TOKEN["tok"]
+    assert model._access_token.expires_at == TOKEN["exp"]
+    assert access_token is not None
+    assert access_token.access_token == TOKEN["tok"]
+    assert access_token.expires_at == TOKEN["exp"]
+
+
+def test_get_token_manual() -> None:
+    token_str = "manual_token"
+    model = GigaChat(access_token=token_str)
+    access_token = model.get_token()
+
+    assert model._access_token is not None
+    assert model._access_token.access_token == token_str
+    assert model._access_token.expires_at == 0
+    assert access_token is not None
+    assert access_token.access_token == token_str
+
+
+def test_get_token_context_var() -> None:
+    token = authorization_cvar.set("Bearer context_token")
+    try:
+        model = GigaChat(credentials=CREDENTIALS)
+        # Even with credentials, if context var is set, it returns None
+        access_token = model.get_token()
+        assert access_token is None
+    finally:
+        authorization_cvar.reset(token)
+
+
+def test_get_token_no_auth() -> None:
+    model = GigaChat(base_url=BASE_URL)
+    access_token = model.get_token()
+    assert access_token is None
 
 
 def test__update_token() -> None:
@@ -95,5 +146,52 @@ async def test_aget_token_credentials(httpx_mock: HTTPXMock) -> None:
     assert model._access_token is not None
     assert model._access_token.access_token == ACCESS_TOKEN["access_token"]
     assert model._access_token.expires_at == ACCESS_TOKEN["expires_at"]
+    assert access_token is not None
     assert access_token.access_token == ACCESS_TOKEN["access_token"]
     assert access_token.expires_at == ACCESS_TOKEN["expires_at"]
+
+
+async def test_aget_token_password(httpx_mock: HTTPXMock) -> None:
+    httpx_mock.add_response(url=TOKEN_URL, json=TOKEN)
+
+    model = GigaChat(
+        base_url=BASE_URL,
+        user="user",
+        password="password",
+    )
+    access_token = await model.aget_token()
+
+    assert model._access_token is not None
+    assert model._access_token.access_token == TOKEN["tok"]
+    assert model._access_token.expires_at == TOKEN["exp"]
+    assert access_token is not None
+    assert access_token.access_token == TOKEN["tok"]
+    assert access_token.expires_at == TOKEN["exp"]
+
+
+async def test_aget_token_manual() -> None:
+    token_str = "manual_token"
+    model = GigaChat(access_token=token_str)
+    access_token = await model.aget_token()
+
+    assert model._access_token is not None
+    assert model._access_token.access_token == token_str
+    assert model._access_token.expires_at == 0
+    assert access_token is not None
+    assert access_token.access_token == token_str
+
+
+async def test_aget_token_context_var() -> None:
+    token = authorization_cvar.set("Bearer context_token")
+    try:
+        model = GigaChat(credentials=CREDENTIALS)
+        access_token = await model.aget_token()
+        assert access_token is None
+    finally:
+        authorization_cvar.reset(token)
+
+
+async def test_aget_token_no_auth() -> None:
+    model = GigaChat(base_url=BASE_URL)
+    access_token = await model.aget_token()
+    assert access_token is None

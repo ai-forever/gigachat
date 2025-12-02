@@ -13,7 +13,6 @@ from typing import (
     Tuple,
     TypeVar,
     Union,
-    cast,
 )
 
 import httpx
@@ -330,9 +329,18 @@ class GigaChatSyncClient(_BaseClient):
                 )
                 _logger.debug("UPDATE TOKEN")
 
-    def get_token(self) -> AccessToken:
+    def get_token(self) -> Optional[AccessToken]:
+        """
+        Return a valid access token, refreshing if necessary.
+
+        Returns:
+            Optional[AccessToken]: The access token if authentication is configured and successful.
+                Returns None if:
+                1. Authentication is managed via context variable (`authorization_cvar`).
+                2. No authentication credentials are provided.
+        """
         self._update_token()
-        return cast(AccessToken, self._access_token)
+        return self._access_token
 
     @_with_retry
     @_with_auth
@@ -568,9 +576,18 @@ class GigaChatAsyncClient(_BaseClient):
                 )
                 _logger.debug("UPDATE TOKEN")
 
-    async def aget_token(self) -> AccessToken:
+    async def aget_token(self) -> Optional[AccessToken]:
+        """
+        Return a valid access token, refreshing if necessary.
+
+        Returns:
+            Optional[AccessToken]: The access token if authentication is configured and successful.
+                Returns None if:
+                1. Authentication is managed via context variable (`authorization_cvar`).
+                2. No authentication credentials are provided.
+        """
         await self._aupdate_token()
-        return cast(AccessToken, self._access_token)
+        return self._access_token
 
     @_awith_retry
     @_awith_auth

@@ -315,3 +315,27 @@
     - [x] Run `pytest` to verify no test regressions (339 passed)
   - [x] Finalization
     - [x] Update `docs/REFACTORING.md` with final implementation details
+
+## `get_token()` Type Safety Fix
+- [x] Fix `get_token()` and `aget_token()` Type Safety
+  - [x] Analyze edge cases: OAuth, password, manual token, context var, no auth
+  - [x] Change `get_token()` return type from `AccessToken` to `Optional[AccessToken]`
+  - [x] Remove `cast(AccessToken, self._access_token)` in `get_token()`
+  - [x] Return `self._access_token` directly (may be None for context var auth)
+  - [x] Change `aget_token()` return type from `AccessToken` to `Optional[AccessToken]`
+  - [x] Remove `cast(AccessToken, self._access_token)` in `aget_token()`
+  - [x] Return `self._access_token` directly in `aget_token()`
+  - [x] Update `get_token()` docstring: document None return for context var auth
+  - [x] Update `aget_token()` docstring: document None return for context var auth
+  - [x] Add unit test: `get_token()` with OAuth credentials returns AccessToken
+  - [x] Add unit test: `get_token()` with password auth returns AccessToken
+  - [x] Add unit test: `get_token()` with manual access_token returns AccessToken
+  - [x] Add unit test: `get_token()` with authorization_cvar set returns None
+  - [x] Add unit test: `get_token()` with no auth configured returns None
+  - [x] Add unit test: `aget_token()` with OAuth credentials returns AccessToken
+  - [x] Add unit test: `aget_token()` with password auth returns AccessToken
+  - [x] Add unit test: `aget_token()` with manual access_token returns AccessToken
+  - [x] Add unit test: `aget_token()` with authorization_cvar set returns None
+  - [x] Add unit test: `aget_token()` with no auth configured returns None
+  - [x] Run `ruff check`, `mypy`, and `pytest` to verify no regressions
+  - [x] Update `docs/REFACTORING.md` with implementation details
