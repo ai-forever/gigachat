@@ -17,7 +17,7 @@ from gigachat.api.utils import (
 )
 from gigachat.models.auth import AccessToken, Token
 
-_logger = logging.getLogger(__name__)
+logger = logging.getLogger(__name__)
 
 
 def _get_auth_kwargs(*, url: str, credentials: str, scope: str) -> Dict[str, Any]:
@@ -38,7 +38,7 @@ def _validate_credentials(credentials: str) -> None:
     try:
         base64.b64decode(credentials, validate=True)
     except (ValueError, binascii.Error):
-        _logger.warning(
+        logger.warning(
             "Invalid credentials format. Please use only base64 credentials (Authorization data, not client secret!)"
         )
 

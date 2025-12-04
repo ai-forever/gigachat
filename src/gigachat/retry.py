@@ -10,7 +10,7 @@ import httpx
 from gigachat.exceptions import RateLimitError, ResponseError, ServerError
 from gigachat.settings import Settings
 
-_logger = logging.getLogger(__name__)
+logger = logging.getLogger(__name__)
 
 T = TypeVar("T")
 
@@ -63,9 +63,10 @@ def _with_retry(func: Callable[..., T]) -> Callable[..., T]:
                     raise
 
                 delay = _calculate_backoff(attempt, backoff_factor, e)
-                _logger.debug("Retry attempt %d/%d after %.2fs due to %s", attempt + 1, max_retries, delay, repr(e))
+                logger.debug("Retry attempt %d/%d after %.2fs due to %s", attempt + 1, max_retries, delay, repr(e))
                 time.sleep(delay)
 
+        logger.info("All %d retries exhausted for %s", max_retries, func.__name__)
         raise RuntimeError("Unreachable")  # pragma: no cover
 
     return wrapper
@@ -95,10 +96,12 @@ def _with_retry_stream(func: Callable[..., Iterator[T]]) -> Callable[..., Iterat
                     raise
 
                 delay = _calculate_backoff(attempt, backoff_factor, e)
-                _logger.debug(
+                logger.debug(
                     "Retry stream attempt %d/%d after %.2fs due to %s", attempt + 1, max_retries, delay, repr(e)
                 )
                 time.sleep(delay)
+
+        logger.info("All %d retries exhausted for %s", max_retries, func.__name__)
 
     return wrapper
 
@@ -125,11 +128,12 @@ def _awith_retry(func: Callable[..., Awaitable[T]]) -> Callable[..., Awaitable[T
                     raise
 
                 delay = _calculate_backoff(attempt, backoff_factor, e)
-                _logger.debug(
+                logger.debug(
                     "Retry async attempt %d/%d after %.2fs due to %s", attempt + 1, max_retries, delay, repr(e)
                 )
                 await asyncio.sleep(delay)
 
+        logger.info("All %d retries exhausted for %s", max_retries, func.__name__)
         raise RuntimeError("Unreachable")  # pragma: no cover
 
     return wrapper
@@ -161,7 +165,7 @@ def _awith_retry_stream(func: Callable[..., AsyncIterator[T]]) -> Callable[..., 
                     raise
 
                 delay = _calculate_backoff(attempt, backoff_factor, e)
-                _logger.debug(
+                logger.debug(
                     "Retry async stream attempt %d/%d after %.2fs due to %s",
                     attempt + 1,
                     max_retries,
@@ -169,5 +173,7 @@ def _awith_retry_stream(func: Callable[..., AsyncIterator[T]]) -> Callable[..., 
                     repr(e),
                 )
                 await asyncio.sleep(delay)
+
+        logger.info("All %d retries exhausted for %s", max_retries, func.__name__)
 
     return wrapper

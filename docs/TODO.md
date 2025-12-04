@@ -352,3 +352,28 @@
   - [x] Refactor token tests to use fixtures
   - [x] Delete unused JSON files (`access_token.json`, `token.json`)
   - [x] Run `ruff check`, `mypy`, and `pytest` to verify no regressions (355 tests pass)
+
+## Logging Improvements
+- [x] Add NullHandler (Library Best Practice)
+  - [x] Add `logging.getLogger(__name__).addHandler(logging.NullHandler())` to `src/gigachat/__init__.py`
+- [x] Fix Authentication Error Log Level
+  - [x] Change `logger.debug("AUTHENTICATION ERROR")` to `logger.warning(...)` in `src/gigachat/authentication.py` (4 occurrences)
+  - [x] Improve message: `"Authentication failed (401), resetting token and retrying"`
+- [x] Improve Token Update Messages
+  - [x] Change `"OAUTH UPDATE TOKEN"` to `"Token refreshed via OAuth"` in `src/gigachat/client.py` (2 occurrences)
+  - [x] Change `"UPDATE TOKEN"` to `"Token refreshed via password auth"` in `src/gigachat/client.py` (2 occurrences)
+- [x] Remove Dead Code
+  - [x] Remove unused logger definition from `src/gigachat/threads.py`
+- [x] Rename Logger Variable
+  - [x] Rename `_logger` to `logger` in `src/gigachat/client.py`
+  - [x] Rename `_logger` to `logger` in `src/gigachat/authentication.py`
+  - [x] Rename `_logger` to `logger` in `src/gigachat/retry.py`
+  - [x] Rename `_logger` to `logger` in `src/gigachat/api/auth.py`
+  - [x] Rename `_logger` to `logger` in `src/gigachat/api/utils.py`
+- [x] Add Missing Warning Logs
+  - [x] Add WARNING for 429 rate limit in `src/gigachat/api/utils.py` `_raise_for_status()` with Retry-After value
+  - [x] Add WARNING for 5xx server errors in `src/gigachat/api/utils.py` `_raise_for_status()`
+- [x] Add Retry Exhaustion Log
+  - [x] Add INFO log in `src/gigachat/retry.py` when all retries exhausted (after final attempt)
+- [x] Verification
+  - [x] Run `ruff check`, `mypy`, and `pytest` to verify no regressions

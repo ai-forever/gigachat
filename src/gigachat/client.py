@@ -41,7 +41,7 @@ from gigachat.threads import ThreadsAsyncClient, ThreadsSyncClient
 
 T = TypeVar("T")
 
-_logger = logging.getLogger(__name__)
+logger = logging.getLogger(__name__)
 
 GIGACHAT_MODEL = "GigaChat"
 
@@ -130,7 +130,7 @@ class _BaseClient:
         **_unknown_kwargs: Any,
     ) -> None:
         if _unknown_kwargs:
-            _logger.warning("GigaChat: unknown kwargs - %s", _unknown_kwargs)
+            logger.warning("GigaChat: unknown kwargs - %s", _unknown_kwargs)
 
         kwargs: Dict[str, Any] = {
             "base_url": base_url,
@@ -318,7 +318,7 @@ class GigaChatSyncClient(_BaseClient):
                     credentials=self._settings.credentials,
                     scope=self._settings.scope,
                 )
-                _logger.debug("OAUTH UPDATE TOKEN")
+                logger.debug("Token refreshed via OAuth")
             elif self._settings.user and self._settings.password:
                 self._access_token = _build_access_token(
                     auth.token_sync(
@@ -327,7 +327,7 @@ class GigaChatSyncClient(_BaseClient):
                         password=self._settings.password,
                     )
                 )
-                _logger.debug("UPDATE TOKEN")
+                logger.debug("Token refreshed via password auth")
 
     def get_token(self) -> Optional[AccessToken]:
         """
@@ -565,7 +565,7 @@ class GigaChatAsyncClient(_BaseClient):
                     credentials=self._settings.credentials,
                     scope=self._settings.scope,
                 )
-                _logger.debug("OAUTH UPDATE TOKEN")
+                logger.debug("Token refreshed via OAuth")
             elif self._settings.user and self._settings.password:
                 self._access_token = _build_access_token(
                     await auth.token_async(
@@ -574,7 +574,7 @@ class GigaChatAsyncClient(_BaseClient):
                         password=self._settings.password,
                     )
                 )
-                _logger.debug("UPDATE TOKEN")
+                logger.debug("Token refreshed via password auth")
 
     async def aget_token(self) -> Optional[AccessToken]:
         """

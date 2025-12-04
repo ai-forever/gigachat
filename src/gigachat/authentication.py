@@ -9,7 +9,7 @@ __all__ = [
     "AsyncAuthClientProtocol",
 ]
 
-_logger = logging.getLogger(__name__)
+logger = logging.getLogger(__name__)
 
 T = TypeVar("T")
 
@@ -71,7 +71,7 @@ def _with_auth(func: Callable[..., T]) -> Callable[..., T]:
                 try:
                     return func(self, *args, **kwargs)
                 except AuthenticationError:
-                    _logger.debug("AUTHENTICATION ERROR")
+                    logger.warning("Authentication failed (401), resetting token and retrying")
                     auth_client._reset_token()
             auth_client._update_token()
         return func(self, *args, **kwargs)
@@ -91,7 +91,7 @@ def _with_auth_stream(func: Callable[..., Iterator[T]]) -> Callable[..., Iterato
                     yield from func(self, *args, **kwargs)
                     return
                 except AuthenticationError:
-                    _logger.debug("AUTHENTICATION ERROR")
+                    logger.warning("Authentication failed (401), resetting token and retrying")
                     auth_client._reset_token()
             auth_client._update_token()
         yield from func(self, *args, **kwargs)
@@ -110,7 +110,7 @@ def _awith_auth(func: Callable[..., Awaitable[T]]) -> Callable[..., Awaitable[T]
                 try:
                     return await func(self, *args, **kwargs)
                 except AuthenticationError:
-                    _logger.debug("AUTHENTICATION ERROR")
+                    logger.warning("Authentication failed (401), resetting token and retrying")
                     auth_client._reset_token()
             await auth_client._aupdate_token()
         return await func(self, *args, **kwargs)
@@ -131,7 +131,7 @@ def _awith_auth_stream(func: Callable[..., AsyncIterator[T]]) -> Callable[..., A
                         yield chunk
                     return
                 except AuthenticationError:
-                    _logger.debug("AUTHENTICATION ERROR")
+                    logger.warning("Authentication failed (401), resetting token and retrying")
                     auth_client._reset_token()
             await auth_client._aupdate_token()
         async for chunk in func(self, *args, **kwargs):

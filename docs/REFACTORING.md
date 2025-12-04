@@ -554,3 +554,49 @@
     - **Both Scenarios Tested**: Valid tokens verify caching works; expired tokens verify refresh works.
     - **Fixtures for Reusability**: Pytest fixtures provide clean injection of test data.
 - **Status**: Resolved. All 355 tests pass. `ruff check`, `ruff format`, and `mypy` pass.
+
+## Logging Improvements
+- **Problem**: The library's logging implementation has several issues:
+  1. **Missing NullHandler**: No `NullHandler` added to the library's root logger. While Python 3.2+ mitigates the "No handlers found" warning via `logging.lastResort`, best practice for libraries is to add `NullHandler` so users get silence by default until they explicitly configure logging.
+  2. **Wrong log levels**: Authentication errors in `authentication.py` use DEBUG level, but these are recoverable errors that should be WARNING (token expired, 401 received, retrying).
+  3. **Poor message quality**: Messages like "AUTHENTICATION ERROR" and "OAUTH UPDATE TOKEN" are ALL CAPS and uninformative.
+  4. **Dead code**: `threads.py` defines `logger` but never uses it.
+  5. **Missing logs**: No logging for rate limits (429), server errors (5xx), or retry exhaustion.
+  6. **Inconsistent naming**: Logger variable uses `_logger` (private convention) but loggers are typically public module-level variables named `logger`.
+- **Analysis of Current Log Statements**:
+  | Location | Current Level | Assessment |
+  |----------|---------------|------------|
+  | `client.py:133` — Unknown kwargs | WARNING | ✅ Correct |
+  | `client.py:321,330,568,577` — Token updates | DEBUG | ✅ Acceptable (routine operation) |
+  | `authentication.py:74,94,113,134` — Auth errors | DEBUG | ❌ Should be WARNING |
+  | `retry.py:66,98,128,164` — Retry attempts | DEBUG | ✅ Correct |
+  | `api/auth.py:41` — Invalid credentials | WARNING | ✅ Correct |
+  | `api/utils.py:80` — Chunk parsing error | ERROR | ✅ Correct |
+  | `threads.py:43` — Logger defined | N/A | ❌ Dead code (removed) |
+- **Solution (Logging Best Practices)**:
+  - **Implementation Details**:
+    - Add `NullHandler` to `src/gigachat/__init__.py`: `logging.getLogger(__name__).addHandler(logging.NullHandler())`
+    - Change auth error log level from DEBUG to WARNING in `authentication.py`
+    - Improve auth error message: `"AUTHENTICATION ERROR"` → `"Authentication failed (401), resetting token and retrying"`
+    - Improve token update messages: `"OAUTH UPDATE TOKEN"` → `"Token refreshed via OAuth"`, `"UPDATE TOKEN"` → `"Token refreshed via password auth"`
+    - Remove unused logger from `threads.py`
+    - Rename `_logger` to `logger` across all modules (standard convention for module-level loggers)
+    - Add WARNING for 429 rate limit in `api/utils.py` with Retry-After header value
+    - Add WARNING for 5xx server errors in `api/utils.py`
+    - Add INFO for retry exhaustion in `retry.py` (all retries failed)
+  - **Why NullHandler**:
+    - Python's [logging documentation](https://docs.python.org/3/howto/logging.html#configuring-logging-for-a-library) explicitly recommends it for libraries
+    - Ensures silence by default — users explicitly enable logging when needed
+    - Used by httpx, requests, boto3, openai, and other major libraries
+    - Without it, WARNING+ messages may appear on stderr unexpectedly when user hasn't configured logging
+  - **Why Keep Standard Library Logging**:
+    - Zero additional dependencies (aligns with minimal dependency philosophy)
+    - httpx (underlying HTTP client) uses standard logging — consistent log output
+    - Users can integrate with any logging backend (structlog, loguru) at application level
+    - Alternative libraries (loguru, structlog) are designed for applications, not libraries
+  - **Log Level Guidelines Applied**:
+    - DEBUG: Routine internal operations (token refresh, retry attempts)
+    - INFO: Notable lifecycle events (retry exhaustion)
+    - WARNING: Recoverable errors (auth failure with retry, rate limits, server errors)
+    - ERROR: Failures that propagate to user (parsing errors)
+- **Status**: Resolved. All logging improvements implemented: NullHandler added, log levels corrected, messages improved, dead code removed, logger renamed to standard convention, and missing warning/info logs added.

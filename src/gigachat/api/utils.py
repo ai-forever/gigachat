@@ -27,7 +27,7 @@ from gigachat.exceptions import (
     UnprocessableEntityError,
 )
 
-_logger = logging.getLogger(__name__)
+logger = logging.getLogger(__name__)
 
 USER_AGENT = "GigaChat-python-lib"
 EVENT_STREAM = "text/event-stream"
@@ -77,7 +77,7 @@ def parse_chunk(line: str, model_class: Type[T]) -> Optional[T]:
             else:
                 return model_class.model_validate_json(value)
     except Exception as e:
-        _logger.error("Error parsing chunk from server: %s, raw value: %s", e, line)
+        logger.error("Error parsing chunk from server: %s, raw value: %s", e, line)
         raise e
     else:
         return None
@@ -110,8 +110,13 @@ def _raise_for_status(url: Union[httpx.URL, str], status_code: int, content: byt
     elif status_code == HTTPStatus.UNPROCESSABLE_ENTITY:
         raise UnprocessableEntityError(url, status_code, content, headers)
     elif status_code == HTTPStatus.TOO_MANY_REQUESTS:
+        if retry_after := headers.get("retry-after"):
+            logger.warning("Rate limit exceeded (429). Retry-After: %s", retry_after)
+        else:
+            logger.warning("Rate limit exceeded (429)")
         raise RateLimitError(url, status_code, content, headers)
     elif 500 <= status_code < 600:
+        logger.warning("Server error (%d) from %s", status_code, url)
         raise ServerError(url, status_code, content, headers)
     else:
         raise ResponseError(url, status_code, content, headers)

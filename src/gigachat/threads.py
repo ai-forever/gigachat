@@ -1,4 +1,3 @@
-import logging
 import warnings
 from typing import (
     TYPE_CHECKING,
@@ -38,9 +37,6 @@ def _parse_message(message: Union[Messages, str, Dict[str, Any]]) -> Messages:
         return Messages(role=MessagesRole.USER, content=message)
     else:
         return Messages.model_validate(message)
-
-
-_logger = logging.getLogger(__name__)
 
 
 class ThreadsSyncClient:

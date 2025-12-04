@@ -1,3 +1,5 @@
+import logging
+
 from gigachat.client import GigaChat, GigaChatAsyncClient, GigaChatSyncClient
 from gigachat.context import custom_headers_cvar, request_id_cvar, session_id_cvar
 from gigachat.exceptions import (
@@ -57,3 +59,5 @@ __all__ = [
     "request_id_cvar",
     "custom_headers_cvar",
 ]
+
+logging.getLogger(__name__).addHandler(logging.NullHandler())

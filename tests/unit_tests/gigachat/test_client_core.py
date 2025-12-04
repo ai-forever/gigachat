@@ -9,7 +9,7 @@ from gigachat.client import (
     GigaChatSyncClient,
     _get_auth_kwargs,
     _get_kwargs,
-    _logger,
+    logger,
 )
 from gigachat.context import authorization_cvar
 from gigachat.settings import Settings
@@ -51,7 +51,7 @@ def test__get_auth_kwargs_ssl() -> None:
 
 
 def test__unknown_kwargs(mocker: MockerFixture) -> None:
-    spy = mocker.spy(_logger, "warning")
+    spy = mocker.spy(logger, "warning")
 
     GigaChatSyncClient(foo="bar")
 
