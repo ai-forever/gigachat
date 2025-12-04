@@ -25,7 +25,7 @@ session_id_cvar: ContextVar[Optional[str]] = ContextVar("session_id_cvar", defau
 service_id_cvar: ContextVar[Optional[str]] = ContextVar("service_id_cvar", default=None)
 """Unique service ID."""
 operation_id_cvar: ContextVar[Optional[str]] = ContextVar("operation_id_cvar", default=None)
-"""Authorization information using JWE."""
+"""Unique operation ID."""
 trace_id_cvar: ContextVar[Optional[str]] = ContextVar("trace_id_cvar", default=None)
 """Unique process instance ID (main operation)."""
 agent_id_cvar: ContextVar[Optional[str]] = ContextVar("agent_id_cvar", default=None)
