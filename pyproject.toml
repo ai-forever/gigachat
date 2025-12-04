@@ -1,6 +1,6 @@
 [project]
 name = "gigachat"
-version = "0.1.43"
+version = "0.2.0"
 description = "GigaChat. Python-library for GigaChat API"
 authors = [
     { name = "Konstantin Krestnikov", email = "rai220@gmail.com" },
