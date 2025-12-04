@@ -2,6 +2,23 @@
 
 **Note**: All information in this file must be grouped by specific issues. Do not separate problems and solutions into different sections; keep them together under the relevant issue heading.
 
+## Workflow
+
+### Progress Tracking
+- Refer to `docs/TODO.md` for current status of refactoring tasks.
+- Tasks are grouped by issue.
+- Only analyzed and approved issues are added to the active plan.
+- **Chronological Order**: All sections (issues) must be listed in chronological ascending order (oldest first). New tasks should always be added at the end.
+
+### Implementation Process
+1. Before implementing each todo item list, get approval.
+2. After implementation, summarize results.
+3. After solving each issue:
+   - Add detailed information about the solution (why and how) to this file.
+   - Update `docs/TODO.md` to reflect detailed implemented steps.
+
+---
+
 ## Resource Leak in Hybrid Client
 - **Problem**: The `GigaChat` class inherits from both `GigaChatSyncClient` and `GigaChatAsyncClient`. Instantiating `GigaChat()` triggers `__init__` for both, creating **four** clients immediately (sync client, sync auth client, async client, async auth client).
 - **Leak Analysis**:
