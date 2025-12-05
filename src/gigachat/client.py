@@ -2,6 +2,7 @@ import asyncio
 import logging
 import ssl
 import threading
+import time
 from typing import (
     Any,
     AsyncIterator,
@@ -173,16 +174,10 @@ class _BaseClient:
 
     def _check_validity_token(self) -> bool:
         """Check if the token is valid (not expired)."""
-        if self._access_token:
-            # _check_validity_token
-            if self._access_token.expires_at == 0:
-                return True
-
-            import time
-
-            # Check if token expires within next 60 seconds
-            if self._access_token.expires_at > (time.time() * 1000) + 60000:
-                return True
+        if self._access_token and (
+            self._access_token.expires_at == 0 or self._access_token.expires_at > (time.time() * 1000) + 60000
+        ):
+            return True
         return False
 
     def _reset_token(self) -> None:
