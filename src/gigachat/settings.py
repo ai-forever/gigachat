@@ -48,4 +48,7 @@ class Settings(BaseSettings):
     retry_on_status_codes: Tuple[int, ...] = (429, 500, 502, 503, 504)
     """HTTP status codes that trigger a retry."""
 
+    token_expiry_buffer_ms: int = 60000
+    """Buffer time (ms) before token expiry to trigger refresh. Default is 60000 (60 seconds)."""
+
     model_config = SettingsConfigDict(env_prefix=ENV_PREFIX)

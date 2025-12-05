@@ -85,7 +85,7 @@
 
 ## Authentication and Stream Logic Improvements
 - [x] Refactor Authentication and Stream Logic
-  - [x] Proactive Token Expiration Check (`_check_validity_token`)
+  - [x] Proactive Token Expiration Check (`_is_token_usable`)
   - [x] Implement `_stream_decorator` in `GigaChatSyncClient`
   - [x] Implement `_astream_decorator` in `GigaChatAsyncClient`
   - [x] Refactor `stream` methods to use stream decorators

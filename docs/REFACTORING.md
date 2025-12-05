@@ -138,7 +138,7 @@
 - **Problem**: The current authentication logic is reactive (waits for 401 error) rather than proactive (checking expiration), causing unnecessary failed requests. Additionally, streaming methods cannot use the standard `_decorator` for auth retries, leading to significant code duplication across `client.py` and `threads.py` (same try/except block repeated 6+ times).
 - **Solution (Stream Decorator & Proactive Auth)**:
   - **Implementation Details**:
-    - **Proactive Auth**: Updated `_check_validity_token` to check `self._access_token.expires_at` against current time, refreshing before the token actually expires (1 minute buffer). Handled edge case `expires_at=0` (manual tokens) by treating them as valid until proven otherwise.
+    - **Proactive Auth**: Updated `_is_token_usable` (formerly `_check_validity_token`) to check `self._access_token.expires_at` against current time, refreshing before the token actually expires (default 60s buffer). Handled edge case `expires_at=0` (manual tokens) by treating them as valid until proven otherwise. Renamed method from `_check_validity_token` to `_is_token_usable` and made the 60s buffer configurable via `Settings.token_expiry_buffer_ms`.
     - **Stream Decorator**: Created `_stream_decorator` (sync) and `_astream_decorator` (async) in `client.py`. These decorators wrap the generator returned by streaming methods. They encapsulate the retry logic: try to yield from the generator, if `AuthenticationError` occurs, reset token, refresh token, and retry.
     - **Refactoring**: Refactored `GigaChatSyncClient.stream`, `GigaChatAsyncClient.astream`, and all streaming methods in `ThreadsSyncClient` and `ThreadsAsyncClient` (`run_stream`, `run_messages_stream`, `rerun_messages_stream`) to use these new decorators. Removed approximately 100 lines of duplicated error handling code.
   - **Why**:
@@ -550,7 +550,7 @@
 - **Status**: Resolved. Changed `get_token()` and `aget_token()` return type to `Optional[AccessToken]`, removed unsafe `cast()` calls, added comprehensive docstrings. Added 10 unit tests covering OAuth, password, manual token, context variable, and no-auth scenarios for both sync and async methods. All 347 tests pass.
 
 ## Token Caching Test Fix
-- **Problem**: The proactive authentication check introduced in "Authentication and Stream Logic Improvements" caused tests to fail when calling `.chat()` multiple times in a row. Each API call triggered a new token request instead of reusing the cached token. Root cause: test data files (`access_token.json`, `token.json`) contained `expires_at` timestamps from 2021, which the proactive check (`_check_validity_token`) correctly identified as expired.
+- **Problem**: The proactive authentication check introduced in "Authentication and Stream Logic Improvements" caused tests to fail when calling `.chat()` multiple times in a row. Each API call triggered a new token request instead of reusing the cached token. Root cause: test data files (`access_token.json`, `token.json`) contained `expires_at` timestamps from 2021, which the proactive check (`_is_token_usable`, formerly `_check_validity_token`) correctly identified as expired.
 - **Solution (Explicit Token Test Data)**:
   - **Implementation Details**:
     - Removed JSON file-based token test data (`tests/data/access_token.json`, `tests/data/token.json`).

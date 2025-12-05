@@ -21,7 +21,7 @@ class MockAuthClient:
     def _use_auth(self) -> bool:
         return self._use_auth_val
 
-    def _check_validity_token(self) -> bool:
+    def _is_token_usable(self) -> bool:
         return self._token_valid
 
     def _reset_token(self) -> None:
@@ -44,7 +44,7 @@ class MockAsyncAuthClient:
     def _use_auth(self) -> bool:
         return self._use_auth_val
 
-    def _check_validity_token(self) -> bool:
+    def _is_token_usable(self) -> bool:
         return self._token_valid
 
     def _reset_token(self) -> None:

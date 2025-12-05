@@ -172,10 +172,11 @@ class _BaseClient:
     def _use_auth(self) -> bool:
         return bool(self._settings.credentials or (self._settings.user and self._settings.password))
 
-    def _check_validity_token(self) -> bool:
-        """Check if the token is valid (not expired)."""
+    def _is_token_usable(self) -> bool:
+        """Check if cached token is usable (exists and not expiring within buffer)."""
         if self._access_token and (
-            self._access_token.expires_at == 0 or self._access_token.expires_at > (time.time() * 1000) + 60000
+            self._access_token.expires_at == 0
+            or self._access_token.expires_at > (time.time() * 1000) + self._settings.token_expiry_buffer_ms
         ):
             return True
         return False
@@ -303,7 +304,7 @@ class GigaChatSyncClient(_BaseClient):
             return
 
         with self._sync_token_lock:
-            if self._check_validity_token():
+            if self._is_token_usable():
                 return
 
             if self._settings.credentials:
@@ -551,7 +552,7 @@ class GigaChatAsyncClient(_BaseClient):
         if authorization_cvar.get() is not None:
             return
         async with self._async_token_lock:
-            if self._check_validity_token():
+            if self._is_token_usable():
                 return
             if self._settings.credentials:
                 self._access_token = await auth.auth_async(

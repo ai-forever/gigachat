@@ -21,7 +21,7 @@ class AuthClientProtocol(Protocol):
     @property
     def _use_auth(self) -> bool: ...
 
-    def _check_validity_token(self) -> bool: ...
+    def _is_token_usable(self) -> bool: ...
 
     def _reset_token(self) -> None: ...
 
@@ -35,7 +35,7 @@ class AsyncAuthClientProtocol(Protocol):
     @property
     def _use_auth(self) -> bool: ...
 
-    def _check_validity_token(self) -> bool: ...
+    def _is_token_usable(self) -> bool: ...
 
     def _reset_token(self) -> None: ...
 
@@ -67,7 +67,7 @@ def _with_auth(func: Callable[..., T]) -> Callable[..., T]:
     def wrapper(self: Any, *args: Any, **kwargs: Any) -> T:
         auth_client = _get_auth_client(self)
         if auth_client._use_auth:
-            if auth_client._check_validity_token():
+            if auth_client._is_token_usable():
                 try:
                     return func(self, *args, **kwargs)
                 except AuthenticationError:
@@ -86,7 +86,7 @@ def _with_auth_stream(func: Callable[..., Iterator[T]]) -> Callable[..., Iterato
     def wrapper(self: Any, *args: Any, **kwargs: Any) -> Iterator[T]:
         auth_client = _get_auth_client(self)
         if auth_client._use_auth:
-            if auth_client._check_validity_token():
+            if auth_client._is_token_usable():
                 try:
                     yield from func(self, *args, **kwargs)
                     return
@@ -106,7 +106,7 @@ def _awith_auth(func: Callable[..., Awaitable[T]]) -> Callable[..., Awaitable[T]
     async def wrapper(self: Any, *args: Any, **kwargs: Any) -> T:
         auth_client = _get_async_auth_client(self)
         if auth_client._use_auth:
-            if auth_client._check_validity_token():
+            if auth_client._is_token_usable():
                 try:
                     return await func(self, *args, **kwargs)
                 except AuthenticationError:
@@ -125,7 +125,7 @@ def _awith_auth_stream(func: Callable[..., AsyncIterator[T]]) -> Callable[..., A
     async def wrapper(self: Any, *args: Any, **kwargs: Any) -> AsyncIterator[T]:
         auth_client = _get_async_auth_client(self)
         if auth_client._use_auth:
-            if auth_client._check_validity_token():
+            if auth_client._is_token_usable():
                 try:
                     async for chunk in func(self, *args, **kwargs):
                         yield chunk
