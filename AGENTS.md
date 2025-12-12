@@ -34,3 +34,6 @@ Python SDK for the GigaChat LLM REST API.
 ## Refactoring
 See `docs/TODO.md` for task status and `docs/REFACTORING.md` for detailed analysis and solutions.
 Update these docs after solving each issue.
+
+## v1.0 Migration
+See `docs/V1_MIGRATION.md` for v1.0 migration plan, including breaking changes.

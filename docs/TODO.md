@@ -267,15 +267,6 @@
 - [x] Verification
   - [x] Run `ruff check`, `mypy`, and `pytest` to verify no regressions
 
-## Unused `verbose` Setting Cleanup
-- [x] Remove Unused `verbose` Setting
-  - [x] Analyze current usage: `verbose` in `Settings` is accepted but never used
-  - [x] Remove `verbose` field from `src/gigachat/settings.py`
-  - [x] Remove `verbose` parameter from `_BaseClient.__init__` in `src/gigachat/client.py`
-  - [x] Remove `verbose` from kwargs dict in `_BaseClient.__init__`
-  - [x] Update/remove tests in `tests/unit_tests/gigachat/test_settings.py` if needed
-  - [x] Run `ruff check`, `mypy`, and `pytest` to verify no regressions
-
 ## Negative `max_retries` Edge Case Fix
 - [x] Handle Negative `max_retries` Values in Retry Decorators
   - [x] Update `_with_retry` to check `max_retries <= 0` instead of `== 0`

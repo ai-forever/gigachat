@@ -36,6 +36,10 @@ class Settings(BaseSettings):
         default=None,
         description="Name of the model to receive a response from.",
     )
+    verbose: bool = Field(
+        default=False,
+        description="Deprecated: will be removed in v1.0.",
+    )
     profanity_check: Optional[bool] = Field(
         default=None,
         description="Censorship parameter.",
