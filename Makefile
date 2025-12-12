@@ -53,6 +53,10 @@ mypy:
 test:
 	uv run pytest -v --cov=src --cov-report=term-missing
 
+.PHONY: test-integration  ## Run integration tests
+test-integration:
+	uv run pytest -v -m integration tests/integration
+
 .PHONY: htmlcov  ## Generate html coverage report
 htmlcov:
 	uv run pytest -v --cov=src --cov-report=html

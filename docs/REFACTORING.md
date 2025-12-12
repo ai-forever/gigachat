@@ -674,3 +674,82 @@
   - **JSON Schema**: Descriptions included in generated JSON Schema (`Model.model_json_schema()`)
   - **IDE Support**: Better tooltips in IDEs that understand Pydantic
 - **Status**: Resolved. All models in `src/gigachat/models/` migrated to use `Field(description=...)`. Multiline docstrings were flattened into single-line descriptions using implicit string concatenation where necessary. Verified with `ruff check`, `mypy`, and full test suite.
+
+## Integration Testing (VCR/Cassette-based)
+- **Problem**: The existing test suite consists entirely of unit tests using `pytest-httpx` (HTTPXMock) to mock HTTP responses. There are no integration tests that verify actual API behavior, response parsing against real responses, or end-to-end authentication flows. This creates gaps:
+  - No validation that Pydantic models match actual API responses
+  - No testing of OAuth token refresh flow against real auth server
+  - Changes to API response format may go undetected until production
+  - No regression protection for response schema changes
+- **Analysis of Testing Approaches**:
+  | Approach | Pros | Cons |
+  |----------|------|------|
+  | **Live API Testing** | Real behavior, catches API changes | Requires credentials in CI, network-dependent, slow, costly |
+  | **Contract Testing (respx)** | Fast, deterministic, no credentials | Doesn't test real API, requires mock maintenance |
+  | **VCR/Cassette** | Real responses recorded, fast replay, deterministic | Cassettes become stale, initial recording requires credentials |
+  | **Mock Server** | Full control, can simulate edge cases | Complex setup, maintenance overhead |
+- **Solution (VCR/Cassette-based Testing with pytest-recording)**:
+  - **Why VCR**:
+    - Records real HTTP interactions once, replays them deterministically
+    - Tests actual API response parsing and Pydantic model validation
+    - Fast execution in CI (no network calls after initial recording)
+    - Catches response schema drift (cassette mismatch)
+    - No mock maintenance required — cassettes are the source of truth
+  - **Implementation Strategy**:
+    - **Dependencies**: `vcrpy>=6.0.0`, `pytest-recording>=0.13.0`, `python-dotenv>=1.0.0`
+    - **Directory Structure**:
+      ```
+      tests/
+      ├── integration/
+      │   ├── __init__.py
+      │   ├── conftest.py          # VCR config, .env loading
+      │   ├── cassettes/           # Recorded HTTP interactions
+      │   └── test_models_vcr.py   # Integration tests for /models
+      └── unit_tests/              # (existing)
+      ```
+    - **Security**: Credentials stored in `.env` (gitignored), filtered from cassettes via `filter_headers` and `before_record_response` hooks
+    - **CI/CD**: Integration tests run in replay mode (`--vcr-record=none`), cassettes committed to repo
+  - **VCR Configuration**:
+    ```python
+    @pytest.fixture(scope="module")
+    def vcr_config():
+        return {
+            "filter_headers": [
+                ("authorization", "Bearer REDACTED"),
+            ],
+            "match_on": ["method", "scheme", "host", "port", "path", "query"],
+            "record_mode": "once",
+            "decode_compressed_response": True,
+            "before_record_request": _scrub_request,
+            "before_record_response": _scrub_response,
+        }
+    ```
+  - **Request Scrubbing**: Custom `_scrub_request` hook replaces `scope=XXX` with `scope=REDACTED` in OAuth request bodies
+  - **Response Scrubbing**: Custom `_scrub_response` hook in `conftest.py`:
+    - Replaces `access_token` with `"REDACTED"` to prevent credential leakage
+    - Replaces `expires_at` with `EXPIRES_AT_VALID` (year 2100) from `tests/constants.py` to prevent token expiration issues during cassette replay
+    - Handles both JSON parsing and regex fallback for non-JSON responses
+  - **Client Fixtures**:
+    - `gigachat_client`: Sync fixture using `with GigaChat(...) as client`
+    - `gigachat_async_client`: Async fixture using `async with GigaChat(...) as client`
+    - Both read `GIGACHAT_CREDENTIALS` and `GIGACHAT_SCOPE` from environment (loaded via `python-dotenv`)
+    - Skip tests if credentials not set
+  - **Test Markers**: `@pytest.mark.integration` marker for selective execution; unit tests run by default (`-m "not integration"` in pytest config)
+  - **Makefile Target**: `make test-integration` runs integration tests
+  - **httpx Compatibility**: VCR.py supports httpx natively since v4.0+
+- **Test Coverage for `/models` Endpoint**:
+  | Test Case | Type | Description |
+  |-----------|------|-------------|
+  | `test_get_models` | Sync happy path | Returns `Models` with valid schema, verifies model list |
+  | `test_get_model` | Sync happy path | Returns `Model` for specific model name |
+  | `test_get_model_not_found` | Sync error | Returns 404, verifies `NotFoundError` raised |
+  | `test_aget_models` | Async happy path | Async version of list models |
+  | `test_aget_model` | Async happy path | Async version of get model |
+  | `test_aget_model_not_found` | Async error | Async 404, verifies `NotFoundError` raised |
+- **Recording Modes**:
+  | Mode | Use Case | Command |
+  |------|----------|---------|
+  | `once` | Default — record if cassette doesn't exist | `make test-integration` |
+  | `none` | CI/CD — replay only, fail if cassette missing | `pytest -m integration --record-mode=none` |
+  | `all` | Update stale cassettes | `pytest -m integration --record-mode=all` |
+- **Status**: Resolved. Integration tests implemented for `/models` endpoint with 6 test cases (3 sync, 3 async). All cassettes recorded and scrubbed of sensitive data.

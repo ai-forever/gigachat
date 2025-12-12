@@ -1,0 +1,125 @@
+interactions:
+- request:
+    body: scope=REDACTED
+    headers:
+      Accept:
+      - '*/*'
+      Accept-Encoding:
+      - gzip, deflate
+      Connection:
+      - keep-alive
+      Content-Length:
+      - '23'
+      Content-Type:
+      - application/x-www-form-urlencoded
+      Host:
+      - ngw.devices.sberbank.ru:9443
+      RqUID:
+      - 2f733af1-3590-47c5-86b9-64be759e77fb
+      User-Agent:
+      - GigaChat-python-lib
+      authorization:
+      - Bearer REDACTED
+    method: POST
+    uri: https://ngw.devices.sberbank.ru:9443/api/v2/oauth
+  response:
+    body:
+      string: '{"access_token": "REDACTED", "expires_at": 4102444800000}'
+    headers:
+      Allow:
+      - GET, POST
+      Cache-Control:
+      - no-cache, no-store, max-age=0, must-revalidate
+      Connection:
+      - keep-alive
+      Content-Length:
+      - '1279'
+      Content-Type:
+      - application/json
+      Date:
+      - Fri, 12 Dec 2025 19:22:16 GMT
+      Expires:
+      - '0'
+      Pragma:
+      - no-cache
+      Referrer-Policy:
+      - no-referrer
+      Server:
+      - SynGX
+      Strict-Transport-Security:
+      - max-age=31536000 ; includeSubDomains
+      - max-age=31536000; includeSubDomains
+      Vary:
+      - Origin
+      - Access-Control-Request-Method
+      - Access-Control-Request-Headers
+      X-Content-Type-Options:
+      - nosniff
+      - nosniff
+      X-Frame-Options:
+      - DENY
+      - SAMEORIGIN
+      X-XSS-Protection:
+      - '0'
+      - 1; mode=block
+    status:
+      code: 200
+      message: OK
+- request:
+    body: ''
+    headers:
+      Accept:
+      - '*/*'
+      Accept-Encoding:
+      - gzip, deflate
+      Connection:
+      - keep-alive
+      Host:
+      - gigachat.devices.sberbank.ru
+      User-Agent:
+      - GigaChat-python-lib
+      authorization:
+      - Bearer REDACTED
+    method: GET
+    uri: https://gigachat.devices.sberbank.ru/api/v1/models/GigaChat
+  response:
+    body:
+      string: '{"id": "GigaChat", "object": "model", "owned_by": "salutedevices",
+        "type": "chat"}'
+    headers:
+      Access-Control-Allow-Credentials:
+      - 'true'
+      Access-Control-Allow-Headers:
+      - Origin, X-Requested-With, Content-Type, Accept, Authorization
+      Access-Control-Allow-Methods:
+      - GET, POST, DELETE, OPTIONS
+      Access-Control-Allow-Origin:
+      - https://beta.saluteai.sberdevices.ru
+      Allow:
+      - GET, POST
+      Connection:
+      - keep-alive
+      Content-Length:
+      - '75'
+      Content-Type:
+      - application/json; charset=utf-8
+      Date:
+      - Fri, 12 Dec 2025 19:22:18 GMT
+      Server:
+      - SynGX
+      Strict-Transport-Security:
+      - max-age=31536000; includeSubDomains
+      X-Content-Type-Options:
+      - nosniff
+      X-Frame-Options:
+      - SAMEORIGIN
+      X-Request-Id:
+      - 1fa59f22-2984-4186-9cab-14ccf1b76f88
+      X-Session-Id:
+      - eb00539c-a5e1-4b91-bd94-560edaf9c244
+      X-XSS-Protection:
+      - 1; mode=block
+    status:
+      code: 200
+      message: OK
+version: 1

@@ -410,3 +410,46 @@
   - [x] `models/tools.py`: AICheckResult, BalanceValue, Balance, TokensCount, OpenApiFunctions (~10 fields)
   - [x] Run `ruff check`, `mypy`, and `pytest` to verify no regressions
   - [x] Update `docs/REFACTORING.md` with implementation details
+
+## Integration Testing (VCR/Cassette-based)
+- [x] Add VCR Dependencies
+  - [x] Add `vcrpy>=6.0.0` to dev dependencies in `pyproject.toml`
+  - [x] Add `pytest-recording>=0.13.0` to dev dependencies in `pyproject.toml`
+  - [x] Add `python-dotenv>=1.0.0` to dev dependencies for `.env` file support
+- [x] Configure Environment and Security
+  - [x] Create `.env.example` with placeholder credentials (`GIGACHAT_CREDENTIALS`, `GIGACHAT_SCOPE`)
+  - [x] Verify `.env` in `.gitignore` to prevent committing secrets
+- [x] Create Integration Test Directory Structure
+  - [x] Create `tests/integration/` directory
+  - [x] Create `tests/integration/__init__.py`
+  - [x] Create `tests/integration/cassettes/` directory (auto-created by VCR)
+- [x] Configure VCR in `tests/integration/conftest.py`
+  - [x] Load environment variables from `.env` using `python-dotenv`
+  - [x] Configure `vcr_config` fixture: filter Authorization headers, x-request-id, x-session-id
+  - [x] Configure `vcr_cassette_dir` fixture for organized cassette storage
+  - [x] Add `before_record_request` hook to scrub `scope` from OAuth request bodies
+  - [x] Add `before_record_response` hook to scrub `access_token` and `expires_at` from OAuth responses
+  - [x] Add `gigachat_client` sync fixture using credentials from env vars
+  - [x] Add `gigachat_async_client` async fixture using credentials from env vars
+- [x] Implement `/models` Endpoint Integration Tests
+  - [x] Create `tests/integration/test_models_vcr.py`
+  - [x] Implement `test_get_models` - list all available models
+  - [x] Implement `test_get_model` - get specific model by name
+  - [x] Implement `test_get_model_not_found` - 404 error handling with `NotFoundError`
+  - [x] Implement `test_aget_models` - async list models
+  - [x] Implement `test_aget_model` - async get specific model
+  - [x] Implement `test_aget_model_not_found` - async 404 error handling
+- [x] Configure Pytest for Integration Tests
+  - [x] Add `integration` marker to `pyproject.toml` pytest markers
+  - [x] Configure pytest to exclude integration tests by default (`-m "not integration"`)
+  - [x] Add `make test-integration` Makefile target
+- [x] Record and Verify Cassettes
+  - [x] Record initial cassettes by running tests with real credentials from `.env`
+  - [x] Review cassette YAML files to verify no sensitive data leaked (`access_token: REDACTED`, `expires_at: 4102444800000`)
+  - [x] Test replay mode works: `pytest -m integration --record-mode=none` (0.10s vs 11s recording)
+- [x] Verification
+  - [x] Run `ruff check tests/integration` - all checks passed
+  - [x] Run `mypy tests/integration` - no issues found
+  - [x] Run `pytest tests/unit_tests` - 355 tests passed
+- [x] Documentation
+  - [x] Update `docs/REFACTORING.md` with implementation details

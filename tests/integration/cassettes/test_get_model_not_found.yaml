@@ -1,0 +1,118 @@
+interactions:
+- request:
+    body: scope=REDACTED
+    headers:
+      Accept:
+      - '*/*'
+      Accept-Encoding:
+      - gzip, deflate
+      Connection:
+      - keep-alive
+      Content-Length:
+      - '23'
+      Content-Type:
+      - application/x-www-form-urlencoded
+      Host:
+      - ngw.devices.sberbank.ru:9443
+      RqUID:
+      - 7ee4fd5c-3ed7-474c-83a7-0ef20acc8979
+      User-Agent:
+      - GigaChat-python-lib
+      authorization:
+      - Bearer REDACTED
+    method: POST
+    uri: https://ngw.devices.sberbank.ru:9443/api/v2/oauth
+  response:
+    body:
+      string: '{"access_token": "REDACTED", "expires_at": 4102444800000}'
+    headers:
+      Allow:
+      - GET, POST
+      Cache-Control:
+      - no-cache, no-store, max-age=0, must-revalidate
+      Connection:
+      - keep-alive
+      Content-Length:
+      - '1279'
+      Content-Type:
+      - application/json
+      Date:
+      - Fri, 12 Dec 2025 19:22:13 GMT
+      Expires:
+      - '0'
+      Pragma:
+      - no-cache
+      Referrer-Policy:
+      - no-referrer
+      Server:
+      - SynGX
+      Strict-Transport-Security:
+      - max-age=31536000 ; includeSubDomains
+      - max-age=31536000; includeSubDomains
+      Vary:
+      - Origin
+      - Access-Control-Request-Method
+      - Access-Control-Request-Headers
+      X-Content-Type-Options:
+      - nosniff
+      - nosniff
+      X-Frame-Options:
+      - DENY
+      - SAMEORIGIN
+      X-XSS-Protection:
+      - '0'
+      - 1; mode=block
+    status:
+      code: 200
+      message: OK
+- request:
+    body: ''
+    headers:
+      Accept:
+      - '*/*'
+      Accept-Encoding:
+      - gzip, deflate
+      Connection:
+      - keep-alive
+      Host:
+      - gigachat.devices.sberbank.ru
+      User-Agent:
+      - GigaChat-python-lib
+      authorization:
+      - Bearer REDACTED
+    method: GET
+    uri: https://gigachat.devices.sberbank.ru/api/v1/models/NonExistentModel
+  response:
+    body:
+      string: '{"status": 404, "message": "No such model"}'
+    headers:
+      Access-Control-Allow-Credentials:
+      - 'true'
+      Access-Control-Allow-Headers:
+      - Origin, X-Requested-With, Content-Type, Accept, Authorization
+      Access-Control-Allow-Methods:
+      - GET, POST, DELETE, OPTIONS
+      Access-Control-Allow-Origin:
+      - https://beta.saluteai.sberdevices.ru
+      Allow:
+      - GET, POST
+      Connection:
+      - keep-alive
+      Content-Length:
+      - '41'
+      Content-Type:
+      - application/json; charset=utf-8
+      Date:
+      - Fri, 12 Dec 2025 19:22:14 GMT
+      Server:
+      - SynGX
+      Strict-Transport-Security:
+      - max-age=31536000; includeSubDomains
+      X-Request-Id:
+      - 197cf306-4546-4506-ba3f-b48e30a108ff
+      X-Session-Id:
+      - d3ee691c-adeb-424f-8a0c-c780f10ef835
+    status:
+      code: 404
+      message: Not Found
+version: 1

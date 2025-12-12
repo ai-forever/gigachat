@@ -1,0 +1,146 @@
+interactions:
+- request:
+    body: scope=REDACTED
+    headers:
+      Accept:
+      - '*/*'
+      Accept-Encoding:
+      - gzip, deflate
+      Connection:
+      - keep-alive
+      Content-Length:
+      - '23'
+      Content-Type:
+      - application/x-www-form-urlencoded
+      Host:
+      - ngw.devices.sberbank.ru:9443
+      RqUID:
+      - d5829615-cd10-45db-a852-0f13da6f4492
+      User-Agent:
+      - GigaChat-python-lib
+      authorization:
+      - Bearer REDACTED
+    method: POST
+    uri: https://ngw.devices.sberbank.ru:9443/api/v2/oauth
+  response:
+    body:
+      string: '{"access_token": "REDACTED", "expires_at": 4102444800000}'
+    headers:
+      Allow:
+      - GET, POST
+      Cache-Control:
+      - no-cache, no-store, max-age=0, must-revalidate
+      Connection:
+      - keep-alive
+      Content-Length:
+      - '1279'
+      Content-Type:
+      - application/json
+      Date:
+      - Fri, 12 Dec 2025 19:22:15 GMT
+      Expires:
+      - '0'
+      Pragma:
+      - no-cache
+      Referrer-Policy:
+      - no-referrer
+      Server:
+      - SynGX
+      Strict-Transport-Security:
+      - max-age=31536000 ; includeSubDomains
+      - max-age=31536000; includeSubDomains
+      Vary:
+      - Origin
+      - Access-Control-Request-Method
+      - Access-Control-Request-Headers
+      X-Content-Type-Options:
+      - nosniff
+      - nosniff
+      X-Frame-Options:
+      - DENY
+      - SAMEORIGIN
+      X-XSS-Protection:
+      - '0'
+      - 1; mode=block
+    status:
+      code: 200
+      message: OK
+- request:
+    body: ''
+    headers:
+      Accept:
+      - '*/*'
+      Accept-Encoding:
+      - gzip, deflate
+      Connection:
+      - keep-alive
+      Host:
+      - gigachat.devices.sberbank.ru
+      User-Agent:
+      - GigaChat-python-lib
+      authorization:
+      - Bearer REDACTED
+    method: GET
+    uri: https://gigachat.devices.sberbank.ru/api/v1/models
+  response:
+    body:
+      string: '{"object": "list", "data": [{"id": "GigaChat", "object": "model", "owned_by":
+        "salutedevices", "type": "chat"}, {"id": "GigaChat-2", "object": "model",
+        "owned_by": "salutedevices", "type": "chat"}, {"id": "GigaChat-2-Max", "object":
+        "model", "owned_by": "salutedevices", "type": "chat"}, {"id": "GigaChat-2-Max-preview",
+        "object": "model", "owned_by": "salutedevices", "type": "chat"}, {"id": "GigaChat-2-Pro",
+        "object": "model", "owned_by": "salutedevices", "type": "chat"}, {"id": "GigaChat-2-Pro-preview",
+        "object": "model", "owned_by": "salutedevices", "type": "chat"}, {"id": "GigaChat-2-preview",
+        "object": "model", "owned_by": "salutedevices", "type": "chat"}, {"id": "GigaChat-Max",
+        "object": "model", "owned_by": "salutedevices", "type": "chat"}, {"id": "GigaChat-Max-preview",
+        "object": "model", "owned_by": "salutedevices", "type": "chat"}, {"id": "GigaChat-Plus",
+        "object": "model", "owned_by": "salutedevices", "type": "chat"}, {"id": "GigaChat-Pro",
+        "object": "model", "owned_by": "salutedevices", "type": "chat"}, {"id": "GigaChat-Pro-preview",
+        "object": "model", "owned_by": "salutedevices", "type": "chat"}, {"id": "GigaChat-preview",
+        "object": "model", "owned_by": "salutedevices", "type": "chat"}, {"id": "GigaFilter",
+        "object": "model", "owned_by": "salutedevices", "type": "filter"}, {"id":
+        "GigaCheckClassification", "object": "model", "owned_by": "salutedevices",
+        "type": "aicheck"}, {"id": "GigaCheckDetection", "object": "model", "owned_by":
+        "salutedevices", "type": "aicheck"}, {"id": "Embeddings", "object": "model",
+        "owned_by": "salutedevices", "type": "embedder"}, {"id": "Embeddings-2", "object":
+        "model", "owned_by": "salutedevices", "type": "embedder"}, {"id": "EmbeddingsGigaR",
+        "object": "model", "owned_by": "salutedevices", "type": "embedder"}, {"id":
+        "GigaEmbeddings-3B-2025-09", "object": "model", "owned_by": "salutedevices",
+        "type": "embedder"}]}'
+    headers:
+      Access-Control-Allow-Credentials:
+      - 'true'
+      Access-Control-Allow-Headers:
+      - Origin, X-Requested-With, Content-Type, Accept, Authorization
+      Access-Control-Allow-Methods:
+      - GET, POST, DELETE, OPTIONS
+      Access-Control-Allow-Origin:
+      - https://beta.saluteai.sberdevices.ru
+      Allow:
+      - GET, POST
+      Connection:
+      - keep-alive
+      Content-Length:
+      - '1724'
+      Content-Type:
+      - application/json; charset=utf-8
+      Date:
+      - Fri, 12 Dec 2025 19:22:16 GMT
+      Server:
+      - SynGX
+      Strict-Transport-Security:
+      - max-age=31536000; includeSubDomains
+      X-Content-Type-Options:
+      - nosniff
+      X-Frame-Options:
+      - SAMEORIGIN
+      X-Request-Id:
+      - 499d2bd8-0fd1-462c-b8e5-e330da9d2326
+      X-Session-Id:
+      - b5e1c126-ed28-41a0-8d06-b08b3621c46f
+      X-XSS-Protection:
+      - 1; mode=block
+    status:
+      code: 200
+      message: OK
+version: 1
