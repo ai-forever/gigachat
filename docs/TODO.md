@@ -377,3 +377,25 @@
   - [x] Add INFO log in `src/gigachat/retry.py` when all retries exhausted (after final attempt)
 - [x] Verification
   - [x] Run `ruff check`, `mypy`, and `pytest` to verify no regressions
+
+## API Response Base Class Refactoring
+- [x] Refactor `WithXHeaders` to `APIResponse` Pattern
+  - [x] Rename `src/gigachat/models/utils.py` to `src/gigachat/models/base.py`
+  - [x] Update `src/gigachat/models/base.py`:
+    - [x] Rename `WithXHeaders` class to `XHeadersMixin`
+    - [x] Add `APIResponse(XHeadersMixin)` class as stable inheritance target
+  - [x] Update `src/gigachat/models/__init__.py`:
+    - [x] Update import from `utils` to `base`
+    - [x] Export `APIResponse`, remove `WithXHeaders`
+  - [x] Update model files to inherit from `APIResponse`:
+    - [x] `chat.py`: ChatCompletion, ChatCompletionChunk (2 classes)
+    - [x] `threads.py`: Threads, ThreadCompletion, ThreadCompletionChunk, ThreadMessages, ThreadMessagesResponse, ThreadRunResponse, ThreadRunResult (7 classes)
+    - [x] `assistants.py`: Assistants, AssistantDelete, AssistantFileDelete, CreateAssistant (4 classes)
+    - [x] `models.py`: Model, Models (2 classes)
+    - [x] `files.py`: UploadedFile, UploadedFiles, DeletedFile, Image (4 classes)
+    - [x] `embeddings.py`: Embeddings (1 class)
+    - [x] `tools.py`: Balance, TokensCount, OpenApiFunctions (3 classes)
+    - [x] `auth.py`: AccessToken, Token (2 classes)
+  - [x] Update tests to use new class names
+  - [x] Run `ruff check`, `mypy`, and `pytest` to verify no regressions
+  - [x] Update `docs/REFACTORING.md` with implementation details

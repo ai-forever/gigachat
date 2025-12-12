@@ -3,6 +3,7 @@ from typing import List, Literal, Optional, Union
 
 from pydantic import BaseModel, ConfigDict, Field
 
+from gigachat.models.base import APIResponse
 from gigachat.models.chat import (
     ChatFunctionCall,
     ChoicesChunk,
@@ -12,7 +13,6 @@ from gigachat.models.chat import (
     MessagesRole,
     Usage,
 )
-from gigachat.models.utils import WithXHeaders
 
 
 class ThreadStatus(str, Enum):
@@ -43,14 +43,14 @@ class Thread(BaseModel):
     """Thread status."""
 
 
-class Threads(WithXHeaders):
+class Threads(APIResponse):
     """List of threads."""
 
     threads: List[Thread]
     """List of thread objects."""
 
 
-class ThreadCompletion(WithXHeaders):
+class ThreadCompletion(APIResponse):
     """Thread completion response."""
 
     object_: str = Field(alias="object")
@@ -71,7 +71,7 @@ class ThreadCompletion(WithXHeaders):
     """Reason why the generation finished."""
 
 
-class ThreadCompletionChunk(WithXHeaders):
+class ThreadCompletionChunk(APIResponse):
     """Thread completion stream chunk."""
 
     object_: str = Field(alias="object")
@@ -120,7 +120,7 @@ class ThreadMessage(BaseModel):
     model_config = ConfigDict(use_enum_values=True)
 
 
-class ThreadMessages(WithXHeaders):
+class ThreadMessages(APIResponse):
     """List of thread messages."""
 
     thread_id: str
@@ -138,7 +138,7 @@ class ThreadMessageResponse(BaseModel):
     """Message identifier."""
 
 
-class ThreadMessagesResponse(WithXHeaders):
+class ThreadMessagesResponse(APIResponse):
     """Response for messages creation."""
 
     thread_id: str
@@ -170,7 +170,7 @@ class ThreadRunOptions(BaseModel):
     """List of available functions."""
 
 
-class ThreadRunResponse(WithXHeaders):
+class ThreadRunResponse(APIResponse):
     """Response for starting a thread run."""
 
     status: ThreadStatus
@@ -181,7 +181,7 @@ class ThreadRunResponse(WithXHeaders):
     """Start timestamp (Unix time)."""
 
 
-class ThreadRunResult(WithXHeaders):
+class ThreadRunResult(APIResponse):
     """Result of a thread run status check."""
 
     status: ThreadStatus

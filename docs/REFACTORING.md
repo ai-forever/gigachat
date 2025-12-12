@@ -617,3 +617,51 @@
     - WARNING: Recoverable errors (auth failure with retry, rate limits, server errors)
     - ERROR: Failures that propagate to user (parsing errors)
 - **Status**: Resolved. All logging improvements implemented: NullHandler added, log levels corrected, messages improved, dead code removed, logger renamed to standard convention, and missing warning/info logs added.
+
+## API Response Base Class Refactoring
+- **Problem**: The `WithXHeaders` class in `src/gigachat/models/utils.py` is directly inherited by **25 API response model classes**. The class name describes a *feature* (what it has: x-headers), not a *role* (what it is: an API response). This creates tight coupling: if x-headers support needs to be removed or changed, all 25 classes require inheritance modifications. Additionally, the file name `utils.py` is misleading — it contains only base classes, not utilities.
+  - **Affected Classes (25 total)**:
+    - `chat.py`: ChatCompletion, ChatCompletionChunk (2)
+    - `threads.py`: Threads, ThreadCompletion, ThreadCompletionChunk, ThreadMessages, ThreadMessagesResponse, ThreadRunResponse, ThreadRunResult (7)
+    - `assistants.py`: Assistants, AssistantDelete, AssistantFileDelete, CreateAssistant (4)
+    - `models.py`: Model, Models (2)
+    - `files.py`: UploadedFile, UploadedFiles, DeletedFile, Image (4)
+    - `embeddings.py`: Embeddings (1)
+    - `tools.py`: Balance, TokensCount, OpenApiFunctions (3)
+    - `auth.py`: AccessToken, Token (2)
+- **Solution (Semantic Base + Feature Mixin Pattern)**:
+  - **Architecture**:
+    ```python
+    # src/gigachat/models/base.py
+    class XHeadersMixin(BaseModel):
+        """Mixin adding X-Headers to API responses."""
+        x_headers: Optional[Dict[str, Optional[str]]] = Field(default=None)
+
+    class APIResponse(XHeadersMixin):
+        """Base class for all API response models."""
+        pass
+    ```
+  - **Implementation Details**:
+    - Rename `models/utils.py` to `models/base.py` — standard convention for base classes (Django, SQLAlchemy, FastAPI)
+    - Rename `WithXHeaders` class to `XHeadersMixin` — reflects its role as a feature provider
+    - Create `APIResponse(XHeadersMixin)` as the stable inheritance target
+    - Update all 25 response classes to inherit from `APIResponse`
+    - Export `APIResponse` from `models/__init__.py`, remove `WithXHeaders` export
+  - **Design Decisions**:
+    - **`APIResponse` as class (not alias)**: Explicit extension point, better IDE support (Ctrl+click), can add validators/config later without restructuring
+    - **Single-field mixin is acceptable**: Follows Single Responsibility Principle; common pattern in Django/SQLAlchemy (`TimestampMixin`, `UUIDMixin`)
+    - **No empty `ResponseBase`**: YAGNI — add when actually needed; inserting it later is a trivial one-line change to `APIResponse`
+    - **Mixin first in MRO**: `class APIResponse(XHeadersMixin)` follows Python's "most specific first" convention for mixins
+  - **Future: Removing X-Headers**:
+    ```python
+    # Single line change to disable x-headers:
+    class APIResponse(BaseModel):  # Remove XHeadersMixin
+        pass
+    # All 25 response classes continue working unchanged
+    ```
+  - **Why**:
+    - **Decoupling**: Classes inherit from something named for their *identity* (`APIResponse`), not their *features* (`WithXHeaders`)
+    - **Single Point of Change**: Feature toggle requires modifying one line, not 25
+    - **Future-Proof**: Easy to add other mixins (e.g., `WithPaginationMixin`) without touching response classes
+    - **Semantic Clarity**: `ChatCompletion(APIResponse)` reads "ChatCompletion is an API response", not "ChatCompletion has x-headers"
+- **Status**: Resolved. Renamed `models/utils.py` to `models/base.py`, renamed `WithXHeaders` to `XHeadersMixin`, created `APIResponse` class, updated all 25 response classes to inherit from `APIResponse`, and exported `APIResponse` from `models/__init__.py`. All 355 tests pass.

@@ -8,6 +8,7 @@ from gigachat.models.assistants import (
     CreateAssistant,
 )
 from gigachat.models.auth import AccessToken, Token
+from gigachat.models.base import APIResponse
 from gigachat.models.chat import (
     Chat,
     ChatCompletion,
@@ -42,7 +43,6 @@ from gigachat.models.threads import (
     ThreadStatus,
 )
 from gigachat.models.tools import AICheckResult, Balance, OpenApiFunctions, TokensCount
-from gigachat.models.utils import WithXHeaders
 
 __all__ = (
     "AccessToken",
@@ -92,7 +92,7 @@ __all__ = (
     "UploadedFile",
     "UploadedFiles",
     "Usage",
-    "WithXHeaders",
+    "APIResponse",
     "assistants",
     "threads",
 )

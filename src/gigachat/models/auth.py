@@ -1,7 +1,7 @@
-from gigachat.models.utils import WithXHeaders
+from gigachat.models.base import APIResponse
 
 
-class AccessToken(WithXHeaders):
+class AccessToken(APIResponse):
     """Access token information."""
 
     access_token: str
@@ -10,7 +10,7 @@ class AccessToken(WithXHeaders):
     """Unix timestamp (in milliseconds) when the Access Token expires."""
 
 
-class Token(WithXHeaders):
+class Token(APIResponse):
     """Raw token response."""
 
     tok: str

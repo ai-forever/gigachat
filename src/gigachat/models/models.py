@@ -2,10 +2,10 @@ from typing import List
 
 from pydantic import Field
 
-from gigachat.models.utils import WithXHeaders
+from gigachat.models.base import APIResponse
 
 
-class Model(WithXHeaders):
+class Model(APIResponse):
     """Model description."""
 
     id_: str = Field(alias="id")
@@ -16,7 +16,7 @@ class Model(WithXHeaders):
     """Owner of the model."""
 
 
-class Models(WithXHeaders):
+class Models(APIResponse):
     """List of available models."""
 
     data: List[Model]

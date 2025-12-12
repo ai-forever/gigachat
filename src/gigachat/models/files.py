@@ -2,10 +2,10 @@ from typing import List, Optional
 
 from pydantic import Field
 
-from gigachat.models.utils import WithXHeaders
+from gigachat.models.base import APIResponse
 
 
-class UploadedFile(WithXHeaders):
+class UploadedFile(APIResponse):
     """Information about an uploaded file."""
 
     id_: str = Field(alias="id")
@@ -24,14 +24,14 @@ class UploadedFile(WithXHeaders):
     """Access policy."""
 
 
-class UploadedFiles(WithXHeaders):
+class UploadedFiles(APIResponse):
     """List of uploaded files."""
 
     data: List[UploadedFile]
     """List of file objects."""
 
 
-class DeletedFile(WithXHeaders):
+class DeletedFile(APIResponse):
     """Information about a deleted file."""
 
     id_: str = Field(alias="id")
@@ -40,7 +40,7 @@ class DeletedFile(WithXHeaders):
     """Deletion status. True if deleted."""
 
 
-class Image(WithXHeaders):
+class Image(APIResponse):
     """Image content."""
 
     content: str

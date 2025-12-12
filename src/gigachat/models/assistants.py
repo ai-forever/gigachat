@@ -2,8 +2,8 @@ from typing import Any, Dict, List, Optional
 
 from pydantic import BaseModel
 
+from gigachat.models.base import APIResponse
 from gigachat.models.chat import Function
-from gigachat.models.utils import WithXHeaders
 
 
 class AssistantAttachment(BaseModel):
@@ -42,14 +42,14 @@ class Assistant(BaseModel):
     """List of functions available to the assistant."""
 
 
-class Assistants(WithXHeaders):
+class Assistants(APIResponse):
     """List of assistants."""
 
     data: List[Assistant]
     """List of assistant objects."""
 
 
-class AssistantDelete(WithXHeaders):
+class AssistantDelete(APIResponse):
     """Assistant deletion response."""
 
     assistant_id: str
@@ -58,7 +58,7 @@ class AssistantDelete(WithXHeaders):
     """Deletion status. True if deleted."""
 
 
-class AssistantFileDelete(WithXHeaders):
+class AssistantFileDelete(APIResponse):
     """Assistant file deletion response."""
 
     file_id: str
@@ -67,7 +67,7 @@ class AssistantFileDelete(WithXHeaders):
     """Deletion status. True if deleted."""
 
 
-class CreateAssistant(WithXHeaders):
+class CreateAssistant(APIResponse):
     """Response for assistant creation."""
 
     assistant_id: str

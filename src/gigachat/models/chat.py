@@ -3,7 +3,7 @@ from typing import Any, Dict, List, Literal, Optional, Union
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
-from gigachat.models.utils import WithXHeaders
+from gigachat.models.base import APIResponse
 
 
 class MessagesRole(str, Enum):
@@ -242,7 +242,7 @@ class Chat(BaseModel):
     """Reasoning effort level."""
 
 
-class ChatCompletion(WithXHeaders):
+class ChatCompletion(APIResponse):
     """Chat completion response."""
 
     choices: List[Choices]
@@ -261,7 +261,7 @@ class ChatCompletion(WithXHeaders):
     """Object type (e.g. 'chat.completion')."""
 
 
-class ChatCompletionChunk(WithXHeaders):
+class ChatCompletionChunk(APIResponse):
     """Chat completion response chunk."""
 
     choices: List[ChoicesChunk]

@@ -2,7 +2,7 @@ from typing import List, Optional
 
 from pydantic import BaseModel, Field
 
-from gigachat.models.utils import WithXHeaders
+from gigachat.models.base import APIResponse
 
 
 class EmbeddingsUsage(BaseModel):
@@ -25,7 +25,7 @@ class Embedding(BaseModel):
     """Object type."""
 
 
-class Embeddings(WithXHeaders):
+class Embeddings(APIResponse):
     """Embeddings response."""
 
     data: List[Embedding]

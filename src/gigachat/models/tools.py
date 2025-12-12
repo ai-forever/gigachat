@@ -2,8 +2,8 @@ from typing import List, Literal, Optional
 
 from pydantic import BaseModel, Field
 
+from gigachat.models.base import APIResponse
 from gigachat.models.chat import Function
-from gigachat.models.utils import WithXHeaders
 
 
 class AICheckResult(BaseModel):
@@ -31,14 +31,14 @@ class BalanceValue(BaseModel):
     """Amount of available units (e.g. tokens)."""
 
 
-class Balance(WithXHeaders):
+class Balance(APIResponse):
     """Balance response."""
 
     balance: List[BalanceValue]
     """List of balance entries."""
 
 
-class TokensCount(WithXHeaders):
+class TokensCount(APIResponse):
     """Token count information."""
 
     tokens: int
@@ -49,7 +49,7 @@ class TokensCount(WithXHeaders):
     """Object type."""
 
 
-class OpenApiFunctions(WithXHeaders):
+class OpenApiFunctions(APIResponse):
     """Functions converted from OpenAPI."""
 
     functions: List[Function]
