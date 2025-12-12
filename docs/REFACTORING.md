@@ -640,3 +640,37 @@
     - **Future-Proof**: Easy to add other mixins (e.g., `WithPaginationMixin`) without touching response classes
     - **Semantic Clarity**: `ChatCompletion(APIResponse)` reads "ChatCompletion is an API response", not "ChatCompletion has x-headers"
 - **Status**: Resolved. Renamed `models/utils.py` to `models/base.py`, renamed `WithXHeaders` to `XHeadersMixin`, created `APIResponse` class, updated all 25 response classes to inherit from `APIResponse`, and exported `APIResponse` from `models/__init__.py`. All 355 tests pass.
+
+## Field Description Migration (Docstring → Field)
+- **Problem**: Model field descriptions are currently defined as docstrings on the line after the field definition. This pattern is inconsistent with `settings.py` (which uses `Field(description=...)`), and docstrings after field definitions are not the standard Pydantic way to document fields — they are not accessible programmatically via `.model_fields` or JSON Schema generation.
+  ```python
+  # Current pattern (non-standard):
+  name: str
+  """Name of the function."""
+
+  # Target pattern (Pydantic standard):
+  name: str = Field(description="Name of the function.")
+  ```
+- **Scope**: ~175 fields across 9 model files in `src/gigachat/models/`:
+  | File | Models | Fields |
+  |------|--------|--------|
+  | `base.py` | XHeadersMixin | ~1 |
+  | `auth.py` | AccessToken, Token | ~4 |
+  | `chat.py` | FunctionCall, FewShotExample, Storage, Usage, FunctionParametersProperty, FunctionParameters, Function, ChatFunctionCall, Messages, MessagesChunk, Choices, ChoicesChunk, Chat, ChatCompletion, ChatCompletionChunk | ~70 |
+  | `assistants.py` | AssistantAttachment, Assistant, Assistants, AssistantDelete, AssistantFileDelete, CreateAssistant | ~20 |
+  | `threads.py` | Thread, Threads, ThreadCompletion, ThreadCompletionChunk, ThreadMessageAttachment, ThreadMessage, ThreadMessages, ThreadMessageResponse, ThreadMessagesResponse, ThreadRunOptions, ThreadRunResponse, ThreadRunResult | ~45 |
+  | `embeddings.py` | EmbeddingsUsage, Embedding, Embeddings | ~8 |
+  | `files.py` | UploadedFile, UploadedFiles, DeletedFile, Image | ~12 |
+  | `models.py` | Model, Models | ~5 |
+  | `tools.py` | AICheckResult, BalanceValue, Balance, TokensCount, OpenApiFunctions | ~10 |
+- **Special Cases**:
+  - **Fields with existing `Field(alias=...)`**: Add `description` to existing `Field()` call:
+    - `type_`, `object_`, `id_`, `bytes_` across multiple models
+  - **Multi-line docstrings**: Keep multi-line descriptions where semantic (e.g., `Storage.is_stateful`, `Storage.limit`, `Storage.assistant_id`)
+- **Why**:
+  - **Consistency**: Aligns models with `settings.py` pattern already migrated
+  - **Pydantic Standard**: `Field(description=...)` is the standard way to document fields
+  - **Programmatic Access**: Descriptions accessible via `Model.model_fields['field'].description`
+  - **JSON Schema**: Descriptions included in generated JSON Schema (`Model.model_json_schema()`)
+  - **IDE Support**: Better tooltips in IDEs that understand Pydantic
+- **Status**: Resolved. All models in `src/gigachat/models/` migrated to use `Field(description=...)`. Multiline docstrings were flattened into single-line descriptions using implicit string concatenation where necessary. Verified with `ruff check`, `mypy`, and full test suite.

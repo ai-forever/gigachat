@@ -390,3 +390,23 @@
   - [x] Update tests to use new class names
   - [x] Run `ruff check`, `mypy`, and `pytest` to verify no regressions
   - [x] Update `docs/REFACTORING.md` with implementation details
+
+## Field Description Migration (Docstring → Field)
+- [x] Migrate field descriptions from docstrings to `Field(description=...)`
+  - [x] `models/base.py`: XHeadersMixin.x_headers (1 field)
+  - [x] `models/auth.py`: AccessToken, Token (4 fields)
+  - [x] `models/chat.py`: FunctionCall, FewShotExample, Storage, Usage, FunctionParametersProperty,
+        FunctionParameters, Function, ChatFunctionCall, Messages, MessagesChunk, Choices,
+        ChoicesChunk, Chat, ChatCompletion, ChatCompletionChunk (~70 fields)
+        Note: Keep multiline descriptions for Storage fields
+  - [x] `models/assistants.py`: AssistantAttachment, Assistant, Assistants, AssistantDelete,
+        AssistantFileDelete, CreateAssistant (~20 fields)
+  - [x] `models/threads.py`: Thread, Threads, ThreadCompletion, ThreadCompletionChunk,
+        ThreadMessageAttachment, ThreadMessage, ThreadMessages, ThreadMessageResponse,
+        ThreadMessagesResponse, ThreadRunOptions, ThreadRunResponse, ThreadRunResult (~45 fields)
+  - [x] `models/embeddings.py`: EmbeddingsUsage, Embedding, Embeddings (~8 fields)
+  - [x] `models/files.py`: UploadedFile, UploadedFiles, DeletedFile, Image (~12 fields)
+  - [x] `models/models.py`: Model, Models (~5 fields)
+  - [x] `models/tools.py`: AICheckResult, BalanceValue, Balance, TokensCount, OpenApiFunctions (~10 fields)
+  - [x] Run `ruff check`, `mypy`, and `pytest` to verify no regressions
+  - [x] Update `docs/REFACTORING.md` with implementation details
