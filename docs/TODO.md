@@ -453,3 +453,4 @@
   - [x] Run `pytest tests/unit_tests` - 355 tests passed
 - [x] Documentation
   - [x] Update `docs/REFACTORING.md` with implementation details
+  - [x] Create `docs/INTEGRATION_TESTING.md` usage guide (setup, running, recording, writing tests)

@@ -1,0 +1,206 @@
+# Integration Testing Guide
+
+This guide covers the VCR/cassette-based integration testing setup for the GigaChat SDK.
+
+## Overview
+
+Integration tests use [VCR.py](https://vcrpy.readthedocs.io/) via `pytest-recording` to record real HTTP interactions and replay them deterministically. This provides:
+
+- **Real API validation**: Tests actual response parsing and Pydantic model validation
+- **Fast execution**: No network calls during replay (~0.1s vs ~11s)
+- **Deterministic CI**: Cassettes committed to repo, no credentials needed in CI
+- **Schema drift detection**: Cassette mismatches catch API changes
+
+## Directory Structure
+
+```
+tests/
+├── integration/
+│   ├── __init__.py
+│   ├── conftest.py          # VCR config, fixtures, credential scrubbing
+│   ├── cassettes/           # Recorded HTTP interactions (YAML)
+│   │   ├── test_get_models.yaml
+│   │   └── ...
+│   └── test_models_vcr.py   # Integration tests
+└── unit_tests/              # Mocked tests (pytest-httpx)
+```
+
+## Setup
+
+### Dependencies
+
+Integration testing requires these dev dependencies (already in `pyproject.toml`):
+- `vcrpy>=6.0.0`
+- `pytest-recording>=0.13.0`
+- `python-dotenv>=1.0.0`
+
+### Environment Variables
+
+Create a `.env` file in the project root (gitignored):
+
+```bash
+GIGACHAT_CREDENTIALS=your_oauth_credentials_here
+GIGACHAT_SCOPE=GIGACHAT_API_PERS  # or GIGACHAT_API_CORP
+```
+
+See `.env.example` for reference.
+
+## Running Tests
+
+### Unit Tests Only (Default)
+
+```bash
+uv run pytest                    # Runs only unit tests (355 tests)
+make test                        # Same via Makefile
+```
+
+### Integration Tests Only
+
+```bash
+uv run pytest -m integration     # Runs only integration tests
+make test-integration            # Same via Makefile
+```
+
+### All Tests
+
+```bash
+uv run pytest -m ""              # Runs all tests (unit + integration)
+```
+
+## Recording Modes
+
+VCR supports different recording modes controlled by `--record-mode`:
+
+| Mode | Use Case | Command |
+|------|----------|---------|
+| `once` | Default — record if cassette doesn't exist | `pytest -m integration` |
+| `none` | CI — replay only, fail if cassette missing | `pytest -m integration --record-mode=none` |
+| `all` | Update all cassettes | `pytest -m integration --record-mode=all` |
+| `new_episodes` | Add new interactions to existing cassettes | `pytest -m integration --record-mode=new_episodes` |
+
+### Recording New Cassettes
+
+1. Ensure `.env` has valid credentials
+2. Run: `pytest -m integration tests/integration/test_your_test.py`
+3. Cassette is created in `tests/integration/cassettes/`
+4. Review YAML file for any sensitive data leakage
+5. Commit the cassette
+
+### Updating Stale Cassettes
+
+```bash
+pytest -m integration --record-mode=all
+```
+
+## Security: Credential Scrubbing
+
+The `conftest.py` automatically scrubs sensitive data from cassettes:
+
+### Request Scrubbing (`_scrub_request`)
+- Replaces `scope=XXX` with `scope=REDACTED` in OAuth request bodies
+
+### Response Scrubbing (`_scrub_response`)
+- Replaces `access_token` values with `"REDACTED"`
+- Replaces `tok` values with `"REDACTED"`
+- Replaces `expires_at` with year 2100 timestamp (prevents token expiration during replay)
+
+### Header Filtering
+- `Authorization: Bearer XXX` → `Authorization: Bearer REDACTED`
+
+**Always review cassettes before committing** to ensure no credentials leaked.
+
+## Writing New Integration Tests
+
+### Basic Test Structure
+
+```python
+import pytest
+from gigachat import GigaChat, ChatCompletion
+
+@pytest.mark.integration
+@pytest.mark.vcr
+def test_chat_completion(gigachat_client: GigaChat) -> None:
+    """Test chat completion endpoint."""
+    from gigachat import Chat, Messages, MessagesRole
+
+    chat = Chat(
+        messages=[Messages(role=MessagesRole.USER, content="Hello!")]
+    )
+    result = gigachat_client.chat(chat)
+
+    assert isinstance(result, ChatCompletion)
+    assert result.choices is not None
+```
+
+### Async Tests
+
+```python
+@pytest.mark.integration
+@pytest.mark.vcr
+async def test_async_chat(gigachat_async_client: GigaChat) -> None:
+    """Test async chat completion."""
+    result = await gigachat_async_client.achat(chat)
+    assert isinstance(result, ChatCompletion)
+```
+
+### Error Case Tests
+
+```python
+@pytest.mark.integration
+@pytest.mark.vcr
+def test_model_not_found(gigachat_client: GigaChat) -> None:
+    """Test 404 error handling."""
+    with pytest.raises(NotFoundError) as exc_info:
+        gigachat_client.get_model("NonExistentModel")
+
+    assert exc_info.value.status_code == 404
+```
+
+### Key Points
+
+1. **Always use both markers**: `@pytest.mark.integration` and `@pytest.mark.vcr`
+2. **Use provided fixtures**: `gigachat_client` (sync) or `gigachat_async_client` (async)
+3. **Test realistic scenarios**: Happy paths, error cases, edge cases
+4. **Cassette per test**: Each test function gets its own cassette file
+
+## Troubleshooting
+
+### "Cassette not found" in CI
+- Ensure cassette was committed to repo
+- Check cassette filename matches test function name
+
+### "Request not in cassette"
+- API behavior changed — re-record with `--record-mode=all`
+- Test modified to make different request — re-record
+
+### Token Expiration Errors During Replay
+- Response scrubbing should set `expires_at` to year 2100
+- Check `_scrub_response` in `conftest.py` is working
+
+### "GIGACHAT_CREDENTIALS not set"
+- Create `.env` file with credentials
+- Or export environment variable: `export GIGACHAT_CREDENTIALS=...`
+
+## VCR Configuration Reference
+
+From `tests/integration/conftest.py`:
+
+```python
+@pytest.fixture(scope="module")
+def vcr_config() -> Dict[str, Any]:
+    return {
+        "filter_headers": [
+            ("authorization", "Bearer REDACTED"),
+        ],
+        "match_on": ["method", "scheme", "host", "port", "path", "query"],
+        "record_mode": "once",
+        "decode_compressed_response": True,
+        "before_record_request": _scrub_request,
+        "before_record_response": _scrub_response,
+    }
+```
+
+## Related Documentation
+
+- `docs/REFACTORING.md` — Historical context on why VCR was chosen
+- `docs/TODO.md` — Implementation checklist (completed)
