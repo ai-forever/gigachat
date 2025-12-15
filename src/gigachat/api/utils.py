@@ -22,6 +22,7 @@ from gigachat.exceptions import (
     ForbiddenError,
     NotFoundError,
     RateLimitError,
+    RequestEntityTooLargeError,
     ResponseError,
     ServerError,
     UnprocessableEntityError,
@@ -107,6 +108,8 @@ def _raise_for_status(url: Union[httpx.URL, str], status_code: int, content: byt
         raise ForbiddenError(url, status_code, content, headers)
     elif status_code == HTTPStatus.NOT_FOUND:
         raise NotFoundError(url, status_code, content, headers)
+    elif status_code == HTTPStatus.REQUEST_ENTITY_TOO_LARGE:
+        raise RequestEntityTooLargeError(url, status_code, content, headers)
     elif status_code == HTTPStatus.UNPROCESSABLE_ENTITY:
         raise UnprocessableEntityError(url, status_code, content, headers)
     elif status_code == HTTPStatus.TOO_MANY_REQUESTS:

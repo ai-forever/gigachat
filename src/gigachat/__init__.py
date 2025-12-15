@@ -9,6 +9,7 @@ from gigachat.exceptions import (
     GigaChatException,
     NotFoundError,
     RateLimitError,
+    RequestEntityTooLargeError,
     ResponseError,
     ServerError,
 )
@@ -40,6 +41,7 @@ __all__ = [
     "BadRequestError",
     "ForbiddenError",
     "NotFoundError",
+    "RequestEntityTooLargeError",
     "ServerError",
     "Chat",
     "ChatCompletion",

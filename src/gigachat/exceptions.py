@@ -9,6 +9,7 @@ __all__ = [
     "AuthenticationError",
     "ForbiddenError",
     "NotFoundError",
+    "RequestEntityTooLargeError",
     "UnprocessableEntityError",
     "RateLimitError",
     "ServerError",
@@ -53,6 +54,10 @@ class ForbiddenError(ResponseError):
 
 class NotFoundError(ResponseError):
     """Exception raised for 404 Not Found."""
+
+
+class RequestEntityTooLargeError(ResponseError):
+    """Exception raised for 413 Request Entity Too Large."""
 
 
 class UnprocessableEntityError(ResponseError):

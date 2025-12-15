@@ -252,6 +252,7 @@
       - `AuthenticationError` (401)
       - `ForbiddenError` (403)
       - `NotFoundError` (404)
+      - `RequestEntityTooLargeError` (413) - added for OpenAPI spec alignment
       - `UnprocessableEntityError` (422)
       - `RateLimitError` (429) - with `retry_after` property
       - `ServerError` (5xx)
@@ -261,6 +262,7 @@
     - **Developer Experience**: Provides structured access to error details, eliminating the need for `e.args` parsing.
     - **Robustness**: Enables users to implement cleaner retry logic and specific error handling (e.g., catching `RateLimitError` separate from `AuthenticationError`).
     - **Standardization**: Aligns with Python best practices and other popular API clients.
+    - **OpenAPI Alignment**: `RequestEntityTooLargeError` (413) maps to the `BadRequestSize` response defined in the GigaChat OpenAPI spec for endpoints like `/v1/functions/convert` and `/v1/functions/validate`.
 - **Status**: Resolved.
 
 ## Pydantic V2 Migration
