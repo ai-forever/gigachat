@@ -1,1 +1,1 @@
-# Integration tests for GigaChat SDK
+"""Integration tests for GigaChat SDK."""
