@@ -122,7 +122,7 @@
 - **Status**: Resolved.
 
 ## Unit Test Consolidation
-- **Problem**: The unit tests were fragmented and inconsistent. `test_client.py` was a monolithic file >750 lines covering multiple domains. Some tests were loose files in `tests/unit_tests/gigachat/` while others were in `tests/unit_tests/gigachat/api/`.
+- **Problem**: The unit tests were fragmented and inconsistent. `test_client.py` was a monolithic file >750 lines covering multiple domains. Some tests were loose files in `tests/unit/gigachat/` while others were in `tests/unit/gigachat/api/`.
 - **Solution**:
   - **Implementation Details**:
     - Broke down `test_client.py` into domain-specific test files: `test_client_chat.py`, `test_client_files.py` (merged `test_get_image.py`), `test_client_models.py`, `test_client_tools.py`, `test_client_embeddings.py`.
@@ -153,7 +153,7 @@
     - **Centralization**: Moved `GigaChat` class from `__init__.py` to `client.py` to better manage inheritance and overrides.
     - **Thread Safety**: Implemented Double-Checked Locking in `GigaChatSyncClient` lazy properties (`_client`, `_auth_client`) using `_sync_token_lock` to ensure only one client instance is created even under heavy concurrency. Switched to `threading.RLock` to prevent deadlocks in re-entrant calls.
     - **Cleanup**: Overrode `aclose()` in `GigaChat` to explicitly call `self.close()` (sync cleanup) in addition to `super().aclose()`, ensuring all resources (sync and async) are released when using `async with`.
-    - **Testing**: Consolidated lazy init and thread safety tests into `tests/unit_tests/gigachat/test_client_lifecycle.py` and fixed Ruff warnings.
+    - **Testing**: Consolidated lazy init and thread safety tests into `tests/unit/gigachat/test_client_lifecycle.py` and fixed Ruff warnings.
   - **Why**:
     - **Robustness**: Prevents race conditions and resource leaks in multi-threaded environments.
     - **Correctness**: Ensures that `async with GigaChat()` fully cleans up the object regardless of how it was used (sync or async).
@@ -256,7 +256,7 @@
       - `RateLimitError` (429) - with `retry_after` property
       - `ServerError` (5xx)
     - Update `api/utils.py` to raise these specific exceptions based on status codes.
-    - Add new unit tests in `tests/unit_tests/gigachat/test_exceptions.py` and update existing tests.
+    - Add new unit tests in `tests/unit/gigachat/test_exceptions.py` and update existing tests.
   - **Why**:
     - **Developer Experience**: Provides structured access to error details, eliminating the need for `e.args` parsing.
     - **Robustness**: Enables users to implement cleaner retry logic and specific error handling (e.g., catching `RateLimitError` separate from `AuthenticationError`).
@@ -347,7 +347,7 @@
     - **Default Disabled**: `max_retries=0` is safe for nested usage with LangChain's own retry mechanism.
     - **Build vs. Library**: Built from scratch to avoid adding dependencies and version conflicts.
     - **No Protocol Needed**: Unlike auth decorators, retry only reads settings (no method calls), so a simple `_get_retry_settings()` helper suffices.
-- **Status**: Resolved. Retry decorators implemented and applied to all client methods in `GigaChatSyncClient`, `GigaChatAsyncClient`, `ThreadsSyncClient`, `ThreadsAsyncClient`, `AssistantsSyncClient`, and `AssistantsAsyncClient`. Unit tests added in `tests/unit_tests/gigachat/test_retry.py`.
+- **Status**: Resolved. Retry decorators implemented and applied to all client methods in `GigaChatSyncClient`, `GigaChatAsyncClient`, `ThreadsSyncClient`, `ThreadsAsyncClient`, `AssistantsSyncClient`, and `AssistantsAsyncClient`. Unit tests added in `tests/unit/gigachat/test_retry.py`.
 
 ## Migrate to uv + Ruff
 - **Problem**: The current development workflow uses `poetry` (package management), `black` (formatting), and `ruff` (linting). This fragmentation leads to slower operations and requires maintaining multiple tool configurations. `poetry` resolution can be slow, and using separate tools for linting and formatting increases complexity.
@@ -399,8 +399,8 @@
 - **Problem**: CI tests failed on Python 3.8 with `TypeError: 'type' object is not subscriptable` and `TypeError: 'dict' object is not subscriptable`. This is because generic aliases like `type[...]` and `dict[...]` were introduced in Python 3.9.
 - **Solution**:
   - **Implementation Details**:
-    - Replaced `type[ResponseError]` with `Type[ResponseError]` (from `typing`) in `tests/unit_tests/gigachat/test_exceptions.py`.
-    - Replaced `dict[str, str]` with `Dict[str, str]` (from `typing`) in `tests/unit_tests/gigachat/api/test_chat.py`.
+    - Replaced `type[ResponseError]` with `Type[ResponseError]` (from `typing`) in `tests/unit/gigachat/test_exceptions.py`.
+    - Replaced `dict[str, str]` with `Dict[str, str]` (from `typing`) in `tests/unit/gigachat/api/test_chat.py`.
   - **Why**: Ensures the codebase is compatible with the project's minimum supported Python version (3.8).
 - **Status**: Resolved.
 
@@ -426,7 +426,7 @@
     - **DRY**: Centralized constants and fixtures reduce duplication and maintenance burden.
     - **Coverage**: Complete API and core module tests ensure all refactored code is properly validated.
     - **Developer Experience**: `asyncio_mode = "auto"` eliminates boilerplate and reduces test verbosity.
-- **Status**: Resolved. All test files renamed, configuration cleaned, imports converted to absolute, constants centralized in `tests/constants.py`, shared fixtures added to `conftest.py`, and comprehensive test coverage added for API layer (`test_files.py`, `test_embeddings.py`, `test_tools.py`, `test_assistants.py`, `test_threads.py`, `test_utils.py`), core modules (`test_context.py`, `test_authentication.py`, expanded `test_settings.py`), and models (`tests/unit_tests/gigachat/models/` with validation tests for chat, files, embeddings, assistants, threads, tools, and auth models). Test count increased from 186 to 333 tests. All `ruff check`, `mypy`, and `pytest` pass.
+- **Status**: Resolved. All test files renamed, configuration cleaned, imports converted to absolute, constants centralized in `tests/constants.py`, shared fixtures added to `conftest.py`, and comprehensive test coverage added for API layer (`test_files.py`, `test_embeddings.py`, `test_tools.py`, `test_assistants.py`, `test_threads.py`, `test_utils.py`), core modules (`test_context.py`, `test_authentication.py`, expanded `test_settings.py`), and models (`tests/unit/gigachat/models/` with validation tests for chat, files, embeddings, assistants, threads, tools, and auth models). Test count increased from 186 to 333 tests. All `ruff check`, `mypy`, and `pytest` pass.
 
 ## Negative `max_retries` Edge Case Fix
 - **Problem**: The retry decorators in `src/gigachat/retry.py` checked `if max_retries == 0` to bypass retry logic, but did not handle negative values. If a user set `max_retries=-1` (via environment variable or code), the check would pass, and `range(max_retries + 1)` would produce an empty range, causing:
@@ -480,7 +480,7 @@
     - Code duplication: ~50 lines × 3 classes = ~150 lines of signature duplication.
     - When adding new parameter: must update 4 places (`_BaseClient`, `GigaChatSyncClient`, `GigaChatAsyncClient`, `GigaChat`).
     - Mitigated by: all changes in single file (`client.py`), easy to spot inconsistencies during review.
-- **Status**: Resolved. Explicit `__init__` signatures added to all 3 client classes with full parameter lists and docstrings. Unit tests added in `tests/unit_tests/gigachat/test_client_constructor.py`. All 339 tests pass.
+- **Status**: Resolved. Explicit `__init__` signatures added to all 3 client classes with full parameter lists and docstrings. Unit tests added in `tests/unit/gigachat/test_client_constructor.py`. All 339 tests pass.
 
 ## `get_token()` Type Safety Fix
 - **Problem**: The `get_token()` and `aget_token()` methods have incorrect return types. They declare `AccessToken` as the return type but use `cast(AccessToken, self._access_token)` to hide the fact that `_access_token` can be `None`. This misleads type checkers and users.
@@ -534,7 +534,7 @@
       - `OAUTH_TOKEN_EXPIRED`: OAuth format with year 2000 expiry (always expired)
       - `PASSWORD_TOKEN_VALID`: Password auth format with year 2100 expiry
       - `PASSWORD_TOKEN_EXPIRED`: Password auth format with year 2000 expiry
-    - Added pytest fixtures in `tests/unit_tests/conftest.py` for URL and token test data.
+    - Added pytest fixtures in `tests/unit/conftest.py` for URL and token test data.
     - Added 8 new tests covering token caching behavior:
       - `test_chat_credentials_token_reuse`: Valid OAuth token reused across calls
       - `test_chat_credentials_expired_token_refresh`: Expired OAuth token triggers refresh

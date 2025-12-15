@@ -8,7 +8,7 @@
   - [x] Refactor `GigaChatSyncClient` to use lazy initialization for `_client` and `_auth_client`
   - [x] Refactor `GigaChatAsyncClient` to use lazy initialization for `_aclient` and `_auth_aclient`
   - [x] Update `close()` and `aclose()` to only close initialized clients
-  - [x] Add regression test `tests/unit_tests/gigachat/test_lazy_init.py`
+  - [x] Add regression test `tests/unit/gigachat/test_lazy_init.py`
 
 ## API Layer Fragmentation
 - [x] Consolidate API Layer
@@ -25,7 +25,7 @@
 - [x] Rename `models_controller.py` to `models.py`
   - [x] Rename file `src/gigachat/api/models_controller.py` to `src/gigachat/api/models.py`
   - [x] Update imports in `src/gigachat/client.py`
-  - [x] Rename and update test `tests/unit_tests/gigachat/api/test_models.py`
+  - [x] Rename and update test `tests/unit/gigachat/api/test_models.py`
 
 ## Assistants and Threads API Consolidation
 - [x] Consolidate Assistants API
@@ -72,7 +72,7 @@
 
 ## Unit Test Consolidation
 - [x] Consolidate and Organize Unit Tests
-  - [x] Remove empty file `tests/unit_tests/gigachat/test_models.py`
+  - [x] Remove empty file `tests/unit/gigachat/test_models.py`
   - [x] Extract Chat tests from `test_client.py` to `test_client_chat.py`
   - [x] Extract Files tests to `test_client_files.py` (merge `test_get_image.py`)
   - [x] Extract Models tests from `test_client.py` to `test_client_models.py`
@@ -150,7 +150,7 @@
   - [x] Implement specific exception subclasses: `BadRequestError` (400), `AuthenticationError` (401), `ForbiddenError` (403), `NotFoundError` (404), `UnprocessableEntityError` (422), `RateLimitError` (429), `ServerError` (5xx)
   - [x] Add helper properties to exceptions (e.g., `RateLimitError.retry_after`)
   - [x] Update `src/gigachat/api/utils.py` to raise specific exceptions
-  - [x] Create unit tests `tests/unit_tests/gigachat/test_exceptions.py`
+  - [x] Create unit tests `tests/unit/gigachat/test_exceptions.py`
   - [x] Update existing tests
 
 ## Pydantic V2 Migration
@@ -196,7 +196,7 @@
   - [x] Apply retry decorators to `ThreadsAsyncClient` methods
   - [x] Apply retry decorators to `AssistantsSyncClient` methods
   - [x] Apply retry decorators to `AssistantsAsyncClient` methods
-  - [x] Create `tests/unit_tests/gigachat/test_retry.py` with unit tests for retry logic
+  - [x] Create `tests/unit/gigachat/test_retry.py` with unit tests for retry logic
   - [x] Run `ruff check`, `mypy`, and `pytest` to verify no regressions
   - [x] Update `docs/REFACTORING.md` with implementation details
 
@@ -233,8 +233,8 @@
 
 ## Python 3.8 Type Hint Compatibility
 - [x] Fix Python 3.8 compatibility issues
-  - [x] Replace `type[...]` with `Type[...]` in `tests/unit_tests/gigachat/test_exceptions.py`
-  - [x] Replace `dict[...]` with `Dict[...]` in `tests/unit_tests/gigachat/api/test_chat.py`
+  - [x] Replace `type[...]` with `Type[...]` in `tests/unit/gigachat/test_exceptions.py`
+  - [x] Replace `dict[...]` with `Dict[...]` in `tests/unit/gigachat/api/test_chat.py`
 
 ## Test Suite Refactoring
 - [x] Module Naming Consistency
@@ -250,20 +250,20 @@
 - [x] Consolidate Constants and Fixtures
   - [x] Create `tests/constants.py` with shared `BASE_URL`, `AUTH_URL`, `CREDENTIALS`
   - [x] Update all test files to import from `tests/constants.py`
-  - [x] Add shared fixtures to `tests/unit_tests/conftest.py`
+  - [x] Add shared fixtures to `tests/unit/conftest.py`
 - [x] Missing Test Coverage (API Layer)
-  - [x] Create `tests/unit_tests/gigachat/api/test_files.py`
-  - [x] Create `tests/unit_tests/gigachat/api/test_embeddings.py`
-  - [x] Create `tests/unit_tests/gigachat/api/test_tools.py`
-  - [x] Create `tests/unit_tests/gigachat/api/test_assistants.py`
-  - [x] Create `tests/unit_tests/gigachat/api/test_threads.py`
-  - [x] Create `tests/unit_tests/gigachat/api/test_utils.py`
+  - [x] Create `tests/unit/gigachat/api/test_files.py`
+  - [x] Create `tests/unit/gigachat/api/test_embeddings.py`
+  - [x] Create `tests/unit/gigachat/api/test_tools.py`
+  - [x] Create `tests/unit/gigachat/api/test_assistants.py`
+  - [x] Create `tests/unit/gigachat/api/test_threads.py`
+  - [x] Create `tests/unit/gigachat/api/test_utils.py`
 - [x] Missing Test Coverage (Core Modules)
-  - [x] Create `tests/unit_tests/gigachat/test_context.py`
-  - [x] Create `tests/unit_tests/gigachat/test_authentication.py`
+  - [x] Create `tests/unit/gigachat/test_context.py`
+  - [x] Create `tests/unit/gigachat/test_authentication.py`
   - [x] Expand `test_settings.py` with comprehensive validation tests
 - [x] Missing Test Coverage (Models)
-  - [x] Create `tests/unit_tests/gigachat/models/` directory with model validation tests
+  - [x] Create `tests/unit/gigachat/models/` directory with model validation tests
 - [x] Verification
   - [x] Run `ruff check`, `mypy`, and `pytest` to verify no regressions
 
@@ -450,7 +450,7 @@
 - [x] Verification
   - [x] Run `ruff check tests/integration` - all checks passed
   - [x] Run `mypy tests/integration` - no issues found
-  - [x] Run `pytest tests/unit_tests` - 355 tests passed
+  - [x] Run `pytest tests/unit` - 355 tests passed
 - [x] Documentation
   - [x] Update `docs/REFACTORING.md` with implementation details
   - [x] Create `docs/INTEGRATION_TESTING.md` usage guide (setup, running, recording, writing tests)

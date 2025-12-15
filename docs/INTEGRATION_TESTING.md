@@ -22,7 +22,7 @@ tests/
 │   │   ├── test_get_models.yaml
 │   │   └── ...
 │   └── test_models_vcr.py   # Integration tests
-└── unit_tests/              # Mocked tests (pytest-httpx)
+└── unit/                    # Mocked unit tests (pytest-httpx)
 ```
 
 ## Setup
