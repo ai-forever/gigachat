@@ -12,7 +12,6 @@ from dotenv import load_dotenv
 from gigachat import GigaChat
 from tests.constants import EXPIRES_AT_VALID
 
-# Load environment variables from .env file at project root
 load_dotenv()
 
 
@@ -21,7 +20,6 @@ def _scrub_request(request: Any) -> Any:
     if request.body:
         body = request.body
         if isinstance(body, bytes):
-            # Replace scope=XXX with scope=REDACTED in form-encoded bodies
             body = re.sub(rb"scope=[^&\s]*", b"scope=REDACTED", body)
             request.body = body
         elif isinstance(body, str):
@@ -49,7 +47,6 @@ def _scrub_response(response: Dict[str, Any]) -> Dict[str, Any]:
                 data["expires_at"] = EXPIRES_AT_VALID
             response["body"]["string"] = json.dumps(data).encode("utf-8")
         except (json.JSONDecodeError, UnicodeDecodeError):
-            # Fallback: regex replacement for non-JSON responses
             if isinstance(body, bytes):
                 body = re.sub(rb'"access_token"\s*:\s*"[^"]*"', b'"access_token": "REDACTED"', body)
                 body = re.sub(rb'"tok"\s*:\s*"[^"]*"', b'"tok": "REDACTED"', body)

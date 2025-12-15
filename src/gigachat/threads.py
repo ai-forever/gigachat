@@ -143,7 +143,6 @@ class ThreadsSyncClient:
         thread_id: str,
         assistant_id: Optional[str] = None,
         thread_options: Optional[ThreadRunOptions] = None,
-        # Backwards compatibility args (if needed by user code, though run signature in test uses named args)
         options: Optional[ThreadRunOptions] = None,
     ) -> ThreadRunResponse:
         """Run a thread."""
@@ -174,7 +173,6 @@ class ThreadsSyncClient:
         thread_id: str,
         assistant_id: Optional[str] = None,
         thread_options: Optional[ThreadRunOptions] = None,
-        # Backwards compatibility
         options: Optional[ThreadRunOptions] = None,
     ) -> Iterator[ThreadCompletionChunk]:
         """Run a thread with streaming response."""
@@ -382,7 +380,6 @@ class ThreadsAsyncClient:
         thread_id: str,
         assistant_id: Optional[str] = None,
         thread_options: Optional[ThreadRunOptions] = None,
-        # Backwards compatibility
         options: Optional[ThreadRunOptions] = None,
     ) -> ThreadRunResponse:
         """Run a thread."""
@@ -414,7 +411,6 @@ class ThreadsAsyncClient:
         thread_id: str,
         assistant_id: Optional[str] = None,
         thread_options: Optional[ThreadRunOptions] = None,
-        # Backwards compatibility
         options: Optional[ThreadRunOptions] = None,
     ) -> AsyncIterator[ThreadCompletionChunk]:
         """Run a thread with streaming response."""
