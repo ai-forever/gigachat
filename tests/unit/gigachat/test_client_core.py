@@ -1,7 +1,7 @@
 import ssl
+from unittest import mock
 
 from pytest_httpx import HTTPXMock
-from pytest_mock import MockerFixture
 
 from gigachat import GigaChat
 from gigachat.client import (
@@ -50,12 +50,11 @@ def test__get_auth_kwargs_ssl() -> None:
     assert _get_kwargs(settings)["verify"] == context
 
 
-def test__unknown_kwargs(mocker: MockerFixture) -> None:
-    spy = mocker.spy(logger, "warning")
+def test__unknown_kwargs() -> None:
+    with mock.patch.object(logger, "warning") as spy:
+        GigaChatSyncClient(foo="bar")
 
-    GigaChatSyncClient(foo="bar")
-
-    assert spy.call_count == 1
+        assert spy.call_count == 1
 
 
 def test_get_token_credentials(httpx_mock: HTTPXMock) -> None:

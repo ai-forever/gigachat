@@ -9,7 +9,24 @@ authors = [
 requires-python = ">=3.8,<4"
 readme = "README.md"
 license = "MIT"
-dependencies = ["pydantic>=2.0,<3", "pydantic-settings>=2.0,<3", "httpx<1"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Typing :: Typed",
+]
+dependencies = [
+    "pydantic>=2.0,<3",
+    "pydantic-settings>=2.0,<3",
+    "httpx>=0.24,<1",
+]
 
 [project.urls]
 Repository = "https://github.com/ai-forever/gigachat"
@@ -21,8 +38,8 @@ dev = [
     "pytest-httpx<=0.22.0 ; python_version >= '3.8' and python_version < '3.9'",
     "pytest-httpx>=0.26.0,<0.27 ; python_version >= '3.9' and python_version < '4'",
     "pytest-asyncio>=0.21.1,<0.22",
-    "coverage<=7.3.0",
-    "pytest-mock>=3.12.0,<4",
+    "coverage<7.6 ; python_version >= '3.8' and python_version < '3.9'",
+    "coverage>=7.6 ; python_version >= '3.9'",
     "ruff>=0.8.0,<0.9",
     "pre-commit>=3.5.0",
     "pytest-cov>=5.0.0",
@@ -48,7 +65,7 @@ build-backend = "hatchling.build"
 line-length = 120
 src = ["src"]
 target-version = "py38"
-exclude = [".venv", "htmlcov", ".mypy_cache", ".pytest_cache", "*.ipynb"]
+exclude = ["htmlcov", "*.ipynb"]
 
 [tool.ruff.lint]
 select = [
@@ -64,21 +81,24 @@ select = [
     "PT",
     "Q",
     "RUF100",
+    "S",
     "UP",
     "W",
 ]
+ignore = ["S311"] # Random for jitter/non-crypto is fine
 
-[tool.ruff.lint.mccabe]
-max-complexity = 10
+[tool.ruff.lint.per-file-ignores]
+"tests/**" = [
+    "S101",
+    "S105",
+    "S106",
+    "S107",
+] # Allow assert and hardcoded test credentials
 
 [tool.ruff.lint.isort]
 known-first-party = ["gigachat"]
 
 [tool.ruff.format]
-quote-style = "double"
-indent-style = "space"
-skip-magic-trailing-comma = false
-line-ending = "auto"
 docstring-code-format = true
 
 [tool.mypy]
@@ -89,22 +109,18 @@ strict = true
 pythonpath = ["src", "."]
 xfail_strict = true
 asyncio_mode = "auto"
-markers = [
-    "integration: mark a test as an integration test.",
-]
+markers = ["integration: mark a test as an integration test."]
 addopts = "-m 'not integration'"
 
 [tool.coverage.run]
 branch = true
-source = ["src"]
+source = ["src/gigachat"]
 
 [tool.coverage.report]
 exclude_lines = [
     "pragma: no cover",
     "raise NotImplementedError",
-    "if TYPE_CHECKING:",
-    "if typing.TYPE_CHECKING:",
-    "@overload",
-    "@typing.overload",
+    "if .*TYPE_CHECKING:",
+    "@.*overload",
     "assert_never",
 ]
