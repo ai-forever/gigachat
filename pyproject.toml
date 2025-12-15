@@ -85,15 +85,10 @@ select = [
     "UP",
     "W",
 ]
-ignore = ["S311"] # Random for jitter/non-crypto is fine
+ignore = ["S311"]
 
 [tool.ruff.lint.per-file-ignores]
-"tests/**" = [
-    "S101",
-    "S105",
-    "S106",
-    "S107",
-] # Allow assert and hardcoded test credentials
+"tests/**" = ["S101", "S105", "S106", "S107"]
 
 [tool.ruff.lint.isort]
 known-first-party = ["gigachat"]
