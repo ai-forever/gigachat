@@ -222,6 +222,11 @@ This section tracks which API endpoints have integration test coverage.
   - `test_tokens_count_multiple` — Batch of texts (sync)
   - `test_atokens_count_single` — Single text (async)
   - `test_atokens_count_multiple` — Batch of texts (async)
+- [x] `/embeddings` — Generate text embeddings (4 tests)
+  - `test_embeddings_single` — Single text (sync)
+  - `test_embeddings_multiple` — Batch of texts (sync)
+  - `test_aembeddings_single` — Single text (async)
+  - `test_aembeddings_multiple` — Batch of texts (async)
 
 ## Related Documentation
 

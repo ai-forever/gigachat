@@ -34,7 +34,7 @@ Python SDK for the GigaChat LLM REST API.
 
 ## Task-Specific Documentation
 Read these only when relevant to your current task:
-- `docs/INTEGRATION_TESTING.md` — VCR/cassette-based integration test setup, recording, running
+- `docs/INTEGRATION_TESTING.md` — VCR/cassette-based integration test setup, recording, running, progress tracking
 - `docs/REFACTORING.md` — Historical analysis of refactoring issues and solutions
 - `docs/TODO.md` — Task checklists and progress tracking
 - `docs/V1_MIGRATION.md` — v1.0 migration plan, including breaking changes
