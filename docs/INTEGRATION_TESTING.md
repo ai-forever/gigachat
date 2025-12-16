@@ -17,14 +17,17 @@ Integration tests use [VCR.py](https://vcrpy.readthedocs.io/) via `pytest-record
 tests/
 ├── integration/
 │   ├── __init__.py
-│   ├── conftest.py          # VCR config, fixtures, credential scrubbing
-│   ├── cassettes/           # Recorded HTTP interactions (YAML)
+│   ├── conftest.py            # VCR config, fixtures, credential scrubbing
+│   ├── cassettes/             # Recorded HTTP interactions (YAML)
+│   │   ├── test_chat_simple.yaml
+│   │   ├── test_stream_simple.yaml
 │   │   ├── test_get_models.yaml
-│   │   ├── test_tokens_count_single.yaml
 │   │   └── ...
-│   ├── test_models_vcr.py   # /models endpoint tests
-│   └── test_tokens_vcr.py   # /tokens/count endpoint tests
-└── unit/                    # Mocked unit tests (pytest-httpx)
+│   ├── test_chat_vcr.py       # /chat/completions endpoint tests
+│   ├── test_models_vcr.py     # /models endpoint tests
+│   ├── test_tokens_vcr.py     # /tokens/count endpoint tests
+│   └── test_embeddings_vcr.py # /embeddings endpoint tests
+└── unit/                      # Mocked unit tests (pytest-httpx)
 ```
 
 ## Setup
@@ -210,6 +213,13 @@ This section tracks which API endpoints have integration test coverage.
 
 ### Completed
 
+- [x] `/chat/completions` — Chat completions and streaming (6 tests)
+  - `test_chat_simple` — Basic chat completion (sync)
+  - `test_achat_simple` — Basic chat completion (async)
+  - `test_stream_simple` — Streaming chat completion (sync)
+  - `test_astream_simple` — Streaming chat completion (async)
+  - `test_chat_model_not_found` — 404 error handling (sync)
+  - `test_achat_model_not_found` — 404 error handling (async)
 - [x] `/models` — List and get models (6 tests)
   - `test_get_models` — List all available models (sync)
   - `test_get_model` — Get specific model by name (sync)
