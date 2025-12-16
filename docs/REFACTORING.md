@@ -686,3 +686,29 @@
   - Security: `_scrub_request` and `_scrub_response` hooks filter credentials
 - **Status**: Resolved. Infrastructure complete, initial endpoint tests implemented.
 - **Documentation**: See `docs/INTEGRATION_TESTING.md` for usage guide and progress tracking.
+
+## Python Version Support Optimization
+- **Problem**: The `pyproject.toml` had unnecessarily complex Python version markers and upper bounds:
+  - `pytest-httpx` had verbose markers (`python_version >= '3.8' and python_version < '3.9'`) and an artificial version gap (`<=0.22.0` for 3.8, `>=0.26.0` for 3.9+)
+  - `coverage` had separate version specs for 3.8 vs 3.9+
+  - Several dev dependencies had unnecessary upper bounds on minor versions
+  - Python 3.13 was not listed in classifiers
+- **Solution (Simplified Markers)**:
+  - **Implementation Details**:
+    - Simplified `pytest-httpx` markers: `<=0.22.0 ; python_version < '3.9'` and `>=0.23.0 ; python_version >= '3.9'` (removed version gap)
+    - Unified `coverage>=7.0.0` (works across all Python versions 3.8-3.13)
+    - Removed unnecessary upper bounds from dev dependencies (`mypy`, `pytest`, `ruff`, `pytest-asyncio`)
+    - Added `"Programming Language :: Python :: 3.13"` to classifiers
+  - **Mypy Limitation on Python 3.8/3.9**:
+    - `pydantic-settings` v2 uses `X | Y` union syntax internally (requires Python 3.10+)
+    - At runtime: Works fine on Python 3.8/3.9 due to `from __future__ import annotations` in pydantic-settings
+    - With mypy: Fails static analysis on Python 3.8/3.9 with syntax errors
+    - **Resolution**: Skip mypy on Python 3.8/3.9 in CI; run on Python 3.10+ only
+    - This is a pydantic-settings issue, not our code — all tests pass at runtime on all versions
+  - **Why**:
+    - **Cleaner Config**: Fewer markers, simpler version specs
+    - **No Version Gap**: `pytest-httpx` versions 0.23-0.25 work fine on Python 3.9+
+    - **Future-Proof**: Removed upper bounds allow automatic security updates for dev tools
+    - **Python 3.13 Support**: Explicitly advertised in classifiers
+- **Verified Compatibility**: All Python versions 3.8-3.13 pass `uv sync`, `ruff check`, `ruff format`, and `pytest` (376 tests). Mypy passes on Python 3.10+.
+- **Status**: Resolved.

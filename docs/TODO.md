@@ -415,3 +415,13 @@
 - [x] VCR infrastructure setup complete (dependencies, fixtures, credential scrubbing)
 - [x] Pytest configuration complete (markers, exclusion by default, Makefile targets)
 - See `docs/INTEGRATION_TESTING.md` for usage guide and progress tracking
+
+## Python Version Support Optimization
+- [x] Optimize pyproject.toml markers for Python 3.8-3.13
+  - [x] Simplify pytest-httpx markers (remove version gap: `<=0.22.0` for `<3.9`, `>=0.23.0` for `>=3.9`)
+  - [x] Remove unnecessary upper bounds on dev dependencies (mypy, pytest, ruff, pytest-asyncio)
+  - [x] Unify coverage version (`>=7.0.0` works across all versions)
+  - [x] Add Python 3.13 to classifiers
+- [x] Document mypy limitation on Python 3.8/3.9 (pydantic-settings uses `X | Y` syntax)
+  - [x] CI should skip mypy on Python 3.8/3.9, run on 3.10+ only
+  - [x] This is a pydantic-settings issue, not our code — runtime works fine
