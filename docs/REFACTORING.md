@@ -684,5 +684,5 @@
   - VCR chosen over live API testing (slow, costly) and contract testing (doesn't test real API)
   - Separate `tests/integration/` directory with `@pytest.mark.integration` marker
   - Security: `_scrub_request` and `_scrub_response` hooks filter credentials
-- **Status**: Resolved. Initial `/models` endpoint tests implemented (6 tests).
-- **Usage Guide**: See `docs/INTEGRATION_TESTING.md` for setup, running tests, recording cassettes, and writing new tests.
+- **Status**: Resolved. Infrastructure complete, initial endpoint tests implemented.
+- **Documentation**: See `docs/INTEGRATION_TESTING.md` for usage guide and progress tracking.

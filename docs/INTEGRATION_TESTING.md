@@ -204,7 +204,25 @@ def vcr_config() -> Dict[str, Any]:
 
 **Note**: The `"body"` matcher ensures POST requests with different payloads (e.g., different inputs to `/tokens/count`) are matched to their respective cassettes.
 
+## Implementation Progress
+
+This section tracks which API endpoints have integration test coverage.
+
+### Completed
+
+- [x] `/models` — List and get models (6 tests)
+  - `test_get_models` — List all available models (sync)
+  - `test_get_model` — Get specific model by name (sync)
+  - `test_get_model_not_found` — 404 error handling (sync)
+  - `test_aget_models` — List all available models (async)
+  - `test_aget_model` — Get specific model by name (async)
+  - `test_aget_model_not_found` — 404 error handling (async)
+- [x] `/tokens/count` — Count tokens in text (4 tests)
+  - `test_tokens_count_single` — Single text (sync)
+  - `test_tokens_count_multiple` — Batch of texts (sync)
+  - `test_atokens_count_single` — Single text (async)
+  - `test_atokens_count_multiple` — Batch of texts (async)
+
 ## Related Documentation
 
 - `docs/REFACTORING.md` — Historical context on why VCR was chosen
-- `docs/TODO.md` — Implementation checklist (completed)
