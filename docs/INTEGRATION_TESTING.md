@@ -20,8 +20,10 @@ tests/
 │   ├── conftest.py          # VCR config, fixtures, credential scrubbing
 │   ├── cassettes/           # Recorded HTTP interactions (YAML)
 │   │   ├── test_get_models.yaml
+│   │   ├── test_tokens_count_single.yaml
 │   │   └── ...
-│   └── test_models_vcr.py   # Integration tests
+│   ├── test_models_vcr.py   # /models endpoint tests
+│   └── test_tokens_vcr.py   # /tokens/count endpoint tests
 └── unit/                    # Mocked unit tests (pytest-httpx)
 ```
 
@@ -50,7 +52,7 @@ See `.env.example` for reference.
 ### Unit Tests Only (Default)
 
 ```bash
-uv run pytest                    # Runs only unit tests (355 tests)
+uv run pytest                    # Runs only unit tests (356 tests)
 make test                        # Same via Makefile
 ```
 
@@ -192,13 +194,15 @@ def vcr_config() -> Dict[str, Any]:
         "filter_headers": [
             ("authorization", "Bearer REDACTED"),
         ],
-        "match_on": ["method", "scheme", "host", "port", "path", "query"],
+        "match_on": ["method", "scheme", "host", "port", "path", "query", "body"],
         "record_mode": "once",
         "decode_compressed_response": True,
         "before_record_request": _scrub_request,
         "before_record_response": _scrub_response,
     }
 ```
+
+**Note**: The `"body"` matcher ensures POST requests with different payloads (e.g., different inputs to `/tokens/count`) are matched to their respective cassettes.
 
 ## Related Documentation
 

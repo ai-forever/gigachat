@@ -15,7 +15,7 @@ interactions:
       Host:
       - ngw.devices.sberbank.ru:9443
       RqUID:
-      - 9a3a11ff-aab6-43a6-a300-a85584d99327
+      - 87bf3858-ad4e-40b2-8928-92bd5301d2bf
       User-Agent:
       - GigaChat-python-lib
       authorization:
@@ -37,7 +37,7 @@ interactions:
       Content-Type:
       - application/json
       Date:
-      - Tue, 16 Dec 2025 03:22:19 GMT
+      - Tue, 16 Dec 2025 03:22:26 GMT
       Expires:
       - '0'
       Pragma:
@@ -66,7 +66,7 @@ interactions:
       code: 200
       message: OK
 - request:
-    body: ''
+    body: '{"model": "GigaChat", "input": ["Hello, world!"]}'
     headers:
       Accept:
       - '*/*'
@@ -74,18 +74,21 @@ interactions:
       - gzip, deflate
       Connection:
       - keep-alive
+      Content-Length:
+      - '49'
+      Content-Type:
+      - application/json
       Host:
       - gigachat.devices.sberbank.ru
       User-Agent:
       - GigaChat-python-lib
       authorization:
       - Bearer REDACTED
-    method: GET
-    uri: https://gigachat.devices.sberbank.ru/api/v1/models/GigaChat
+    method: POST
+    uri: https://gigachat.devices.sberbank.ru/api/v1/tokens/count
   response:
     body:
-      string: '{"id": "GigaChat", "object": "model", "owned_by": "salutedevices",
-        "type": "chat"}'
+      string: '[{"object": "tokens", "tokens": 4, "characters": 13}]'
     headers:
       Access-Control-Allow-Credentials:
       - 'true'
@@ -100,11 +103,11 @@ interactions:
       Connection:
       - keep-alive
       Content-Length:
-      - '75'
+      - '48'
       Content-Type:
       - application/json; charset=utf-8
       Date:
-      - Tue, 16 Dec 2025 03:22:20 GMT
+      - Tue, 16 Dec 2025 03:22:27 GMT
       Server:
       - SynGX
       Strict-Transport-Security:
@@ -114,9 +117,9 @@ interactions:
       X-Frame-Options:
       - SAMEORIGIN
       X-Request-Id:
-      - c2f21e55-78c5-4a9f-8f6d-b2a6e976523c
+      - d41796d3-2043-4cf7-815f-cd215333a37c
       X-Session-Id:
-      - 4760938b-44a9-49b2-9f9a-3c64194bb4aa
+      - c45a62d3-f7f9-4ae3-affd-c98e426a253a
       X-XSS-Protection:
       - 1; mode=block
     status:

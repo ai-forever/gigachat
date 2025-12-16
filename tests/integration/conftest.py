@@ -66,7 +66,7 @@ def vcr_config() -> Dict[str, Any]:
         "filter_headers": [
             ("authorization", "Bearer REDACTED"),
         ],
-        "match_on": ["method", "scheme", "host", "port", "path", "query"],
+        "match_on": ["method", "scheme", "host", "port", "path", "query", "body"],
         "record_mode": "once",
         "decode_compressed_response": True,
         "before_record_request": _scrub_request,

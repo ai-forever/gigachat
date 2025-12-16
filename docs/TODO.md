@@ -454,3 +454,16 @@
 - [x] Documentation
   - [x] Update `docs/REFACTORING.md` with implementation details
   - [x] Create `docs/INTEGRATION_TESTING.md` usage guide (setup, running, recording, writing tests)
+
+## Integration Tests: `/tokens/count` Endpoint
+- [x] Implement `/tokens/count` Endpoint Integration Tests
+  - [x] Update `conftest.py`: add `"body"` to VCR `match_on` list for request body matching
+  - [x] Create `tests/integration/test_tokens_vcr.py`
+  - [x] Implement `test_tokens_count_single` - count tokens in single text (sync)
+  - [x] Implement `test_tokens_count_multiple` - count tokens in batch of texts (sync)
+  - [x] Implement `test_atokens_count_single` - async single text
+  - [x] Implement `test_atokens_count_multiple` - async batch of texts
+  - [x] Record VCR cassettes (4 cassettes created)
+  - [x] Review cassettes for sensitive data leakage (all clean)
+  - [x] Verify replay mode works (`--record-mode=none`, 0.07s)
+  - [x] Run full test suite to ensure no regressions (356 tests passed)

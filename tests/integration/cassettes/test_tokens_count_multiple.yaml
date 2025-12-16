@@ -15,7 +15,7 @@ interactions:
       Host:
       - ngw.devices.sberbank.ru:9443
       RqUID:
-      - 9a3a11ff-aab6-43a6-a300-a85584d99327
+      - b6685347-650e-4579-8958-e62df893eb9c
       User-Agent:
       - GigaChat-python-lib
       authorization:
@@ -37,7 +37,7 @@ interactions:
       Content-Type:
       - application/json
       Date:
-      - Tue, 16 Dec 2025 03:22:19 GMT
+      - Tue, 16 Dec 2025 03:22:24 GMT
       Expires:
       - '0'
       Pragma:
@@ -66,7 +66,7 @@ interactions:
       code: 200
       message: OK
 - request:
-    body: ''
+    body: '{"model": "GigaChat", "input": ["First text", "Second text"]}'
     headers:
       Accept:
       - '*/*'
@@ -74,18 +74,22 @@ interactions:
       - gzip, deflate
       Connection:
       - keep-alive
+      Content-Length:
+      - '61'
+      Content-Type:
+      - application/json
       Host:
       - gigachat.devices.sberbank.ru
       User-Agent:
       - GigaChat-python-lib
       authorization:
       - Bearer REDACTED
-    method: GET
-    uri: https://gigachat.devices.sberbank.ru/api/v1/models/GigaChat
+    method: POST
+    uri: https://gigachat.devices.sberbank.ru/api/v1/tokens/count
   response:
     body:
-      string: '{"id": "GigaChat", "object": "model", "owned_by": "salutedevices",
-        "type": "chat"}'
+      string: '[{"object": "tokens", "tokens": 2, "characters": 10}, {"object": "tokens",
+        "tokens": 2, "characters": 11}]'
     headers:
       Access-Control-Allow-Credentials:
       - 'true'
@@ -100,11 +104,11 @@ interactions:
       Connection:
       - keep-alive
       Content-Length:
-      - '75'
+      - '95'
       Content-Type:
       - application/json; charset=utf-8
       Date:
-      - Tue, 16 Dec 2025 03:22:20 GMT
+      - Tue, 16 Dec 2025 03:22:25 GMT
       Server:
       - SynGX
       Strict-Transport-Security:
@@ -114,9 +118,9 @@ interactions:
       X-Frame-Options:
       - SAMEORIGIN
       X-Request-Id:
-      - c2f21e55-78c5-4a9f-8f6d-b2a6e976523c
+      - a51f30ab-6d98-478a-85f1-e8434de8535d
       X-Session-Id:
-      - 4760938b-44a9-49b2-9f9a-3c64194bb4aa
+      - d46c03cf-4da8-4ea0-9a85-8920b13d005f
       X-XSS-Protection:
       - 1; mode=block
     status:

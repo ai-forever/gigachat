@@ -15,7 +15,7 @@ interactions:
       Host:
       - ngw.devices.sberbank.ru:9443
       RqUID:
-      - 44dbdf01-294b-4231-927c-2facd4ed6d9b
+      - 99da9bab-2861-4d8a-b2c1-79968ed4e6e3
       User-Agent:
       - GigaChat-python-lib
       authorization:
@@ -37,7 +37,7 @@ interactions:
       Content-Type:
       - application/json
       Date:
-      - Fri, 12 Dec 2025 19:22:11 GMT
+      - Tue, 16 Dec 2025 03:22:13 GMT
       Expires:
       - '0'
       Pragma:
@@ -104,7 +104,7 @@ interactions:
       Content-Type:
       - application/json; charset=utf-8
       Date:
-      - Fri, 12 Dec 2025 19:22:12 GMT
+      - Tue, 16 Dec 2025 03:22:14 GMT
       Server:
       - SynGX
       Strict-Transport-Security:
@@ -114,9 +114,9 @@ interactions:
       X-Frame-Options:
       - SAMEORIGIN
       X-Request-Id:
-      - 92ded42b-204d-4e0d-b358-541ec9e506c6
+      - 336cabfa-c231-4f42-9d4b-18faaaaa85a6
       X-Session-Id:
-      - 4eb080c4-76c0-4e28-bbd9-9e77bed67814
+      - 8a94af45-a530-4a94-a860-2da90e06e060
       X-XSS-Protection:
       - 1; mode=block
     status:
