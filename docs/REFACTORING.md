@@ -695,7 +695,8 @@
   - Python 3.13 was not listed in classifiers
 - **Solution (Simplified Markers)**:
   - **Implementation Details**:
-    - Simplified `pytest-httpx` markers: `<=0.22.0 ; python_version < '3.9'` and `>=0.23.0 ; python_version >= '3.9'` (removed version gap)
+    - Simplified `pytest-httpx` markers: `<=0.22.0 ; python_version < '3.9'` and `>=0.26.0,<0.27 ; python_version >= '3.9'`
+    - Kept `pytest-httpx<0.27` upper bound: version 0.27+ introduced breaking change where registered mock responses can only match one request by default (breaks auth retry tests)
     - Unified `coverage>=7.0.0` (works across all Python versions 3.8-3.13)
     - Removed unnecessary upper bounds from dev dependencies (`mypy`, `pytest`, `ruff`, `pytest-asyncio`)
     - Added `"Programming Language :: Python :: 3.13"` to classifiers

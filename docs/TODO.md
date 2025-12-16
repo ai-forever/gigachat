@@ -418,7 +418,8 @@
 
 ## Python Version Support Optimization
 - [x] Optimize pyproject.toml markers for Python 3.8-3.13
-  - [x] Simplify pytest-httpx markers (remove version gap: `<=0.22.0` for `<3.9`, `>=0.23.0` for `>=3.9`)
+  - [x] Simplify pytest-httpx markers (`<=0.22.0` for `<3.9`, `>=0.26.0,<0.27` for `>=3.9`)
+  - [x] Keep pytest-httpx `<0.27` upper bound (0.27+ has breaking change: responses match only once)
   - [x] Remove unnecessary upper bounds on dev dependencies (mypy, pytest, ruff, pytest-asyncio)
   - [x] Unify coverage version (`>=7.0.0` works across all versions)
   - [x] Add Python 3.13 to classifiers
