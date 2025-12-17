@@ -4,7 +4,7 @@ import json
 import os
 import re
 from pathlib import Path
-from typing import Any, AsyncGenerator, Dict, Generator
+from typing import Any, AsyncGenerator, Dict, Generator, Tuple
 
 import pytest
 from dotenv import load_dotenv
@@ -82,7 +82,7 @@ def vcr_cassette_dir() -> str:
     return str(Path(__file__).parent / "cassettes")
 
 
-def _get_credentials() -> tuple[str, str]:
+def _get_credentials() -> Tuple[str, str]:
     """Get credentials from environment or use dummy values for CI.
 
     In CI environments (where CI=true), VCR cassettes provide all HTTP responses,
