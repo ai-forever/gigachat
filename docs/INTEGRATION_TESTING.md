@@ -2,6 +2,8 @@
 
 This guide covers the VCR/cassette-based integration testing setup for the GigaChat SDK.
 
+> **Note:** Unit tests (`tests/unit/`) cover internal logic using mocked HTTP (`pytest-httpx`). This document focuses on integration tests only.
+
 ## Overview
 
 Integration tests use [VCR.py](https://vcrpy.readthedocs.io/) via `pytest-recording` to record real HTTP interactions and replay them deterministically. This provides:

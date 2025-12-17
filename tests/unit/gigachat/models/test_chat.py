@@ -4,9 +4,6 @@ import pytest
 from pydantic import ValidationError
 
 from gigachat.models.chat import (
-    Chat,
-    ChatCompletion,
-    ChatCompletionChunk,
     Function,
     FunctionCall,
     FunctionParameters,
@@ -60,58 +57,6 @@ def test_function_model_validator() -> None:
     assert func.parameters is not None
     assert func.parameters.properties is not None
     assert "prop" in func.parameters.properties
-
-
-def test_chat_creation() -> None:
-    chat = Chat(
-        messages=[Messages(role=MessagesRole.USER, content="hi")],
-        model="GigaChat",
-        temperature=0.5,
-    )
-    assert chat.model == "GigaChat"
-    assert len(chat.messages) == 1
-    assert chat.temperature == 0.5
-
-
-def test_chat_completion_creation() -> None:
-    data = {
-        "choices": [
-            {
-                "message": {"role": "assistant", "content": "response"},
-                "index": 0,
-                "finish_reason": "stop",
-            }
-        ],
-        "created": 1234567890,
-        "model": "GigaChat",
-        "usage": {"prompt_tokens": 10, "completion_tokens": 20, "total_tokens": 30},
-        "object": "chat.completion",
-    }
-    completion = ChatCompletion.model_validate(data)
-    assert completion.model == "GigaChat"
-    assert completion.created == 1234567890
-    assert completion.object_ == "chat.completion"
-    assert len(completion.choices) == 1
-    assert completion.choices[0].message.content == "response"
-    assert completion.usage.total_tokens == 30
-
-
-def test_chat_completion_chunk_creation() -> None:
-    data = {
-        "choices": [
-            {
-                "delta": {"content": "chunk"},
-                "index": 0,
-                "finish_reason": None,
-            }
-        ],
-        "created": 1234567890,
-        "model": "GigaChat",
-        "object": "chat.completion.chunk",
-    }
-    chunk = ChatCompletionChunk.model_validate(data)
-    assert chunk.object_ == "chat.completion.chunk"
-    assert chunk.choices[0].delta.content == "chunk"
 
 
 def test_usage_validation() -> None:

@@ -133,6 +133,10 @@
     - **Consistency**: Aligns the test structure with the recently refactored source code structure.
     - **Clarity**: Distinctly separates High-Level Client tests (`test_client_*.py`) from Low-Level API tests (`api/test_*.py`).
 - **Status**: Resolved.
+- **Post-Integration Cleanup**: After implementing VCR-based integration tests, redundant unit tests were removed:
+  - Deleted `test_client_models.py` and `test_client_embeddings.py` (covered by integration tests).
+  - Removed basic "happy path" tests from `test_client_chat.py` and model construction tests.
+  - Kept unit tests for: authentication flows, error handling, endpoints without integration coverage (`/balance`, `/functions/convert`, `/ai/check`).
 
 ## Authentication and Stream Logic Improvements
 - **Problem**: The current authentication logic is reactive (waits for 401 error) rather than proactive (checking expiration), causing unnecessary failed requests. Additionally, streaming methods cannot use the standard `_decorator` for auth retries, leading to significant code duplication across `client.py` and `threads.py` (same try/except block repeated 6+ times).

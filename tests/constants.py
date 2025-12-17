@@ -7,6 +7,11 @@ AUTH_URL = "http://auth_url"
 # Mock Credentials (valid base64)
 CREDENTIALS = "NmIwNzhlODgtNDlkNC00ZjFmLTljMjMtYjFiZTZjMjVmNTRlOmU3NWJlNjVhLTk4YjAtNGY0Ni1iOWVhLTljMDkwZGE4YTk4MQ=="
 
+# Test authentication values
+ACCESS_TOKEN = "access_token"
+USER = "user"
+PASSWORD = "password"
+
 # Token expiration timestamps (milliseconds)
 # 2000-01-01 00:00:00 UTC - always expired
 EXPIRES_AT_EXPIRED = 946684800000

@@ -414,6 +414,15 @@
 ## Integration Testing (VCR/Cassette-based)
 - [x] VCR infrastructure setup complete (dependencies, fixtures, credential scrubbing)
 - [x] Pytest configuration complete (markers, exclusion by default, Makefile targets)
+- [x] Post-integration unit test cleanup
+  - [x] Deleted redundant `test_client_models.py` and `test_client_embeddings.py`
+  - [x] Deleted redundant `tests/unit/gigachat/models/test_embeddings.py`
+  - [x] Removed basic "happy path" tests from `test_client_chat.py` (`test_stream`, `test_astream`)
+  - [x] Removed basic model construction tests from `tests/unit/gigachat/models/test_chat.py`
+  - [x] Removed redundant tests from `test_client_tools.py` (`test_get_tokens_count`, `test_atokens_count`)
+  - [x] Standardized test naming in `test_client_tools.py` to match client method names
+  - [x] Reordered mock responses in `test_client_chat.py` for chronological clarity
+  - [x] Extracted string literals (`ACCESS_TOKEN`, `USER`, `PASSWORD`) to `tests/constants.py`
 - See `docs/INTEGRATION_TESTING.md` for usage guide and progress tracking
 
 ## Python Version Support Optimization

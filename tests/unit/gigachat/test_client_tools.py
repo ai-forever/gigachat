@@ -1,9 +1,7 @@
-from typing import List
-
 from pytest_httpx import HTTPXMock
 
 from gigachat.client import GigaChatAsyncClient, GigaChatSyncClient
-from gigachat.models import AICheckResult, Balance, Function, OpenApiFunctions, TokensCount
+from gigachat.models import AICheckResult, Balance, Function, OpenApiFunctions
 from gigachat.models.tools import BalanceValue
 from tests.constants import (
     AI_CHECK,
@@ -13,22 +11,10 @@ from tests.constants import (
     BASE_URL,
     CONVERT_FUNCTIONS,
     CONVERT_FUNCTIONS_URL,
-    TOKENS_COUNT,
-    TOKENS_COUNT_URL,
 )
 
 
-def test_get_tokens_count(httpx_mock: HTTPXMock) -> None:
-    httpx_mock.add_response(url=TOKENS_COUNT_URL, json=TOKENS_COUNT)
-
-    with GigaChatSyncClient(base_url=BASE_URL) as client:
-        response = client.tokens_count(input_=["123"], model="GigaChat:latest")
-    assert isinstance(response, List)
-    for row in response:
-        assert isinstance(row, TokensCount)
-
-
-def test_balance(httpx_mock: HTTPXMock) -> None:
+def test_get_balance(httpx_mock: HTTPXMock) -> None:
     httpx_mock.add_response(url=BALANCE_URL, json=BALANCE)
 
     with GigaChatSyncClient(base_url=BASE_URL) as client:
@@ -38,7 +24,7 @@ def test_balance(httpx_mock: HTTPXMock) -> None:
         assert isinstance(row, BalanceValue)
 
 
-def test_convert_functions(httpx_mock: HTTPXMock) -> None:
+def test_openapi_function_convert(httpx_mock: HTTPXMock) -> None:
     httpx_mock.add_response(url=CONVERT_FUNCTIONS_URL, json=CONVERT_FUNCTIONS)
 
     with GigaChatSyncClient(base_url=BASE_URL) as client:
@@ -56,18 +42,7 @@ def test_check_ai(httpx_mock: HTTPXMock) -> None:
     assert isinstance(response, AICheckResult)
 
 
-async def test_atokens_count(httpx_mock: HTTPXMock) -> None:
-    httpx_mock.add_response(url=TOKENS_COUNT_URL, json=TOKENS_COUNT)
-
-    async with GigaChatAsyncClient(base_url=BASE_URL) as client:
-        response = await client.atokens_count(input_=["text"], model="GigaChat:latest")
-
-    assert isinstance(response, List)
-    for row in response:
-        assert isinstance(row, TokensCount)
-
-
-async def test_abalance(httpx_mock: HTTPXMock) -> None:
+async def test_aget_balance(httpx_mock: HTTPXMock) -> None:
     httpx_mock.add_response(url=BALANCE_URL, json=BALANCE)
 
     async with GigaChatAsyncClient(base_url=BASE_URL) as client:
@@ -77,7 +52,7 @@ async def test_abalance(httpx_mock: HTTPXMock) -> None:
         assert isinstance(row, BalanceValue)
 
 
-async def test_aconvert_functions(httpx_mock: HTTPXMock) -> None:
+async def test_aopenapi_function_convert(httpx_mock: HTTPXMock) -> None:
     httpx_mock.add_response(url=CONVERT_FUNCTIONS_URL, json=CONVERT_FUNCTIONS)
 
     async with GigaChatAsyncClient(base_url=BASE_URL) as client:
