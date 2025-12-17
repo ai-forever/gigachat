@@ -37,7 +37,7 @@ class ResponseError(GigaChatException):
         super().__init__(f"{status_code} {url}")
 
     def __str__(self) -> str:
-        return f"{self.status_code} {self.url}: {self.content!r}"
+        return f"{self.status_code} {self.url}: {self.content!r}, {self.headers!r}"
 
 
 class BadRequestError(ResponseError):

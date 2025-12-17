@@ -29,7 +29,7 @@ def test_response_error_init() -> None:
     assert exc.status_code == status_code
     assert exc.content == content
     assert exc.headers == headers
-    assert str(exc) == "400 http://example.com: b'error'"
+    assert str(exc) == "400 http://example.com: b'error', Headers({'x-request-id': '123'})"
 
 
 def test_rate_limit_retry_after() -> None:
