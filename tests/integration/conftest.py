@@ -10,9 +10,11 @@ import pytest
 from dotenv import load_dotenv
 
 from gigachat import GigaChat
-from tests.constants import EXPIRES_AT_VALID
 
 load_dotenv()
+
+# 2100-01-01 00:00:00 UTC (milliseconds) - ensures cassette tokens never appear expired during replay
+EXPIRES_AT_VALID = 4102444800000
 
 
 def _scrub_request(request: Any) -> Any:
