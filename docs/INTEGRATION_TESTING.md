@@ -66,6 +66,13 @@ uv run pytest -m integration     # Runs only integration tests
 make test-integration            # Same via Makefile
 ```
 
+### Integration Tests (CI Mode)
+
+```bash
+uv run pytest -m integration --record-mode=none  # Replay only, no recording
+make test-integration-ci                          # Same via Makefile
+```
+
 ### All Tests
 
 ```bash
@@ -78,8 +85,8 @@ VCR supports different recording modes controlled by `--record-mode`:
 
 | Mode | Use Case | Command |
 |------|----------|---------|
-| `once` | Default — record if cassette doesn't exist | `pytest -m integration` |
-| `none` | CI — replay only, fail if cassette missing | `pytest -m integration --record-mode=none` |
+| `once` | Default — record if cassette doesn't exist | `make test-integration` |
+| `none` | CI — replay only, fail if cassette missing | `make test-integration-ci` |
 | `all` | Update all cassettes | `pytest -m integration --record-mode=all` |
 | `new_episodes` | Add new interactions to existing cassettes | `pytest -m integration --record-mode=new_episodes` |
 
@@ -96,6 +103,71 @@ VCR supports different recording modes controlled by `--record-mode`:
 ```bash
 pytest -m integration --record-mode=all
 ```
+
+## CI/CD Integration
+
+Integration tests run automatically in GitHub Actions CI pipeline.
+
+### How It Works
+
+1. **Separate CI job**: Integration tests run in a dedicated `integration-test` job
+2. **Single Python version**: Tests run on Python 3.12 only (cassettes are Python-agnostic)
+3. **Replay mode**: Uses `--record-mode=none` to ensure only cassette replay, no network calls
+4. **No credentials needed**: Dummy credentials are used automatically in CI (detected via `CI` env var)
+
+### CI Configuration
+
+From `.github/workflows/gigachat.yml`:
+
+```yaml
+integration-test:
+  name: Integration Tests
+  runs-on: ubuntu-latest
+  steps:
+    - uses: actions/checkout@v4
+    - uses: astral-sh/setup-uv@v5
+    - run: uv python install 3.12
+    - run: uv sync --all-extras --dev
+    - run: uv run pytest -m integration --record-mode=none
+```
+
+### Why Single Python Version?
+
+VCR cassettes contain raw HTTP responses which are Python-agnostic. The tests verify:
+- API response parsing (JSON)
+- Pydantic model validation
+- HTTP client behavior (httpx)
+
+None of these vary by Python version. Unit tests (which run on all Python versions) cover internal logic where version differences could matter.
+
+### Credential Handling in CI
+
+The `_get_credentials()` function in `conftest.py` automatically detects CI:
+
+```python
+if credentials:
+    return credentials, scope
+
+if os.getenv("CI"):  # GitHub Actions sets CI=true
+    return "dummy-credentials-for-vcr-replay", scope
+
+pytest.skip("GIGACHAT_CREDENTIALS not set (and not in CI)")
+```
+
+This means:
+- **Local with credentials**: Uses real credentials (can record new cassettes)
+- **Local without credentials**: Tests are skipped
+- **CI**: Uses dummy credentials (VCR handles all HTTP via cassettes)
+
+### Adding New Tests for CI
+
+When adding new integration tests:
+
+1. Record cassette locally with real credentials
+2. Commit the cassette file to `tests/integration/cassettes/`
+3. CI will automatically replay the cassette
+
+If you forget to commit a cassette, CI will fail with "cassette not found" error.
 
 ## Security: Credential Scrubbing
 
@@ -182,9 +254,10 @@ def test_model_not_found(gigachat_client: GigaChat) -> None:
 - Response scrubbing should set `expires_at` to year 2100
 - Check `_scrub_response` in `conftest.py` is working
 
-### "GIGACHAT_CREDENTIALS not set"
+### "GIGACHAT_CREDENTIALS not set" (local)
 - Create `.env` file with credentials
 - Or export environment variable: `export GIGACHAT_CREDENTIALS=...`
+- Note: In CI, dummy credentials are used automatically
 
 ## VCR Configuration Reference
 

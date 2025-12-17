@@ -57,6 +57,10 @@ test:
 test-integration:
 	uv run pytest -v -m integration tests/integration
 
+.PHONY: test-integration-ci  ## Run integration tests in CI mode (replay only)
+test-integration-ci:
+	uv run pytest -v -m integration --record-mode=none
+
 .PHONY: htmlcov  ## Generate html coverage report
 htmlcov:
 	uv run pytest -v --cov=src --cov-report=html

@@ -82,14 +82,29 @@ def vcr_cassette_dir() -> str:
     return str(Path(__file__).parent / "cassettes")
 
 
+def _get_credentials() -> tuple[str, str]:
+    """Get credentials from environment or use dummy values for CI.
+
+    In CI environments (where CI=true), VCR cassettes provide all HTTP responses,
+    so real credentials are not needed. Dummy values allow tests to run in replay mode.
+    """
+    credentials = os.getenv("GIGACHAT_CREDENTIALS")
+    scope = os.getenv("GIGACHAT_SCOPE", "GIGACHAT_API_PERS")
+
+    if credentials:
+        return credentials, scope
+
+    # In CI, use dummy credentials since VCR cassettes handle all HTTP responses
+    if os.getenv("CI"):
+        return "dummy-credentials-for-vcr-replay", scope
+
+    pytest.skip("GIGACHAT_CREDENTIALS environment variable not set (and not in CI)")
+
+
 @pytest.fixture
 def gigachat_client() -> Generator[GigaChat, None, None]:
     """Create GigaChat client using credentials from environment variables."""
-    credentials = os.getenv("GIGACHAT_CREDENTIALS")
-    scope = os.getenv("GIGACHAT_SCOPE")
-
-    if not credentials:
-        pytest.skip("GIGACHAT_CREDENTIALS environment variable not set")
+    credentials, scope = _get_credentials()
 
     with GigaChat(credentials=credentials, scope=scope, verify_ssl_certs=False) as client:
         yield client
@@ -98,11 +113,7 @@ def gigachat_client() -> Generator[GigaChat, None, None]:
 @pytest.fixture
 async def gigachat_async_client() -> AsyncGenerator[GigaChat, None]:
     """Create async GigaChat client using credentials from environment variables."""
-    credentials = os.getenv("GIGACHAT_CREDENTIALS")
-    scope = os.getenv("GIGACHAT_SCOPE")
-
-    if not credentials:
-        pytest.skip("GIGACHAT_CREDENTIALS environment variable not set")
+    credentials, scope = _get_credentials()
 
     async with GigaChat(credentials=credentials, scope=scope, verify_ssl_certs=False) as client:
         yield client
