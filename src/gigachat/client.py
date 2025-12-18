@@ -113,7 +113,6 @@ class _BaseClient:
         scope: Optional[str] = None,
         access_token: Optional[str] = None,
         model: Optional[str] = None,
-        verbose: Optional[bool] = None,
         profanity_check: Optional[bool] = None,
         user: Optional[str] = None,
         password: Optional[str] = None,
@@ -141,7 +140,6 @@ class _BaseClient:
             "scope": scope,
             "access_token": access_token,
             "model": model,
-            "verbose": verbose,
             "profanity_check": profanity_check,
             "user": user,
             "password": password,
@@ -199,7 +197,6 @@ class GigaChatSyncClient(_BaseClient):
         scope: API version to which access is provided.
         access_token: JWE token.
         model: Name of the model to receive a response from.
-        verbose: Deprecated: will be removed in v1.0.
         profanity_check: Censorship parameter.
         user: User name for authorization.
         password: Password for authorization.
@@ -227,7 +224,6 @@ class GigaChatSyncClient(_BaseClient):
         scope: Optional[str] = None,
         access_token: Optional[str] = None,
         model: Optional[str] = None,
-        verbose: Optional[bool] = None,
         profanity_check: Optional[bool] = None,
         user: Optional[str] = None,
         password: Optional[str] = None,
@@ -252,7 +248,6 @@ class GigaChatSyncClient(_BaseClient):
             scope=scope,
             access_token=access_token,
             model=model,
-            verbose=verbose,
             profanity_check=profanity_check,
             user=user,
             password=password,
@@ -455,7 +450,6 @@ class GigaChatAsyncClient(_BaseClient):
         scope: API version to which access is provided.
         access_token: JWE token.
         model: Name of the model to receive a response from.
-        verbose: Deprecated: will be removed in v1.0.
         profanity_check: Censorship parameter.
         user: User name for authorization.
         password: Password for authorization.
@@ -483,7 +477,6 @@ class GigaChatAsyncClient(_BaseClient):
         scope: Optional[str] = None,
         access_token: Optional[str] = None,
         model: Optional[str] = None,
-        verbose: Optional[bool] = None,
         profanity_check: Optional[bool] = None,
         user: Optional[str] = None,
         password: Optional[str] = None,
@@ -508,7 +501,6 @@ class GigaChatAsyncClient(_BaseClient):
             scope=scope,
             access_token=access_token,
             model=model,
-            verbose=verbose,
             profanity_check=profanity_check,
             user=user,
             password=password,
@@ -719,7 +711,6 @@ class GigaChat(GigaChatSyncClient, GigaChatAsyncClient):
         scope: API version to which access is provided.
         access_token: JWE token.
         model: Name of the model to receive a response from.
-        verbose: Deprecated: will be removed in v1.0.
         profanity_check: Censorship parameter.
         user: User name for authorization.
         password: Password for authorization.
@@ -747,7 +738,6 @@ class GigaChat(GigaChatSyncClient, GigaChatAsyncClient):
         scope: Optional[str] = None,
         access_token: Optional[str] = None,
         model: Optional[str] = None,
-        verbose: Optional[bool] = None,
         profanity_check: Optional[bool] = None,
         user: Optional[str] = None,
         password: Optional[str] = None,
@@ -772,7 +762,6 @@ class GigaChat(GigaChatSyncClient, GigaChatAsyncClient):
             scope=scope,
             access_token=access_token,
             model=model,
-            verbose=verbose,
             profanity_check=profanity_check,
             user=user,
             password=password,

@@ -435,3 +435,21 @@
 - [x] Document mypy limitation on Python 3.8/3.9 (pydantic-settings uses `X | Y` syntax)
   - [x] CI should skip mypy on Python 3.8/3.9, run on 3.10+ only
   - [x] This is a pydantic-settings issue, not our code — runtime works fine
+
+## Remove Unused `verbose` Parameter
+- [x] Remove `verbose` parameter from codebase
+  - [x] Remove `verbose: bool = False` from `src/gigachat/settings.py`
+  - [x] Remove `verbose: Optional[bool] = None` from `_BaseClient.__init__` in `client.py`
+  - [x] Remove `"verbose": verbose` from kwargs dict in `_BaseClient.__init__`
+  - [x] Remove `verbose` param from `GigaChatSyncClient.__init__` signature and `super().__init__()` call
+  - [x] Remove `verbose` param from `GigaChatAsyncClient.__init__` signature and `super().__init__()` call
+  - [x] Remove `verbose` param from `GigaChat.__init__` signature and `super().__init__()` call
+  - [x] Remove `verbose` from docstrings in all three client classes
+- [x] Verification
+  - [x] Check `__all__` in `__init__.py` — `verbose` not exported, no changes needed
+  - [x] Check tests for `verbose` usage — none found, no changes needed
+  - [x] Run `ruff check`, `ruff format`, `mypy`, and `pytest` — all pass (342 tests)
+- [x] Documentation
+  - [x] Add "Remove Unused `verbose` Parameter" section to `docs/REFACTORING.md`
+  - [x] Add verbose removal task checklist to `docs/TODO.md`
+  - [x] Delete `docs/V1_MIGRATION.md` (no longer needed)

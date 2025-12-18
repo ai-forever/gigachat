@@ -717,3 +717,26 @@
     - **Python 3.13 Support**: Explicitly advertised in classifiers
 - **Verified Compatibility**: All Python versions 3.8-3.13 pass `uv sync`, `ruff check`, `ruff format`, and `pytest` (376 tests). Mypy passes on Python 3.10+.
 - **Status**: Resolved.
+
+## Remove Unused `verbose` Parameter
+- **Problem**: The `verbose` parameter existed in `Settings` class and was accepted in `_BaseClient.__init__`, but it was **never used anywhere** in the `gigachat` codebase. All logging statements executed unconditionally without checking this setting.
+  - Location: `src/gigachat/settings.py`: `verbose: bool = False`
+  - Location: `src/gigachat/client.py`: `verbose: Optional[bool] = None` in `_BaseClient.__init__` and explicit `__init__` signatures
+  - **User Impact**: Users could set `verbose=True` expecting debug output, but nothing happened in the `gigachat` SDK itself. The downstream `langchain-gigachat` package used this parameter for request/response logging.
+- **Analysis**:
+  - The setting was intended to control logging verbosity but was never implemented in the `gigachat` SDK.
+  - Existing debug logging in `gigachat` uses standard Python `logging` module, which users can configure via `logging.getLogger("gigachat").setLevel(logging.DEBUG)`.
+  - Since 0.x versions can contain breaking changes under semver, the parameter was removed in v0.x rather than waiting for v1.0.
+- **Solution (Remove Parameter)**:
+  - **Implementation Details**:
+    - Removed `verbose: bool = False` from `src/gigachat/settings.py`.
+    - Removed `verbose: Optional[bool] = None` parameter from `_BaseClient.__init__` in `src/gigachat/client.py`.
+    - Removed `"verbose": verbose` from the kwargs dict in `_BaseClient.__init__`.
+    - Removed `verbose` from explicit `__init__` signatures in `GigaChatSyncClient`, `GigaChatAsyncClient`, `GigaChat`.
+    - Removed `verbose` from docstrings in all three client classes.
+  - **Why**:
+    - **API Hygiene**: Public APIs should not accept parameters that have no effect.
+    - **Clarity**: Removes confusion for users who might expect verbose mode to enable debug logging.
+    - **Simplicity**: Eliminates dead code without adding new complexity.
+- **Coordination**: Requires coordinated update in `langchain-gigachat` to remove passing of `verbose` parameter.
+- **Status**: Resolved.
