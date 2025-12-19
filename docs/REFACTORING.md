@@ -740,3 +740,21 @@
     - **Simplicity**: Eliminates dead code without adding new complexity.
 - **Coordination**: Requires coordinated update in `langchain-gigachat` to remove passing of `verbose` parameter.
 - **Status**: Resolved.
+
+## SSE Parsing Bug Fix
+- **Problem**: The `parse_chunk()` function in `src/gigachat/api/utils.py` used `line.partition(": ")` to split SSE event lines. This required a space after the colon, but some SSE servers send `data:{"..."}` (no space). Lines without a space were silently ignored, causing streaming responses to drop chunks. Additionally, `raise e` was used instead of `raise`, which resets the exception traceback to the re-raise line, hiding the original error location.
+- **Root Cause**:
+  - SSE specification (RFC 8895) allows both `data: value` and `data:value` formats — the space is optional.
+  - The original `partition(": ")` implementation only matched lines with a space.
+  - Python's `raise e` creates a new traceback starting at the `raise e` line, while bare `raise` preserves the original traceback.
+- **Solution**:
+  - **Implementation Details**:
+    - Changed `line.partition(": ")` to `line.partition(":")` to split on colon without requiring a space.
+    - Added `value = value.lstrip()` after partition to strip leading whitespace, handling both `data: {...}` and `data:{...}` formats uniformly.
+    - Changed `raise e` to `raise` to preserve the original exception traceback for better debugging.
+    - Added unit test `test_parse_chunk_valid_no_space` to verify the fix and prevent regression.
+  - **Why**:
+    - **Correctness**: Aligns with SSE specification where the space after colon is optional.
+    - **Robustness**: Streaming responses work regardless of whether the server includes a space.
+    - **Debugging**: Preserved tracebacks show the actual parsing failure location, not the re-raise line.
+- **Status**: Resolved.

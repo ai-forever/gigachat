@@ -112,6 +112,12 @@ def test_parse_chunk_valid() -> None:
     assert chunk.value == "chunk"
 
 
+def test_parse_chunk_valid_no_space() -> None:
+    chunk = parse_chunk('data:{"value": "chunk"}', MockModel)
+    assert isinstance(chunk, MockModel)
+    assert chunk.value == "chunk"
+
+
 def test_parse_chunk_done() -> None:
     chunk = parse_chunk("data: [DONE]", MockModel)
     assert chunk is None

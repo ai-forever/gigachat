@@ -71,15 +71,16 @@ T = TypeVar("T", bound=BaseModel)
 def parse_chunk(line: str, model_class: Type[T]) -> Optional[T]:
     """Parse a single line of SSE event data."""
     try:
-        name, _, value = line.partition(": ")
+        name, _, value = line.partition(":")
         if name == "data":
+            value = value.lstrip()
             if value == "[DONE]":
                 return None
             else:
                 return model_class.model_validate_json(value)
     except Exception as e:
         logger.error("Error parsing chunk from server: %s, raw value: %s", e, line)
-        raise e
+        raise
     else:
         return None
 

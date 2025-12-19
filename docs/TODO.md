@@ -453,3 +453,12 @@
   - [x] Add "Remove Unused `verbose` Parameter" section to `docs/REFACTORING.md`
   - [x] Add verbose removal task checklist to `docs/TODO.md`
   - [x] Delete `docs/V1_MIGRATION.md` (no longer needed)
+
+## SSE Parsing Bug Fix
+- [x] Fix SSE `parse_chunk()` to handle lines without space after `data:`
+  - [x] Change `line.partition(": ")` to `line.partition(":")` in `src/gigachat/api/utils.py`
+  - [x] Add `value = value.lstrip()` to handle both `data: {...}` and `data:{...}` formats
+  - [x] Change `raise e` to `raise` to preserve original exception traceback
+  - [x] Add unit test `test_parse_chunk_valid_no_space` in `tests/unit/gigachat/api/test_utils.py`
+- [x] Verification
+  - [x] Run `ruff check`, `mypy`, and `pytest` — all pass (343 tests)
