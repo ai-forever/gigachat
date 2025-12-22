@@ -1,11 +1,15 @@
-"""Пример получения эмбеддингов"""
+"""Example of getting embeddings"""
+
+import os
 
 from gigachat import GigaChat
 
-# Используйте токен, полученный в личном кабинете из поля Авторизационные данные
-with GigaChat(
-    credentials=...,
-    verify_ssl_certs=False,
-) as giga:
+if "GIGACHAT_CREDENTIALS" not in os.environ:
+    os.environ["GIGACHAT_CREDENTIALS"] = input("GigaChat Credentials: ")
+
+if "GIGACHAT_SCOPE" not in os.environ:
+    os.environ["GIGACHAT_SCOPE"] = input("GigaChat Scope: ")
+
+with GigaChat(verify_ssl_certs=False) as giga:
     response = giga.embeddings(["Hello world!"])
     print(response)

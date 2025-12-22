@@ -1,32 +1,42 @@
-# Примеры работы с GigaChat
+# GigaChat Usage Examples
 
-В этом разделе вы найдете примеры работы с библиотекой GigaChat:
+In this section you will find examples of working with the GigaChat library:
 
-* Простой запрос на генерацию:
-  * [версия](./example_ask.py) с отключенной проверкой сертификатов;
-  * [версия](./example_russian_trusted_root_ca.py) с корневым сертификатом НУЦ Минцифры.
+* Simple generation request:
+  * [version](./example_ask.py) with certificate verification disabled;
+  * [version](./example_russian_trusted_root_ca.py) with the root certificate of the Russian Ministry of Digital Development.
 
-  В обоих случаях код примера передает сообщение в модель и выводит ее ответ.
+  In both cases, the example code sends a message to the model and outputs its response.
 
-* [Работа с чатом](./simple_chat.py)
-* [Асинхронная работа с потоковой обработкой токенов](./streaming_asyncio.py)
-* [Взаимная аутентификация по протоколу TLS (mTLS)](./example_auth_certs_mtls.py)
-* [Использование необязательны заголовков](./example_contextvars.py)
+* [Working with chat](./example_simple_chat.py)
+* [Asynchronous work with streaming token processing](./example_streaming_asyncio.py)
+* [Mutual TLS (mTLS) authentication](./example_auth_certs_mtls.py)
+* [Using optional headers](./example_contextvars.py)
 
-  Пример демонстрирует как с помощью библиотеки вы можете передавать необязательные заголовки `X-Session-ID`, `X-Request-ID` и другие.
+  The example demonstrates how you can pass optional headers `X-Session-ID`, `X-Request-ID` and others using the library.
 
-  Необязательные заголовки могут использоваться для различных целей. Например, для упрощения логирования или для [кэширования запросов](https://developers.sber.ru/docs/ru/gigachat/api/keeping-context#keshirovanie-zaprosov).
+  Optional headers can be used for various purposes. For example, to simplify logging or for [request caching](https://developers.sber.ru/docs/ru/gigachat/api/keeping-context#keshirovanie-zaprosov).
 
-* [Пример подсчета токенов](./example_tokens.py)
+* [Token counting example](./example_tokens.py)
 
-  Пример показывает как можно оценить количество токенов в передаваемых данных до запроса на генерацию.
+  The example shows how you can estimate the number of tokens in the data being sent before making a generation request.
 
-* [Пример получения изображения](./example_get_image.py)
-<!--* [Jupyter-ноутбук с примером вызова reasoning](./example_reasoning.ipynb)-->
-* [Jupyter-ноутбук с примером работы с чатом и изображениями](./simple_chat_with_images.ipynb)
+* [Embeddings example](./example_embeddings.py)
 
-  Комплексный пример, который демонстрирует работу с чатом и изображениями.
+  The example demonstrates how to get embeddings for text.
 
-* [Jupyter-ноутбук с примером работы c GigaChat Vision](./vision/vision.ipynb)
+* [Functions example](./example_functions.py)
 
-  Пример демонстрирует, как с помощью библиотеки и GigaChat API работать с изображениями.
+  The example shows how to use function calling with the library, including a DuckDuckGo search integration.
+
+* [AI detection example](./example_ai_check.py)
+
+  The example demonstrates how to check if text was written by AI using the GigaCheckDetection model.
+
+* [Image retrieval example](./example_get_image.py)
+
+  The example shows how to get image.
+
+* [GigaChat Vision example](./vision/example_vision.py)
+
+  The example demonstrates how to work with images using the library and GigaChat API.

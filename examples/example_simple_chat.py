@@ -1,4 +1,4 @@
-"""Пример работы с чатом"""
+"""Example of working with chat"""
 
 from gigachat import GigaChat
 from gigachat.models import Chat, Messages, MessagesRole
@@ -7,15 +7,14 @@ payload = Chat(
     messages=[
         Messages(
             role=MessagesRole.SYSTEM,
-            content="Ты внимательный бот-психолог, который помогает пользователю решить его проблемы.",
+            content="You are an attentive bot-psychologist who helps the user solve their problems.",
         )
     ],
     temperature=0.7,
     max_tokens=100,
 )
 
-# Используйте токен, полученный в личном кабинете из поля Авторизационные данные
-with GigaChat(credentials=..., verify_ssl_certs=False) as giga:
+with GigaChat(verify_ssl_certs=False) as giga:
     while True:
         user_input = input("User: ")
         payload.messages.append(Messages(role=MessagesRole.USER, content=user_input))

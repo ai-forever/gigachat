@@ -1,42 +1,44 @@
-"""Пример - использование функций.
-Для работы поисковой системы используется утилита ddgs.
-Установите соответствующую библиотеку с помощью команды
+"""Example - using functions.
+The ddgs utility is used for the search system.
+Install the corresponding library using the command
 
 pip install -U ddgs
-
 """
 
 import json
+import os
 
 from ddgs import DDGS
 
 from gigachat import GigaChat
 from gigachat.models import Chat, Function, FunctionParameters, Messages, MessagesRole
 
+if "GIGACHAT_CREDENTIALS" not in os.environ:
+    os.environ["GIGACHAT_CREDENTIALS"] = input("GigaChat Credentials: ")
+
+if "GIGACHAT_SCOPE" not in os.environ:
+    os.environ["GIGACHAT_SCOPE"] = input("GigaChat Scope: ")
+
 
 def search_ddg(search_query):
     """
-    Поиск в DuckDuckGo.
+    Search in DuckDuckGo.
 
-    Полезен, когда нужно ответить на вопросы о текущих событиях.
-    Входными данными должен быть поисковый запрос.
+    Useful when you need to answer questions about current events.
+    The input should be a search query.
     """
     return DDGS().text(search_query, max_results=10)
 
 
-# Используйте токен, полученный в личном кабинете из поля Авторизационные данные
-with GigaChat(
-    credentials=...,
-    model=...,  # Model with functions
-) as giga:
+with GigaChat(verify_ssl_certs=False) as giga:
     search = Function(
         name="duckduckgo_search",
-        description="""Поиск в DuckDuckGo.
-Полезен, когда нужно ответить на вопросы о текущих событиях.
-Входными данными должен быть поисковый запрос.""",
+        description="""Search in DuckDuckGo.
+Useful when you need to answer questions about current events.
+The input should be a search query.""",
         parameters=FunctionParameters(
             type="object",
-            properties={"query": {"type": "string", "description": "Поисковый запрос"}},
+            properties={"query": {"type": "string", "description": "Search query"}},
             required=["query"],
         ),
     )
@@ -44,7 +46,7 @@ with GigaChat(
     messages = []
     function_called = False
     while True:
-        # Если предыдущий ответ LLM не был вызовом функции - просим пользователя продолжить диалог
+        # If the previous LLM response was not a function call - ask the user to continue the dialogue
         if not function_called:
             query = input("\033[92mUser: \033[0m")
             messages.append(Messages(role=MessagesRole.USER, content=query))

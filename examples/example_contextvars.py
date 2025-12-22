@@ -1,6 +1,5 @@
-"""Пример перенаправления заголовков запроса в GigaChat"""
+"""Example of forwarding request headers to GigaChat"""
 
-# pip install python-dotenv
 import asyncio
 
 import gigachat.context
@@ -18,7 +17,7 @@ headers = {
     "X-Agent-ID": "agent-id-1234567890",
 }
 
-# Установка переменных для клиента
+# Setting variables for the client
 with GigaChat(verify_ssl_certs=False) as giga:
     gigachat.context.authorization_cvar.set(headers.get("Authorization"))
     gigachat.context.session_id_cvar.set(headers.get("X-Session-ID"))
@@ -29,11 +28,11 @@ with GigaChat(verify_ssl_certs=False) as giga:
     gigachat.context.agent_id_cvar.set(headers.get("X-Agent-ID"))
     gigachat.context.custom_headers_cvar.set({"X-Custom-Header": "CustomValue"})
 
-    response = giga.chat("Какие факторы влияют на стоимость страховки на дом?")
+    response = giga.chat("What factors affect the cost of home insurance?")
     print(response.choices[0].message.content)
 
 
-# Установка переменных для каждого вызова (только async)
+# Setting variables for each call (async only)
 async def ask_with_headers(giga, some_custom_header, prompt):
     gigachat.context.custom_headers_cvar.set({"X-Custom-Header": some_custom_header})
 
@@ -44,8 +43,8 @@ async def ask_with_headers(giga, some_custom_header, prompt):
 async def async_main():
     async with GigaChat(verify_ssl_certs=False) as giga:
         await asyncio.gather(
-            ask_with_headers(giga, "CustomValue 1", "Кто тебя сделал?"),
-            ask_with_headers(giga, "CustomValue 2", "Как тебя зовут?"),
+            ask_with_headers(giga, "CustomValue 1", "Who made you?"),
+            ask_with_headers(giga, "CustomValue 2", "What is your name?"),
         )
 
 

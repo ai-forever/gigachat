@@ -1,8 +1,8 @@
-"""Пример вопрос - ответ"""
+"""Question-answer example"""
 
 from gigachat import GigaChat
 
-# Используйте токен, полученный в личном кабинете из поля Авторизационные данные
+# Use the token obtained from the personal account in the credentials field
 with GigaChat(credentials=..., verify_ssl_certs=False) as giga:
-    response = giga.chat("Какие факторы влияют на стоимость страховки на дом?")
+    response = giga.chat("What factors affect the cost of home insurance?")
     print(response.choices[0].message.content)

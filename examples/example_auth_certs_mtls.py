@@ -1,4 +1,4 @@
-"""Взаимная аутентификация по протоколу TLS (mTLS)"""
+"""Mutual TLS (mTLS) authentication"""
 
 from gigachat import GigaChat
 
@@ -9,5 +9,5 @@ with GigaChat(
     key_file="certs/tls.key",
     key_file_password="123456",
 ) as giga:
-    response = giga.chat("Какие факторы влияют на стоимость страховки на дом?")
+    response = giga.chat("What factors affect the cost of home insurance?")
     print(response.choices[0].message.content)
