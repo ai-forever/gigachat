@@ -628,67 +628,6 @@ with GigaChat() as client:
     client.delete_file(uploaded.id)
 ```
 
-### Assistants API
-
-Create and manage persistent assistants:
-
-```python
-from gigachat import GigaChat
-
-with GigaChat() as client:
-    # Create an assistant
-    result = client.assistants.create(
-        model="GigaChat",
-        name="Python Tutor",
-        instructions="You are a helpful Python programming tutor. Explain concepts clearly with examples.",
-        description="A friendly assistant for learning Python",
-    )
-    assistant_id = result.assistant.id_
-
-    # List assistants
-    assistants = client.assistants.get()
-    for asst in assistants.data:
-        print(f"{asst.id_}: {asst.name}")
-
-    # Update an assistant
-    client.assistants.update(
-        assistant_id=assistant_id,
-        instructions="Updated instructions...",
-    )
-
-    # Delete an assistant
-    client.assistants.delete(assistant_id)
-```
-
-### Threads API
-
-Manage conversation threads:
-
-```python
-from gigachat import GigaChat
-
-with GigaChat() as client:
-    # Create a thread
-    thread_id = client.threads.create_thread()
-
-    # Add a message
-    client.threads.add_message(thread_id, "Help me understand recursion")
-
-    # Run the thread with an assistant
-    response = client.threads.run(thread_id, assistant_id="<assistant_id>")
-
-    # Or run with streaming
-    for chunk in client.threads.run_stream(thread_id, assistant_id="<assistant_id>"):
-        print(chunk)
-
-    # Get conversation history
-    messages = client.threads.get_messages(thread_id)
-    for msg in messages.messages:
-        print(f"{msg.role}: {msg.content}")
-
-    # Delete the thread
-    client.threads.delete(thread_id)
-```
 
 ### Balance Check
 
