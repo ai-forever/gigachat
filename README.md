@@ -6,7 +6,7 @@
 
 Python SDK for the [GigaChat REST API](https://developers.sber.ru/docs/ru/gigachat/api/reference/rest/gigachat-api) — a large language model.
 
-This library is part of [GigaChain](https://github.com/ai-forever/gigachain) and powers [langchain-gigachat](https://github.com/ai-forever/langchain-gigachat), the official LangChain and LlamaIndex integration for GigaChat.
+This library is part of [GigaChain](https://github.com/ai-forever/gigachain) and powers [langchain-gigachat](https://github.com/ai-forever/langchain-gigachat), the official LangChain integration for GigaChat.
 
 ## Table of Contents
 
@@ -569,7 +569,7 @@ with GigaChat(scope="GIGACHAT_API_B2B") as client:
 
 ## Related Projects
 
-- **[GigaChain](https://github.com/ai-forever/gigachain)** — A set of solutions for developing Russian-language LLM applications and multi-agent systems, with support for LangChain, LangGraph, LlamaIndex, LangChain4j, as well as GigaChat and other available LLMs. GigaChain covers the full development lifecycle: from prototyping and research to production deployment and ongoing support.
+- **[GigaChain](https://github.com/ai-forever/gigachain)** — A set of solutions for developing Russian-language LLM applications and multi-agent systems, with support for LangChain, LangGraph, LangChain4j, as well as GigaChat and other available LLMs. GigaChain covers the full development lifecycle: from prototyping and research to production deployment and ongoing support.
 - **[langchain-gigachat](https://github.com/ai-forever/langchain-gigachat)** — Official LangChain integration package for GigaChat
 
 ## Contributing
