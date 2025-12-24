@@ -44,8 +44,6 @@ This library is part of [GigaChain](https://github.com/ai-forever/gigachain) and
 - ✅ **Embeddings** — text vectorization
 - ✅ **Function calling** — tool use for building agents
 - ✅ **Vision** — image understanding (multimodal)
-- ✅ **Assistants API** — persistent assistants with custom instructions
-- ✅ **Threads API** — managed conversation history
 - ✅ **File operations** — upload, retrieve, and delete files
 - ✅ **Token counting** — estimate token usage before requests
 - ✅ **Multiple auth methods** — OAuth credentials, password, TLS certificates, access tokens
