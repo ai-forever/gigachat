@@ -1,14 +1,12 @@
 # GigaChat Python SDK
 
-[![PyPI version](https://img.shields.io/badge/pypi-v0.2.0b1-blue?style=flat-square)](https://pypi.org/project/gigachat/)
-[![Python versions](https://img.shields.io/badge/python-3.8%20|%203.9%20|%203.10%20|%203.11%20|%203.12%20|%203.13-blue?style=flat-square)](https://pypi.org/project/gigachat/)
-[![License](https://img.shields.io/github/license/ai-forever/gigachat?style=flat-square)](https://opensource.org/license/MIT)
+[![PyPI version](https://img.shields.io/pypi/v/gigachat?style=flat-square)](https://pypi.org/project/gigachat/)[![Python versions](https://img.shields.io/pypi/pyversions/gigachat?style=flat-square)](https://pypi.org/project/gigachat/)[![License](https://img.shields.io/github/license/ai-forever/gigachat?style=flat-square)](https://opensource.org/license/MIT)
 [![CI](https://img.shields.io/github/actions/workflow/status/ai-forever/gigachat/gigachat.yml?style=flat-square)](https://github.com/ai-forever/gigachat/actions/workflows/gigachat.yml)
 [![Downloads](https://img.shields.io/pypi/dm/gigachat?style=flat-square)](https://pypistats.org/packages/gigachat)
 
 Python SDK for the [GigaChat REST API](https://developers.sber.ru/docs/ru/gigachat/api/reference/rest/gigachat-api) — a large language model.
 
-This library is part of [GigaChain](https://github.com/ai-forever/gigachain) and powers [langchain-gigachat](https://github.com/ai-forever/langchain-gigachat), the official LangChain integration for GigaChat.
+This library is part of [GigaChain](https://github.com/ai-forever/gigachain) and powers [langchain-gigachat](https://github.com/ai-forever/langchain-gigachat), the official LangChain and LlamaIndex integration for GigaChat.
 
 ## Table of Contents
 
@@ -63,27 +61,17 @@ pip install gigachat
 
 ## Quick Start
 
-```python
-from gigachat import GigaChat
+### Get your GigaChat authorization key
 
-# Production: keep TLS verification enabled (default).
-with GigaChat(credentials="<your_authorization_key>") as client:
-    response = client.chat("Hello, GigaChat!")
-    print(response.choices[0].message.content)
-```
+For detailed instructions, see the [official documentation](https://developers.sber.ru/docs/ru/gigachat/quickstart/main).
 
-**Get your authorization key:**
+### Configure gigachat package to use TLS certificate
 
-- TLS certificates: follow the OS-specific installation steps on Gosuslugi: https://www.gosuslugi.ru/crt (see [SSL Certificates](#ssl-certificates) for how to configure `GIGACHAT_CA_BUNDLE_FILE` / `ca_bundle_file` if needed).
-- Development-only (not recommended): set `GIGACHAT_VERIFY_SSL_CERTS=false` or pass `verify_ssl_certs=False` to `GigaChat(...)`.
+TLS certificate: follow the OS-specific installation steps on [Gosuslugi](https://www.gosuslugi.ru/crt) (see [SSL Certificates](#ssl-certificates) for how to configure `GIGACHAT_CA_BUNDLE_FILE` / `ca_bundle_file` if needed).
 
-1. Create a GigaChat API project in the [Studio dashboard](https://developers.sber.ru/studio/).
-2. Navigate to **API Settings** in the left panel.
-3. Click **Get Key** and copy the Authorization Key.
+**Development-only (not recommended):**
 
-For detailed instructions, see the official documentation:
-- [Quick Start for Individuals](https://developers.sber.ru/docs/ru/gigachat/individuals-quickstart)
-- [Quick Start for Legal Entities](https://developers.sber.ru/docs/ru/gigachat/legal-quickstart)
+set `GIGACHAT_VERIFY_SSL_CERTS=false` or pass `verify_ssl_certs=False` to `GigaChat(...)`.
 
 ## Usage Examples
 
@@ -91,30 +79,11 @@ For detailed instructions, see the official documentation:
 
 ### Basic Chat
 
-Send a chat request with message history and generation parameters:
-
 ```python
 from gigachat import GigaChat
-from gigachat.models import Chat, Messages, MessagesRole
 
-chat = Chat(
-    messages=[
-        Messages(role=MessagesRole.SYSTEM, content="You are a helpful assistant."),
-        Messages(role=MessagesRole.USER, content="What is Python?"),
-    ],
-    temperature=0.7,
-    max_tokens=1024,
-)
-
-with GigaChat() as client:
-    response = client.chat(chat)
-    print(response.choices[0].message.content)
-
-    # Continue the conversation
-    chat.messages.append(response.choices[0].message)
-    chat.messages.append(Messages(role=MessagesRole.USER, content="How do I install it?"))
-
-    response = client.chat(chat)
+with GigaChat(credentials="<your_authorization_key>") as client:
+    response = client.chat("Hello, GigaChat!")
     print(response.choices[0].message.content)
 ```
 
@@ -198,7 +167,7 @@ weather_function = Function(
 )
 
 chat = Chat(
-    messages=[Messages(role=MessagesRole.USER, content="What's the weather in Moscow?")],
+    messages=[Messages(role=MessagesRole.USER, content="What's the weather in Tokyo?")],
     functions=[weather_function],
 )
 
@@ -274,7 +243,7 @@ print("Category:", result.category)
 print("AI intervals:", result.ai_intervals)
 ```
 
-> 📁 **More examples:** See the [examples/](examples/) folder for complete working examples including vision, mTLS authentication, and context variables.
+> 📁 **More examples:** See the !!! [examples/](examples/) folder for complete working examples including vision, mTLS authentication, and context variables.
 
 ## Configuration
 
@@ -351,9 +320,7 @@ The library supports four authentication methods:
 
 ### 1. Authorization Key (Recommended)
 
-Use the authorization key from your GigaChat API project:
-
-Developer portal: https://developers.sber.ru/
+For detailed instructions, see the [official documentation](https://developers.sber.ru/docs/ru/gigachat/quickstart/main).
 
 ```python
 from gigachat import GigaChat
@@ -430,9 +397,9 @@ This section explains how to configure the GigaChat SDK to use the required cert
 
 ### Quick Reference
 
-- **What you need:** The **"Russian Trusted Root CA"** certificate file from [Gosuslugi](https://www.gosuslugi.ru/crt).
-- **How to configure:** Set `GIGACHAT_CA_BUNDLE_FILE` environment variable or pass `ca_bundle_file` argument to `GigaChat()`.
-- **Why:** Python HTTP clients typically use their own CA bundle (e.g., `certifi`) instead of the OS trust store.
+- **What you need:** The **"Russian Trusted Root CA"** certificate file from [Gosuslugi](https://www.gosuslugi.ru/crt)
+- **How to configure:** Set `GIGACHAT_CA_BUNDLE_FILE` environment variable or pass `ca_bundle_file` argument to `GigaChat()`
+- **Why:** Python HTTP clients typically use their own CA bundle (e.g., `certifi`) instead of the OS trust store
 
 ### Configuration
 
@@ -642,14 +609,14 @@ with GigaChat(scope="GIGACHAT_API_B2B") as client:
 
 ## API Reference
 
-- [GigaChat API Documentation](https://developers.sber.ru/docs/ru/gigachat/api/reference/rest/gigachat-api)
+- [GigaChat API Documentation](https://developers.sber.ru/docs/ru/gigachat/api/main)
 - [Available Models](https://developers.sber.ru/docs/ru/gigachat/models)
 - [Early Access Models](https://developers.sber.ru/docs/ru/gigachat/models/preview-models)
 - [Pricing](https://developers.sber.ru/docs/ru/gigachat/api/tariffs)
 
 ## Related Projects
 
-- **[GigaChain](https://github.com/ai-forever/gigachain)** — A set of solutions for developing Russian-language LLM applications and multi-agent systems, with support for LangChain, LangGraph, LangChain4j, as well as GigaChat and other available LLMs. GigaChain covers the full development lifecycle: from prototyping and research to production deployment and ongoing support.
+- **[GigaChain](https://github.com/ai-forever/gigachain)** — A set of solutions for developing Russian-language LLM applications and multi-agent systems, with support for LangChain, LangGraph, LlamaIndex, LangChain4j, as well as GigaChat and other available LLMs. GigaChain covers the full development lifecycle: from prototyping and research to production deployment and ongoing support.
 - **[langchain-gigachat](https://github.com/ai-forever/langchain-gigachat)** — Official LangChain integration package for GigaChat
 
 ## Contributing
@@ -682,6 +649,6 @@ Please ensure all tests pass and code follows the project style before submittin
 
 ## License
 
-This project is licensed under the [MIT License](LICENSE).
+This project is licensed under the MIT License.
 
 Copyright © 2026 [GigaChain](https://github.com/ai-forever/gigachain)
