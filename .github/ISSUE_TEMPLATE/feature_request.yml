@@ -1,0 +1,132 @@
+name: Feature Request
+description: Suggest a new feature or enhancement for the GigaChat SDK
+title: "[Feature]: "
+labels: ["enhancement"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for suggesting a new feature! Please provide as much detail as possible to help us understand your proposal.
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem Statement
+      description: Is your feature request related to a problem? Please describe the use case.
+      placeholder: |
+        I'm frustrated when...
+        It would be helpful if...
+        Currently there's no way to...
+    validations:
+      required: true
+
+  - type: textarea
+    id: solution
+    attributes:
+      label: Proposed Solution
+      description: Describe the solution you'd like to see implemented.
+      placeholder: |
+        I would like to have a method/feature that...
+        The SDK could provide...
+    validations:
+      required: true
+
+  - type: textarea
+    id: api-design
+    attributes:
+      label: API Design (Optional)
+      description: If applicable, provide a proposed API design or code example of how this feature would be used.
+      placeholder: |
+        from gigachat import GigaChat
+
+        with GigaChat() as client:
+            # Example of proposed API
+            result = client.new_feature(...)
+      render: python
+    validations:
+      required: false
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives Considered
+      description: Describe any alternative solutions or workarounds you've considered.
+      placeholder: |
+        - Alternative 1: ...
+        - Alternative 2: ...
+        - Current workaround: ...
+    validations:
+      required: false
+
+  - type: dropdown
+    id: feature-area
+    attributes:
+      label: Feature Area
+      description: Which area of the SDK does this feature relate to?
+      options:
+        - Chat completions
+        - Streaming
+        - Embeddings
+        - Function calling
+        - File operations
+        - Authentication
+        - Error handling
+        - Retry mechanism
+        - Configuration
+        - Documentation
+        - Other
+    validations:
+      required: true
+
+  - type: dropdown
+    id: priority
+    attributes:
+      label: Priority
+      description: How important is this feature to you?
+      options:
+        - Critical (blocking my work)
+        - High (would significantly improve my workflow)
+        - Medium (nice to have)
+        - Low (minor improvement)
+    validations:
+      required: false
+
+  - type: textarea
+    id: use-case
+    attributes:
+      label: Use Case Description
+      description: Describe your specific use case and how this feature would benefit you or others.
+      placeholder: |
+        I'm building an application that...
+        This feature would help because...
+        Other users might benefit from...
+    validations:
+      required: false
+
+  - type: textarea
+    id: additional
+    attributes:
+      label: Additional Context
+      description: Add any other context, screenshots, links to similar implementations in other SDKs, or examples.
+    validations:
+      required: false
+
+  - type: checkboxes
+    id: contribution
+    attributes:
+      label: Contribution
+      description: Would you be willing to contribute to implementing this feature?
+      options:
+        - label: I am willing to submit a pull request for this feature
+          required: false
+
+  - type: checkboxes
+    id: checklist
+    attributes:
+      label: Pre-submission Checklist
+      description: Please verify the following before submitting
+      options:
+        - label: I have searched existing issues to ensure this feature hasn't been requested
+          required: true
+        - label: This feature aligns with the SDK's scope and purpose
+          required: true

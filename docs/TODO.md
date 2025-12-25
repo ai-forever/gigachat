@@ -462,3 +462,26 @@
   - [x] Add unit test `test_parse_chunk_valid_no_space` in `tests/unit/gigachat/api/test_utils.py`
 - [x] Verification
   - [x] Run `ruff check`, `mypy`, and `pytest` — all pass (343 tests)
+
+## Contribution Guidelines and Documentation
+- [x] Create comprehensive contribution guidelines for open-source contributors
+  - [x] Create `CONTRIBUTING.md` with complete contributor guide (1,130 lines)
+    - [x] Types of contributions and getting started guide
+    - [x] Development workflow and branching strategy
+    - [x] Code quality standards (style, type hints, docstrings)
+    - [x] Testing guidelines (unit and integration tests)
+    - [x] Commit message conventions (Conventional Commits)
+    - [x] Pull request process and CI checks
+    - [x] Issue reporting guidelines
+    - [x] Documentation guidelines (minimal docstrings style)
+    - [x] Project architecture overview
+    - [x] License information (MIT)
+  - [x] Create GitHub issue templates (`.github/ISSUE_TEMPLATE/`)
+    - [x] `bug_report.yml` — Structured bug report template
+    - [x] `feature_request.yml` — Feature request template with API design section
+    - [x] `config.yml` — Issue template chooser configuration
+  - [x] Create GitHub PR template
+    - [x] `.github/PULL_REQUEST_TEMPLATE.md` — Comprehensive PR template with checklist
+  - [x] Update `README.md` Contributing section
+    - [x] Add prominent link to `CONTRIBUTING.md`
+    - [x] Simplify to quick start with forward reference to detailed guide

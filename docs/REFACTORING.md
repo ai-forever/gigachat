@@ -758,3 +758,46 @@
     - **Robustness**: Streaming responses work regardless of whether the server includes a space.
     - **Debugging**: Preserved tracebacks show the actual parsing failure location, not the re-raise line.
 - **Status**: Resolved.
+
+## Contribution Guidelines and Documentation
+
+- **Problem**: The project lacked comprehensive contribution guidelines, making it difficult for external contributors to understand:
+  - How to set up the development environment
+  - What code quality standards are expected
+  - How to write tests and commit messages
+  - The pull request and issue reporting process
+  - The project's architectural patterns
+- **Solution (Comprehensive Documentation)**:
+  - **Implementation Details**:
+    - **`CONTRIBUTING.md` (1,130 lines)**: Created comprehensive guide covering:
+      - **Getting Started**: Prerequisites, development setup, SSL configuration, make commands
+      - **Development Workflow**: Fork-and-pull model, branching strategy, pre-commit hooks
+      - **Code Quality Standards**: PEP 8, Ruff formatting, mypy strict mode, minimal imperative-mood docstrings, Python 3.8 compatibility
+      - **Testing**: Unit tests (pytest-httpx), integration tests (VCR cassettes), coverage targets (90%+)
+      - **Commit Messages**: Conventional Commits format with examples
+      - **Pull Request Process**: Pre-submission checklist, CI checks, review process
+      - **Issue Reporting**: Bug reports, feature requests, security issues
+      - **Documentation Guidelines**: Minimal docstring style, README/examples guidance
+      - **Project Architecture**: Client/API/Models layers, authentication/retry patterns, design patterns (decorator stacking, lazy initialization, context variables)
+      - **License**: MIT License, contributor rights
+    - **GitHub Issue Templates** (`.github/ISSUE_TEMPLATE/`):
+      - `bug_report.yml`: Structured YAML form with fields for description, reproduction steps, environment, etc.
+      - `feature_request.yml`: Structured YAML form with problem statement, proposed solution, API design, use case
+      - `config.yml`: Issue template chooser configuration with links to docs and discussions
+    - **GitHub PR Template** (`.github/PULL_REQUEST_TEMPLATE.md`):
+      - Description, motivation, type of change
+      - Changes made, testing approach
+      - Comprehensive checklist (code quality, tests, docs, CI)
+      - Pre-merge actions and review guidelines
+    - **README.md Updates**:
+      - Added prominent link to `CONTRIBUTING.md` in Contributing section
+      - Simplified to quick start with forward reference to detailed guide
+      - Maintained consistency with `CONTRIBUTING.md` (make commands, Python versions, SSL setup)
+  - **Why**:
+    - **Accessibility**: Lowers the barrier for new contributors by providing clear, step-by-step guidance
+    - **Quality**: Establishes explicit code quality standards, reducing review friction
+    - **Consistency**: Ensures all contributions follow the same patterns and conventions
+    - **Efficiency**: Comprehensive checklists and templates reduce back-and-forth in PR reviews
+    - **Transparency**: Clear architectural documentation helps contributors understand where to make changes
+    - **Legal Clarity**: Explicit MIT License section clarifies contribution rights and responsibilities
+- **Status**: Resolved. Comprehensive contribution guidelines in place, following open-source best practices.

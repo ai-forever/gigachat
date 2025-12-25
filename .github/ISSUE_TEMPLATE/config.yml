@@ -1,0 +1,11 @@
+blank_issues_enabled: false
+contact_links:
+  - name: 📚 Documentation
+    url: https://developers.sber.ru/docs/ru/gigachat/api/main
+    about: Check the official GigaChat API documentation for guides and references
+  - name: 💬 GitHub Discussions
+    url: https://github.com/ai-forever/gigachat/discussions
+    about: Ask questions and discuss ideas with the community
+  - name: 🔗 Related Projects
+    url: https://github.com/ai-forever/gigachain
+    about: Visit GigaChain - A set of solutions for developing Russian-language LLM applications and multi-agent systems

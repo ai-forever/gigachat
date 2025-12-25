@@ -20,7 +20,6 @@ This library is part of [GigaChain](https://github.com/ai-forever/gigachain) and
   - [Embeddings](#embeddings)
   - [Function Calling](#function-calling)
   - [More Examples](#more-examples)
-    - [Retrieve an image by file ID](#retrieve-an-image-by-file-id)
 - [Configuration](#configuration)
   - [Constructor Parameters](#constructor-parameters)
   - [Environment Variables](#environment-variables)
@@ -177,26 +176,8 @@ with GigaChat() as client:
         print(f"Arguments: {message.function_call.arguments}")
 ```
 
-### More Examples
-
-#### Retrieve an image by file ID
-
-Download an image previously generated/uploaded and save it to disk:
-
-```python
-import base64
-
-from gigachat import GigaChat
-from gigachat.models import Image
-
-with GigaChat() as client:
-    response: Image = client.get_image(file_id="<file_id>")
-
-with open("giga_img.jpg", "wb") as f:
-    f.write(base64.b64decode(response.content))
-```
-
-> 📁 **More examples:** See the [examples/](examples/)  folder for complete working examples including chat, functions, context variables, AI detection and vision.
+### More examples
+See the [examples/](https://github.com/ai-forever/gigachat/tree/main/examples/) folder for complete working examples including chat, functions, context variables, AI detection, and vision.
 
 ## Configuration
 
@@ -574,31 +555,33 @@ with GigaChat(scope="GIGACHAT_API_B2B") as client:
 
 ## Contributing
 
-We welcome contributions! Here's how to get started:
+We welcome contributions of all kinds — bug reports, feature requests, documentation improvements, and code contributions!
+
+**Quick Start:**
 
 ```bash
-# Clone the repository
-git clone https://github.com/ai-forever/gigachat.git
+# Fork and clone the repository
+git clone https://github.com/YOUR_USERNAME/gigachat.git
 cd gigachat
 
-# Install dependencies with uv
-uv sync
-
-# Run tests
-uv run pytest
-
-# Run linting and formatting
-uv run ruff check src tests
-uv run ruff format src tests
-
-# Run type checking
-uv run mypy src
+# Install dependencies and pre-commit hooks
+make install
 
 # Run all checks
-uv run ruff check src tests && uv run ruff format --check src tests && uv run mypy src && uv run pytest
+make all
 ```
 
-Please ensure all tests pass and code follows the project style before submitting a pull request.
+**For detailed contributing guidelines, please see [CONTRIBUTING.md](CONTRIBUTING.md).**
+
+This guide covers:
+- Development setup and workflow
+- Code quality standards and testing
+- Commit message guidelines
+- Pull request process
+- Issue reporting guidelines
+- Project architecture
+
+All contributions are licensed under the MIT License.
 
 ## License
 

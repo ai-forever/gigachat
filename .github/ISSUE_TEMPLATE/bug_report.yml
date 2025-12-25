@@ -1,0 +1,133 @@
+name: Bug Report
+description: Report a bug or unexpected behavior in the GigaChat SDK
+title: "[Bug]: "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking the time to report a bug! Please fill out the form below to help us understand and reproduce the issue.
+
+  - type: textarea
+    id: description
+    attributes:
+      label: Description
+      description: A clear and concise description of what the bug is.
+      placeholder: Describe the bug you encountered...
+    validations:
+      required: true
+
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Steps to Reproduce
+      description: Provide detailed steps to reproduce the behavior.
+      placeholder: |
+        1. Install gigachat via '...'
+        2. Run the following code '...'
+        3. See error
+      value: |
+        1.
+        2.
+        3.
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected Behavior
+      description: What did you expect to happen?
+      placeholder: Describe what you expected...
+    validations:
+      required: true
+
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual Behavior
+      description: What actually happened? Include full error messages and stack traces.
+      placeholder: Paste error messages and stack traces here...
+      render: shell
+    validations:
+      required: true
+
+  - type: textarea
+    id: code
+    attributes:
+      label: Code Example
+      description: If possible, provide a minimal code example that reproduces the issue.
+      placeholder: |
+        from gigachat import GigaChat
+
+        with GigaChat() as client:
+            # Your code here
+            pass
+      render: python
+    validations:
+      required: false
+
+  - type: input
+    id: version
+    attributes:
+      label: GigaChat SDK Version
+      description: What version of gigachat are you using?
+      placeholder: "e.g., 0.2.0"
+    validations:
+      required: true
+
+  - type: input
+    id: python-version
+    attributes:
+      label: Python Version
+      description: What version of Python are you using?
+      placeholder: "e.g., 3.11.5"
+    validations:
+      required: true
+
+  - type: dropdown
+    id: os
+    attributes:
+      label: Operating System
+      description: What operating system are you using?
+      options:
+        - Linux
+        - macOS
+        - Windows
+        - Other
+    validations:
+      required: true
+
+  - type: textarea
+    id: environment
+    attributes:
+      label: Environment Details
+      description: |
+        Any additional environment details that might be relevant (e.g., Docker, virtual environment, proxy settings, SSL certificate configuration).
+      placeholder: |
+        - Using uv for package management
+        - Behind corporate proxy
+        - Custom CA certificate bundle
+    validations:
+      required: false
+
+  - type: textarea
+    id: additional
+    attributes:
+      label: Additional Context
+      description: Add any other context about the problem here (screenshots, logs, related issues, etc.).
+    validations:
+      required: false
+
+  - type: checkboxes
+    id: checklist
+    attributes:
+      label: Pre-submission Checklist
+      description: Please verify the following before submitting
+      options:
+        - label: I have searched existing issues to ensure this is not a duplicate
+          required: true
+        - label: I have provided all requested information above
+          required: true
+        - label: I am using a supported Python version (3.8-3.13)
+          required: true
