@@ -1,13 +1,7 @@
 from typing import TYPE_CHECKING, Any, Dict, List, Optional
 
-from gigachat.api.assistants import (
-    get_assistants,
-    post_assistant_delete,
-    post_assistant_files_delete,
-    post_assistant_modify,
-    post_assistants,
-)
-from gigachat.models import Function
+from gigachat.api import assistants
+from gigachat.authentication import _awith_auth, _with_auth
 from gigachat.models.assistants import (
     Assistant,
     AssistantDelete,
@@ -15,6 +9,8 @@ from gigachat.models.assistants import (
     Assistants,
     CreateAssistant,
 )
+from gigachat.models.chat import Function
+from gigachat.retry import _awith_retry, _with_retry
 
 if TYPE_CHECKING:
     from gigachat.client import GigaChatAsyncClient, GigaChatSyncClient
@@ -22,18 +18,20 @@ if TYPE_CHECKING:
 
 class AssistantsSyncClient:
     def __init__(self, base_client: "GigaChatSyncClient"):
-        self.base_client = base_client
+        self._base_client = base_client
 
+    @_with_retry
+    @_with_auth
     def get(self, assistant_id: Optional[str] = None) -> Assistants:
-        """Возвращает список доступных ассистентов"""
-        return self.base_client._decorator(
-            lambda: get_assistants.sync(
-                self.base_client._client,
-                assistant_id=assistant_id,
-                access_token=self.base_client.token,
-            )
+        """Return a list of available assistants."""
+        return assistants.get_assistants_sync(
+            self._base_client._client,
+            assistant_id=assistant_id,
+            access_token=self._base_client.token,
         )
 
+    @_with_retry
+    @_with_auth
     def create(
         self,
         model: str,
@@ -44,21 +42,21 @@ class AssistantsSyncClient:
         functions: Optional[List[Function]] = None,
         metadata: Optional[Dict[str, Any]] = None,
     ) -> CreateAssistant:
-        """Создает ассистента"""
-        return self.base_client._decorator(
-            lambda: post_assistants.sync(
-                self.base_client._client,
-                model=model,
-                name=name,
-                description=description,
-                instructions=instructions,
-                file_ids=file_ids,
-                functions=functions,
-                metadata=metadata,
-                access_token=self.base_client.token,
-            )
+        """Create an assistant."""
+        return assistants.create_assistant_sync(
+            self._base_client._client,
+            model=model,
+            name=name,
+            description=description,
+            instructions=instructions,
+            file_ids=file_ids,
+            functions=functions,
+            metadata=metadata,
+            access_token=self._base_client.token,
         )
 
+    @_with_retry
+    @_with_auth
     def update(
         self,
         assistant_id: str,
@@ -69,60 +67,59 @@ class AssistantsSyncClient:
         functions: Optional[List[Function]] = None,
         metadata: Optional[Dict[str, Any]] = None,
     ) -> Assistant:
-        """Обновляет ассистента"""
+        """Update an assistant."""
 
-        return self.base_client._decorator(
-            lambda: post_assistant_modify.sync(
-                self.base_client._client,
-                assistant_id=assistant_id,
-                name=name,
-                description=description,
-                instructions=instructions,
-                file_ids=file_ids,
-                functions=functions,
-                metadata=metadata,
-                access_token=self.base_client.token,
-            )
+        return assistants.modify_assistant_sync(
+            self._base_client._client,
+            assistant_id=assistant_id,
+            name=name,
+            description=description,
+            instructions=instructions,
+            file_ids=file_ids,
+            functions=functions,
+            metadata=metadata,
+            access_token=self._base_client.token,
         )
 
+    @_with_retry
+    @_with_auth
     def delete_file(self, assistant_id: str, file_id: str) -> AssistantFileDelete:
-        """Удаляет файл ассистента"""
-        return self.base_client._decorator(
-            lambda: post_assistant_files_delete.sync(
-                self.base_client._client,
-                assistant_id=assistant_id,
-                file_id=file_id,
-                access_token=self.base_client.token,
-            )
+        """Delete an assistant file."""
+        return assistants.delete_assistant_file_sync(
+            self._base_client._client,
+            assistant_id=assistant_id,
+            file_id=file_id,
+            access_token=self._base_client.token,
         )
 
+    @_with_retry
+    @_with_auth
     def delete(self, assistant_id: str) -> AssistantDelete:
-        """Удаляет ассистента"""
-        return self.base_client._decorator(
-            lambda: post_assistant_delete.sync(
-                self.base_client._client,
-                assistant_id=assistant_id,
-                access_token=self.base_client.token,
-            )
+        """Delete an assistant."""
+        return assistants.delete_assistant_sync(
+            self._base_client._client,
+            assistant_id=assistant_id,
+            access_token=self._base_client.token,
         )
 
 
 class AssistantsAsyncClient:
     def __init__(self, base_client: "GigaChatAsyncClient"):
-        self.base_client = base_client
+        self._base_client = base_client
 
+    @_awith_retry
+    @_awith_auth
     async def get(self, assistant_id: Optional[str] = None) -> Assistants:
-        """Возвращает список доступных ассистентов"""
+        """Return a list of available assistants."""
 
-        async def _acall() -> Assistants:
-            return await get_assistants.asyncio(
-                self.base_client._aclient,
-                assistant_id=assistant_id,
-                access_token=self.base_client.token,
-            )
+        return await assistants.get_assistants_async(
+            self._base_client._aclient,
+            assistant_id=assistant_id,
+            access_token=self._base_client.token,
+        )
 
-        return await self.base_client._adecorator(_acall)
-
+    @_awith_retry
+    @_awith_auth
     async def create(
         self,
         model: str,
@@ -133,23 +130,22 @@ class AssistantsAsyncClient:
         functions: Optional[List[Function]] = None,
         metadata: Optional[Dict[str, Any]] = None,
     ) -> CreateAssistant:
-        """Создает ассистента"""
+        """Create an assistant."""
 
-        async def _acall() -> CreateAssistant:
-            return await post_assistants.asyncio(
-                self.base_client._aclient,
-                model=model,
-                name=name,
-                description=description,
-                instructions=instructions,
-                file_ids=file_ids,
-                functions=functions,
-                metadata=metadata,
-                access_token=self.base_client.token,
-            )
+        return await assistants.create_assistant_async(
+            self._base_client._aclient,
+            model=model,
+            name=name,
+            description=description,
+            instructions=instructions,
+            file_ids=file_ids,
+            functions=functions,
+            metadata=metadata,
+            access_token=self._base_client.token,
+        )
 
-        return await self.base_client._adecorator(_acall)
-
+    @_awith_retry
+    @_awith_auth
     async def update(
         self,
         assistant_id: str,
@@ -160,44 +156,39 @@ class AssistantsAsyncClient:
         functions: Optional[List[Function]] = None,
         metadata: Optional[Dict[str, Any]] = None,
     ) -> Assistant:
-        """Обновляет ассистента"""
+        """Update an assistant."""
 
-        async def _acall() -> Assistant:
-            return await post_assistant_modify.asyncio(
-                self.base_client._aclient,
-                assistant_id=assistant_id,
-                name=name,
-                description=description,
-                instructions=instructions,
-                file_ids=file_ids,
-                functions=functions,
-                metadata=metadata,
-                access_token=self.base_client.token,
-            )
+        return await assistants.modify_assistant_async(
+            self._base_client._aclient,
+            assistant_id=assistant_id,
+            name=name,
+            description=description,
+            instructions=instructions,
+            file_ids=file_ids,
+            functions=functions,
+            metadata=metadata,
+            access_token=self._base_client.token,
+        )
 
-        return await self.base_client._adecorator(_acall)
-
+    @_awith_retry
+    @_awith_auth
     async def delete_file(self, assistant_id: str, file_id: str) -> AssistantFileDelete:
-        """Удаляет файл ассистента"""
+        """Delete an assistant file."""
 
-        async def _acall() -> AssistantFileDelete:
-            return await post_assistant_files_delete.asyncio(
-                self.base_client._aclient,
-                assistant_id=assistant_id,
-                file_id=file_id,
-                access_token=self.base_client.token,
-            )
+        return await assistants.delete_assistant_file_async(
+            self._base_client._aclient,
+            assistant_id=assistant_id,
+            file_id=file_id,
+            access_token=self._base_client.token,
+        )
 
-        return await self.base_client._adecorator(_acall)
-
+    @_awith_retry
+    @_awith_auth
     async def delete(self, assistant_id: str) -> AssistantDelete:
-        """Удаляет ассистента"""
+        """Delete an assistant."""
 
-        async def _acall() -> AssistantDelete:
-            return await post_assistant_delete.asyncio(
-                self.base_client._aclient,
-                assistant_id=assistant_id,
-                access_token=self.base_client.token,
-            )
-
-        return await self.base_client._adecorator(_acall)
+        return await assistants.delete_assistant_async(
+            self._base_client._aclient,
+            assistant_id=assistant_id,
+            access_token=self._base_client.token,
+        )

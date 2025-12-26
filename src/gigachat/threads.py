@@ -1,4 +1,3 @@
-import logging
 import warnings
 from typing import (
     TYPE_CHECKING,
@@ -11,21 +10,9 @@ from typing import (
     Union,
 )
 
-from gigachat.api.threads import (
-    get_threads,
-    get_threads_messages,
-    get_threads_run,
-    post_thread_messages_rerun,
-    post_thread_messages_rerun_stream,
-    post_thread_messages_run,
-    post_thread_messages_run_stream,
-    post_threads_delete,
-    post_threads_messages,
-    post_threads_retrieve,
-    post_threads_run,
-)
-from gigachat.exceptions import AuthenticationError
-from gigachat.models import (
+from gigachat.api import threads
+from gigachat.authentication import _awith_auth, _awith_auth_stream, _with_auth, _with_auth_stream
+from gigachat.models.chat import (
     Messages,
     MessagesRole,
 )
@@ -39,6 +26,7 @@ from gigachat.models.threads import (
     ThreadRunResult,
     Threads,
 )
+from gigachat.retry import _awith_retry, _awith_retry_stream, _with_retry, _with_retry_stream
 
 if TYPE_CHECKING:
     from gigachat.client import GigaChatAsyncClient, GigaChatSyncClient
@@ -48,492 +36,474 @@ def _parse_message(message: Union[Messages, str, Dict[str, Any]]) -> Messages:
     if isinstance(message, str):
         return Messages(role=MessagesRole.USER, content=message)
     else:
-        return Messages.parse_obj(message)
-
-
-_logger = logging.getLogger(__name__)
+        return Messages.model_validate(message)
 
 
 class ThreadsSyncClient:
     def __init__(self, base_client: "GigaChatSyncClient"):
-        self.base_client = base_client
+        self._base_client = base_client
 
-    def list(  # noqa: A003
+    @_with_retry
+    @_with_auth
+    def get_threads(
         self,
         assistants_ids: Optional[List[str]] = None,
         limit: Optional[int] = None,
         before: Optional[int] = None,
     ) -> Threads:
-        """Получение перечня тредов"""
-        return self.base_client._decorator(
-            lambda: get_threads.sync(
-                self.base_client._client,
-                assistants_ids=assistants_ids,
-                limit=limit,
-                before=before,
-                access_token=self.base_client.token,
-            )
+        """Return a list of threads."""
+        return threads.get_threads_sync(
+            self._base_client._client,
+            assistants_ids=assistants_ids,
+            limit=limit,
+            before=before,
+            access_token=self._base_client.token,
         )
 
-    def retrieve(
+    def list(
         self,
-        threads_ids: List[str],
+        assistants_ids: Optional[List[str]] = None,
+        limit: Optional[int] = None,
+        before: Optional[int] = None,
     ) -> Threads:
-        """Получение перечня тредов по идентификаторам"""
-        return self.base_client._decorator(
-            lambda: post_threads_retrieve.sync(
-                self.base_client._client,
-                threads_ids=threads_ids,
-                access_token=self.base_client.token,
-            )
+        """Alias for get_threads."""
+        return self.get_threads(assistants_ids=assistants_ids, limit=limit, before=before)
+
+    @_with_retry
+    @_with_auth
+    def create_thread(self) -> str:
+        """Create a thread."""
+        return threads.post_thread_sync(self._base_client._client, access_token=self._base_client.token).id_
+
+    @_with_retry
+    @_with_auth
+    def retrieve(self, threads_ids: List[str]) -> Threads:
+        """Return a list of threads by their IDs."""
+        return threads.retrieve_threads_sync(
+            self._base_client._client, threads_ids=threads_ids, access_token=self._base_client.token
         )
 
+    @_with_retry
+    @_with_auth
     def delete(self, thread_id: str) -> bool:
-        """Удаляет тред"""
-
-        return self.base_client._decorator(
-            lambda: post_threads_delete.sync(
-                self.base_client._client,
-                thread_id=thread_id,
-                access_token=self.base_client.token,
-            )
+        """Delete a thread."""
+        return threads.delete_thread_sync(
+            self._base_client._client, thread_id=thread_id, access_token=self._base_client.token
         )
 
-    def get_run(self, thread_id: str) -> ThreadRunResult:
-        """Получить результат run треда"""
-        warnings.warn("get_run is deprecated. Use get_messages instead", stacklevel=2)
-
-        return self.base_client._decorator(
-            lambda: get_threads_run.sync(
-                self.base_client._client,
-                thread_id=thread_id,
-                access_token=self.base_client.token,
-            )
+    @_with_retry
+    @_with_auth
+    def get_messages(
+        self,
+        thread_id: str,
+        limit: Optional[int] = None,
+        before: Optional[int] = None,
+    ) -> ThreadMessages:
+        """Return a list of messages in a thread."""
+        return threads.get_thread_messages_sync(
+            self._base_client._client,
+            thread_id=thread_id,
+            limit=limit,
+            before=before,
+            access_token=self._base_client.token,
         )
 
-    def get_messages(self, thread_id: str, limit: Optional[int] = None, before: Optional[int] = None) -> ThreadMessages:
-        """Получение сообщений треда"""
-
-        return self.base_client._decorator(
-            lambda: get_threads_messages.sync(
-                self.base_client._client,
-                thread_id=thread_id,
-                limit=limit,
-                before=before,
-                access_token=self.base_client.token,
-            )
+    @_with_retry
+    @_with_auth
+    def add_message(self, thread_id: str, message: Union[Messages, str, Dict[str, Any]]) -> ThreadMessagesResponse:
+        """Add a message to a thread."""
+        message_ = _parse_message(message)
+        return threads.add_thread_messages_sync(
+            self._base_client._client,
+            thread_id=thread_id,
+            messages=[message_],
+            access_token=self._base_client.token,
         )
 
+    @_with_retry
+    @_with_auth
+    def add_messages(
+        self, thread_id: Optional[str] = None, messages: Optional[List[Union[Messages, str, Dict[str, Any]]]] = None
+    ) -> ThreadMessagesResponse:
+        """Add multiple messages to a thread."""
+        if messages is None:
+            messages = []
+        messages_ = [_parse_message(message) for message in messages]
+        return threads.add_thread_messages_sync(
+            self._base_client._client,
+            thread_id=thread_id,
+            messages=messages_,
+            access_token=self._base_client.token,
+        )
+
+    @_with_retry
+    @_with_auth
     def run(
         self,
         thread_id: str,
-        thread_options: Optional[Union[ThreadRunOptions, Dict[str, Any]]] = None,
-    ) -> ThreadRunResponse:
-        """Запуск генерации ответа на контекст треда"""
-        if thread_options is not None:
-            thread_options = ThreadRunOptions.parse_obj(thread_options)
-        return self.base_client._decorator(
-            lambda: post_threads_run.sync(
-                self.base_client._client,
-                thread_id=thread_id,
-                thread_options=thread_options,
-                access_token=self.base_client.token,
-            )
-        )
-
-    def add_messages(
-        self,
-        messages: Union[List[Messages], List[str], List[Dict[str, Any]]],
-        model: Optional[str] = None,
-        thread_id: Optional[str] = None,
         assistant_id: Optional[str] = None,
-    ) -> ThreadMessagesResponse:
-        """Добавление сообщений к треду без запуска"""
-        parsed_messages = [_parse_message(message) for message in messages]
-        return self.base_client._decorator(
-            lambda: post_threads_messages.sync(
-                self.base_client._client,
-                messages=parsed_messages,
-                model=model,
-                thread_id=thread_id,
-                assistant_id=assistant_id,
-                access_token=self.base_client.token,
-            )
+        thread_options: Optional[ThreadRunOptions] = None,
+        options: Optional[ThreadRunOptions] = None,
+    ) -> ThreadRunResponse:
+        """Run a thread."""
+        if options and not thread_options:
+            thread_options = options
+            warnings.warn("Argument 'options' is deprecated, use 'thread_options'", DeprecationWarning, stacklevel=2)
+
+        return threads.run_thread_sync(
+            self._base_client._client,
+            thread_id=thread_id,
+            assistant_id=assistant_id,
+            thread_options=thread_options,
+            access_token=self._base_client.token,
         )
 
+    @_with_retry
+    @_with_auth
+    def get_run(self, thread_id: str) -> ThreadRunResult:
+        """Return the status of a thread run."""
+        return threads.get_thread_run_sync(
+            self._base_client._client, thread_id=thread_id, access_token=self._base_client.token
+        )
+
+    @_with_retry_stream
+    @_with_auth_stream
+    def run_stream(
+        self,
+        thread_id: str,
+        assistant_id: Optional[str] = None,
+        thread_options: Optional[ThreadRunOptions] = None,
+        options: Optional[ThreadRunOptions] = None,
+    ) -> Iterator[ThreadCompletionChunk]:
+        """Run a thread with streaming response."""
+        if options and not thread_options:
+            thread_options = options
+            warnings.warn("Argument 'options' is deprecated, use 'thread_options'", DeprecationWarning, stacklevel=2)
+
+        yield from threads.run_thread_stream_sync(
+            self._base_client._client,
+            thread_id=thread_id,
+            assistant_id=assistant_id,
+            thread_options=thread_options,
+            access_token=self._base_client.token,
+        )
+
+    @_with_retry
+    @_with_auth
     def run_messages(
         self,
-        messages: Union[List[Messages], List[str], List[Dict[str, Any]]],
+        messages: List[Union[Messages, str, Dict[str, Any]]],
         thread_id: Optional[str] = None,
         assistant_id: Optional[str] = None,
         model: Optional[str] = None,
-        thread_options: Optional[Union[ThreadRunOptions, Dict[str, Any]]] = None,
+        thread_options: Optional[ThreadRunOptions] = None,
     ) -> ThreadCompletion:
-        """Добавление сообщений к треду с запуском"""
-        warnings.warn("run_messages is deprecated. Use GigaChat.chat instead", stacklevel=2)
-        parsed_messages = [_parse_message(message) for message in messages]
-        if thread_options is not None:
-            thread_options = ThreadRunOptions.parse_obj(thread_options)
-
-        return self.base_client._decorator(
-            lambda: post_thread_messages_run.sync(
-                self.base_client._client,
-                messages=parsed_messages,
-                thread_id=thread_id,
-                assistant_id=assistant_id,
-                model=model,
-                thread_options=thread_options,
-                access_token=self.base_client.token,
-            )
+        """Run messages."""
+        messages_ = [_parse_message(message) for message in messages]
+        return threads.run_thread_messages_sync(
+            self._base_client._client,
+            messages=messages_,
+            thread_id=thread_id,
+            assistant_id=assistant_id,
+            model=model,
+            thread_options=thread_options,
+            access_token=self._base_client.token,
         )
 
+    @_with_retry
+    @_with_auth
     def rerun_messages(
         self,
         thread_id: str,
-        thread_options: Optional[Union[ThreadRunOptions, Dict[str, Any]]] = None,
+        thread_options: Optional[ThreadRunOptions] = None,
     ) -> ThreadCompletion:
-        """Перегенерация ответа модели"""
-        if thread_options is not None:
-            thread_options = ThreadRunOptions.parse_obj(thread_options)
-
-        return self.base_client._decorator(
-            lambda: post_thread_messages_rerun.sync(
-                self.base_client._client,
-                thread_id=thread_id,
-                thread_options=thread_options,
-                access_token=self.base_client.token,
-            )
+        """Regenerate messages."""
+        return threads.rerun_thread_messages_sync(
+            self._base_client._client,
+            thread_id=thread_id,
+            thread_options=thread_options,
+            access_token=self._base_client.token,
         )
 
+    @_with_retry_stream
+    @_with_auth_stream
     def run_messages_stream(
         self,
-        messages: Union[List[Messages], List[str], List[Dict[str, Any]]],
+        messages: List[Union[Messages, str, Dict[str, Any]]],
         thread_id: Optional[str] = None,
         assistant_id: Optional[str] = None,
         model: Optional[str] = None,
-        thread_options: Optional[Union[ThreadRunOptions, Dict[str, Any]]] = None,
+        thread_options: Optional[ThreadRunOptions] = None,
         update_interval: Optional[int] = None,
     ) -> Iterator[ThreadCompletionChunk]:
-        """Добавление сообщений к треду с запуском"""
-        warnings.warn("run_messages is deprecated. Use GigaChat.chat instead", stacklevel=2)
-        parsed_messages = [_parse_message(message) for message in messages]
-        if thread_options is not None:
-            thread_options = ThreadRunOptions.parse_obj(thread_options)
-
-        if self.base_client._use_auth:
-            if self.base_client._check_validity_token():
-                try:
-                    for chunk in post_thread_messages_run_stream.sync(
-                        self.base_client._client,
-                        messages=parsed_messages,
-                        thread_id=thread_id,
-                        assistant_id=assistant_id,
-                        model=model,
-                        thread_options=thread_options,
-                        update_interval=update_interval,
-                        access_token=self.base_client.token,
-                    ):
-                        yield chunk
-                    return
-                except AuthenticationError:
-                    _logger.debug("AUTHENTICATION ERROR")
-                    self.base_client._reset_token()
-            self.base_client._update_token()
-
-        for chunk in post_thread_messages_run_stream.sync(
-            self.base_client._client,
-            messages=parsed_messages,
+        """Run messages with streaming response."""
+        messages_ = [_parse_message(message) for message in messages]
+        yield from threads.run_thread_messages_stream_sync(
+            self._base_client._client,
+            messages=messages_,
             thread_id=thread_id,
             assistant_id=assistant_id,
             model=model,
             thread_options=thread_options,
             update_interval=update_interval,
-            access_token=self.base_client.token,
-        ):
-            yield chunk
+            access_token=self._base_client.token,
+        )
 
+    @_with_retry_stream
+    @_with_auth_stream
     def rerun_messages_stream(
         self,
         thread_id: str,
-        thread_options: Optional[Union[ThreadRunOptions, Dict[str, Any]]] = None,
+        thread_options: Optional[ThreadRunOptions] = None,
         update_interval: Optional[int] = None,
     ) -> Iterator[ThreadCompletionChunk]:
-        """Перегенерация ответа модели"""
-        if thread_options is not None:
-            thread_options = ThreadRunOptions.parse_obj(thread_options)
-
-        if self.base_client._use_auth:
-            if self.base_client._check_validity_token():
-                try:
-                    for chunk in post_thread_messages_rerun_stream.sync(
-                        self.base_client._client,
-                        thread_id=thread_id,
-                        thread_options=thread_options,
-                        update_interval=update_interval,
-                        access_token=self.base_client.token,
-                    ):
-                        yield chunk
-                    return
-                except AuthenticationError:
-                    _logger.debug("AUTHENTICATION ERROR")
-                    self.base_client._reset_token()
-            self.base_client._update_token()
-
-        for chunk in post_thread_messages_rerun_stream.sync(
-            self.base_client._client,
+        """Regenerate messages with streaming response."""
+        yield from threads.rerun_thread_messages_stream_sync(
+            self._base_client._client,
             thread_id=thread_id,
             thread_options=thread_options,
             update_interval=update_interval,
-            access_token=self.base_client.token,
-        ):
-            yield chunk
+            access_token=self._base_client.token,
+        )
 
 
 class ThreadsAsyncClient:
     def __init__(self, base_client: "GigaChatAsyncClient"):
-        self.base_client = base_client
+        self._base_client = base_client
 
-    async def list(  # noqa: A003
+    @_awith_retry
+    @_awith_auth
+    async def get_threads(
         self,
         assistants_ids: Optional[List[str]] = None,
         limit: Optional[int] = None,
         before: Optional[int] = None,
     ) -> Threads:
-        """Получение перечня тредов"""
+        """Return a list of threads."""
 
-        async def _acall() -> Threads:
-            return await get_threads.asyncio(
-                self.base_client._aclient,
-                assistants_ids=assistants_ids,
-                limit=limit,
-                before=before,
-                access_token=self.base_client.token,
-            )
+        return await threads.get_threads_async(
+            self._base_client._aclient,
+            assistants_ids=assistants_ids,
+            limit=limit,
+            before=before,
+            access_token=self._base_client.token,
+        )
 
-        return await self.base_client._adecorator(_acall)
-
-    async def retrieve(
+    async def list(
         self,
-        threads_ids: List[str],
+        assistants_ids: Optional[List[str]] = None,
+        limit: Optional[int] = None,
+        before: Optional[int] = None,
     ) -> Threads:
-        """Получение перечня тредов по идентификаторам"""
+        """Alias for get_threads."""
+        return await self.get_threads(assistants_ids=assistants_ids, limit=limit, before=before)
 
-        async def _acall() -> Threads:
-            return await post_threads_retrieve.asyncio(
-                self.base_client._aclient,
-                threads_ids=threads_ids,
-                access_token=self.base_client.token,
-            )
+    @_awith_retry
+    @_awith_auth
+    async def create_thread(self) -> str:
+        """Create a thread."""
 
-        return await self.base_client._adecorator(_acall)
+        return (await threads.post_thread_async(self._base_client._aclient, access_token=self._base_client.token)).id_
 
+    @_awith_retry
+    @_awith_auth
+    async def retrieve(self, threads_ids: List[str]) -> Threads:
+        """Return a list of threads by their IDs."""
+
+        return await threads.retrieve_threads_async(
+            self._base_client._aclient, threads_ids=threads_ids, access_token=self._base_client.token
+        )
+
+    @_awith_retry
+    @_awith_auth
     async def delete(self, thread_id: str) -> bool:
-        """Удаляет тред"""
+        """Delete a thread."""
 
-        async def _acall() -> bool:
-            return await post_threads_delete.asyncio(
-                self.base_client._aclient,
-                thread_id=thread_id,
-                access_token=self.base_client.token,
-            )
+        return await threads.delete_thread_async(
+            self._base_client._aclient, thread_id=thread_id, access_token=self._base_client.token
+        )
 
-        return await self.base_client._adecorator(_acall)
-
-    async def get_run(self, thread_id: str) -> ThreadRunResult:
-        """Получить результат run треда"""
-        warnings.warn("get_run is deprecated. Use get_messages instead", stacklevel=2)
-
-        async def _acall() -> ThreadRunResult:
-            return await get_threads_run.asyncio(
-                self.base_client._aclient,
-                thread_id=thread_id,
-                access_token=self.base_client.token,
-            )
-
-        return await self.base_client._adecorator(_acall)
-
+    @_awith_retry
+    @_awith_auth
     async def get_messages(
-        self, thread_id: str, limit: Optional[int] = None, before: Optional[int] = None
+        self,
+        thread_id: str,
+        limit: Optional[int] = None,
+        before: Optional[int] = None,
     ) -> ThreadMessages:
-        """Получение сообщений треда"""
+        """Return a list of messages in a thread."""
 
-        async def _acall() -> ThreadMessages:
-            return await get_threads_messages.asyncio(
-                self.base_client._aclient,
-                thread_id=thread_id,
-                limit=limit,
-                before=before,
-                access_token=self.base_client.token,
-            )
+        return await threads.get_thread_messages_async(
+            self._base_client._aclient,
+            thread_id=thread_id,
+            limit=limit,
+            before=before,
+            access_token=self._base_client.token,
+        )
 
-        return await self.base_client._adecorator(_acall)
+    @_awith_retry
+    @_awith_auth
+    async def add_message(
+        self, thread_id: str, message: Union[Messages, str, Dict[str, Any]]
+    ) -> ThreadMessagesResponse:
+        """Add a message to a thread."""
+        message_ = _parse_message(message)
 
+        return await threads.add_thread_messages_async(
+            self._base_client._aclient,
+            thread_id=thread_id,
+            messages=[message_],
+            access_token=self._base_client.token,
+        )
+
+    @_awith_retry
+    @_awith_auth
+    async def add_messages(
+        self, thread_id: Optional[str] = None, messages: Optional[List[Union[Messages, str, Dict[str, Any]]]] = None
+    ) -> ThreadMessagesResponse:
+        """Add multiple messages to a thread."""
+        if messages is None:
+            messages = []
+        messages_ = [_parse_message(message) for message in messages]
+
+        return await threads.add_thread_messages_async(
+            self._base_client._aclient,
+            thread_id=thread_id,
+            messages=messages_,
+            access_token=self._base_client.token,
+        )
+
+    @_awith_retry
+    @_awith_auth
     async def run(
         self,
         thread_id: str,
-        thread_options: Optional[Union[ThreadRunOptions, Dict[str, Any]]] = None,
-    ) -> ThreadRunResponse:
-        """Запуск генерации ответа на контекст треда"""
-        if thread_options is not None:
-            thread_options = ThreadRunOptions.parse_obj(thread_options)
-
-        async def _acall() -> ThreadRunResponse:
-            return await post_threads_run.asyncio(
-                self.base_client._aclient,
-                thread_id=thread_id,
-                thread_options=thread_options,
-                access_token=self.base_client.token,
-            )
-
-        return await self.base_client._adecorator(_acall)
-
-    async def add_messages(
-        self,
-        messages: Union[List[Messages], List[str], List[Dict[str, Any]]],
-        model: Optional[str] = None,
-        thread_id: Optional[str] = None,
         assistant_id: Optional[str] = None,
-    ) -> ThreadMessagesResponse:
-        """Добавление сообщений к треду без запуска"""
-        parsed_messages = [_parse_message(message) for message in messages]
+        thread_options: Optional[ThreadRunOptions] = None,
+        options: Optional[ThreadRunOptions] = None,
+    ) -> ThreadRunResponse:
+        """Run a thread."""
+        if options and not thread_options:
+            thread_options = options
+            warnings.warn("Argument 'options' is deprecated, use 'thread_options'", DeprecationWarning, stacklevel=2)
 
-        async def _acall() -> ThreadMessagesResponse:
-            return await post_threads_messages.asyncio(
-                self.base_client._aclient,
-                messages=parsed_messages,
-                model=model,
-                thread_id=thread_id,
-                assistant_id=assistant_id,
-                access_token=self.base_client.token,
-            )
+        return await threads.run_thread_async(
+            self._base_client._aclient,
+            thread_id=thread_id,
+            assistant_id=assistant_id,
+            thread_options=thread_options,
+            access_token=self._base_client.token,
+        )
 
-        return await self.base_client._adecorator(_acall)
+    @_awith_retry
+    @_awith_auth
+    async def get_run(self, thread_id: str) -> ThreadRunResult:
+        """Return the status of a thread run."""
 
+        return await threads.get_thread_run_async(
+            self._base_client._aclient, thread_id=thread_id, access_token=self._base_client.token
+        )
+
+    @_awith_retry_stream
+    @_awith_auth_stream
+    def run_stream(
+        self,
+        thread_id: str,
+        assistant_id: Optional[str] = None,
+        thread_options: Optional[ThreadRunOptions] = None,
+        options: Optional[ThreadRunOptions] = None,
+    ) -> AsyncIterator[ThreadCompletionChunk]:
+        """Run a thread with streaming response."""
+        if options and not thread_options:
+            thread_options = options
+            warnings.warn("Argument 'options' is deprecated, use 'thread_options'", DeprecationWarning, stacklevel=2)
+
+        return threads.run_thread_stream_async(
+            self._base_client._aclient,
+            thread_id=thread_id,
+            assistant_id=assistant_id,
+            thread_options=thread_options,
+            access_token=self._base_client.token,
+        )
+
+    @_awith_retry
+    @_awith_auth
     async def run_messages(
         self,
-        messages: Union[List[Messages], List[str], List[Dict[str, Any]]],
+        messages: List[Union[Messages, str, Dict[str, Any]]],
         thread_id: Optional[str] = None,
         assistant_id: Optional[str] = None,
         model: Optional[str] = None,
-        thread_options: Optional[Union[ThreadRunOptions, Dict[str, Any]]] = None,
+        thread_options: Optional[ThreadRunOptions] = None,
     ) -> ThreadCompletion:
-        """Добавление сообщений к треду с запуском"""
-        warnings.warn("run_messages is deprecated. Use GigaChat.chat instead", stacklevel=2)
-        parsed_messages = [_parse_message(message) for message in messages]
-        if thread_options is not None:
-            thread_options = ThreadRunOptions.parse_obj(thread_options)
+        """Run messages."""
+        messages_ = [_parse_message(message) for message in messages]
 
-        async def _acall() -> ThreadCompletion:
-            return await post_thread_messages_run.asyncio(
-                self.base_client._aclient,
-                messages=parsed_messages,
-                thread_id=thread_id,
-                assistant_id=assistant_id,
-                model=model,
-                thread_options=thread_options,
-                access_token=self.base_client.token,
-            )
+        return await threads.run_thread_messages_async(
+            self._base_client._aclient,
+            messages=messages_,
+            thread_id=thread_id,
+            assistant_id=assistant_id,
+            model=model,
+            thread_options=thread_options,
+            access_token=self._base_client.token,
+        )
 
-        return await self.base_client._adecorator(_acall)
-
+    @_awith_retry
+    @_awith_auth
     async def rerun_messages(
         self,
         thread_id: str,
-        thread_options: Optional[Union[ThreadRunOptions, Dict[str, Any]]] = None,
+        thread_options: Optional[ThreadRunOptions] = None,
     ) -> ThreadCompletion:
-        """Перегенерация ответа модели"""
-        if thread_options is not None:
-            thread_options = ThreadRunOptions.parse_obj(thread_options)
+        """Regenerate messages."""
 
-        async def _acall() -> ThreadCompletion:
-            return await post_thread_messages_rerun.asyncio(
-                self.base_client._aclient,
-                thread_id=thread_id,
-                thread_options=thread_options,
-                access_token=self.base_client.token,
-            )
+        return await threads.rerun_thread_messages_async(
+            self._base_client._aclient,
+            thread_id=thread_id,
+            thread_options=thread_options,
+            access_token=self._base_client.token,
+        )
 
-        return await self.base_client._adecorator(_acall)
-
-    async def run_messages_stream(
+    @_awith_retry_stream
+    @_awith_auth_stream
+    def run_messages_stream(
         self,
-        messages: Union[List[Messages], List[str], List[Dict[str, Any]]],
+        messages: List[Union[Messages, str, Dict[str, Any]]],
         thread_id: Optional[str] = None,
         assistant_id: Optional[str] = None,
         model: Optional[str] = None,
-        thread_options: Optional[Union[ThreadRunOptions, Dict[str, Any]]] = None,
+        thread_options: Optional[ThreadRunOptions] = None,
         update_interval: Optional[int] = None,
     ) -> AsyncIterator[ThreadCompletionChunk]:
-        """Добавление сообщений к треду с запуском"""
-        warnings.warn("run_messages is deprecated. Use GigaChat.chat instead", stacklevel=2)
-        parsed_messages = [_parse_message(message) for message in messages]
-        if thread_options is not None:
-            thread_options = ThreadRunOptions.parse_obj(thread_options)
+        """Run messages with streaming response."""
+        messages_ = [_parse_message(message) for message in messages]
 
-        if self.base_client._use_auth:
-            if self.base_client._check_validity_token():
-                try:
-                    async for chunk in post_thread_messages_run_stream.asyncio(
-                        self.base_client._aclient,
-                        messages=parsed_messages,
-                        thread_id=thread_id,
-                        assistant_id=assistant_id,
-                        model=model,
-                        thread_options=thread_options,
-                        update_interval=update_interval,
-                        access_token=self.base_client.token,
-                    ):
-                        yield chunk
-                    return
-                except AuthenticationError:
-                    _logger.debug("AUTHENTICATION ERROR")
-                    self.base_client._reset_token()
-            await self.base_client._aupdate_token()
-
-        async for chunk in post_thread_messages_run_stream.asyncio(
-            self.base_client._aclient,
-            messages=parsed_messages,
+        return threads.run_thread_messages_stream_async(
+            self._base_client._aclient,
+            messages=messages_,
             thread_id=thread_id,
             assistant_id=assistant_id,
             model=model,
             thread_options=thread_options,
             update_interval=update_interval,
-            access_token=self.base_client.token,
-        ):
-            yield chunk
+            access_token=self._base_client.token,
+        )
 
-    async def rerun_messages_stream(
+    @_awith_retry_stream
+    @_awith_auth_stream
+    def rerun_messages_stream(
         self,
         thread_id: str,
-        thread_options: Optional[Union[ThreadRunOptions, Dict[str, Any]]] = None,
+        thread_options: Optional[ThreadRunOptions] = None,
         update_interval: Optional[int] = None,
     ) -> AsyncIterator[ThreadCompletionChunk]:
-        """Перегенерация ответа модели"""
-        if thread_options is not None:
-            thread_options = ThreadRunOptions.parse_obj(thread_options)
+        """Regenerate messages with streaming response."""
 
-        if self.base_client._use_auth:
-            if self.base_client._check_validity_token():
-                try:
-                    async for chunk in post_thread_messages_rerun_stream.asyncio(
-                        self.base_client._aclient,
-                        thread_id=thread_id,
-                        thread_options=thread_options,
-                        update_interval=update_interval,
-                        access_token=self.base_client.token,
-                    ):
-                        yield chunk
-                    return
-                except AuthenticationError:
-                    _logger.debug("AUTHENTICATION ERROR")
-                    self.base_client._reset_token()
-            await self.base_client._aupdate_token()
-
-        async for chunk in post_thread_messages_rerun_stream.asyncio(
-            self.base_client._aclient,
+        return threads.rerun_thread_messages_stream_async(
+            self._base_client._aclient,
             thread_id=thread_id,
             thread_options=thread_options,
             update_interval=update_interval,
-            access_token=self.base_client.token,
-        ):
-            yield chunk
+            access_token=self._base_client.token,
+        )

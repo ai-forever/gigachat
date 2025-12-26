@@ -1,0 +1,140 @@
+interactions:
+- request:
+    body: scope=REDACTED
+    headers:
+      Accept:
+      - '*/*'
+      Accept-Encoding:
+      - gzip, deflate
+      Connection:
+      - keep-alive
+      Content-Length:
+      - '23'
+      Content-Type:
+      - application/x-www-form-urlencoded
+      Host:
+      - ngw.devices.sberbank.ru:9443
+      RqUID:
+      - 37eef493-0ec8-4eb4-8eff-a5e3939b045d
+      User-Agent:
+      - GigaChat-python-lib
+      authorization:
+      - Bearer REDACTED
+    method: POST
+    uri: https://ngw.devices.sberbank.ru:9443/api/v2/oauth
+  response:
+    body:
+      string: '{"access_token": "REDACTED", "expires_at": 4102444800000}'
+    headers:
+      Allow:
+      - GET, POST
+      Cache-Control:
+      - no-cache, no-store, max-age=0, must-revalidate
+      Connection:
+      - keep-alive
+      Content-Length:
+      - '1279'
+      Content-Type:
+      - application/json
+      Date:
+      - Tue, 16 Dec 2025 08:57:46 GMT
+      Expires:
+      - '0'
+      Pragma:
+      - no-cache
+      Referrer-Policy:
+      - no-referrer
+      Server:
+      - SynGX
+      Strict-Transport-Security:
+      - max-age=31536000 ; includeSubDomains
+      - max-age=31536000; includeSubDomains
+      Vary:
+      - Origin
+      - Access-Control-Request-Method
+      - Access-Control-Request-Headers
+      X-Content-Type-Options:
+      - nosniff
+      - nosniff
+      X-Frame-Options:
+      - DENY
+      - SAMEORIGIN
+      X-XSS-Protection:
+      - '0'
+      - 1; mode=block
+    status:
+      code: 200
+      message: OK
+- request:
+    body: '{"model": "GigaChat", "messages": [{"role": "user", "content": "Count from
+      1 to 3"}], "stream": true}'
+    headers:
+      Accept:
+      - text/event-stream
+      Accept-Encoding:
+      - gzip, deflate
+      Cache-Control:
+      - no-store
+      Connection:
+      - keep-alive
+      Content-Length:
+      - '101'
+      Content-Type:
+      - application/json
+      Host:
+      - gigachat.devices.sberbank.ru
+      User-Agent:
+      - GigaChat-python-lib
+      authorization:
+      - Bearer REDACTED
+    method: POST
+    uri: https://gigachat.devices.sberbank.ru/api/v1/chat/completions
+  response:
+    body:
+      string: "data: {\"choices\":[{\"delta\":{\"content\":\"$1\\\\, 2\\\\, 3$  \\n\\n\u041F\u043E\u0448\u0430\u0433\u043E\u0432\u043E:\",\"role\":\"assistant\"},\"index\":0}],\"created\":1765875468,\"model\":\"GigaChat:2.0.28.2\",\"object\":\"chat.completion\"}\n\ndata:
+        {\"choices\":[{\"delta\":{\"content\":\"  \\n- \u041D\u0430\u0447\u0438\u043D\u0430\u0435\u043C
+        \u0441 \u0447\u0438\u0441\u043B\u0430 **1**  \\n- \u0414\u043E\u0431\u0430\u0432\u043B\u044F\u0435\u043C
+        \u0435\u0434\u0438\u043D\u0438\u0446\u0443 \u2014 \u043F\u043E\u043B\u0443\u0447\u0430\u0435\u043C
+        \u0447\u0438\u0441\u043B\u043E **2**  \\n- \u0415\u0449\u0435 \u0440\u0430\u0437
+        \u0434\u043E\u0431\u0430\u0432\u043B\u044F\u0435\u043C \u0435\u0434\u0438\u043D\u0438\u0446\u0443
+        \u2014 \u043F\u043E\u043B\u0443\u0447\u0430\u0435\u0442\u0441\u044F \u0447\u0438\u0441\u043B\u043E
+        **3**.\"},\"index\":0}],\"created\":1765875468,\"model\":\"GigaChat:2.0.28.2\",\"object\":\"chat.completion\"}\n\ndata:
+        {\"choices\":[{\"delta\":{\"content\":\"\"},\"index\":0,\"finish_reason\":\"stop\"}],\"created\":1765875468,\"model\":\"GigaChat:2.0.28.2\",\"object\":\"chat.completion\",\"usage\":{\"prompt_tokens\":17,\"completion_tokens\":51,\"total_tokens\":68,\"precached_prompt_tokens\":2}}\n\ndata:
+        [DONE]\n\n"
+    headers:
+      Access-Control-Allow-Credentials:
+      - 'true'
+      Access-Control-Allow-Headers:
+      - Origin, X-Requested-With, Content-Type, Accept, Authorization
+      Access-Control-Allow-Methods:
+      - GET, POST, DELETE, OPTIONS
+      Access-Control-Allow-Origin:
+      - https://beta.saluteai.sberdevices.ru
+      Allow:
+      - GET, POST
+      Connection:
+      - keep-alive
+      Content-Type:
+      - text/event-stream
+      Date:
+      - Tue, 16 Dec 2025 08:57:47 GMT
+      Server:
+      - SynGX
+      Strict-Transport-Security:
+      - max-age=31536000; includeSubDomains
+      Transfer-Encoding:
+      - chunked
+      X-Content-Type-Options:
+      - nosniff
+      X-Frame-Options:
+      - SAMEORIGIN
+      X-Request-Id:
+      - b9d3a2ec-f9ca-4f5f-b4b2-20bda4add2ba
+      X-Session-Id:
+      - 6b66d8ce-29c2-4b89-a3bd-9950334086c3
+      X-XSS-Protection:
+      - 1; mode=block
+    status:
+      code: 200
+      message: OK
+version: 1

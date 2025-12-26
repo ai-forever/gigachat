@@ -1,32 +1,9 @@
-# Примеры работы с GigaChat
+# GigaChat Usage Examples
 
-В этом разделе вы найдете примеры работы с библиотекой GigaChat:
+This directory contains Jupyter notebook examples demonstrating how to use the GigaChat library:
 
-* Простой запрос на генерацию:
-  * [версия](./example_ask.py) с отключенной проверкой сертификатов;
-  * [версия](./example_russian_trusted_root_ca.py) с корневым сертификатом НУЦ Минцифры.
-
-  В обоих случаях код примера передает сообщение в модель и выводит ее ответ.
-
-* [Работа с чатом](./simple_chat.py)
-* [Асинхронная работа с потоковой обработкой токенов](./streaming_asyncio.py)
-* [Взаимная аутентификация по протоколу TLS (mTLS)](./example_auth_certs_mtls.py)
-* [Использование необязательны заголовков](./example_contextvars.py)
-
-  Пример демонстрирует как с помощью библиотеки вы можете передавать необязательные заголовки `X-Session-ID`, `X-Request-ID` и другие.
-
-  Необязательные заголовки могут использоваться для различных целей. Например, для упрощения логирования или для [кэширования запросов](https://developers.sber.ru/docs/ru/gigachat/api/keeping-context#keshirovanie-zaprosov).
-
-* [Пример подсчета токенов](./example_tokens.py)
-
-  Пример показывает как можно оценить количество токенов в передаваемых данных до запроса на генерацию.
-
-* [Пример получения изображения](./example_get_image.py)
-<!--* [Jupyter-ноутбук с примером вызова reasoning](./example_reasoning.ipynb)-->
-* [Jupyter-ноутбук с примером работы с чатом и изображениями](./simple_chat_with_images.ipynb)
-
-  Комплексный пример, который демонстрирует работу с чатом и изображениями.
-
-* [Jupyter-ноутбук с примером работы c GigaChat Vision](./vision/vision.ipynb)
-
-  Пример демонстрирует, как с помощью библиотеки и GigaChat API работать с изображениями.
+* [Simple Chat](./example_simple_chat.ipynb) - Basic chat with system messages and interactive conversation
+* [Functions](./example_functions.ipynb) - Function calling with the GigaChat API
+* [Context Variables](./example_contextvars.ipynb) - Using context variables to pass optional headers (X-Session-ID, X-Request-ID, etc.)
+* [AI Check](./example_ai_check.ipynb) - Detecting AI-generated text using GigaCheckDetection model
+* [Vision](./vision/example_vision.ipynb) - Image analysis using GigaChat Vision capabilities

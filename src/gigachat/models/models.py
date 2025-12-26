@@ -1,14 +1,20 @@
 from typing import List
 
-from gigachat.models.model import Model
-from gigachat.models.with_x_headers import WithXHeaders
-from gigachat.pydantic_v1 import Field
+from pydantic import Field
+
+from gigachat.models.base import APIResponse
 
 
-class Models(WithXHeaders):
-    """Доступные модели"""
+class Model(APIResponse):
+    """Model description."""
 
-    data: List[Model]
-    """Массив объектов с данными доступных моделей"""
-    object_: str = Field(alias="object")
-    """Тип сущности в ответе, например, список"""
+    id_: str = Field(alias="id", description="Model identifier (name).")
+    object_: str = Field(alias="object", description="Object type.")
+    owned_by: str = Field(description="Owner of the model.")
+
+
+class Models(APIResponse):
+    """List of available models."""
+
+    data: List[Model] = Field(description="List of model objects.")
+    object_: str = Field(alias="object", description="Object type.")

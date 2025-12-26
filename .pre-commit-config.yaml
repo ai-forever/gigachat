@@ -2,7 +2,7 @@
 # See https://pre-commit.com/hooks.html for more hooks
 repos:
   - repo: https://github.com/pre-commit/pre-commit-hooks
-    rev: v4.5.0
+    rev: v6.0.0
     hooks:
       - id: trailing-whitespace
       - id: end-of-file-fixer
@@ -11,29 +11,28 @@ repos:
       - id: fix-byte-order-marker
       - id: detect-private-key
       - id: check-ast
+
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.8.6
+    hooks:
+      - id: ruff
+        args: [--fix, --exit-non-zero-on-fix]
+      - id: ruff-format
+
   - repo: local
     hooks:
-      - id: lint
-        name: lint python source files
-        entry: make lint
-        language: system
-        pass_filenames: false
-        always_run: true
       - id: mypy
-        name: perform type-checking
-        entry: make mypy
+        name: mypy type checking
+        entry: uv run mypy
+        args: ["src", "tests"]
         language: system
+        types: [python]
         pass_filenames: false
         always_run: true
-      - id: poetry-check
-        name: validate the structure of the pyproject.toml
-        entry: poetry check
-        language: system
-        pass_filenames: false
-        always_run: true
-      - id: poetry-lock-check
-        name: verify that poetry.lock is consistent with pyproject.toml
-        entry: poetry lock --check
+
+      - id: uv-lock-check
+        name: verify uv.lock is consistent
+        entry: uv lock --check
         language: system
         pass_filenames: false
         always_run: true
