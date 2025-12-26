@@ -1,8 +1,10 @@
 # GigaChat Python SDK
 
-[![PyPI version](https://img.shields.io/pypi/v/gigachat?style=flat-square)](https://pypi.org/project/gigachat/)[![Python versions](https://img.shields.io/pypi/pyversions/gigachat?style=flat-square)](https://pypi.org/project/gigachat/)[![License](https://img.shields.io/github/license/ai-forever/gigachat?style=flat-square)](https://opensource.org/license/MIT)
+[![PyPI version](https://img.shields.io/pypi/v/gigachat?style=flat-square&cacheSeconds=300)](https://pypi.org/project/gigachat/)
+[![Python versions](https://img.shields.io/pypi/pyversions/gigachat?style=flat-square&cacheSeconds=300)](https://pypi.org/project/gigachat/)
+[![License](https://img.shields.io/github/license/ai-forever/gigachat?style=flat-square)](https://opensource.org/license/MIT)
 [![CI](https://img.shields.io/github/actions/workflow/status/ai-forever/gigachat/gigachat.yml?style=flat-square)](https://github.com/ai-forever/gigachat/actions/workflows/gigachat.yml)
-[![Downloads](https://img.shields.io/pypi/dm/gigachat?style=flat-square)](https://pypistats.org/packages/gigachat)
+[![Downloads](https://static.pepy.tech/badge/gigachat/month)](https://pepy.tech/project/gigachat)
 
 Python SDK for the [GigaChat REST API](https://developers.sber.ru/docs/ru/gigachat/api/reference/rest/gigachat-api) — a large language model.
 
