@@ -22,7 +22,7 @@ Python SDK for the GigaChat LLM REST API.
 
 ## Build and Test Commands
 - Run tests: `uv run pytest`
-- Run integration tests: `uv run pytest -m integration` (see `docs/INTEGRATION_TESTING.md`)
+- Run integration tests: `uv run pytest -m integration` (see `CONTRIBUTING.md` “Testing” section)
 - Lint code: `uv run ruff check src`
 - Format code: `uv run ruff format src`
 - Type check: `uv run mypy src`
@@ -34,7 +34,4 @@ Python SDK for the GigaChat LLM REST API.
 
 ## Task-Specific Documentation
 Read these only when relevant to your current task:
-- `docs/INTEGRATION_TESTING.md` — VCR/cassette-based integration test setup, recording, running, progress tracking
-- `docs/REFACTORING.md` — Historical analysis of refactoring issues and solutions
-- `docs/TODO.md` — Task checklists and progress tracking
-- `docs/V1_MIGRATION.md` — v1.0 migration plan, including breaking changes
+- `CONTRIBUTING.md` — Development workflow, testing (including integration tests), and contribution guidelines

@@ -15,7 +15,7 @@ interactions:
       Host:
       - ngw.devices.sberbank.ru:9443
       RqUID:
-      - 38a27fac-9cfe-4a8f-8de8-9307bbce0f96
+      - 736ba29f-7e21-495b-a0a6-ab5003dffc84
       User-Agent:
       - GigaChat-python-lib
       authorization:
@@ -37,7 +37,7 @@ interactions:
       Content-Type:
       - application/json
       Date:
-      - Tue, 16 Dec 2025 08:57:44 GMT
+      - Wed, 21 Jan 2026 11:49:32 GMT
       Expires:
       - '0'
       Pragma:
@@ -90,7 +90,7 @@ interactions:
   response:
     body:
       string: '{"choices": [{"message": {"content": "Hello.", "role": "assistant"},
-        "index": 0, "finish_reason": "stop"}], "created": 1765875465, "model": "GigaChat:2.0.28.2",
+        "index": 0, "finish_reason": "stop"}], "created": 1768996174, "model": "GigaChat:2.0.28.2",
         "object": "chat.completion", "usage": {"prompt_tokens": 17, "completion_tokens":
         3, "total_tokens": 20, "precached_prompt_tokens": 2}}'
     headers:
@@ -111,7 +111,7 @@ interactions:
       Content-Type:
       - application/json; charset=utf-8
       Date:
-      - Tue, 16 Dec 2025 08:57:45 GMT
+      - Wed, 21 Jan 2026 11:49:34 GMT
       Server:
       - SynGX
       Strict-Transport-Security:
@@ -121,9 +121,9 @@ interactions:
       X-Frame-Options:
       - SAMEORIGIN
       X-Request-Id:
-      - 6251964a-379a-45fe-bb3b-421b57149f61
+      - 5c3626f4-16aa-4af1-bd35-9d684e8422f1
       X-Session-Id:
-      - 0c9be511-667e-4e3f-a6fa-1c3ce9998a65
+      - 16b57839-70a7-4ea3-998b-ac82b08fe8e9
       X-XSS-Protection:
       - 1; mode=block
     status:
