@@ -254,6 +254,18 @@ with GigaChat() as client:
 
 The library supports four authentication methods:
 
+### Authentication priority (when multiple are configured)
+
+If multiple auth inputs are provided at the same time, the SDK applies this priority:
+
+1. **`custom_headers_cvar["Authorization"]`** (if set) — overrides any other auth source.
+2. **`authorization_cvar`** (if set) — overrides any other auth source and **disables automatic token fetching/refresh** (you manage the header value and its lifecycle).
+3. **Explicit `access_token`** (constructor parameter / `GIGACHAT_ACCESS_TOKEN`) — used as-is. If it fails with 401 and OAuth credentials or user/password are also configured, the SDK will fall back to fetching a new token.
+4. **OAuth `credentials`** (constructor parameter / `GIGACHAT_CREDENTIALS`) — used to obtain/refresh a token.
+5. **Username/password** (`user` + `password`) — used to obtain/refresh a token from the `/token` endpoint.
+
+When both **OAuth `credentials`** and **username/password** are provided, OAuth credentials take precedence for token refresh.
+
 ### 1. Authorization Key (Recommended)
 
 For detailed instructions, see the [official documentation](https://developers.sber.ru/docs/ru/gigachat/quickstart/main).
@@ -467,6 +479,12 @@ Available context variables:
 | `client_id_cvar` | `X-Client-ID` | Client identifier |
 | `custom_headers_cvar` | (various) | Dictionary of additional headers |
 
+**Header precedence (when multiple sources set the same header):**
+
+- **Explicit `access_token`** passed by the SDK (or your code) sets `Authorization: Bearer ...` first.
+- **`authorization_cvar`** overrides that `Authorization` header if it is set.
+- **`custom_headers_cvar`** is applied last and overrides both (including `Authorization`), as well as any other header.
+
 ### Retry Configuration
 
 Configure automatic retry with exponential backoff for transient errors:
@@ -480,6 +498,20 @@ client = GigaChat(
     retry_on_status_codes=(429, 500, 502, 503, 504),
 )
 ```
+
+> **Avoid “double retry” (important):**
+> If you use `gigachat` through a higher-level library that also retries (for example, `langchain-gigachat` / LangChain),
+> enable retries in **only one** layer. Otherwise, the effective number of attempts multiplies (e.g., 3 SDK retries × 3 framework retries).
+>
+> Recommended defaults:
+> - Keep `gigachat` retries **disabled** (default `max_retries=0`) when the outer framework retries.
+> - Or disable retries in the outer framework and configure retries here (recommended if you want one consistent retry policy).
+
+### Deprecations
+
+- **`Messages.data_for_context`**: deprecated by the upstream API. Do not use it in new code.
+  - **Use instead**: include the relevant information directly in the message `content`, or attach files via `attachments` (file IDs) when you need to provide additional context.
+  - **Timeline**: the SDK will keep accepting `data_for_context` through the `0.x` line, but it may be removed in **`1.0.0`** (or earlier if the upstream API removes it).
 
 ### Token Counting
 
@@ -554,6 +586,22 @@ with GigaChat(scope="GIGACHAT_API_B2B") as client:
 
 - **[GigaChain](https://github.com/ai-forever/gigachain)** — A set of solutions for developing Russian-language LLM applications and multi-agent systems, with support for LangChain, LangGraph, LangChain4j, as well as GigaChat and other available LLMs. GigaChain covers the full development lifecycle: from prototyping and research to production deployment and ongoing support.
 - **[langchain-gigachat](https://github.com/ai-forever/langchain-gigachat)** — Official LangChain integration package for GigaChat
+
+## Versioning and stability
+
+This project follows SemVer with additional clarity for pre-`1.0.0` releases:
+
+- **Patch releases (`0.x.Y`)**: Backwards compatible bug fixes and internal changes.
+- **Minor releases (`0.X.0`)**: May include backwards-incompatible changes. Any breaking changes must be called out in the GitHub Release notes.
+
+### Stable release gate
+
+To ship a release marked **Production/Stable**, the following must be true:
+
+- **CI is green** on `main` (lint, mypy, unit tests, integration replay).
+- **Local checks are green** (`make all`).
+- **Packaging is sane**: sdist+wheel build and install from artifacts works (no missing files).
+- **Integration cassettes are current**: re-recorded with real credentials and reviewed for scrubbing.
 
 ## Contributing
 
