@@ -130,7 +130,10 @@ Generate vector representations of text:
 from gigachat import GigaChat
 
 with GigaChat() as client:
-    result = client.embeddings(["Hello, world!", "Machine learning is fascinating"])
+    result = client.embeddings(
+        texts=["Hello, world!", "Machine learning is fascinating"],
+        model="EmbeddingsGigaR"
+    )
 
     for i, item in enumerate(result.data):
         print(f"Text {i + 1}: {len(item.embedding)} dimensions")
