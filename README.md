@@ -131,13 +131,16 @@ from gigachat import GigaChat
 
 with GigaChat() as client:
     result = client.embeddings(
-        texts=["Hello, world!", "Machine learning is fascinating"],
-        model="EmbeddingsGigaR"
+        ["Hello, world!", "Machine learning is fascinating"],
+        model="Embeddings",
     )
 
     for i, item in enumerate(result.data):
         print(f"Text {i + 1}: {len(item.embedding)} dimensions")
 ```
+
+> **Note:** The `model` parameter must be passed directly to the `embeddings()` method (default: `"Embeddings"`).
+> The `model` set in the `GigaChat()` constructor does not affect embeddings.
 
 ### Function Calling
 
@@ -192,7 +195,7 @@ See the [examples/](https://github.com/ai-forever/gigachat/tree/main/examples/) 
 |-----------|------|---------|-------------|
 | `credentials` | `str` | `None` | Authorization key from GigaChat API |
 | `scope` | `str` | `GIGACHAT_API_PERS` | API scope (see below) |
-| `model` | `str` | `GigaChat` | Default model for requests |
+| `model` | `str` | `GigaChat` | Model name sent in chat/tokens_count requests (note: the API may override this with its default; for embeddings, pass `model` directly to the `embeddings()` method) |
 | `base_url` | `str` | `https://gigachat.devices.sberbank.ru/api/v1` | API base URL |
 | `auth_url` | `str` | `https://ngw.devices.sberbank.ru:9443/api/v2/oauth` | OAuth token endpoint |
 | `access_token` | `str` | `None` | Pre-obtained access token (bypasses OAuth) |
@@ -235,7 +238,8 @@ export GIGACHAT_VERIFY_SSL_CERTS="true"
 # TLS: path to a CA bundle file (typically required - Python HTTP clients often don't use OS trust store by default)
 export GIGACHAT_CA_BUNDLE_FILE="<your_ca_bundle_file>"
 
-# Model
+# Model (sent in chat requests; the API may use its default regardless.
+# For embeddings, pass model directly to the embeddings() method.)
 export GIGACHAT_MODEL="GigaChat"
 
 # Retry
