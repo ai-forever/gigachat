@@ -195,7 +195,7 @@ See the [examples/](https://github.com/ai-forever/gigachat/tree/main/examples/) 
 |-----------|------|---------|-------------|
 | `credentials` | `str` | `None` | Authorization key from GigaChat API |
 | `scope` | `str` | `GIGACHAT_API_PERS` | API scope (see below) |
-| `model` | `str` | `GigaChat` | Model name sent in chat/tokens_count requests (note: the API may override this with its default; for embeddings, pass `model` directly to the `embeddings()` method) |
+| `model` | `str` | `GigaChat` | Default model for requests |
 | `base_url` | `str` | `https://gigachat.devices.sberbank.ru/api/v1` | API base URL |
 | `auth_url` | `str` | `https://ngw.devices.sberbank.ru:9443/api/v2/oauth` | OAuth token endpoint |
 | `access_token` | `str` | `None` | Pre-obtained access token (bypasses OAuth) |
@@ -238,8 +238,7 @@ export GIGACHAT_VERIFY_SSL_CERTS="true"
 # TLS: path to a CA bundle file (typically required - Python HTTP clients often don't use OS trust store by default)
 export GIGACHAT_CA_BUNDLE_FILE="<your_ca_bundle_file>"
 
-# Model (sent in chat requests; the API may use its default regardless.
-# For embeddings, pass model directly to the embeddings() method.)
+# Model
 export GIGACHAT_MODEL="GigaChat"
 
 # Retry
