@@ -329,3 +329,70 @@ def test_dict_schema_passthrough_no_normalization() -> None:
     dumped = rf.model_dump(exclude_none=True, by_alias=True)
     assert "additionalProperties" not in dumped["schema"]
     assert "required" not in dumped["schema"]
+
+
+# ---------------------------------------------------------------------------
+# Shorthand: Chat(response_format=SomeModel) without wrapping
+# ---------------------------------------------------------------------------
+
+
+class Person(BaseModel):
+    name: str = Field(description="Name")
+    age: int = Field(description="Age")
+
+
+def test_chat_response_format_bare_basemodel() -> None:
+    """Passing a BaseModel class directly as response_format should work."""
+    chat = Chat(
+        messages=[Messages(role=MessagesRole.USER, content="hi")],
+        response_format=Person,
+    )
+    dumped = chat.model_dump(exclude_none=True, by_alias=True)
+    rf = dumped["response_format"]
+    assert rf["type"] == "json_schema"
+    assert rf["schema"]["type"] == "object"
+    assert "name" in rf["schema"]["properties"]
+    assert "age" in rf["schema"]["properties"]
+    assert rf["schema"]["additionalProperties"] is False
+
+
+def test_chat_response_format_bare_basemodel_validate() -> None:
+    """Chat.model_validate with a bare BaseModel class in response_format."""
+    data = {
+        "messages": [{"role": "user", "content": "hi"}],
+        "response_format": Person,
+    }
+    chat = Chat.model_validate(data)
+    assert chat.response_format is not None
+    dumped = chat.model_dump(exclude_none=True, by_alias=True)
+    assert dumped["response_format"]["type"] == "json_schema"
+    assert dumped["response_format"]["schema"]["type"] == "object"
+
+
+def test_chat_response_format_bare_type_adapter() -> None:
+    """Passing a TypeAdapter directly as response_format should work."""
+    adapter: TypeAdapter[Union[int, str]] = TypeAdapter(Union[int, str])
+    chat = Chat(
+        messages=[Messages(role=MessagesRole.USER, content="hi")],
+        response_format=adapter,
+    )
+    dumped = chat.model_dump(exclude_none=True, by_alias=True)
+    rf = dumped["response_format"]
+    assert rf["type"] == "json_schema"
+    assert "anyOf" in rf["schema"]
+
+
+def test_chat_response_format_bare_nested_model() -> None:
+    """Nested BaseModel as response_format is normalized correctly."""
+    chat = Chat(
+        messages=[Messages(role=MessagesRole.USER, content="hi")],
+        response_format=Universe,
+    )
+    dumped = chat.model_dump(exclude_none=True, by_alias=True)
+    rf = dumped["response_format"]
+    assert rf["type"] == "json_schema"
+    schema = rf["schema"]
+    assert schema["additionalProperties"] is False
+    galaxy_prop = schema["properties"]["galaxy"]
+    assert galaxy_prop["type"] == "object"
+    assert galaxy_prop["additionalProperties"] is False
