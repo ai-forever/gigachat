@@ -589,22 +589,16 @@ If the project has VCR integration tests (`tests/integration/test_chat_vcr.py`):
   - [x] `examples/response_format_json_schema.py`.
   - [x] `examples/agent_structured_step.py` (OpenAI-style agent loop).
 
-- [ ] **Integration VCR cassettes (re-record after request shape changes)**:
-  - [ ] VCR matches on request `body` and uses `record_mode="once"` (`tests/integration/conftest.py`), so adding new request fields (e.g. `response_format`) requires updating cassettes.
-  - [ ] Delete affected cassette(s) under `tests/integration/cassettes/` (at least:
-    - `test_chat_simple.yaml`
-    - `test_achat_simple.yaml`
-    - `test_stream_simple.yaml`
-    - `test_astream_simple.yaml`
-    )
-    and re-run integration tests with real `GIGACHAT_CREDENTIALS` to recreate them.
-  - [ ] Review the new cassette contents (tokens must be scrubbed; `expires_at` is set to a far-future timestamp during recording).
+- [x] **Integration VCR cassettes (re-record after request shape changes)**:
+  - [x] VCR matches on request `body` and uses `record_mode="once"` (`tests/integration/conftest.py`), so adding new request fields (e.g. `response_format`) may require updating cassettes.
+  - [x] Re-recorded chat-related cassettes under `tests/integration/cassettes/` using real `GIGACHAT_CREDENTIALS` from `.env` (loaded via `dotenv.load_dotenv()` in `tests/integration/conftest.py`).
+  - [x] Verified `uv run pytest -m integration tests/integration` passes in replay mode.
 
-- [ ] **Final quality validation**:
-  - [ ] `uv run ruff check .`
-  - [ ] `uv run ruff format .`
-  - [ ] `uv run mypy src/gigachat`
-  - [ ] `uv run pytest`
+- [x] **Final quality validation**:
+  - [x] `uv run ruff check .` — all checks passed
+  - [x] `uv run ruff format .` — 79 files already formatted
+  - [x] `uv run mypy src/gigachat` — no issues in 32 source files
+  - [x] `uv run pytest` — 397 passed, 20 deselected
 
 ## Minimal usage example (for README / examples)
 
