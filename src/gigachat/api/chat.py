@@ -24,9 +24,14 @@ def _get_chat_kwargs(
     headers["Content-Type"] = "application/json"
     json_data = chat.model_dump(exclude_none=True, by_alias=True, exclude={"stream"})
     fields = json_data.pop("additional_fields", None)
+    response_format = json_data.get("response_format")
 
     if fields:
         json_data = {**json_data, **fields}
+
+    if response_format is not None:
+        json_data["response_format"] = response_format
+
     return {
         "method": "POST",
         "url": chat_url_cvar.get(),
@@ -68,8 +73,13 @@ def _get_stream_kwargs(
     headers["Content-Type"] = "application/json"
     json_data = chat.model_dump(exclude_none=True, by_alias=True)
     fields = json_data.pop("additional_fields", None)
+    response_format = json_data.get("response_format")
+
     if fields:
         json_data = {**json_data, **fields}
+
+    if response_format is not None:
+        json_data["response_format"] = response_format
 
     return {
         "method": "POST",
