@@ -582,12 +582,12 @@ If the project has VCR integration tests (`tests/integration/test_chat_vcr.py`):
   - [x] Error path: non-JSON content → error.
   - [x] Error path: JSON fails `model_validate` → error.
 
-- [ ] **Documentation & examples**:
-  - [ ] `README.md`: `response_format=json_schema` + `json.loads` example.
-  - [ ] `README.md`: A+ example (pass a Pydantic model as schema).
-  - [ ] `README.md`: B example (`chat_parse`) — “like OpenAI parse”.
-  - [ ] `examples/response_format_json_schema.py`.
-  - [ ] `examples/agent_structured_step.py` (OpenAI-style agent loop).
+- [x] **Documentation & examples**:
+  - [x] `README.md`: `response_format=json_schema` + `json.loads` example.
+  - [x] `README.md`: A+ example (pass a Pydantic model as schema).
+  - [x] `README.md`: B example (`chat_parse`) — “like OpenAI parse”.
+  - [x] `examples/response_format_json_schema.py`.
+  - [x] `examples/agent_structured_step.py` (OpenAI-style agent loop).
 
 - [ ] **Integration VCR cassettes (re-record after request shape changes)**:
   - [ ] VCR matches on request `body` and uses `record_mode="once"` (`tests/integration/conftest.py`), so adding new request fields (e.g. `response_format`) requires updating cassettes.
