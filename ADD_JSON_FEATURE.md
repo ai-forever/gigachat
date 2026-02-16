@@ -550,7 +550,7 @@ If the project has VCR integration tests (`tests/integration/test_chat_vcr.py`):
     - [x] set `required` from `properties` by default,
     - [x] inline/unravel `$ref` when `$ref` has sibling keywords (resolve `#/...` refs from the root schema),
     - [x] recursively normalize `$defs`/`definitions`, `items`, `anyOf`, `allOf` (flatten single-entry `allOf`).
-  - [ ] Document explicitly: `anyOf/oneOf` are supported (Union works).
+  - [x] Document explicitly: `anyOf/oneOf` are supported (Union works).
   - [ ] **Verify `$defs` / `$ref` compatibility** with the GigaChat server (before/after normalization) and decide if we should additionally inline/remove `$defs` entirely on the wire.
 
 - [x] **Payload building & `additional_fields` precedence**:
@@ -569,18 +569,18 @@ If the project has VCR integration tests (`tests/integration/test_chat_vcr.py`):
   - [x] `schema=TypeAdapter(Union[...])` serializes correctly into a dict schema.
   - [x] Nested model schema includes `$defs` / `$ref` and we handle it correctly (inlined when sibling keys present, preserved when bare).
 
-- [ ] **B (OpenAI-style `.parse` helper)**:
-  - [ ] Add `GigaChatSyncClient.chat_parse(...)` and `GigaChatAsyncClient.achat_parse(...)`:
-    - [ ] automatically set `response_format` from `response_model`
-    - [ ] call `chat()/achat()`
-    - [ ] parse `message.content` into `response_model`
-  - [ ] Define error behavior (non-JSON / model validation failure) and implement exceptions/messages.
-  - [ ] Match OpenAI behavior for `finish_reason == "length"` / `"content_filter"` if applicable.
+- [x] **B (OpenAI-style `.parse` helper)**:
+  - [x] Add `GigaChatSyncClient.chat_parse(...)` and `GigaChatAsyncClient.achat_parse(...)`:
+    - [x] automatically set `response_format` from `response_model`
+    - [x] call `chat()/achat()`
+    - [x] parse `message.content` into `response_model`
+  - [x] Define error behavior (non-JSON / model validation failure) and implement exceptions/messages.
+  - [x] Match OpenAI behavior for `finish_reason == "length"` / `"content_filter"` if applicable.
 
-- [ ] **Unit tests: B helper**:
-  - [ ] Happy path: returns `(completion, parsed)` and `parsed` is of the expected type.
-  - [ ] Error path: non-JSON content → error.
-  - [ ] Error path: JSON fails `model_validate` → error.
+- [x] **Unit tests: B helper**:
+  - [x] Happy path: returns `(completion, parsed)` and `parsed` is of the expected type.
+  - [x] Error path: non-JSON content → error.
+  - [x] Error path: JSON fails `model_validate` → error.
 
 - [ ] **Documentation & examples**:
   - [ ] `README.md`: `response_format=json_schema` + `json.loads` example.
