@@ -21,6 +21,7 @@ This library is part of [GigaChain](https://github.com/ai-forever/gigachain) and
   - [Async](#async)
   - [Embeddings](#embeddings)
   - [Function Calling](#function-calling)
+  - [Structured Output (JSON Schema)](#structured-output-json-schema)
   - [More Examples](#more-examples)
 - [Configuration](#configuration)
   - [Constructor Parameters](#constructor-parameters)
@@ -183,6 +184,47 @@ with GigaChat() as client:
         print(f"Function: {message.function_call.name}")
         print(f"Arguments: {message.function_call.arguments}")
 ```
+
+### Structured Output (JSON Schema)
+
+Force the model to reply with JSON matching your schema by setting `response_format.type="json_schema"`.
+
+> **Important:** The API returns JSON as a **string** in `choices[0].message.content`. You must parse it yourself (or validate it with Pydantic).
+
+```python
+import json
+from typing import List
+from pydantic import BaseModel
+
+from gigachat import GigaChat
+from gigachat.models import Chat, Messages, MessagesRole
+
+
+class MathAnswer(BaseModel):
+    steps: List[str]
+    final_answer: str
+
+
+chat = Chat(
+    messages=[
+        Messages(role=MessagesRole.USER, content="Solve 8x + 7 = -23. Explain step by step."),
+    ],
+    response_format={
+        "type": "json_schema",
+        # You can pass a raw JSON Schema dict, or a Pydantic model/type adapter (see below).
+        "schema": MathAnswer,
+        "strict": True,
+    },
+)
+
+with GigaChat() as client:
+    resp = client.chat(chat)
+    data = json.loads(resp.choices[0].message.content)
+    parsed = MathAnswer.model_validate(data)
+    print(parsed.final_answer)
+```
+
+Pydantic schemas may include `anyOf` / `oneOf` (for example, when using `Union[...]`). This is supported by the API, so you can model multiple valid JSON shapes and validate the output accordingly.
 
 ### More examples
 See the [examples/](https://github.com/ai-forever/gigachat/tree/main/examples/) folder for complete working examples including chat, functions, context variables, AI detection, and vision.
