@@ -531,43 +531,43 @@ If the project has VCR integration tests (`tests/integration/test_chat_vcr.py`):
 
 ## TODO (step-by-step implementation checklist)
 
-- [ ] **`response_format` models (minimal wire shape)**:
-  - [ ] Add `src/gigachat/models/response_format.py` with `JsonSchemaResponseFormat(type="json_schema", schema, strict?)`.
-  - [ ] Add `ResponseFormat` (union/alias) and export it from `src/gigachat/models/__init__.py` if needed.
-  - [ ] Add validation: when `type="json_schema"`, require `schema` to be an object.
+- [x] **`response_format` models (minimal wire shape)**:
+  - [x] Add `src/gigachat/models/response_format.py` with `JsonSchemaResponseFormat(type="json_schema", schema, strict?)`.
+  - [x] Add `ResponseFormat` (union/alias) and export it from `src/gigachat/models/__init__.py` if needed.
+  - [x] Add validation: when `type="json_schema"`, require `schema` to be an object.
 
-- [ ] **Field on `Chat`**:
-  - [ ] Add `response_format` to `src/gigachat/models/chat.py::Chat`.
-  - [ ] Ensure `model_dump(exclude_none=True)` serializes `response_format` correctly.
+- [x] **Field on `Chat`**:
+  - [x] Add `response_format` to `src/gigachat/models/chat.py::Chat`.
+  - [x] Ensure `model_dump(exclude_none=True)` serializes `response_format` correctly.
 
-- [ ] **A+ (Pydantic/TypeAdapter passed as schema directly)**:
-  - [ ] Allow `schema` to be `dict | type[BaseModel] | TypeAdapter`.
-  - [ ] In `model_validator(mode="before")`, convert:
-    - [ ] `BaseModel` → `model_json_schema()`
-    - [ ] `TypeAdapter` → `json_schema()`
-  - [ ] Normalize Pydantic-generated schema using an OpenAI-style helper (like `openai.lib._pydantic.to_strict_json_schema`):
-    - [ ] apply `additionalProperties: false` defaults for objects,
-    - [ ] set `required` from `properties` by default,
-    - [ ] inline/unravel `$ref` when `$ref` has sibling keywords (resolve `#/...` refs from the root schema),
-    - [ ] recursively normalize `$defs`/`definitions`, `items`, `anyOf`, `allOf` (flatten single-entry `allOf`).
+- [x] **A+ (Pydantic/TypeAdapter passed as schema directly)**:
+  - [x] Allow `schema` to be `dict | type[BaseModel] | TypeAdapter`.
+  - [x] In `model_validator(mode="before")`, convert:
+    - [x] `BaseModel` → `model_json_schema()`
+    - [x] `TypeAdapter` → `json_schema()`
+  - [x] Normalize Pydantic-generated schema using an OpenAI-style helper (`src/gigachat/models/_schema_normalize.py`):
+    - [x] apply `additionalProperties: false` defaults for objects,
+    - [x] set `required` from `properties` by default,
+    - [x] inline/unravel `$ref` when `$ref` has sibling keywords (resolve `#/...` refs from the root schema),
+    - [x] recursively normalize `$defs`/`definitions`, `items`, `anyOf`, `allOf` (flatten single-entry `allOf`).
   - [ ] Document explicitly: `anyOf/oneOf` are supported (Union works).
   - [ ] **Verify `$defs` / `$ref` compatibility** with the GigaChat server (before/after normalization) and decide if we should additionally inline/remove `$defs` entirely on the wire.
 
-- [ ] **Payload building & `additional_fields` precedence**:
-  - [ ] Choose precedence strategy:
-    - [ ] (Recommended first) special-case: `Chat.response_format` overrides `additional_fields["response_format"]` if both set.
+- [x] **Payload building & `additional_fields` precedence**:
+  - [x] Choose precedence strategy:
+    - [x] (Recommended first) special-case: `Chat.response_format` overrides `additional_fields["response_format"]` if both set.
     - [ ] (Later / major bump) flip global merge so typed fields override `additional_fields`.
-  - [ ] Verify it works consistently for sync and streaming (`_get_chat_kwargs` and `_get_stream_kwargs`).
+  - [x] Verify it works consistently for sync and streaming (`_get_chat_kwargs` and `_get_stream_kwargs`).
 
-- [ ] **Unit tests: wire serialization**:
-  - [ ] `tests/unit/gigachat/api/test_chat.py`: `response_format` is included in sync request body.
-  - [ ] `tests/unit/gigachat/api/test_chat.py`: `response_format` is included in streaming request body.
-  - [ ] Conflict test: `additional_fields["response_format"]` vs `Chat.response_format` (the `Chat` field wins).
+- [x] **Unit tests: wire serialization**:
+  - [x] `tests/unit/gigachat/api/test_chat.py`: `response_format` is included in sync request body.
+  - [x] `tests/unit/gigachat/api/test_chat.py`: `response_format` is included in streaming request body.
+  - [x] Conflict test: `additional_fields["response_format"]` vs `Chat.response_format` (the `Chat` field wins).
 
-- [ ] **Unit tests: A+ (Pydantic → schema)**:
-  - [ ] `schema=MyModel` serializes correctly into a dict schema.
-  - [ ] `schema=TypeAdapter(Union[...])` serializes correctly into a dict schema (if supported).
-  - [ ] Nested model schema includes `$defs` / `$ref` and we handle it correctly (either accepted as-is, or normalized/inlined).
+- [x] **Unit tests: A+ (Pydantic → schema)**:
+  - [x] `schema=MyModel` serializes correctly into a dict schema.
+  - [x] `schema=TypeAdapter(Union[...])` serializes correctly into a dict schema.
+  - [x] Nested model schema includes `$defs` / `$ref` and we handle it correctly (inlined when sibling keys present, preserved when bare).
 
 - [ ] **B (OpenAI-style `.parse` helper)**:
   - [ ] Add `GigaChatSyncClient.chat_parse(...)` and `GigaChatAsyncClient.achat_parse(...)`:
@@ -588,6 +588,17 @@ If the project has VCR integration tests (`tests/integration/test_chat_vcr.py`):
   - [ ] `README.md`: B example (`chat_parse`) — “like OpenAI parse”.
   - [ ] `examples/response_format_json_schema.py`.
   - [ ] `examples/agent_structured_step.py` (OpenAI-style agent loop).
+
+- [ ] **Integration VCR cassettes (re-record after request shape changes)**:
+  - [ ] VCR matches on request `body` and uses `record_mode="once"` (`tests/integration/conftest.py`), so adding new request fields (e.g. `response_format`) requires updating cassettes.
+  - [ ] Delete affected cassette(s) under `tests/integration/cassettes/` (at least:
+    - `test_chat_simple.yaml`
+    - `test_achat_simple.yaml`
+    - `test_stream_simple.yaml`
+    - `test_astream_simple.yaml`
+    )
+    and re-run integration tests with real `GIGACHAT_CREDENTIALS` to recreate them.
+  - [ ] Review the new cassette contents (tokens must be scrubbed; `expires_at` is set to a far-future timestamp during recording).
 
 - [ ] **Final quality validation**:
   - [ ] `uv run ruff check .`
