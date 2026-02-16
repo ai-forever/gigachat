@@ -57,4 +57,11 @@ class JsonSchemaResponseFormat(BaseModel):
         )
 
 
-ResponseFormat = Union[JsonSchemaResponseFormat, dict[str, Any]]
+ResponseFormat = Union[JsonSchemaResponseFormat, dict[str, Any], type[pydantic.BaseModel], Any]
+"""Accepted types for ``Chat.response_format``:
+
+* ``JsonSchemaResponseFormat`` — fully typed object.
+* ``dict`` — raw JSON passed through as-is.
+* ``type[BaseModel]`` — Pydantic model class (auto-converted to JSON Schema).
+* ``TypeAdapter`` — Pydantic TypeAdapter (auto-converted to JSON Schema).
+"""
