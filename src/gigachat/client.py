@@ -19,12 +19,13 @@ from typing import (
 import httpx
 from typing_extensions import Self
 
-from gigachat._types import FileTypes
-from gigachat.api import auth, chat, embeddings, files, models, tools
+from gigachat._types import FileContent, FileTypes
+from gigachat.api import auth, batches, chat, embeddings, files, models, tools
 from gigachat.assistants import AssistantsAsyncClient, AssistantsSyncClient
 from gigachat.authentication import _awith_auth, _awith_auth_stream, _with_auth, _with_auth_stream
 from gigachat.context import authorization_cvar
 from gigachat.models.auth import AccessToken, Token
+from gigachat.models.batches import Batch, Batches
 from gigachat.models.chat import (
     Chat,
     ChatCompletion,
@@ -354,6 +355,18 @@ class GigaChatSyncClient(_BaseClient):
 
     @_with_retry
     @_with_auth
+    def create_batch(self, file: FileContent, method: Literal["chat_completions", "embedder"]) -> Batch:
+        """Create a batch task for asynchronous processing."""
+        return batches.create_batch_sync(self._client, file=file, method=method, access_token=self.token)
+
+    @_with_retry
+    @_with_auth
+    def get_batches(self, batch_id: Optional[str] = None) -> Batches:
+        """Return batch tasks or a specific batch task."""
+        return batches.get_batches_sync(self._client, batch_id=batch_id, access_token=self.token)
+
+    @_with_retry
+    @_with_auth
     def get_models(self) -> Models:
         """Return a list of available models."""
         return models.get_models_sync(self._client, access_token=self.token)
@@ -600,6 +613,18 @@ class GigaChatAsyncClient(_BaseClient):
         """Return embeddings."""
 
         return await embeddings.embeddings_async(self._aclient, access_token=self.token, input_=texts, model=model)
+
+    @_awith_retry
+    @_awith_auth
+    async def acreate_batch(self, file: FileContent, method: Literal["chat_completions", "embedder"]) -> Batch:
+        """Create a batch task for asynchronous processing."""
+        return await batches.create_batch_async(self._aclient, file=file, method=method, access_token=self.token)
+
+    @_awith_retry
+    @_awith_auth
+    async def aget_batches(self, batch_id: Optional[str] = None) -> Batches:
+        """Return batch tasks or a specific batch task."""
+        return await batches.get_batches_async(self._aclient, batch_id=batch_id, access_token=self.token)
 
     @_awith_retry
     @_awith_auth
