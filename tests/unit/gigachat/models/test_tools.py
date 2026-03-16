@@ -1,6 +1,8 @@
 from gigachat.models.tools import (
     AICheckResult,
     Balance,
+    CustomFunction,
+    FunctionValidationResult,
     OpenApiFunctions,
     TokensCount,
 )
@@ -44,3 +46,26 @@ def test_openapi_functions_creation() -> None:
     funcs = OpenApiFunctions.model_validate(data)
     assert len(funcs.functions) == 1
     assert funcs.functions[0].name == "func1"
+
+
+def test_function_validation_result_creation() -> None:
+    data = {
+        "status": 200,
+        "message": "Function is valid",
+        "json_ai_rules_version": "1.0.5",
+        "warnings": [{"description": "few_shot_examples are missing", "schema_location": "(root)"}],
+    }
+    result = FunctionValidationResult.model_validate(data)
+    assert result.status == 200
+    assert result.warnings is not None
+    assert result.warnings[0].schema_location == "(root)"
+
+
+def test_custom_function_creation() -> None:
+    data = {
+        "name": "weather_forecast",
+        "parameters": {"type": "object", "properties": {"location": {"type": "string"}}},
+    }
+    function = CustomFunction.model_validate(data)
+    assert function.name == "weather_forecast"
+    assert function.parameters["type"] == "object"

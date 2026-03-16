@@ -1,4 +1,4 @@
-from typing import List, Literal, Optional
+from typing import Any, Dict, List, Literal, Optional
 
 from pydantic import BaseModel, Field
 
@@ -42,3 +42,41 @@ class OpenApiFunctions(APIResponse):
     """Functions converted from OpenAPI."""
 
     functions: List[Function] = Field(description="List of converted functions.")
+
+
+class FunctionValidationIssue(BaseModel):
+    """Validation issue details for a function schema."""
+
+    description: str = Field(description="Issue description.")
+    schema_location: str = Field(description="Location in the schema that should be fixed.")
+
+
+class FunctionValidationResult(APIResponse):
+    """Result of validating a GigaChat function schema."""
+
+    status: int = Field(description="HTTP status code.")
+    message: Literal["Function is valid", "Incorrect function syntax"] = Field(
+        description="Validation result message."
+    )
+    json_ai_rules_version: Optional[str] = Field(default=None, description="Version of validation rules.")
+    errors: Optional[List[FunctionValidationIssue]] = Field(default=None, description="Validation errors.")
+    warnings: Optional[List[FunctionValidationIssue]] = Field(default=None, description="Validation warnings.")
+
+
+class CustomFunctionExample(BaseModel):
+    """Few-shot example for a custom function."""
+
+    request: str = Field(description="User request example.")
+    params: Dict[str, Any] = Field(description="Function parameters example.")
+
+
+class CustomFunction(BaseModel):
+    """Custom function schema accepted by the validation endpoint."""
+
+    name: str = Field(description="Function name.")
+    description: Optional[str] = Field(default=None, description="Function description.")
+    parameters: Dict[str, Any] = Field(description="JSON schema for function arguments.")
+    few_shot_examples: Optional[List[CustomFunctionExample]] = Field(
+        default=None, description="Examples of expected argument generation."
+    )
+    return_parameters: Optional[Dict[str, Any]] = Field(default=None, description="JSON schema for return values.")

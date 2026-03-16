@@ -43,7 +43,16 @@ from gigachat.models.threads import (
     Threads,
     ThreadStatus,
 )
-from gigachat.models.tools import AICheckResult, Balance, OpenApiFunctions, TokensCount
+from gigachat.models.tools import (
+    AICheckResult,
+    Balance,
+    CustomFunction,
+    CustomFunctionExample,
+    FunctionValidationIssue,
+    FunctionValidationResult,
+    OpenApiFunctions,
+    TokensCount,
+)
 
 __all__ = (
     "AccessToken",
@@ -64,6 +73,8 @@ __all__ = (
     "ChatCompletionChunk",
     "Choices",
     "ChoicesChunk",
+    "CustomFunction",
+    "CustomFunctionExample",
     "CreateAssistant",
     "DeletedFile",
     "Embedding",
@@ -72,6 +83,8 @@ __all__ = (
     "Function",
     "FunctionCall",
     "FunctionParameters",
+    "FunctionValidationIssue",
+    "FunctionValidationResult",
     "Image",
     "Messages",
     "MessagesChunk",

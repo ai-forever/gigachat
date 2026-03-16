@@ -6,12 +6,21 @@ from gigachat.api.tools import (
     ai_check_sync,
     functions_convert_async,
     functions_convert_sync,
+    functions_validate_async,
+    functions_validate_sync,
     get_balance_async,
     get_balance_sync,
     tokens_count_async,
     tokens_count_sync,
 )
-from gigachat.models.tools import AICheckResult, Balance, OpenApiFunctions, TokensCount
+from gigachat.models.tools import (
+    AICheckResult,
+    Balance,
+    CustomFunction,
+    FunctionValidationResult,
+    OpenApiFunctions,
+    TokensCount,
+)
 from tests.constants import (
     AI_CHECK,
     AI_CHECK_URL,
@@ -22,6 +31,8 @@ from tests.constants import (
     CONVERT_FUNCTIONS_URL,
     TOKENS_COUNT,
     TOKENS_COUNT_URL,
+    VALIDATE_FUNCTION,
+    VALIDATE_FUNCTION_URL,
 )
 
 
@@ -61,6 +72,54 @@ async def test_functions_convert_async(httpx_mock: HTTPXMock) -> None:
         response = await functions_convert_async(client, openapi_function="function")
 
     assert isinstance(response, OpenApiFunctions)
+
+
+def test_functions_validate_sync(httpx_mock: HTTPXMock) -> None:
+    httpx_mock.add_response(url=VALIDATE_FUNCTION_URL, json=VALIDATE_FUNCTION)
+
+    with httpx.Client(base_url=BASE_URL) as client:
+        response = functions_validate_sync(
+            client,
+            function=CustomFunction(name="weather_forecast", parameters={"type": "object", "properties": {}}),
+        )
+
+    assert isinstance(response, FunctionValidationResult)
+
+
+def test_functions_validate_sync_with_dict(httpx_mock: HTTPXMock) -> None:
+    httpx_mock.add_response(url=VALIDATE_FUNCTION_URL, json=VALIDATE_FUNCTION)
+
+    with httpx.Client(base_url=BASE_URL) as client:
+        response = functions_validate_sync(
+            client,
+            function={"name": "weather_forecast", "parameters": {"type": "object", "properties": {}}},
+        )
+
+    assert isinstance(response, FunctionValidationResult)
+
+
+async def test_functions_validate_async(httpx_mock: HTTPXMock) -> None:
+    httpx_mock.add_response(url=VALIDATE_FUNCTION_URL, json=VALIDATE_FUNCTION)
+
+    async with httpx.AsyncClient(base_url=BASE_URL) as client:
+        response = await functions_validate_async(
+            client,
+            function=CustomFunction(name="weather_forecast", parameters={"type": "object", "properties": {}}),
+        )
+
+    assert isinstance(response, FunctionValidationResult)
+
+
+async def test_functions_validate_async_with_dict(httpx_mock: HTTPXMock) -> None:
+    httpx_mock.add_response(url=VALIDATE_FUNCTION_URL, json=VALIDATE_FUNCTION)
+
+    async with httpx.AsyncClient(base_url=BASE_URL) as client:
+        response = await functions_validate_async(
+            client,
+            function={"name": "weather_forecast", "parameters": {"type": "object", "properties": {}}},
+        )
+
+    assert isinstance(response, FunctionValidationResult)
 
 
 def test_ai_check_sync(httpx_mock: HTTPXMock) -> None:
