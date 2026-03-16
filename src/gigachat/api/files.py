@@ -8,7 +8,7 @@ import httpx
 from gigachat._types import FileTypes
 from gigachat.api.utils import build_headers, build_x_headers, execute_request_async, execute_request_sync
 from gigachat.exceptions import AuthenticationError, ResponseError
-from gigachat.models.files import DeletedFile, File, Image, UploadedFile, UploadedFiles
+from gigachat.models.files import DeletedFile, File, UploadedFile, UploadedFiles
 
 
 def _get_file_kwargs(
