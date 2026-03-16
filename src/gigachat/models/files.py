@@ -38,4 +38,5 @@ class File(APIResponse):
 
 class Image(APIResponse):
     """DEPRECATED: Base64-encoded Image content"""
+
     content: str = Field(description="Base64 encoded image data.")
