@@ -2,7 +2,7 @@ from pytest_httpx import HTTPXMock
 
 from gigachat.client import GigaChatAsyncClient, GigaChatSyncClient
 from gigachat.models.batches import Batch, Batches
-from tests.constants import BASE_URL, BATCH, BATCH_BY_ID_URL, BATCHES, BATCHES_URL
+from tests.constants import BASE_URL, BATCH, BATCH_BY_ID_URL, BATCHES, BATCHES_LIST, BATCHES_URL
 
 
 def test_create_batch(httpx_mock: HTTPXMock) -> None:
@@ -34,7 +34,7 @@ async def test_acreate_batch(httpx_mock: HTTPXMock) -> None:
 
 
 async def test_aget_batches(httpx_mock: HTTPXMock) -> None:
-    httpx_mock.add_response(url=BATCHES_URL, json=BATCHES)
+    httpx_mock.add_response(url=BATCHES_URL, json=BATCHES_LIST)
 
     async with GigaChatAsyncClient(base_url=BASE_URL) as client:
         response = await client.aget_batches()

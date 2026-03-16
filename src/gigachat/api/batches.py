@@ -1,9 +1,15 @@
-from typing import Any, Dict, Literal, Optional
+from typing import Any, Dict, List, Literal, Optional, Union
 
 import httpx
 
 from gigachat._types import FileContent
-from gigachat.api.utils import build_headers, execute_request_async, execute_request_sync
+from gigachat.api.utils import (
+    _raise_for_status,
+    build_headers,
+    build_x_headers,
+    execute_request_async,
+    execute_request_sync,
+)
 from gigachat.models.batches import Batch, Batches
 
 
@@ -78,6 +84,24 @@ def _get_batches_kwargs(
     }
 
 
+def _parse_batches_payload(payload: Union[Dict[str, Any], List[Dict[str, Any]]]) -> Dict[str, Any]:
+    if isinstance(payload, list):
+        return {"batches": payload}
+    if "batches" in payload:
+        return payload
+    if "id" in payload:
+        return {"batches": [payload]}
+    return payload
+
+
+def _build_batches_response(response: httpx.Response) -> Batches:
+    if response.status_code != 200:
+        _raise_for_status(response.url, response.status_code, response.content, response.headers)
+
+    payload = _parse_batches_payload(response.json())
+    return Batches(x_headers=build_x_headers(response), **payload)
+
+
 def get_batches_sync(
     client: httpx.Client,
     *,
@@ -86,7 +110,8 @@ def get_batches_sync(
 ) -> Batches:
     """Return batch tasks or a specific batch task."""
     kwargs = _get_batches_kwargs(batch_id=batch_id, access_token=access_token)
-    return execute_request_sync(client, kwargs, Batches)
+    response = client.request(**kwargs)
+    return _build_batches_response(response)
 
 
 async def get_batches_async(
@@ -97,4 +122,5 @@ async def get_batches_async(
 ) -> Batches:
     """Return batch tasks or a specific batch task."""
     kwargs = _get_batches_kwargs(batch_id=batch_id, access_token=access_token)
-    return await execute_request_async(client, kwargs, Batches)
+    response = await client.request(**kwargs)
+    return _build_batches_response(response)

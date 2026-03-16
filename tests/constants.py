@@ -89,6 +89,7 @@ POST_ASSISTANT_DELETE = get_json("assistants/post_assistant_delete.json")
 EMBEDDINGS = get_json("embeddings.json")
 BATCH = get_json("batch.json")
 BATCHES = get_json("batches.json")
+BATCHES_LIST = BATCHES["batches"]
 
 FILES = get_json("post_files.json")
 GET_FILE = get_json("get_file.json")
