@@ -6,8 +6,7 @@ from pydantic import BaseModel, Field, TypeAdapter, ValidationError
 
 from gigachat.models._schema_normalize import to_strict_json_schema
 from gigachat.models.chat import Chat, Messages, MessagesRole
-from gigachat.models.response_format import ResponseFormat
-from gigachat.models.response_format import JsonSchemaResponseFormat
+from gigachat.models.response_format import JsonSchemaResponseFormat, ResponseFormat
 
 SAMPLE_SCHEMA: Dict[str, Any] = {
     "type": "object",

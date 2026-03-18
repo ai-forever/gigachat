@@ -98,6 +98,9 @@ known-first-party = ["gigachat"]
 [tool.ruff.format]
 docstring-code-format = true
 
+[tool.ruff.lint.pyupgrade]
+keep-runtime-typing = true
+
 [tool.mypy]
 plugins = "pydantic.mypy"
 strict = true
