@@ -9,6 +9,7 @@ from gigachat.models.assistants import (
 )
 from gigachat.models.auth import AccessToken, Token
 from gigachat.models.base import APIResponse
+from gigachat.models.batches import Batch, Batches, BatchMethod, BatchRequestCounts, BatchStatus
 from gigachat.models.chat import (
     Chat,
     ChatCompletion,
@@ -53,6 +54,11 @@ __all__ = (
     "AssistantFileDelete",
     "Assistants",
     "Balance",
+    "Batch",
+    "Batches",
+    "BatchMethod",
+    "BatchRequestCounts",
+    "BatchStatus",
     "Chat",
     "ChatCompletion",
     "ChatCompletionChunk",
