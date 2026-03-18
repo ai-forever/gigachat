@@ -166,10 +166,7 @@ async def main() -> None:
 asyncio.run(main())
 ```
 
-`gigachat[aiohttp]` installs the appropriate dependency for your Python version:
-
-- Python 3.8: `aiohttp`
-- Python 3.9+: `httpx-aiohttp`
+`gigachat[aiohttp]` installs `aiohttp` as the optional async backend dependency.
 
 ### Embeddings
 
