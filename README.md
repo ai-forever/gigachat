@@ -19,6 +19,7 @@ This library is part of [GigaChain](https://github.com/ai-forever/gigachain) and
   - [Basic Chat](#basic-chat)
   - [Streaming](#streaming)
   - [Async](#async)
+  - [Async With `aiohttp`](#async-with-aiohttp)
   - [Embeddings](#embeddings)
   - [Function Calling](#function-calling)
   - [Structured Output (JSON Schema)](#structured-output-json-schema)
@@ -52,6 +53,12 @@ This library is part of [GigaChain](https://github.com/ai-forever/gigachain) and
 
 ```bash
 pip install gigachat
+```
+
+To use `aiohttp` as the async HTTP backend for async clients:
+
+```bash
+pip install gigachat[aiohttp]
 ```
 
 **Requirements:** Python 3.8 — 3.13
@@ -122,6 +129,47 @@ async def main():
 
 asyncio.run(main())
 ```
+
+### Async With `aiohttp`
+
+By default, async requests use `httpx`. For higher-concurrency workloads you can switch the async backend to `aiohttp`.
+This option affects async clients only and does not change the synchronous client.
+
+First install the extra:
+
+```bash
+pip install gigachat[aiohttp]
+```
+
+Then pass `DefaultAioHttpClient()` to `GigaChat(...)`:
+
+```python
+import asyncio
+
+from gigachat import DefaultAioHttpClient, GigaChat
+
+
+async def main() -> None:
+    async with GigaChat(
+        http_client=DefaultAioHttpClient(),
+        max_connections=100,
+    ) as client:
+        response = await client.achat("Say this is a test")
+        print(response.choices[0].message.content)
+
+        print("Streaming response:")
+        async for chunk in client.astream("Write one sentence about aiohttp"):
+            print(chunk.choices[0].delta.content, end="", flush=True)
+        print()
+
+
+asyncio.run(main())
+```
+
+`gigachat[aiohttp]` installs the appropriate dependency for your Python version:
+
+- Python 3.8: `aiohttp`
+- Python 3.9+: `httpx-aiohttp`
 
 ### Embeddings
 
@@ -293,6 +341,7 @@ See the [examples/](https://github.com/ai-forever/gigachat/tree/main/examples/) 
 | `key_file` | `str` | `None` | Path to client private key (for mTLS) |
 | `key_file_password` | `str` | `None` | Password for encrypted private key |
 | `timeout` | `float` | `30.0` | Request timeout in seconds |
+| `http_client` | `AsyncHttpClientFactory` | `None` | Custom async HTTP backend factory (async clients only) |
 | `max_connections` | `int` | `None` | Maximum concurrent connections |
 | `max_retries` | `int` | `0` | Maximum retry attempts for transient errors |
 | `retry_backoff_factor` | `float` | `0.5` | Exponential backoff multiplier |
