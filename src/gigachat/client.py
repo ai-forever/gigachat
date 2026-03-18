@@ -17,6 +17,7 @@ from typing import (
     Type,
     TypeVar,
     Union,
+    cast,
 )
 
 import httpx
@@ -34,6 +35,7 @@ from gigachat.exceptions import (
     ContentValidationError,
     LengthFinishReasonError,
 )
+from gigachat.http_client import AsyncHttpClient, AsyncHttpClientFactory
 from gigachat.models.auth import AccessToken, Token
 from gigachat.models.batches import Batch, Batches
 from gigachat.models.chat import (
@@ -179,6 +181,7 @@ class _BaseClient:
         key_file_password: Optional[str] = None,
         ssl_context: Optional[ssl.SSLContext] = None,
         flags: Optional[List[str]] = None,
+        http_client: Optional[AsyncHttpClientFactory] = None,
         max_connections: Optional[int] = None,
         max_retries: Optional[int] = None,
         retry_backoff_factor: Optional[float] = None,
@@ -213,6 +216,7 @@ class _BaseClient:
         }
         config = {k: v for k, v in kwargs.items() if v is not None}
         self._settings = Settings(**config)
+        self._http_client_factory = http_client
         if self._settings.access_token:
             self._access_token = AccessToken(access_token=self._settings.access_token, expires_at=0)
 
@@ -290,6 +294,7 @@ class GigaChatSyncClient(_BaseClient):
         key_file_password: Optional[str] = None,
         ssl_context: Optional[ssl.SSLContext] = None,
         flags: Optional[List[str]] = None,
+        http_client: Optional[AsyncHttpClientFactory] = None,
         max_connections: Optional[int] = None,
         max_retries: Optional[int] = None,
         retry_backoff_factor: Optional[float] = None,
@@ -314,6 +319,7 @@ class GigaChatSyncClient(_BaseClient):
             key_file_password=key_file_password,
             ssl_context=ssl_context,
             flags=flags,
+            http_client=http_client,
             max_connections=max_connections,
             max_retries=max_retries,
             retry_backoff_factor=retry_backoff_factor,
@@ -596,6 +602,7 @@ class GigaChatAsyncClient(_BaseClient):
         key_file_password: Optional[str] = None,
         ssl_context: Optional[ssl.SSLContext] = None,
         flags: Optional[List[str]] = None,
+        http_client: Optional[AsyncHttpClientFactory] = None,
         max_connections: Optional[int] = None,
         max_retries: Optional[int] = None,
         retry_backoff_factor: Optional[float] = None,
@@ -620,6 +627,7 @@ class GigaChatAsyncClient(_BaseClient):
             key_file_password=key_file_password,
             ssl_context=ssl_context,
             flags=flags,
+            http_client=http_client,
             max_connections=max_connections,
             max_retries=max_retries,
             retry_backoff_factor=retry_backoff_factor,
@@ -629,19 +637,28 @@ class GigaChatAsyncClient(_BaseClient):
         self.a_assistants = AssistantsAsyncClient(self)
         self.a_threads = ThreadsAsyncClient(self)
         self._async_token_lock = asyncio.Lock()
-        self._aclient_instance: Optional[httpx.AsyncClient] = None
-        self._auth_aclient_instance: Optional[httpx.AsyncClient] = None
+        self._aclient_instance: Optional[AsyncHttpClient] = None
+        self._auth_aclient_instance: Optional[AsyncHttpClient] = None
 
     @property
-    def _aclient(self) -> httpx.AsyncClient:
+    def _aclient(self) -> AsyncHttpClient:
         if self._aclient_instance is None:
-            self._aclient_instance = httpx.AsyncClient(**_get_kwargs(self._settings))
+            if self._http_client_factory is not None:
+                self._aclient_instance = self._http_client_factory.create_client(self._settings)
+            else:
+                self._aclient_instance = cast(AsyncHttpClient, httpx.AsyncClient(**_get_kwargs(self._settings)))
         return self._aclient_instance
 
     @property
-    def _auth_aclient(self) -> httpx.AsyncClient:
+    def _auth_aclient(self) -> AsyncHttpClient:
         if self._auth_aclient_instance is None:
-            self._auth_aclient_instance = httpx.AsyncClient(**_get_auth_kwargs(self._settings))
+            if self._http_client_factory is not None:
+                self._auth_aclient_instance = self._http_client_factory.create_auth_client(self._settings)
+            else:
+                self._auth_aclient_instance = cast(
+                    AsyncHttpClient,
+                    httpx.AsyncClient(**_get_auth_kwargs(self._settings)),
+                )
         return self._auth_aclient_instance
 
     async def aclose(self) -> None:
@@ -895,6 +912,7 @@ class GigaChat(GigaChatSyncClient, GigaChatAsyncClient):
         key_file_password: Optional[str] = None,
         ssl_context: Optional[ssl.SSLContext] = None,
         flags: Optional[List[str]] = None,
+        http_client: Optional[AsyncHttpClientFactory] = None,
         max_connections: Optional[int] = None,
         max_retries: Optional[int] = None,
         retry_backoff_factor: Optional[float] = None,
@@ -919,6 +937,7 @@ class GigaChat(GigaChatSyncClient, GigaChatAsyncClient):
             key_file_password=key_file_password,
             ssl_context=ssl_context,
             flags=flags,
+            http_client=http_client,
             max_connections=max_connections,
             max_retries=max_retries,
             retry_backoff_factor=retry_backoff_factor,

@@ -10,6 +10,7 @@ from gigachat.api.utils import (
     execute_request_async,
     execute_request_sync,
 )
+from gigachat.http_client import AsyncHttpClient
 from gigachat.models.batches import Batch, Batches
 
 
@@ -56,7 +57,7 @@ def create_batch_sync(
 
 
 async def create_batch_async(
-    client: httpx.AsyncClient,
+    client: AsyncHttpClient,
     *,
     file: FileContent,
     method: Literal["chat_completions", "embedder"],
@@ -115,7 +116,7 @@ def get_batches_sync(
 
 
 async def get_batches_async(
-    client: httpx.AsyncClient,
+    client: AsyncHttpClient,
     *,
     batch_id: Optional[str] = None,
     access_token: Optional[str] = None,

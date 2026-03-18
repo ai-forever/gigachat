@@ -3,6 +3,7 @@ from typing import Any, Dict, List, Optional
 import httpx
 
 from gigachat.api.utils import build_headers, execute_request_async, execute_request_sync
+from gigachat.http_client import AsyncHttpClient
 from gigachat.models.assistants import (
     Assistant,
     AssistantDelete,
@@ -41,7 +42,7 @@ def get_assistants_sync(
 
 
 async def get_assistants_async(
-    client: httpx.AsyncClient,
+    client: AsyncHttpClient,
     *,
     assistant_id: Optional[str] = None,
     access_token: Optional[str] = None,
@@ -109,7 +110,7 @@ def create_assistant_sync(
 
 
 async def create_assistant_async(
-    client: httpx.AsyncClient,
+    client: AsyncHttpClient,
     *,
     model: str,
     name: str,
@@ -193,7 +194,7 @@ def modify_assistant_sync(
 
 
 async def modify_assistant_async(
-    client: httpx.AsyncClient,
+    client: AsyncHttpClient,
     *,
     assistant_id: str,
     name: Optional[str] = None,
@@ -247,7 +248,7 @@ def delete_assistant_sync(
 
 
 async def delete_assistant_async(
-    client: httpx.AsyncClient,
+    client: AsyncHttpClient,
     *,
     assistant_id: str,
     access_token: Optional[str] = None,
@@ -289,7 +290,7 @@ def delete_assistant_file_sync(
 
 
 async def delete_assistant_file_async(
-    client: httpx.AsyncClient,
+    client: AsyncHttpClient,
     *,
     assistant_id: str,
     file_id: str,

@@ -11,6 +11,7 @@ from gigachat.api.utils import (
     execute_stream_sync,
 )
 from gigachat.exceptions import AuthenticationError, ResponseError
+from gigachat.http_client import AsyncHttpClient
 from gigachat.models.chat import Messages
 from gigachat.models.threads import (
     Thread,
@@ -67,7 +68,7 @@ def get_threads_sync(
 
 
 async def get_threads_async(
-    client: httpx.AsyncClient,
+    client: AsyncHttpClient,
     *,
     assistants_ids: Optional[List[str]] = None,
     limit: Optional[int] = None,
@@ -105,7 +106,7 @@ def post_thread_sync(
 
 
 async def post_thread_async(
-    client: httpx.AsyncClient,
+    client: AsyncHttpClient,
     *,
     access_token: Optional[str] = None,
 ) -> Thread:
@@ -142,7 +143,7 @@ def retrieve_threads_sync(
 
 
 async def retrieve_threads_async(
-    client: httpx.AsyncClient,
+    client: AsyncHttpClient,
     *,
     threads_ids: List[str],
     access_token: Optional[str] = None,
@@ -190,7 +191,7 @@ def delete_thread_sync(
 
 
 async def delete_thread_async(
-    client: httpx.AsyncClient,
+    client: AsyncHttpClient,
     *,
     thread_id: str,
     access_token: Optional[str] = None,
@@ -227,7 +228,7 @@ def get_thread_run_sync(
 
 
 async def get_thread_run_async(
-    client: httpx.AsyncClient,
+    client: AsyncHttpClient,
     *,
     thread_id: str,
     access_token: Optional[str] = None,
@@ -272,7 +273,7 @@ def get_thread_messages_sync(
 
 
 async def get_thread_messages_async(
-    client: httpx.AsyncClient,
+    client: AsyncHttpClient,
     *,
     thread_id: str,
     limit: Optional[int] = None,
@@ -322,7 +323,7 @@ def run_thread_sync(
 
 
 async def run_thread_async(
-    client: httpx.AsyncClient,
+    client: AsyncHttpClient,
     *,
     thread_id: str,
     assistant_id: Optional[str] = None,
@@ -380,7 +381,7 @@ def run_thread_stream_sync(
 
 
 def run_thread_stream_async(
-    client: httpx.AsyncClient,
+    client: AsyncHttpClient,
     *,
     thread_id: str,
     assistant_id: Optional[str] = None,
@@ -442,7 +443,7 @@ def add_thread_messages_sync(
 
 
 async def add_thread_messages_async(
-    client: httpx.AsyncClient,
+    client: AsyncHttpClient,
     *,
     messages: List[Messages],
     model: Optional[str] = None,
@@ -515,7 +516,7 @@ def run_thread_messages_sync(
 
 
 async def run_thread_messages_async(
-    client: httpx.AsyncClient,
+    client: AsyncHttpClient,
     *,
     messages: List[Messages],
     thread_id: Optional[str] = None,
@@ -576,7 +577,7 @@ def rerun_thread_messages_sync(
 
 
 async def rerun_thread_messages_async(
-    client: httpx.AsyncClient,
+    client: AsyncHttpClient,
     *,
     thread_id: str,
     thread_options: Optional[ThreadRunOptions] = None,
@@ -650,7 +651,7 @@ def run_thread_messages_stream_sync(
 
 
 def run_thread_messages_stream_async(
-    client: httpx.AsyncClient,
+    client: AsyncHttpClient,
     *,
     messages: List[Messages],
     thread_id: Optional[str] = None,
@@ -718,7 +719,7 @@ def rerun_thread_messages_stream_sync(
 
 
 def rerun_thread_messages_stream_async(
-    client: httpx.AsyncClient,
+    client: AsyncHttpClient,
     *,
     thread_id: str,
     thread_options: Optional[ThreadRunOptions] = None,

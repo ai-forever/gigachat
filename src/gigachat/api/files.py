@@ -8,6 +8,7 @@ import httpx
 from gigachat._types import FileTypes
 from gigachat.api.utils import build_headers, build_x_headers, execute_request_async, execute_request_sync
 from gigachat.exceptions import AuthenticationError, ResponseError
+from gigachat.http_client import AsyncHttpClient
 from gigachat.models.files import DeletedFile, File, UploadedFile, UploadedFiles
 
 
@@ -36,7 +37,7 @@ def get_file_sync(
 
 
 async def get_file_async(
-    client: httpx.AsyncClient,
+    client: AsyncHttpClient,
     *,
     file: str,
     access_token: Optional[str] = None,
@@ -69,7 +70,7 @@ def get_files_sync(
 
 
 async def get_files_async(
-    client: httpx.AsyncClient,
+    client: AsyncHttpClient,
     *,
     access_token: Optional[str] = None,
 ) -> UploadedFiles:
@@ -107,7 +108,7 @@ def upload_file_sync(
 
 
 async def upload_file_async(
-    client: httpx.AsyncClient,
+    client: AsyncHttpClient,
     *,
     file: FileTypes,
     purpose: Literal["general", "assistant"] = "general",
@@ -144,7 +145,7 @@ def delete_file_sync(
 
 
 async def delete_file_async(
-    client: httpx.AsyncClient,
+    client: AsyncHttpClient,
     *,
     file: str,
     access_token: Optional[str] = None,
@@ -191,7 +192,7 @@ def get_file_content_sync(
 
 
 async def get_file_content_async(
-    client: httpx.AsyncClient,
+    client: AsyncHttpClient,
     *,
     file_id: str,
     access_token: Optional[str] = None,
@@ -218,7 +219,7 @@ def get_image_sync(
 
 
 async def get_image_async(
-    client: httpx.AsyncClient,
+    client: AsyncHttpClient,
     *,
     file_id: str,
     access_token: Optional[str] = None,

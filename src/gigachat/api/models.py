@@ -3,6 +3,7 @@ from typing import Any, Dict, Optional
 import httpx
 
 from gigachat.api.utils import build_headers, execute_request_async, execute_request_sync
+from gigachat.http_client import AsyncHttpClient
 from gigachat.models.models import Model, Models
 
 
@@ -30,7 +31,7 @@ def get_models_sync(
 
 
 async def get_models_async(
-    client: httpx.AsyncClient,
+    client: AsyncHttpClient,
     *,
     access_token: Optional[str] = None,
 ) -> Models:
@@ -65,7 +66,7 @@ def get_model_sync(
 
 
 async def get_model_async(
-    client: httpx.AsyncClient,
+    client: AsyncHttpClient,
     *,
     model: str,
     access_token: Optional[str] = None,

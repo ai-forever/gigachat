@@ -12,6 +12,7 @@ from gigachat.api.utils import (
     execute_stream_sync,
 )
 from gigachat.context import chat_url_cvar
+from gigachat.http_client import AsyncHttpClient
 from gigachat.models.chat import Chat, ChatCompletion, ChatCompletionChunk
 
 
@@ -52,7 +53,7 @@ def chat_sync(
 
 
 async def chat_async(
-    client: httpx.AsyncClient,
+    client: AsyncHttpClient,
     *,
     chat: Chat,
     access_token: Optional[str] = None,
@@ -101,7 +102,7 @@ def stream_sync(
 
 
 def stream_async(
-    client: httpx.AsyncClient,
+    client: AsyncHttpClient,
     *,
     chat: Chat,
     access_token: Optional[str] = None,

@@ -27,6 +27,7 @@ from gigachat.exceptions import (
     ServerError,
     UnprocessableEntityError,
 )
+from gigachat.http_client import AsyncHttpClient, AsyncStreamResponse
 
 logger = logging.getLogger(__name__)
 
@@ -85,7 +86,7 @@ def parse_chunk(line: str, model_class: Type[T]) -> Optional[T]:
         return None
 
 
-def build_x_headers(response: httpx.Response) -> Dict[str, Optional[str]]:
+def build_x_headers(response: Union[httpx.Response, AsyncStreamResponse]) -> Dict[str, Optional[str]]:
     """Extract X-Headers from response."""
     return {
         "x-request-id": response.headers.get("x-request-id"),
@@ -94,7 +95,7 @@ def build_x_headers(response: httpx.Response) -> Dict[str, Optional[str]]:
     }
 
 
-def _check_content_type(response: httpx.Response) -> None:
+def _check_content_type(response: Union[httpx.Response, AsyncStreamResponse]) -> None:
     content_type, _, _ = response.headers.get("content-type", "").partition(";")
     if content_type != EVENT_STREAM:
         raise httpx.TransportError(f"Expected response Content-Type to be '{EVENT_STREAM}', got {content_type!r}")
@@ -133,7 +134,7 @@ def _check_response(response: httpx.Response) -> None:
         _raise_for_status(response.url, response.status_code, response.read(), response.headers)
 
 
-async def _acheck_response(response: httpx.Response) -> None:
+async def _acheck_response(response: AsyncStreamResponse) -> None:
     if response.status_code == HTTPStatus.OK:
         _check_content_type(response)
     else:
@@ -154,7 +155,7 @@ def execute_request_sync(client: httpx.Client, kwargs: Dict[str, Any], model_cla
     return build_response(response, model_class)
 
 
-async def execute_request_async(client: httpx.AsyncClient, kwargs: Dict[str, Any], model_class: Type[T]) -> T:
+async def execute_request_async(client: AsyncHttpClient, kwargs: Dict[str, Any], model_class: Type[T]) -> T:
     """Execute async request and parse response."""
     response = await client.request(**kwargs)
     return build_response(response, model_class)
@@ -173,7 +174,7 @@ def execute_stream_sync(client: httpx.Client, kwargs: Dict[str, Any], model_clas
 
 
 async def execute_stream_async(
-    client: httpx.AsyncClient, kwargs: Dict[str, Any], model_class: Type[T]
+    client: AsyncHttpClient, kwargs: Dict[str, Any], model_class: Type[T]
 ) -> AsyncIterator[T]:
     """Execute async streaming request and yield parsed chunks."""
     async with client.stream(**kwargs) as response:

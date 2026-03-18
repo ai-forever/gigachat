@@ -15,6 +15,7 @@ from gigachat.api.utils import (
     execute_request_async,
     execute_request_sync,
 )
+from gigachat.http_client import AsyncHttpClient
 from gigachat.models.auth import AccessToken, Token
 
 logger = logging.getLogger(__name__)
@@ -64,7 +65,7 @@ def auth_sync(client: httpx.Client, *, url: str, credentials: str, scope: str) -
     return _build_auth_response(response)
 
 
-async def auth_async(client: httpx.AsyncClient, *, url: str, credentials: str, scope: str) -> AccessToken:
+async def auth_async(client: AsyncHttpClient, *, url: str, credentials: str, scope: str) -> AccessToken:
     """Return an access token."""
     _validate_credentials(credentials)
     kwargs = _get_auth_kwargs(url=url, credentials=credentials, scope=scope)
@@ -99,7 +100,7 @@ def token_sync(
 
 
 async def token_async(
-    client: httpx.AsyncClient,
+    client: AsyncHttpClient,
     *,
     user: str,
     password: str,

@@ -31,6 +31,12 @@ dependencies = [
     "httpx>=0.24,<1",
 ]
 
+[project.optional-dependencies]
+aiohttp = [
+    "aiohttp>=3.9,<4 ; python_version == '3.8'",
+    "httpx-aiohttp>=0.1.8,<1 ; python_version >= '3.9'",
+]
+
 [project.urls]
 Repository = "https://github.com/ai-forever/gigachat"
 

@@ -6,6 +6,7 @@ import httpx
 
 from gigachat.api.utils import build_headers, execute_request_async, execute_request_sync
 from gigachat.exceptions import AuthenticationError, ResponseError
+from gigachat.http_client import AsyncHttpClient
 from gigachat.models.tools import AICheckResult, Balance, OpenApiFunctions, TokensCount
 
 
@@ -51,7 +52,7 @@ def tokens_count_sync(
 
 
 async def tokens_count_async(
-    client: httpx.AsyncClient,
+    client: AsyncHttpClient,
     *,
     input_: List[str],
     model: str,
@@ -90,7 +91,7 @@ def functions_convert_sync(
 
 
 async def functions_convert_async(
-    client: httpx.AsyncClient,
+    client: AsyncHttpClient,
     *,
     openapi_function: str,
     access_token: Optional[str] = None,
@@ -129,7 +130,7 @@ def ai_check_sync(
 
 
 async def ai_check_async(
-    client: httpx.AsyncClient,
+    client: AsyncHttpClient,
     *,
     input_: str,
     model: str,
@@ -169,7 +170,7 @@ def get_balance_sync(
 
 
 async def get_balance_async(
-    client: httpx.AsyncClient,
+    client: AsyncHttpClient,
     *,
     access_token: Optional[str] = None,
 ) -> Balance:

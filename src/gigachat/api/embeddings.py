@@ -4,6 +4,7 @@ from typing import Any, Dict, List, Optional
 import httpx
 
 from gigachat.api.utils import build_headers, execute_request_async, execute_request_sync
+from gigachat.http_client import AsyncHttpClient
 from gigachat.models.embeddings import Embeddings
 
 
@@ -37,7 +38,7 @@ def embeddings_sync(
 
 
 async def embeddings_async(
-    client: httpx.AsyncClient,
+    client: AsyncHttpClient,
     *,
     input_: List[str],
     model: str,

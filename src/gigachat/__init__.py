@@ -18,6 +18,7 @@ from gigachat.exceptions import (
     ResponseError,
     ServerError,
 )
+from gigachat.http_client import DefaultAioHttpClient
 from gigachat.models import (
     Batch,
     Batches,
@@ -47,6 +48,7 @@ __all__ = [
     "GigaChat",
     "GigaChatSyncClient",
     "GigaChatAsyncClient",
+    "DefaultAioHttpClient",
     "GigaChatException",
     "ResponseError",
     "AuthenticationError",
