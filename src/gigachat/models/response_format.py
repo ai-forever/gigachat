@@ -23,7 +23,7 @@ class JsonSchemaResponseFormat(BaseModel):
 
     type: Literal["json_schema"] = Field(default="json_schema", description="Response format type.")
     schema_: dict[str, Any] = Field(alias="schema", description="JSON Schema that the response must conform to.")
-    strict: bool | None = Field(default=None, description="Request strict schema adherence (best-effort).")
+    strict: Union[bool, None] = Field(default=None, description="Request strict schema adherence (best-effort).")
 
     @model_validator(mode="before")
     @classmethod
