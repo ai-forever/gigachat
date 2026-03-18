@@ -1,0 +1,20 @@
+{
+  "choices": [
+    {
+      "message": {
+        "role": "assistant",
+        "content": "{\"steps\": [\"Step 1: Subtract 7 from both sides\", \"Step 2: Divide by 8\"], \"final_answer\": \"x = -3.75\"}"
+      },
+      "index": 0,
+      "finish_reason": "stop"
+    }
+  ],
+  "created": 1678878333,
+  "model": "GigaChat-2-Max:2.0.30.01",
+  "usage": {
+    "prompt_tokens": 56,
+    "completion_tokens": 40,
+    "total_tokens": 96
+  },
+  "object": "chat.completion"
+}

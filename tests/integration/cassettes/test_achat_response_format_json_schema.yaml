@@ -15,7 +15,7 @@ interactions:
       Host:
       - ngw.devices.sberbank.ru:9443
       RqUID:
-      - 54011c6b-4441-4a05-beaa-68d505039c77
+      - 7111ed02-b2bf-4d60-8757-dc15464de756
       User-Agent:
       - GigaChat-python-lib
       authorization:
@@ -37,7 +37,7 @@ interactions:
       Content-Type:
       - application/json
       Date:
-      - Mon, 16 Feb 2026 14:08:26 GMT
+      - Mon, 16 Feb 2026 14:17:41 GMT
       Expires:
       - '0'
       Pragma:
@@ -66,8 +66,13 @@ interactions:
       code: 200
       message: OK
 - request:
-    body: '{"model": "GigaChat", "messages": [{"role": "user", "content": "Say ''Hello''
-      and nothing else"}]}'
+    body: '{"model": "GigaChat", "messages": [{"role": "system", "content": "You are
+      a JSON API. Output must be a single JSON object and NOTHING else. Do not use
+      markdown. Do not wrap in ``` code fences. Do not add comments. Do not add trailing
+      text."}, {"role": "user", "content": "Return {\"answer\":\"ok\",\"n\":3} exactly."}],
+      "response_format": {"type": "json_schema", "schema": {"type": "object", "properties":
+      {"answer": {"type": "string"}, "n": {"type": "integer"}}, "required": ["answer",
+      "n"], "additionalProperties": false}, "strict": true}}'
     headers:
       Accept:
       - '*/*'
@@ -76,7 +81,7 @@ interactions:
       Connection:
       - keep-alive
       Content-Length:
-      - '96'
+      - '541'
       Content-Type:
       - application/json
       Host:
@@ -89,10 +94,11 @@ interactions:
     uri: https://gigachat.devices.sberbank.ru/api/v1/chat/completions
   response:
     body:
-      string: '{"choices": [{"message": {"content": "Hello", "role": "assistant"},
-        "index": 0, "finish_reason": "stop"}], "created": 1771250906, "model": "GigaChat:2.0.28.2",
-        "object": "chat.completion", "usage": {"prompt_tokens": 17, "completion_tokens":
-        2, "total_tokens": 19, "precached_prompt_tokens": 2}}'
+      string: '{"choices": [{"message": {"content": "{\"answer\":\"ok\",\"n\":3}",
+        "role": "assistant"}, "index": 0, "finish_reason": "stop"}], "created": 1771251462,
+        "model": "GigaChat:2.0.28.2", "object": "chat.completion", "usage": {"prompt_tokens":
+        65, "completion_tokens": 10, "total_tokens": 75, "precached_prompt_tokens":
+        4}}'
     headers:
       Access-Control-Allow-Credentials:
       - 'true'
@@ -107,11 +113,11 @@ interactions:
       Connection:
       - keep-alive
       Content-Length:
-      - '270'
+      - '293'
       Content-Type:
       - application/json; charset=utf-8
       Date:
-      - Mon, 16 Feb 2026 14:08:26 GMT
+      - Mon, 16 Feb 2026 14:17:42 GMT
       Server:
       - SynGX
       Strict-Transport-Security:
@@ -121,9 +127,9 @@ interactions:
       X-Frame-Options:
       - SAMEORIGIN
       X-Request-Id:
-      - 7276cb8c-e6bb-4fb4-92db-8aef7949dac5
+      - 5669a8d6-eed5-49e4-9c7c-299ed1216027
       X-Session-Id:
-      - e6e0aa65-e7c0-4c39-a029-7768df4027b2
+      - fce95f6f-6a26-4a6b-990a-2758f1144dc3
       X-XSS-Protection:
       - 1; mode=block
     status:
