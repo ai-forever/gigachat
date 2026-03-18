@@ -1,7 +1,8 @@
 from pytest_httpx import HTTPXMock
 
 from gigachat.client import GigaChatAsyncClient, GigaChatSyncClient
-from gigachat.models import DeletedFile, Image, UploadedFile, UploadedFiles
+from gigachat.models import DeletedFile, UploadedFile, UploadedFiles
+from gigachat.models.files import File
 from tests.constants import (
     BASE_URL,
     FILE,
@@ -55,9 +56,9 @@ def test_delete_file(httpx_mock: HTTPXMock) -> None:
 def test_get_image(httpx_mock: HTTPXMock) -> None:
     httpx_mock.add_response(url=IMAGE_URL, content=IMAGE)
     with GigaChatSyncClient(base_url=BASE_URL, model="model") as client:
-        response = client.get_image(file_id="img_file")
+        response = client.get_file_content(file_id="img_file")
 
-    assert isinstance(response, Image)
+    assert isinstance(response, File)
 
 
 async def test_aupload_file(httpx_mock: HTTPXMock) -> None:
@@ -97,6 +98,22 @@ async def test_adelete_file(httpx_mock: HTTPXMock) -> None:
 async def test_aget_image(httpx_mock: HTTPXMock) -> None:
     httpx_mock.add_response(url=IMAGE_URL, content=IMAGE)
     async with GigaChatAsyncClient(base_url=BASE_URL, model="model") as client:
+        response = await client.aget_file_content(file_id="img_file")
+
+    assert isinstance(response, File)
+
+
+def test_get_image_deprecated(httpx_mock: HTTPXMock) -> None:
+    httpx_mock.add_response(url=IMAGE_URL, content=IMAGE)
+    with GigaChatSyncClient(base_url=BASE_URL, model="model") as client:
+        response = client.get_image(file_id="img_file")
+
+    assert isinstance(response, File)
+
+
+async def test_aget_image_deprecated(httpx_mock: HTTPXMock) -> None:
+    httpx_mock.add_response(url=IMAGE_URL, content=IMAGE)
+    async with GigaChatAsyncClient(base_url=BASE_URL, model="model") as client:
         response = await client.aget_image(file_id="img_file")
 
-    assert isinstance(response, Image)
+    assert isinstance(response, File)

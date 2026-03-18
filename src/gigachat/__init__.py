@@ -1,4 +1,5 @@
 import logging
+from importlib.metadata import PackageNotFoundError, version
 
 from gigachat.client import GigaChat, GigaChatAsyncClient, GigaChatSyncClient
 from gigachat.context import custom_headers_cvar, request_id_cvar, session_id_cvar
@@ -18,6 +19,8 @@ from gigachat.exceptions import (
     ServerError,
 )
 from gigachat.models import (
+    Batch,
+    Batches,
     Chat,
     ChatCompletion,
     ChatCompletionChunk,
@@ -34,7 +37,13 @@ from gigachat.models import (
     Usage,
 )
 
+try:
+    __version__ = version("gigachat")
+except PackageNotFoundError:
+    __version__ = "0.2.1"
+
 __all__ = [
+    "__version__",
     "GigaChat",
     "GigaChatSyncClient",
     "GigaChatAsyncClient",
@@ -51,6 +60,8 @@ __all__ = [
     "NotFoundError",
     "RequestEntityTooLargeError",
     "ServerError",
+    "Batch",
+    "Batches",
     "Chat",
     "ChatCompletion",
     "ChatCompletionChunk",
