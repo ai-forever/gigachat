@@ -18,6 +18,7 @@ from typing import (
     TypeVar,
     Union,
     get_origin,
+    overload,
 )
 
 import httpx
@@ -55,6 +56,7 @@ from gigachat.threads import ThreadsAsyncClient, ThreadsSyncClient
 
 T = TypeVar("T")
 _ModelT = TypeVar("_ModelT")
+_AdaptedT = TypeVar("_AdaptedT")
 
 logger = logging.getLogger(__name__)
 
@@ -137,10 +139,25 @@ def _get_response_model_adapter(response_model: Any) -> Optional[pydantic.TypeAd
     return None
 
 
+@overload
+def _parse_completion(completion: ChatCompletion, response_model: type[_ModelT]) -> _ModelT: ...
+
+
+@overload
+def _parse_completion(completion: ChatCompletion, response_model: pydantic.TypeAdapter[_AdaptedT]) -> _AdaptedT: ...
+
+
+@overload
 def _parse_completion(
     completion: ChatCompletion,
     response_model: Any,
-) -> _ModelT:
+) -> Any: ...
+
+
+def _parse_completion(
+    completion: ChatCompletion,
+    response_model: Any,
+) -> Any:
     """Parse and validate message content from *completion* into *response_model*.
 
     Raise on bad finish_reason, invalid JSON, or schema validation failure.
@@ -504,13 +521,40 @@ class GigaChatSyncClient(_BaseClient):
         chat_data = _parse_chat(payload, self._settings)
         return chat.chat_sync(self._client, chat=chat_data, access_token=self.token)
 
+    @overload
+    def chat_parse(
+        self,
+        payload: Union[Chat, Dict[str, Any], str],
+        *,
+        response_model: type[_ModelT],
+        strict: Optional[bool] = None,
+    ) -> Tuple[ChatCompletion, _ModelT]: ...
+
+    @overload
+    def chat_parse(
+        self,
+        payload: Union[Chat, Dict[str, Any], str],
+        *,
+        response_model: pydantic.TypeAdapter[_AdaptedT],
+        strict: Optional[bool] = None,
+    ) -> Tuple[ChatCompletion, _AdaptedT]: ...
+
+    @overload
     def chat_parse(
         self,
         payload: Union[Chat, Dict[str, Any], str],
         *,
         response_model: Any,
         strict: Optional[bool] = None,
-    ) -> Tuple[ChatCompletion, _ModelT]:
+    ) -> Tuple[ChatCompletion, Any]: ...
+
+    def chat_parse(
+        self,
+        payload: Union[Chat, Dict[str, Any], str],
+        *,
+        response_model: Any,
+        strict: Optional[bool] = None,
+    ) -> Tuple[ChatCompletion, Any]:
         """Send a chat request and parse the response into *response_model*.
 
         Automatically set ``response_format`` from *response_model*, call
@@ -531,7 +575,7 @@ class GigaChatSyncClient(_BaseClient):
         """
         chat_data = _prepare_chat_for_parse(payload, self._settings, response_model, strict)
         completion = self.chat(chat_data)
-        parsed = _parse_completion(completion, response_model)
+        parsed: Any = _parse_completion(completion, response_model)
         return completion, parsed
 
     @_with_retry
@@ -778,20 +822,47 @@ class GigaChatAsyncClient(_BaseClient):
 
         return await chat.chat_async(self._aclient, chat=chat_data, access_token=self.token)
 
+    @overload
+    async def achat_parse(
+        self,
+        payload: Union[Chat, Dict[str, Any], str],
+        *,
+        response_model: type[_ModelT],
+        strict: Optional[bool] = None,
+    ) -> Tuple[ChatCompletion, _ModelT]: ...
+
+    @overload
+    async def achat_parse(
+        self,
+        payload: Union[Chat, Dict[str, Any], str],
+        *,
+        response_model: pydantic.TypeAdapter[_AdaptedT],
+        strict: Optional[bool] = None,
+    ) -> Tuple[ChatCompletion, _AdaptedT]: ...
+
+    @overload
     async def achat_parse(
         self,
         payload: Union[Chat, Dict[str, Any], str],
         *,
         response_model: Any,
         strict: Optional[bool] = None,
-    ) -> Tuple[ChatCompletion, _ModelT]:
+    ) -> Tuple[ChatCompletion, Any]: ...
+
+    async def achat_parse(
+        self,
+        payload: Union[Chat, Dict[str, Any], str],
+        *,
+        response_model: Any,
+        strict: Optional[bool] = None,
+    ) -> Tuple[ChatCompletion, Any]:
         """Send a chat request and parse the response into *response_model*.
 
         Async version of :meth:`GigaChatSyncClient.chat_parse`.
         """
         chat_data = _prepare_chat_for_parse(payload, self._settings, response_model, strict)
         completion = await self.achat(chat_data)
-        parsed = _parse_completion(completion, response_model)
+        parsed: Any = _parse_completion(completion, response_model)
         return completion, parsed
 
     @_awith_retry
