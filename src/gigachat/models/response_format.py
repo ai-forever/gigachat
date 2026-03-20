@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import inspect
-from typing import Any, Dict, Literal, Type, Union
+from typing import Any, Dict, Literal, Type, Union, get_origin
 
 import pydantic
 from pydantic import BaseModel, Field, model_validator
@@ -19,6 +19,8 @@ class JsonSchemaResponseFormat(BaseModel):
       ``model_json_schema()`` and normalized (OpenAI-style).
     * ``pydantic.TypeAdapter``  -- auto-converted via ``.json_schema()``
       and normalized (OpenAI-style).
+    * supported typing annotations such as ``Union[Foo, Bar]`` --
+      auto-converted through ``pydantic.TypeAdapter`` and normalized.
     """
 
     type: Literal["json_schema"] = Field(default="json_schema", description="Response format type.")
@@ -47,13 +49,20 @@ class JsonSchemaResponseFormat(BaseModel):
             values["schema"] = to_strict_json_schema(schema)
             return values
 
+        # Supported typing annotation (e.g. Union[Foo, Bar]) -> TypeAdapter
+        if get_origin(schema) is not None:
+            values = dict(values)
+            values["schema"] = to_strict_json_schema(pydantic.TypeAdapter(schema))
+            return values
+
         # Plain dict -> passthrough (no normalization)
         if isinstance(schema, dict):
             return values
 
         raise ValueError(
             f"'schema' must be a dict, a pydantic.BaseModel subclass, "
-            f"or a pydantic.TypeAdapter; got {type(schema).__name__}"
+            f"a supported typing annotation, or a pydantic.TypeAdapter; "
+            f"got {type(schema).__name__}"
         )
 
 
