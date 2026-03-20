@@ -8,6 +8,7 @@ import time
 import warnings
 from typing import (
     Any,
+    Type,
     AsyncIterator,
     Dict,
     Iterator,
@@ -140,7 +141,7 @@ def _get_response_model_adapter(response_model: Any) -> Optional[pydantic.TypeAd
 
 
 @overload
-def _parse_completion(completion: ChatCompletion, response_model: type[_ModelT]) -> _ModelT: ...
+def _parse_completion(completion: ChatCompletion, response_model: Type[_ModelT]) -> _ModelT: ...
 
 
 @overload
@@ -526,7 +527,7 @@ class GigaChatSyncClient(_BaseClient):
         self,
         payload: Union[Chat, Dict[str, Any], str],
         *,
-        response_model: type[_ModelT],
+        response_model: Type[_ModelT],
         strict: Optional[bool] = None,
     ) -> Tuple[ChatCompletion, _ModelT]: ...
 
@@ -827,7 +828,7 @@ class GigaChatAsyncClient(_BaseClient):
         self,
         payload: Union[Chat, Dict[str, Any], str],
         *,
-        response_model: type[_ModelT],
+        response_model: Type[_ModelT],
         strict: Optional[bool] = None,
     ) -> Tuple[ChatCompletion, _ModelT]: ...
 
