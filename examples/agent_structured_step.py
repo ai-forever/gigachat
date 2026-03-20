@@ -23,6 +23,7 @@ from pydantic import BaseModel, Field
 
 from gigachat import GigaChat
 from gigachat.models import Messages, MessagesRole
+
 load_dotenv()
 # -- Action models (what the agent can do) ---------------------------------
 

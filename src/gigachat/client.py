@@ -8,7 +8,6 @@ import time
 import warnings
 from typing import (
     Any,
-    Type,
     AsyncIterator,
     Dict,
     Iterator,
@@ -16,6 +15,7 @@ from typing import (
     Literal,
     Optional,
     Tuple,
+    Type,
     TypeVar,
     Union,
     get_origin,
