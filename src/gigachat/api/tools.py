@@ -1,12 +1,19 @@
 import json
 from http import HTTPStatus
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Union
 
 import httpx
 
 from gigachat.api.utils import build_headers, execute_request_async, execute_request_sync
 from gigachat.exceptions import AuthenticationError, ResponseError
-from gigachat.models.tools import AICheckResult, Balance, OpenApiFunctions, TokensCount
+from gigachat.models.chat import Function
+from gigachat.models.tools import (
+    AICheckResult,
+    Balance,
+    FunctionValidationResult,
+    OpenApiFunctions,
+    TokensCount,
+)
 
 
 def _get_tokens_count_kwargs(
@@ -78,6 +85,24 @@ def _get_functions_convert_kwargs(
     }
 
 
+def _get_function_validate_kwargs(
+    *,
+    function: Union[Function, Dict[str, Any]],
+    access_token: Optional[str] = None,
+) -> Dict[str, Any]:
+    headers = build_headers(access_token)
+    headers["Content-Type"] = "application/json"
+
+    function_payload = Function.model_validate(function).model_dump(by_alias=True, exclude_none=True)
+
+    return {
+        "method": "POST",
+        "url": "/functions/validate",
+        "json": function_payload,
+        "headers": headers,
+    }
+
+
 def functions_convert_sync(
     client: httpx.Client,
     *,
@@ -98,6 +123,28 @@ async def functions_convert_async(
     """Convert OpenAPI function definition to GigaChat format."""
     kwargs = _get_functions_convert_kwargs(openapi_function=openapi_function, access_token=access_token)
     return await execute_request_async(client, kwargs, OpenApiFunctions)
+
+
+def function_validate_sync(
+    client: httpx.Client,
+    *,
+    function: Union[Function, Dict[str, Any]],
+    access_token: Optional[str] = None,
+) -> FunctionValidationResult:
+    """Validate a GigaChat function definition."""
+    kwargs = _get_function_validate_kwargs(function=function, access_token=access_token)
+    return execute_request_sync(client, kwargs, FunctionValidationResult)
+
+
+async def function_validate_async(
+    client: httpx.AsyncClient,
+    *,
+    function: Union[Function, Dict[str, Any]],
+    access_token: Optional[str] = None,
+) -> FunctionValidationResult:
+    """Validate a GigaChat function definition."""
+    kwargs = _get_function_validate_kwargs(function=function, access_token=access_token)
+    return await execute_request_async(client, kwargs, FunctionValidationResult)
 
 
 def _get_ai_check_kwargs(

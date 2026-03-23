@@ -53,6 +53,7 @@ POST_THREADS_RETRIEVE_URL = f"{BASE_URL}/threads/retrieve"
 TOKENS_COUNT_URL = f"{BASE_URL}/tokens/count"
 BALANCE_URL = f"{BASE_URL}/balance"
 CONVERT_FUNCTIONS_URL = f"{BASE_URL}/functions/convert"
+VALIDATE_FUNCTION_URL = f"{BASE_URL}/functions/validate"
 AI_CHECK_URL = f"{BASE_URL}/ai/check"
 EMBEDDINGS_URL = f"{BASE_URL}/embeddings"
 BATCHES_URL = f"{BASE_URL}/batches"
@@ -117,4 +118,10 @@ POST_THREADS_RETRIEVE = get_json("threads/post_threads_retrieve.json")
 TOKENS_COUNT = get_json("tokens_count.json")
 BALANCE = get_json("balance.json")
 CONVERT_FUNCTIONS = get_json("convert_functions.json")
+FUNCTION_VALIDATION = {
+    "status": 200,
+    "message": "Function is valid",
+    "json_ai_rules_version": "1.0.5",
+    "warnings": [{"description": "few_shot_examples are missing", "schema_location": "(root)"}],
+}
 AI_CHECK = get_json("ai_check.json")

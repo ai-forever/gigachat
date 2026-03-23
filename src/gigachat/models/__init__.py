@@ -44,7 +44,14 @@ from gigachat.models.threads import (
     Threads,
     ThreadStatus,
 )
-from gigachat.models.tools import AICheckResult, Balance, OpenApiFunctions, TokensCount
+from gigachat.models.tools import (
+    AICheckResult,
+    Balance,
+    FunctionValidationIssue,
+    FunctionValidationResult,
+    OpenApiFunctions,
+    TokensCount,
+)
 
 __all__ = (
     "AccessToken",
@@ -73,6 +80,8 @@ __all__ = (
     "Function",
     "FunctionCall",
     "FunctionParameters",
+    "FunctionValidationIssue",
+    "FunctionValidationResult",
     "Image",
     "JsonSchemaResponseFormat",
     "Messages",
