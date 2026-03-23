@@ -1,7 +1,7 @@
 from pytest_httpx import HTTPXMock
 
 from gigachat.client import GigaChatAsyncClient, GigaChatSyncClient
-from gigachat.models import AICheckResult, Balance, Function, OpenApiFunctions
+from gigachat.models import AICheckResult, Balance, Function, FunctionValidationResult, OpenApiFunctions
 from gigachat.models.tools import BalanceValue
 from tests.constants import (
     AI_CHECK,
@@ -11,6 +11,8 @@ from tests.constants import (
     BASE_URL,
     CONVERT_FUNCTIONS,
     CONVERT_FUNCTIONS_URL,
+    FUNCTION_VALIDATION,
+    VALIDATE_FUNCTION_URL,
 )
 
 
@@ -42,6 +44,21 @@ def test_check_ai(httpx_mock: HTTPXMock) -> None:
     assert isinstance(response, AICheckResult)
 
 
+def test_validate_function(httpx_mock: HTTPXMock) -> None:
+    httpx_mock.add_response(url=VALIDATE_FUNCTION_URL, json=FUNCTION_VALIDATION)
+
+    with GigaChatSyncClient(base_url=BASE_URL) as client:
+        response = client.validate_function(
+            Function.model_validate(
+                {
+                    "name": "weather_forecast",
+                    "parameters": {"type": "object", "properties": {"location": {"type": "string"}}},
+                }
+            )
+        )
+    assert isinstance(response, FunctionValidationResult)
+
+
 async def test_aget_balance(httpx_mock: HTTPXMock) -> None:
     httpx_mock.add_response(url=BALANCE_URL, json=BALANCE)
 
@@ -68,3 +85,16 @@ async def test_acheck_ai(httpx_mock: HTTPXMock) -> None:
     async with GigaChatAsyncClient(base_url=BASE_URL) as client:
         response = await client.acheck_ai(text="", model="")
     assert isinstance(response, AICheckResult)
+
+
+async def test_avalidate_function(httpx_mock: HTTPXMock) -> None:
+    httpx_mock.add_response(url=VALIDATE_FUNCTION_URL, json=FUNCTION_VALIDATION)
+
+    async with GigaChatAsyncClient(base_url=BASE_URL) as client:
+        response = await client.avalidate_function(
+            {
+                "name": "weather_forecast",
+                "parameters": {"type": "object", "properties": {"location": {"type": "string"}}},
+            }
+        )
+    assert isinstance(response, FunctionValidationResult)

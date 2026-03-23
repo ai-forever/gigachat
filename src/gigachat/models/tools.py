@@ -42,3 +42,31 @@ class OpenApiFunctions(APIResponse):
     """Functions converted from OpenAPI."""
 
     functions: List[Function] = Field(description="List of converted functions.")
+
+
+class FunctionValidationIssue(BaseModel):
+    """Validation issue for a function schema."""
+
+    description: str = Field(description="Description of the validation issue.")
+    schema_location: str = Field(description="Schema location related to the issue.")
+
+
+class FunctionValidationResult(APIResponse):
+    """Function validation response."""
+
+    status: int = Field(description="HTTP-like status code of validation result.")
+    message: Literal["Function is valid", "Incorrect function syntax"] = Field(
+        description="Validation result message."
+    )
+    json_ai_rules_version: Optional[str] = Field(
+        default=None,
+        description="Version of validation rules used for JSON-based function validation.",
+    )
+    errors: Optional[List[FunctionValidationIssue]] = Field(
+        default=None,
+        description="Validation errors. Present when function syntax is invalid.",
+    )
+    warnings: Optional[List[FunctionValidationIssue]] = Field(
+        default=None,
+        description="Validation warnings. Present when the function is valid with non-critical issues.",
+    )
