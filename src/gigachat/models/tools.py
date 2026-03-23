@@ -55,9 +55,7 @@ class FunctionValidationResult(APIResponse):
     """Function validation response."""
 
     status: int = Field(description="HTTP-like status code of validation result.")
-    message: Literal["Function is valid", "Incorrect function syntax"] = Field(
-        description="Validation result message."
-    )
+    message: Literal["Function is valid", "Incorrect function syntax"] = Field(description="Validation result message.")
     json_ai_rules_version: Optional[str] = Field(
         default=None,
         description="Version of validation rules used for JSON-based function validation.",
