@@ -142,6 +142,9 @@ class Messages(BaseModel):
 
     role: MessagesRole = Field(description="Role of the message author.")
     content: str = Field(default="", description="Text content of the message.")
+    logprobs: Optional[List[Dict[str, Any]]] = Field(
+        default=None, description="Token-level log probabilities for the generated message."
+    )
     function_call: Optional[FunctionCall] = Field(default=None, description="Function call details.")
     name: Optional[str] = Field(default=None, description="Function name. Required if role is 'function'.")
     attachments: Optional[List[str]] = Field(default=None, description="List of attached file IDs.")
@@ -235,7 +238,9 @@ class Chat(BaseModel):
         default=None, description="Reasoning effort level."
     )
     top_logprobs: Optional[int] = Field(
-        default=None, description="Number of most likely tokens to return with log probabilities."
+        default=None, description="Number of most likely tokens to return with log probabilities.",
+        ge=0,
+        le=5
     )
     unnormalized_history: Optional[bool] = Field(
         default=None, description="Disable automatic normalization of the message history."

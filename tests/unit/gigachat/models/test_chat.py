@@ -11,6 +11,7 @@ from gigachat.models.chat import (
     Messages,
     MessagesRole,
     Chat,
+    ChatCompletion,
     Usage,
 )
 
@@ -90,3 +91,40 @@ def test_chat_unnormalized_history_dump() -> None:
     chat = Chat(messages=[], unnormalized_history=True)
 
     assert chat.model_dump(exclude_none=True)["unnormalized_history"] is True
+
+
+def test_chat_completion_message_logprobs() -> None:
+    completion = ChatCompletion.model_validate(
+        {
+            "choices": [
+                {
+                    "message": {
+                        "role": "assistant",
+                        "content": "Да",
+                        "logprobs": [
+                            {
+                                "chosen": {"token": "Да", "logprob": -0.1},
+                                "top": [
+                                    {"token": "Да", "logprob": -0.1},
+                                    {"token": "Нет", "logprob": -1.5},
+                                ],
+                            }
+                        ],
+                    },
+                    "index": 0,
+                    "finish_reason": "stop",
+                }
+            ],
+            "created": 1678878333,
+            "model": "GigaChat:v1.2.19.2",
+            "usage": {
+                "prompt_tokens": 1,
+                "completion_tokens": 1,
+                "total_tokens": 2,
+            },
+            "object": "chat.completion",
+        }
+    )
+
+    assert completion.choices[0].message.logprobs is not None
+    assert completion.choices[0].message.logprobs[0]["chosen"]["token"] == "Да"
