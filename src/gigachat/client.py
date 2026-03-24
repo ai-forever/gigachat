@@ -269,7 +269,7 @@ class _BaseClient:
         self._settings = Settings(**config)
         if self._settings.access_token:
             self._access_token = AccessToken(
-                access_token=cast(SecretStr, self._settings.access_token),
+                access_token=self._settings.access_token,
                 expires_at=0,
             )
 
