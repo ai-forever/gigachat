@@ -116,6 +116,22 @@ def test_chat_sync_additional_fields(httpx_mock: HTTPXMock) -> None:
     assert request_content["additional_field"] == "val"
 
 
+def test_chat_sync_additional_fields_passthrough_preset(httpx_mock: HTTPXMock) -> None:
+    httpx_mock.add_response(url=MOCK_URL, json=CHAT_COMPLETION)
+
+    chat_data = Chat(
+        messages=[Messages(role=MessagesRole.USER, content="hi")],
+        additional_fields={"preset": "my-preset"},
+    )
+
+    with httpx.Client(base_url=BASE_URL) as client:
+        chat.chat_sync(client, chat=chat_data)
+
+    requests = httpx_mock.get_requests()
+    request_content = json.loads(requests[0].content.decode("utf-8"))
+    assert request_content["preset"] == "my-preset"
+
+
 def test_chat_sync_value_error(httpx_mock: HTTPXMock) -> None:
     httpx_mock.add_response(url=MOCK_URL, json={})
 
@@ -326,6 +342,48 @@ async def test_stream_async_additional_fields(httpx_mock: HTTPXMock) -> None:
     requests = httpx_mock.get_requests()
     request_content = json.loads(requests[0].content.decode("utf-8"))
     assert request_content["additional_field"] == "val"
+
+
+def test_chat_sync_function_ranker_top_logprobs_and_unnormalized_history(httpx_mock: HTTPXMock) -> None:
+    httpx_mock.add_response(url=MOCK_URL, json=CHAT_COMPLETION)
+
+    chat_data = Chat(
+        model="GigaChat-2-Max",
+        messages=[Messages(role=MessagesRole.USER, content="hi")],
+        function_ranker={"enabled": True, "top_n": 3},
+        top_logprobs=2,
+        unnormalized_history=True,
+    )
+
+    with httpx.Client(base_url=BASE_URL) as client:
+        chat.chat_sync(client, chat=chat_data)
+
+    requests = httpx_mock.get_requests()
+    request_content = json.loads(requests[0].content.decode("utf-8"))
+    assert request_content["function_ranker"] == {"enabled": True, "top_n": 3}
+    assert request_content["top_logprobs"] == 2
+    assert request_content["unnormalized_history"] is True
+
+
+def test_stream_sync_function_ranker_top_logprobs_and_unnormalized_history(httpx_mock: HTTPXMock) -> None:
+    httpx_mock.add_response(url=MOCK_URL, content=CHAT_COMPLETION_STREAM, headers=HEADERS_STREAM)
+
+    chat_data = Chat(
+        model="GigaChat-2-Max",
+        messages=[Messages(role=MessagesRole.USER, content="hi")],
+        function_ranker={"enabled": True, "top_n": 3},
+        top_logprobs=2,
+        unnormalized_history=True,
+    )
+
+    with httpx.Client(base_url=BASE_URL) as client:
+        list(chat.stream_sync(client, chat=chat_data))
+
+    requests = httpx_mock.get_requests()
+    request_content = json.loads(requests[0].content.decode("utf-8"))
+    assert request_content["function_ranker"] == {"enabled": True, "top_n": 3}
+    assert request_content["top_logprobs"] == 2
+    assert request_content["unnormalized_history"] is True
 
 
 # --- response_format wire serialization tests ---

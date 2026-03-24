@@ -6,9 +6,11 @@ from pydantic import ValidationError
 from gigachat.models.chat import (
     Function,
     FunctionCall,
+    FunctionRanker,
     FunctionParameters,
     Messages,
     MessagesRole,
+    Chat,
     Usage,
 )
 
@@ -67,3 +69,24 @@ def test_usage_validation() -> None:
 def test_function_parameters_default() -> None:
     params = FunctionParameters()
     assert params.type_ == "object"
+
+
+def test_chat_function_ranker_from_dict() -> None:
+    chat = Chat(messages=[], function_ranker={"enabled": True, "top_n": 3})
+
+    assert isinstance(chat.function_ranker, FunctionRanker)
+    assert chat.function_ranker.enabled is True
+    assert chat.function_ranker.top_n == 3
+    assert chat.model_dump(exclude_none=True)["function_ranker"] == {"enabled": True, "top_n": 3}
+
+
+def test_chat_top_logprobs_dump() -> None:
+    chat = Chat(messages=[], top_logprobs=2)
+
+    assert chat.model_dump(exclude_none=True)["top_logprobs"] == 2
+
+
+def test_chat_unnormalized_history_dump() -> None:
+    chat = Chat(messages=[], unnormalized_history=True)
+
+    assert chat.model_dump(exclude_none=True)["unnormalized_history"] is True
