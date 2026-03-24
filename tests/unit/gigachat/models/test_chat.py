@@ -127,4 +127,6 @@ def test_chat_completion_message_logprobs() -> None:
     )
 
     assert completion.choices[0].message.logprobs is not None
-    assert completion.choices[0].message.logprobs[0]["chosen"]["token"] == "Да"
+    assert completion.choices[0].message.logprobs[0].chosen.token == "Да"
+    assert completion.choices[0].message.logprobs[0].chosen.logprob == -0.1
+    assert completion.choices[0].message.logprobs[0].top[1].token == "Нет"

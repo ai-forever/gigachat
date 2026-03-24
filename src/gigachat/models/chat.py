@@ -137,12 +137,26 @@ class FunctionRanker(BaseModel):
     top_n: Optional[int] = Field(default=None, description="Number of ranked functions to pass to the model.")
 
 
+class LogProbToken(BaseModel):
+    """A token and its log probability."""
+
+    token: str = Field(description="Token text.")
+    logprob: float = Field(description="Log probability for the token.")
+
+
+class MessageLogProb(BaseModel):
+    """Log probability information for one generated token position."""
+
+    chosen: LogProbToken = Field(description="The token chosen by the model.")
+    top: List[LogProbToken] = Field(description="Top candidate tokens for this position.")
+
+
 class Messages(BaseModel):
     """Message in a chat conversation."""
 
     role: MessagesRole = Field(description="Role of the message author.")
     content: str = Field(default="", description="Text content of the message.")
-    logprobs: Optional[List[Dict[str, Any]]] = Field(
+    logprobs: Optional[List[MessageLogProb]] = Field(
         default=None, description="Token-level log probabilities for the generated message."
     )
     function_call: Optional[FunctionCall] = Field(default=None, description="Function call details.")
