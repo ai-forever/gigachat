@@ -1,7 +1,7 @@
 import ssl
 from typing import List, Optional, Tuple
 
-from pydantic import Field
+from pydantic import Field, SecretStr
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 ENV_PREFIX = "GIGACHAT_"
@@ -20,7 +20,7 @@ class Settings(BaseSettings):
         default=AUTH_URL,
         description="Address for requesting OAuth 2.0 access token.",
     )
-    credentials: Optional[str] = Field(
+    credentials: Optional[SecretStr] = Field(
         default=None,
         description="Authorization data.",
     )
@@ -28,7 +28,7 @@ class Settings(BaseSettings):
         default=SCOPE,
         description="API version to which access is provided.",
     )
-    access_token: Optional[str] = Field(
+    access_token: Optional[SecretStr] = Field(
         default=None,
         description="JWE token.",
     )
@@ -45,7 +45,7 @@ class Settings(BaseSettings):
         default=None,
         description="Username for basic authentication.",
     )
-    password: Optional[str] = Field(
+    password: Optional[SecretStr] = Field(
         default=None,
         description="Password for basic authentication.",
     )
@@ -75,7 +75,7 @@ class Settings(BaseSettings):
         default=None,
         description="Path to client private key file.",
     )
-    key_file_password: Optional[str] = Field(
+    key_file_password: Optional[SecretStr] = Field(
         default=None,
         description="Password for encrypted client private key file.",
     )

@@ -6,9 +6,12 @@ from pydantic import ValidationError
 from gigachat.models.chat import (
     Function,
     FunctionCall,
+    FunctionRanker,
     FunctionParameters,
     Messages,
     MessagesRole,
+    Chat,
+    ChatCompletion,
     Usage,
 )
 
@@ -67,3 +70,63 @@ def test_usage_validation() -> None:
 def test_function_parameters_default() -> None:
     params = FunctionParameters()
     assert params.type_ == "object"
+
+
+def test_chat_function_ranker_from_dict() -> None:
+    chat = Chat(messages=[], function_ranker={"enabled": True, "top_n": 3})
+
+    assert isinstance(chat.function_ranker, FunctionRanker)
+    assert chat.function_ranker.enabled is True
+    assert chat.function_ranker.top_n == 3
+    assert chat.model_dump(exclude_none=True)["function_ranker"] == {"enabled": True, "top_n": 3}
+
+
+def test_chat_top_logprobs_dump() -> None:
+    chat = Chat(messages=[], top_logprobs=2)
+
+    assert chat.model_dump(exclude_none=True)["top_logprobs"] == 2
+
+
+def test_chat_unnormalized_history_dump() -> None:
+    chat = Chat(messages=[], unnormalized_history=True)
+
+    assert chat.model_dump(exclude_none=True)["unnormalized_history"] is True
+
+
+def test_chat_completion_message_logprobs() -> None:
+    completion = ChatCompletion.model_validate(
+        {
+            "choices": [
+                {
+                    "message": {
+                        "role": "assistant",
+                        "content": "Да",
+                        "logprobs": [
+                            {
+                                "chosen": {"token": "Да", "logprob": -0.1},
+                                "top": [
+                                    {"token": "Да", "logprob": -0.1},
+                                    {"token": "Нет", "logprob": -1.5},
+                                ],
+                            }
+                        ],
+                    },
+                    "index": 0,
+                    "finish_reason": "stop",
+                }
+            ],
+            "created": 1678878333,
+            "model": "GigaChat:v1.2.19.2",
+            "usage": {
+                "prompt_tokens": 1,
+                "completion_tokens": 1,
+                "total_tokens": 2,
+            },
+            "object": "chat.completion",
+        }
+    )
+
+    assert completion.choices[0].message.logprobs is not None
+    assert completion.choices[0].message.logprobs[0].chosen.token == "Да"
+    assert completion.choices[0].message.logprobs[0].chosen.logprob == -0.1
+    assert completion.choices[0].message.logprobs[0].top[1].token == "Нет"
