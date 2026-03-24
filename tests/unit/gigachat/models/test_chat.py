@@ -4,14 +4,14 @@ import pytest
 from pydantic import ValidationError
 
 from gigachat.models.chat import (
-    Function,
-    FunctionCall,
-    FunctionRanker,
-    FunctionParameters,
-    Messages,
-    MessagesRole,
     Chat,
     ChatCompletion,
+    Function,
+    FunctionCall,
+    FunctionParameters,
+    FunctionRanker,
+    Messages,
+    MessagesRole,
     Usage,
 )
 
