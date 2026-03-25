@@ -85,6 +85,25 @@ def parse_chunk(line: str, model_class: Type[T]) -> Optional[T]:
         return None
 
 
+def _parse_sse_event(event: Optional[str], data_lines: list[str], model_class: Type[T]) -> Optional[T]:
+    """Parse one SSE event accumulated from event/data lines."""
+    if not data_lines:
+        return None
+
+    raw_value = "\n".join(data_lines).lstrip()
+    try:
+        if raw_value == "[DONE]":
+            return None
+
+        chunk = model_class.model_validate_json(raw_value)
+        if event is not None and hasattr(chunk, "event"):
+            chunk.event = event
+        return chunk
+    except Exception as e:
+        logger.error("Error parsing SSE event from server: %s, event: %s, raw value: %s", e, event, raw_value)
+        raise
+
+
 def build_x_headers(response: httpx.Response) -> Dict[str, Optional[str]]:
     """Extract X-Headers from response."""
     return {
@@ -165,11 +184,28 @@ def execute_stream_sync(client: httpx.Client, kwargs: Dict[str, Any], model_clas
     with client.stream(**kwargs) as response:
         _check_response(response)
         x_headers = build_x_headers(response)
+        event = None
+        data_lines = []
         for line in response.iter_lines():
-            if chunk := parse_chunk(line, model_class):
-                if hasattr(chunk, "x_headers"):
-                    chunk.x_headers = x_headers
-                yield chunk
+            if line == "":
+                if chunk := _parse_sse_event(event, data_lines, model_class):
+                    if hasattr(chunk, "x_headers"):
+                        chunk.x_headers = x_headers
+                    yield chunk
+                event = None
+                data_lines = []
+                continue
+
+            name, _, value = line.partition(":")
+            if name == "event":
+                event = value.lstrip()
+            elif name == "data":
+                data_lines.append(value.lstrip())
+
+        if chunk := _parse_sse_event(event, data_lines, model_class):
+            if hasattr(chunk, "x_headers"):
+                chunk.x_headers = x_headers
+            yield chunk
 
 
 async def execute_stream_async(
@@ -179,8 +215,25 @@ async def execute_stream_async(
     async with client.stream(**kwargs) as response:
         await _acheck_response(response)
         x_headers = build_x_headers(response)
+        event = None
+        data_lines = []
         async for line in response.aiter_lines():
-            if chunk := parse_chunk(line, model_class):
-                if hasattr(chunk, "x_headers"):
-                    chunk.x_headers = x_headers
-                yield chunk
+            if line == "":
+                if chunk := _parse_sse_event(event, data_lines, model_class):
+                    if hasattr(chunk, "x_headers"):
+                        chunk.x_headers = x_headers
+                    yield chunk
+                event = None
+                data_lines = []
+                continue
+
+            name, _, value = line.partition(":")
+            if name == "event":
+                event = value.lstrip()
+            elif name == "data":
+                data_lines.append(value.lstrip())
+
+        if chunk := _parse_sse_event(event, data_lines, model_class):
+            if hasattr(chunk, "x_headers"):
+                chunk.x_headers = x_headers
+            yield chunk

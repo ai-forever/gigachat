@@ -27,6 +27,12 @@ class MockModel(BaseModel):
     x_headers: Optional[Dict[str, Optional[str]]] = None
 
 
+class MockEventModel(MockModel):
+    """Mock model with SSE event support."""
+
+    event: Optional[str] = None
+
+
 def test_build_headers_empty() -> None:
     headers = build_headers()
     assert "Authorization" not in headers
@@ -146,6 +152,33 @@ def test_execute_stream_sync(httpx_mock: HTTPXMock) -> None:
 
     assert len(chunks) == 2
     assert chunks[0].value == "chunk1"
+    assert chunks[1].value == "chunk2"
+
+
+def test_execute_stream_sync_named_events_and_eof_flush(httpx_mock: HTTPXMock) -> None:
+    httpx_mock.add_response(
+        url=f"{BASE_URL}/stream",
+        content=(
+            b'event: response.message.delta\n'
+            b'data: {"value": "chunk1"}\n\n'
+            b'event: response.message.done\n'
+            b'data: {"value": "chunk2"}'
+        ),
+        headers={"content-type": "text/event-stream"},
+    )
+
+    with httpx.Client(base_url=BASE_URL) as client:
+        chunks = list(
+            execute_stream_sync(
+                client,
+                {"method": "GET", "url": "/stream"},
+                MockEventModel,
+            )
+        )
+
+    assert len(chunks) == 2
+    assert chunks[0].event == "response.message.delta"
+    assert chunks[1].event == "response.message.done"
     assert chunks[1].value == "chunk2"
 
 

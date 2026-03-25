@@ -92,6 +92,9 @@ def test_stream_v2(httpx_mock: HTTPXMock) -> None:
         response = list(client.stream_v2(CHAT_V2))
 
     assert len(response) == 2
+    assert response[0].event == "response.message.delta"
+    assert response[1].event == "response.message.done"
+    assert response[1].messages is None
     assert response[1].finish_reason == "stop"
 
 
@@ -117,4 +120,7 @@ async def test_astream_v2(httpx_mock: HTTPXMock) -> None:
         response = [chunk async for chunk in client.astream_v2(CHAT_V2)]
 
     assert len(response) == 2
+    assert response[0].event == "response.message.delta"
+    assert response[1].event == "response.message.done"
     assert response[0].messages[0].role == "assistant"
+    assert response[1].messages is None

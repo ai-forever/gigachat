@@ -39,13 +39,24 @@ def resolve_chat_v2_url(base_url: str) -> str:
         raise ValueError("chat_v2_url_cvar must be an absolute URL or an absolute path starting with '/'")
 
     base_path = parsed_base_url.path.rstrip("/")
-    if not base_path.endswith("/v1"):
+    # Костыль для /v1/token
+    # -> /v2/chat/completions
+    segments = [segment for segment in base_path.split("/") if segment]
+
+    if len(segments) >= 3 and segments[-2:] == ["chat", "completions"] and segments[-3] == "v2":
+        return str(origin.copy_with(path=base_path))
+
+    if segments and segments[-1] == "v2":
+        return str(origin.copy_with(path=f"{base_path}/chat/completions"))
+
+    if not segments or segments[-1] != "v1":
         raise ValueError(
             f"Cannot derive v2 chat URL from base_url={base_url!r}; "
-            "set chat_v2_url_cvar or use a base_url ending with '/api/v1'"
+            "set chat_v2_url_cvar or use a base_url ending with '/v1' or '/v2'"
         )
 
-    v2_path = f"{base_path[:-len('/api/v1')]}/v2/chat/completions"
+    segments[-1] = "v2"
+    v2_path = f"/{'/'.join(segments)}/chat/completions"
     return str(origin.copy_with(path=v2_path))
 
 

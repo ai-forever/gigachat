@@ -4,7 +4,7 @@ import inspect
 from typing import Any, Dict, List, Literal, Optional, Type, Union, get_origin
 
 import pydantic
-from pydantic import BaseModel, Field, model_validator
+from pydantic import AliasChoices, BaseModel, Field, model_validator
 
 from gigachat.models._schema_normalize import to_strict_json_schema
 from gigachat.models.base import APIResponse
@@ -30,7 +30,7 @@ class ChatV2ToolExecution(BaseModel):
     """Information about a platform tool execution."""
 
     name: str = Field(description="Tool name.")
-    status: str = Field(description="Execution status.")
+    status: Optional[str] = Field(default=None, description="Execution status.")
     seconds_left: Optional[int] = Field(default=None, description="Estimated seconds left for streaming runs.")
     censored: Optional[bool] = Field(default=None, description="Whether the tool output was censored.")
 
@@ -97,7 +97,11 @@ class ChatV2Message(BaseModel):
 
     message_id: Optional[str] = Field(default=None, description="Message identifier.")
     role: str = Field(description="Message role.")
-    tools_state_id: Optional[str] = Field(default=None, description="Tool state identifier.")
+    tools_state_id: Optional[str] = Field(
+        default=None,
+        validation_alias=AliasChoices("tools_state_id", "tool_state_id"),
+        description="Tool state identifier.",
+    )
     content: List[ChatV2ContentPart] = Field(description="Structured message content.")
 
     @model_validator(mode="before")
@@ -121,7 +125,11 @@ class ChatV2MessageChunk(BaseModel):
 
     message_id: Optional[str] = Field(default=None, description="Message identifier.")
     role: Optional[str] = Field(default=None, description="Message role.")
-    tools_state_id: Optional[str] = Field(default=None, description="Tool state identifier.")
+    tools_state_id: Optional[str] = Field(
+        default=None,
+        validation_alias=AliasChoices("tools_state_id", "tool_state_id"),
+        description="Tool state identifier.",
+    )
     content: Optional[List[ChatV2ContentPart]] = Field(default=None, description="Structured message content delta.")
 
     @model_validator(mode="before")
@@ -404,10 +412,17 @@ class ChatCompletionV2(APIResponse):
 class ChatCompletionV2Chunk(APIResponse):
     """Response model for streaming v2 chat completions."""
 
+    event: Optional[str] = Field(default=None, description="SSE event name.")
     model: str = Field(description="Model name.")
     thread_id: Optional[str] = Field(default=None, description="Thread identifier.")
     created_at: int = Field(description="Creation timestamp.")
-    messages: List[ChatV2MessageChunk] = Field(description="Streaming message deltas.")
+    messages: Optional[List[ChatV2MessageChunk]] = Field(default=None, description="Streaming message deltas.")
     finish_reason: Optional[str] = Field(default=None, description="Why generation finished.")
     usage: Optional[ChatV2Usage] = Field(default=None, description="Usage statistics.")
     additional_data: Optional[ChatV2AdditionalData] = Field(default=None, description="Additional metadata.")
+
+    @model_validator(mode="after")
+    def _validate_stream_payload(self) -> ChatCompletionV2Chunk:
+        if self.messages is None and self.finish_reason is None and self.usage is None and self.additional_data is None:
+            raise ValueError("ChatCompletionV2Chunk requires messages or completion metadata")
+        return self

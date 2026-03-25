@@ -38,6 +38,17 @@ def test_resolve_chat_v2_url_from_standard_base_url() -> None:
     assert chat_v2.resolve_chat_v2_url(CHAT_V2_BASE_URL) == CHAT_V2_URL
 
 
+def test_resolve_chat_v2_url_from_plain_v1_base_url() -> None:
+    assert chat_v2.resolve_chat_v2_url(f"{BASE_URL}/v1") == f"{BASE_URL}/v2/chat/completions"
+
+
+def test_resolve_chat_v2_url_swaps_terminal_v1_in_place() -> None:
+    assert (
+        chat_v2.resolve_chat_v2_url(f"{BASE_URL}/tenant/gateway/v1")
+        == f"{BASE_URL}/tenant/gateway/v2/chat/completions"
+    )
+
+
 def test_resolve_chat_v2_url_uses_absolute_override() -> None:
     token = chat_v2_url_cvar.set("https://override.example/api/v2/chat/completions")
     try:
@@ -146,11 +157,59 @@ def test_stream_v2_sync(httpx_mock: HTTPXMock) -> None:
 
     assert len(response) == 2
     assert all(isinstance(chunk, ChatCompletionV2Chunk) for chunk in response)
+    assert response[0].event == "response.message.delta"
+    assert response[0].messages is not None
+    assert response[0].messages[0].role == "assistant"
+    assert response[1].event == "response.message.done"
+    assert response[1].messages is None
     assert response[1].finish_reason == "stop"
 
     requests = httpx_mock.get_requests()
     request_content = json.loads(requests[0].content.decode("utf-8"))
     assert request_content["stream"] is True
+
+
+def test_stream_v2_sync_with_tool_events(httpx_mock: HTTPXMock) -> None:
+    httpx_mock.add_response(
+        url=CHAT_V2_URL,
+        content=(
+            b'event: response.tool.in_progress\n'
+            b'data: {"model":"GigaChat-3-Ultra","created_at":1774444263,'
+            b'"messages":[{"role":"assistant","content":[{"tool_execution":'
+            b'{"name":"web_search"}}]}]}\n\n'
+            b'event: response.tool.completed\n'
+            b'data: {"model":"GigaChat-3-Ultra","created_at":1774444265,'
+            b'"messages":[{"role":"assistant","content":[{"tool_execution":'
+            b'{"name":"web_search","status":"success"}}]}]}\n\n'
+            b'event: response.message.done\n'
+            b'data: {"model":"GigaChat-3-Ultra","created_at":1774444267,'
+            b'"messages":[{"role":"assistant","tool_state_id":"tool-state-1"}],'
+            b'"finish_reason":"stop","usage":{"input_tokens":10,"output_tokens":12,'
+            b'"total_tokens":22}}'
+        ),
+        headers=HEADERS_STREAM,
+    )
+
+    with httpx.Client(base_url=CHAT_V2_BASE_URL) as client:
+        response = list(chat_v2.stream_v2_sync(client, chat=ChatV2.model_validate(CHAT_V2), base_url=CHAT_V2_BASE_URL))
+
+    assert [chunk.event for chunk in response] == [
+        "response.tool.in_progress",
+        "response.tool.completed",
+        "response.message.done",
+    ]
+    assert response[0].messages is not None
+    assert response[0].messages[0].content is not None
+    assert response[0].messages[0].content[0].tool_execution is not None
+    assert response[0].messages[0].content[0].tool_execution.name == "web_search"
+    assert response[0].messages[0].content[0].tool_execution.status is None
+    assert response[1].messages is not None
+    assert response[1].messages[0].content is not None
+    assert response[1].messages[0].content[0].tool_execution is not None
+    assert response[1].messages[0].content[0].tool_execution.status == "success"
+    assert response[2].messages is not None
+    assert response[2].messages[0].tools_state_id == "tool-state-1"
+    assert response[2].finish_reason == "stop"
 
 
 async def test_chat_v2_async(httpx_mock: HTTPXMock) -> None:
@@ -176,6 +235,9 @@ async def test_stream_v2_async(httpx_mock: HTTPXMock) -> None:
 
     assert len(response) == 2
     assert all(isinstance(chunk, ChatCompletionV2Chunk) for chunk in response)
+    assert response[0].event == "response.message.delta"
+    assert response[1].event == "response.message.done"
+    assert response[1].messages is None
 
 
 async def test_headers_in_async_v2_request(httpx_mock: HTTPXMock) -> None:
