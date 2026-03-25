@@ -17,6 +17,7 @@ This library is part of [GigaChain](https://github.com/ai-forever/gigachain) and
 - [Quick Start](#quick-start)
 - [Usage Examples](#usage-examples)
   - [Basic Chat](#basic-chat)
+  - [V2 Chat Completions](#v2-chat-completions)
   - [Streaming](#streaming)
   - [Async](#async)
   - [Embeddings](#embeddings)
@@ -86,6 +87,31 @@ with GigaChat(credentials="<your_authorization_key>") as client:
     response = client.chat("Hello, GigaChat!")
     print(response.choices[0].message.content)
 ```
+
+### V2 Chat Completions
+
+Use the dedicated `v2/chat/completions` helpers when you need the newer structured `messages[]` response format.
+
+```python
+from gigachat import GigaChat
+from gigachat.models import ChatV2
+
+chat = ChatV2(
+    messages=[
+        {
+            "role": "user",
+            "content": [{"text": "Придумай короткий слоган для кофейни"}],
+        }
+    ],
+)
+
+with GigaChat(credentials="<your_authorization_key>") as client:
+    response = client.chat_v2(chat)
+    print(response.messages[0].content[0].text)
+```
+
+> **Migration note:** v1 returns `choices[0].message`, while v2 returns top-level `messages[]`.
+> The SDK derives the default v2 endpoint from a `base_url` ending with `/api/v1`. For custom deployments, set `chat_v2_url_cvar`.
 
 ### Streaming
 

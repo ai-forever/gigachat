@@ -33,6 +33,8 @@ MOCK_TOKEN_STRING = (
 
 # URLs derived from BASE_URL
 CHAT_URL = f"{BASE_URL}/chat/completions"
+CHAT_V2_BASE_URL = f"{BASE_URL}/api/v2"
+CHAT_V2_URL = f"{BASE_URL}/api/v2/chat/completions"
 TOKEN_URL = f"{BASE_URL}/token"
 FILES_URL = f"{BASE_URL}/files"
 GET_FILE_URL = f"{BASE_URL}/files/1"
@@ -77,6 +79,9 @@ CHAT_FUNCTION = Chat.model_validate(get_json("chat_function.json"))
 CHAT_COMPLETION = get_json("chat_completion.json")
 CHAT_COMPLETION_FUNCTION = get_json("chat_completion_function.json")
 CHAT_COMPLETION_STREAM = get_bytes("chat_completion.stream")
+CHAT_V2 = get_json("chat_v2.json")
+CHAT_COMPLETION_V2 = get_json("chat_completion_v2.json")
+CHAT_COMPLETION_V2_STREAM = get_bytes("chat_completion_v2.stream")
 
 HEADERS_STREAM = {"Content-Type": "text/event-stream"}
 X_CUSTOM_HEADER = "X-Custom-Header"

@@ -28,7 +28,7 @@ from pydantic import SecretStr
 from typing_extensions import Self
 
 from gigachat._types import FileContent, FileTypes
-from gigachat.api import auth, batches, chat, embeddings, files, models, tools
+from gigachat.api import auth, batches, chat, chat_v2, embeddings, files, models, tools
 from gigachat.assistants import AssistantsAsyncClient, AssistantsSyncClient
 from gigachat.authentication import _awith_auth, _awith_auth_stream, _with_auth, _with_auth_stream
 from gigachat.context import authorization_cvar
@@ -47,6 +47,14 @@ from gigachat.models.chat import (
     Function,
     Messages,
     MessagesRole,
+)
+from gigachat.models.chat_v2 import (
+    ChatCompletionV2,
+    ChatCompletionV2Chunk,
+    ChatV2,
+    ChatV2ContentPart,
+    ChatV2Message,
+    ChatV2Storage,
 )
 from gigachat.models.embeddings import Embeddings
 from gigachat.models.files import DeletedFile, File, UploadedFile, UploadedFiles
@@ -140,6 +148,21 @@ def _prepare_chat_for_parse(
     """Prepare a Chat object with response_format derived from *response_model*."""
     chat_data = _parse_chat(payload, settings)
     chat_data.response_format = JsonSchemaResponseFormat(schema=response_model, strict=strict)
+    return chat_data
+
+
+def _parse_chat_v2(payload: Union[ChatV2, Dict[str, Any], str], settings: Settings) -> ChatV2:
+    if isinstance(payload, str):
+        chat_data = ChatV2(messages=[ChatV2Message(role="user", content=[ChatV2ContentPart(text=payload)])])
+    else:
+        chat_data = ChatV2.model_validate(payload)
+
+    storage_thread_id = chat_data.storage.thread_id if isinstance(chat_data.storage, ChatV2Storage) else None
+    using_assistant = chat_data.assistant_id is not None or storage_thread_id is not None
+    if not using_assistant and chat_data.model is None:
+        chat_data.model = settings.model or GIGACHAT_MODEL
+    if chat_data.flags is None:
+        chat_data.flags = settings.flags
     return chat_data
 
 
@@ -544,6 +567,18 @@ class GigaChatSyncClient(_BaseClient):
         chat_data = _parse_chat(payload, self._settings)
         return chat.chat_sync(self._client, chat=chat_data, access_token=self.token)
 
+    @_with_retry
+    @_with_auth
+    def chat_v2(self, payload: Union[ChatV2, Dict[str, Any], str]) -> ChatCompletionV2:
+        """Return a v2 model response based on the provided messages."""
+        chat_data = _parse_chat_v2(payload, self._settings)
+        return chat_v2.chat_v2_sync(
+            self._client,
+            chat=chat_data,
+            base_url=self._settings.base_url,
+            access_token=self.token,
+        )
+
     @overload
     def chat_parse(
         self,
@@ -636,6 +671,19 @@ class GigaChatSyncClient(_BaseClient):
         chat_data = _parse_chat(payload, self._settings)
 
         yield from chat.stream_sync(self._client, chat=chat_data, access_token=self.token)
+
+    @_with_retry_stream
+    @_with_auth_stream
+    def stream_v2(self, payload: Union[ChatV2, Dict[str, Any], str]) -> Iterator[ChatCompletionV2Chunk]:
+        """Return a v2 model response based on the provided messages (streaming)."""
+        chat_data = _parse_chat_v2(payload, self._settings)
+
+        yield from chat_v2.stream_v2_sync(
+            self._client,
+            chat=chat_data,
+            base_url=self._settings.base_url,
+            access_token=self.token,
+        )
 
 
 class GigaChatAsyncClient(_BaseClient):
@@ -853,6 +901,19 @@ class GigaChatAsyncClient(_BaseClient):
 
         return await chat.chat_async(self._aclient, chat=chat_data, access_token=self.token)
 
+    @_awith_retry
+    @_awith_auth
+    async def achat_v2(self, payload: Union[ChatV2, Dict[str, Any], str]) -> ChatCompletionV2:
+        """Return an async v2 model response based on the provided messages."""
+        chat_data = _parse_chat_v2(payload, self._settings)
+
+        return await chat_v2.chat_v2_async(
+            self._aclient,
+            chat=chat_data,
+            base_url=self._settings.base_url,
+            access_token=self.token,
+        )
+
     @overload
     async def achat_parse(
         self,
@@ -970,6 +1031,18 @@ class GigaChatAsyncClient(_BaseClient):
         """Return a model response based on the provided messages (streaming)."""
         chat_data = _parse_chat(payload, self._settings)
         return chat.stream_async(self._aclient, chat=chat_data, access_token=self.token)
+
+    @_awith_retry_stream
+    @_awith_auth_stream
+    def astream_v2(self, payload: Union[ChatV2, Dict[str, Any], str]) -> AsyncIterator[ChatCompletionV2Chunk]:
+        """Return a v2 model response based on the provided messages (streaming)."""
+        chat_data = _parse_chat_v2(payload, self._settings)
+        return chat_v2.stream_v2_async(
+            self._aclient,
+            chat=chat_data,
+            base_url=self._settings.base_url,
+            access_token=self.token,
+        )
 
 
 class GigaChat(GigaChatSyncClient, GigaChatAsyncClient):

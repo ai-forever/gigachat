@@ -2,7 +2,7 @@ import logging
 from importlib.metadata import PackageNotFoundError, version
 
 from gigachat.client import GigaChat, GigaChatAsyncClient, GigaChatSyncClient
-from gigachat.context import custom_headers_cvar, request_id_cvar, session_id_cvar
+from gigachat.context import chat_v2_url_cvar, custom_headers_cvar, request_id_cvar, session_id_cvar
 from gigachat.exceptions import (
     AuthenticationError,
     BadRequestError,
@@ -24,6 +24,11 @@ from gigachat.models import (
     Chat,
     ChatCompletion,
     ChatCompletionChunk,
+    ChatCompletionV2,
+    ChatCompletionV2Chunk,
+    ChatV2,
+    ChatV2ContentPart,
+    ChatV2Message,
     Choices,
     Embeddings,
     File,
@@ -66,6 +71,11 @@ __all__ = [
     "Chat",
     "ChatCompletion",
     "ChatCompletionChunk",
+    "ChatCompletionV2",
+    "ChatCompletionV2Chunk",
+    "ChatV2",
+    "ChatV2ContentPart",
+    "ChatV2Message",
     "Messages",
     "MessagesRole",
     "Function",
@@ -81,6 +91,7 @@ __all__ = [
     "session_id_cvar",
     "request_id_cvar",
     "custom_headers_cvar",
+    "chat_v2_url_cvar",
 ]
 
 logging.getLogger(__name__).addHandler(logging.NullHandler())
