@@ -1,10 +1,8 @@
-from typing import TYPE_CHECKING, Optional, Union
+from typing import Optional, Union
 
 import httpx
 
-from gigachat import ChatCompletion, ChatCompletionV2
-
-ChatCompletionLike = Union[ChatCompletion, ChatCompletionV2]
+ChatCompletionLike = Union["ChatCompletion", "ChatCompletionV2"]
 
 __all__ = [
     "GigaChatException",
