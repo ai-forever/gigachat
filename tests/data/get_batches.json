@@ -1,0 +1,18 @@
+[
+  {
+    "batch_id": "batch_1",
+    "status": "completed",
+    "input_file_id": "file_input_1",
+    "output_file_id": "file_output_1",
+    "created_at": 1710000000,
+    "updated_at": 1710000100,
+    "completed_at": 1710000200
+  },
+  {
+    "batch_id": "batch_2",
+    "status": "in_progress",
+    "input_file_id": "file_input_2",
+    "created_at": 1710000300,
+    "updated_at": 1710000400
+  }
+]

@@ -1,0 +1,96 @@
+{
+  "model": "GigaChat-2-Max",
+  "thread_id": "thread-123",
+  "created_at": 1710000000,
+  "messages": [
+    {
+      "message_id": "msg-1",
+      "role": "assistant",
+      "tools_state_id": "tool-state-1",
+      "content": [
+        {
+          "text": "Вот ответ"
+        },
+        {
+          "inline_data": {
+            "sources": {
+              "1": {
+                "url": "https://example.com",
+                "title": "Example"
+              }
+            },
+            "images": [
+              {
+                "id": "img-1"
+              }
+            ]
+          }
+        },
+        {
+          "files": [
+            {
+              "id": "file-1",
+              "target": "image",
+              "mime": "image/png"
+            }
+          ]
+        },
+        {
+          "function_call": {
+            "name": "weather-get",
+            "arguments": {
+              "location": "Moscow"
+            }
+          }
+        },
+        {
+          "tool_execution": {
+            "name": "image_generation",
+            "status": "success",
+            "censored": false
+          }
+        },
+        {
+          "logprobs": [
+            {
+              "chosen": {
+                "token": "Вот",
+                "token_id": 1,
+                "logprob": -0.1
+              },
+              "top": [
+                {
+                  "token": "Вот",
+                  "token_id": 1,
+                  "logprob": -0.1
+                },
+                {
+                  "token": "Нет",
+                  "token_id": 2,
+                  "logprob": -1.5
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "finish_reason": "stop",
+  "usage": {
+    "input_tokens": 10,
+    "input_tokens_details": {
+      "cached_tokens": 2
+    },
+    "output_tokens": 12,
+    "total_tokens": 22
+  },
+  "additional_data": {
+    "execution_steps": [
+      {
+        "name": "tool_ranking",
+        "status": "ok"
+      }
+    ]
+  }
+}

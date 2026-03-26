@@ -1,0 +1,5 @@
+event: response.message.delta
+data: {"model":"GigaChat-2-Max","thread_id":"thread-123","created_at":1710000000,"messages":[{"message_id":"msg-1","role":"assistant","content":[{"text":"Вот "}]}]}
+
+event: response.message.done
+data: {"model":"GigaChat-2-Max","thread_id":"thread-123","created_at":1710000001,"finish_reason":"stop","usage":{"input_tokens":10,"input_tokens_details":{"cached_tokens":2},"output_tokens":12,"total_tokens":22}}
