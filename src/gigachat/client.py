@@ -54,6 +54,8 @@ from gigachat.models.chat_v2 import (
     ChatV2,
     ChatV2ContentPart,
     ChatV2Message,
+    ChatV2ModelOptions,
+    ChatV2ResponseFormat,
     ChatV2Storage,
 )
 from gigachat.models.embeddings import Embeddings
@@ -151,6 +153,24 @@ def _prepare_chat_for_parse(
     return chat_data
 
 
+def _prepare_chat_v2_for_parse(
+    payload: Union[ChatV2, Dict[str, Any], str],
+    settings: Settings,
+    response_model: Any,
+    strict: Optional[bool],
+) -> ChatV2:
+    """Prepare a ChatV2 object with response_format derived from *response_model*."""
+    chat_data = _parse_chat_v2(payload, settings)
+    if chat_data.model_options is None:
+        chat_data.model_options = ChatV2ModelOptions()
+    chat_data.model_options.response_format = ChatV2ResponseFormat(
+        type="json_schema",
+        schema=response_model,
+        strict=strict,
+    )
+    return chat_data
+
+
 def _parse_chat_v2(payload: Union[ChatV2, Dict[str, Any], str], settings: Settings) -> ChatV2:
     if isinstance(payload, str):
         chat_data = ChatV2(messages=[ChatV2Message(role="user", content=[ChatV2ContentPart(text=payload)])])
@@ -178,6 +198,25 @@ def _get_response_model_adapter(response_model: Any) -> Optional[pydantic.TypeAd
         return pydantic.TypeAdapter(response_model)
 
     return None
+
+
+def _parse_response_content(
+    content: Any,
+    completion: Union[ChatCompletion, ChatCompletionV2],
+    response_model: Any,
+) -> Any:
+    try:
+        data = json.loads(content)
+    except (json.JSONDecodeError, TypeError) as exc:
+        raise ContentParseError(content, completion) from exc
+
+    try:
+        adapter = _get_response_model_adapter(response_model)
+        if adapter is not None:
+            return adapter.validate_python(data)
+        return response_model.model_validate(data)
+    except pydantic.ValidationError as exc:
+        raise ContentValidationError(content, completion, exc) from exc
 
 
 @overload
@@ -213,19 +252,48 @@ def _parse_completion(
     if choice.finish_reason == "content_filter":
         raise ContentFilterFinishReasonError(completion)
 
-    content = choice.message.content
-    try:
-        data = json.loads(content)
-    except (json.JSONDecodeError, TypeError) as exc:
-        raise ContentParseError(content, completion) from exc
+    return _parse_response_content(choice.message.content, completion, response_model)
 
-    try:
-        adapter = _get_response_model_adapter(response_model)
-        if adapter is not None:
-            return adapter.validate_python(data)
-        return response_model.model_validate(data)
-    except pydantic.ValidationError as exc:
-        raise ContentValidationError(content, completion, exc) from exc
+
+@overload
+def _parse_completion_v2(completion: ChatCompletionV2, response_model: Type[_ModelT]) -> _ModelT: ...
+
+
+@overload
+def _parse_completion_v2(
+    completion: ChatCompletionV2,
+    response_model: pydantic.TypeAdapter[_AdaptedT],
+) -> _AdaptedT: ...
+
+
+@overload
+def _parse_completion_v2(
+    completion: ChatCompletionV2,
+    response_model: Any,
+) -> Any: ...
+
+
+def _parse_completion_v2(
+    completion: ChatCompletionV2,
+    response_model: Any,
+) -> Any:
+    """Parse and validate text content from a v2 completion into *response_model*."""
+    if not completion.messages:
+        raise ContentParseError("", completion)
+
+    if completion.finish_reason == "length":
+        raise LengthFinishReasonError(completion)
+    if completion.finish_reason == "content_filter":
+        raise ContentFilterFinishReasonError(completion)
+
+    content = ""
+    for message in completion.messages:
+        text_parts = [part.text for part in message.content if part.text is not None]
+        if text_parts:
+            content = "".join(text_parts)
+            break
+
+    return _parse_response_content(content, completion, response_model)
 
 
 def _build_access_token(token: Token) -> AccessToken:
@@ -636,6 +704,46 @@ class GigaChatSyncClient(_BaseClient):
         parsed: Any = _parse_completion(completion, response_model)
         return completion, parsed
 
+    @overload
+    def chat_parse_v2(
+        self,
+        payload: Union[ChatV2, Dict[str, Any], str],
+        *,
+        response_model: Type[_ModelT],
+        strict: Optional[bool] = None,
+    ) -> Tuple[ChatCompletionV2, _ModelT]: ...
+
+    @overload
+    def chat_parse_v2(
+        self,
+        payload: Union[ChatV2, Dict[str, Any], str],
+        *,
+        response_model: pydantic.TypeAdapter[_AdaptedT],
+        strict: Optional[bool] = None,
+    ) -> Tuple[ChatCompletionV2, _AdaptedT]: ...
+
+    @overload
+    def chat_parse_v2(
+        self,
+        payload: Union[ChatV2, Dict[str, Any], str],
+        *,
+        response_model: Any,
+        strict: Optional[bool] = None,
+    ) -> Tuple[ChatCompletionV2, Any]: ...
+
+    def chat_parse_v2(
+        self,
+        payload: Union[ChatV2, Dict[str, Any], str],
+        *,
+        response_model: Any,
+        strict: Optional[bool] = None,
+    ) -> Tuple[ChatCompletionV2, Any]:
+        """Send a v2 chat request and parse the first text response into *response_model*."""
+        chat_data = _prepare_chat_v2_for_parse(payload, self._settings, response_model, strict)
+        completion = self.chat_v2(chat_data)
+        parsed: Any = _parse_completion_v2(completion, response_model)
+        return completion, parsed
+
     @_with_retry
     @_with_auth
     def get_balance(self) -> Balance:
@@ -955,6 +1063,46 @@ class GigaChatAsyncClient(_BaseClient):
         chat_data = _prepare_chat_for_parse(payload, self._settings, response_model, strict)
         completion = await self.achat(chat_data)
         parsed: Any = _parse_completion(completion, response_model)
+        return completion, parsed
+
+    @overload
+    async def achat_parse_v2(
+        self,
+        payload: Union[ChatV2, Dict[str, Any], str],
+        *,
+        response_model: Type[_ModelT],
+        strict: Optional[bool] = None,
+    ) -> Tuple[ChatCompletionV2, _ModelT]: ...
+
+    @overload
+    async def achat_parse_v2(
+        self,
+        payload: Union[ChatV2, Dict[str, Any], str],
+        *,
+        response_model: pydantic.TypeAdapter[_AdaptedT],
+        strict: Optional[bool] = None,
+    ) -> Tuple[ChatCompletionV2, _AdaptedT]: ...
+
+    @overload
+    async def achat_parse_v2(
+        self,
+        payload: Union[ChatV2, Dict[str, Any], str],
+        *,
+        response_model: Any,
+        strict: Optional[bool] = None,
+    ) -> Tuple[ChatCompletionV2, Any]: ...
+
+    async def achat_parse_v2(
+        self,
+        payload: Union[ChatV2, Dict[str, Any], str],
+        *,
+        response_model: Any,
+        strict: Optional[bool] = None,
+    ) -> Tuple[ChatCompletionV2, Any]:
+        """Send an async v2 chat request and parse the first text response into *response_model*."""
+        chat_data = _prepare_chat_v2_for_parse(payload, self._settings, response_model, strict)
+        completion = await self.achat_v2(chat_data)
+        parsed: Any = _parse_completion_v2(completion, response_model)
         return completion, parsed
 
     @_awith_retry

@@ -2,8 +2,9 @@ from typing import TYPE_CHECKING, Optional, Union
 
 import httpx
 
-if TYPE_CHECKING:
-    from gigachat.models.chat import ChatCompletion
+from gigachat import ChatCompletion, ChatCompletionV2
+
+ChatCompletionLike = Union[ChatCompletion, ChatCompletionV2]
 
 __all__ = [
     "GigaChatException",
@@ -94,7 +95,7 @@ class ServerError(ResponseError):
 class ContentParseError(GigaChatException):
     """Exception raised when model response content is not valid JSON."""
 
-    def __init__(self, content: str, completion: "ChatCompletion") -> None:
+    def __init__(self, content: str, completion: "ChatCompletionLike") -> None:
         self.content = content
         self.completion = completion
         super().__init__(f"Failed to parse response content as JSON: {content!r:.200}")
@@ -103,7 +104,7 @@ class ContentParseError(GigaChatException):
 class ContentValidationError(GigaChatException):
     """Exception raised when parsed JSON does not match the expected model schema."""
 
-    def __init__(self, content: str, completion: "ChatCompletion", cause: Exception) -> None:
+    def __init__(self, content: str, completion: "ChatCompletionLike", cause: Exception) -> None:
         self.content = content
         self.completion = completion
         self.cause = cause
@@ -113,7 +114,7 @@ class ContentValidationError(GigaChatException):
 class LengthFinishReasonError(GigaChatException):
     """Exception raised when finish_reason is 'length' (response truncated)."""
 
-    def __init__(self, completion: "ChatCompletion") -> None:
+    def __init__(self, completion: "ChatCompletionLike") -> None:
         self.completion = completion
         super().__init__("Response was truncated (finish_reason='length'); JSON may be incomplete")
 
@@ -121,6 +122,6 @@ class LengthFinishReasonError(GigaChatException):
 class ContentFilterFinishReasonError(GigaChatException):
     """Exception raised when finish_reason is 'content_filter'."""
 
-    def __init__(self, completion: "ChatCompletion") -> None:
+    def __init__(self, completion: "ChatCompletionLike") -> None:
         self.completion = completion
         super().__init__("Response was filtered (finish_reason='content_filter')")
