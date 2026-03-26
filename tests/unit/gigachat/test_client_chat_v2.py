@@ -64,6 +64,16 @@ def test__parse_chat_v2_from_string_and_flags() -> None:
     assert actual.flags == ["preprocess"]
 
 
+def test__parse_chat_v2_accepts_tool_string_shorthand() -> None:
+    actual = _parse_chat_v2(
+        {"messages": [{"role": "user", "content": "hi"}], "tools": ["web_search"]},
+        Settings(),
+    )
+
+    assert actual.tools is not None
+    assert actual.tools[0].model_dump(exclude_none=True) == {"web_search": {}}
+
+
 def test_chat_v2(httpx_mock: HTTPXMock) -> None:
     httpx_mock.add_response(url=CHAT_V2_URL, json=CHAT_COMPLETION_V2)
 

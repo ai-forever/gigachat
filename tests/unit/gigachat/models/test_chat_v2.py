@@ -33,6 +33,17 @@ def test_chat_v2_tool_requires_exactly_one_kind() -> None:
         ChatV2Tool(code_interpreter={}, image_generate={})
 
 
+def test_chat_v2_tool_from_name_accepts_builtin_shorthand() -> None:
+    tool = ChatV2Tool.from_name("web_search")
+
+    assert tool.model_dump(exclude_none=True) == {"web_search": {}}
+
+
+def test_chat_v2_tool_from_name_rejects_unknown_shorthand() -> None:
+    with pytest.raises(ValueError, match="Unknown tool shorthand"):
+        ChatV2Tool.from_name("unknown_tool")
+
+
 def test_chat_v2_tool_web_search_factory_serializes_to_empty_config() -> None:
     tool = ChatV2Tool.web_search_tool()
 
@@ -54,6 +65,20 @@ def test_chat_v2_tool_builtin_factories_dump_expected_payloads() -> None:
         "url_content_extraction": {}
     }
     assert ChatV2Tool.model_3d_generate_tool().model_dump(exclude_none=True) == {"model_3d_generate": {}}
+    assert ChatV2Tool.functions_tool().model_dump(exclude_none=True) == {"functions": {}}
+
+
+def test_chat_v2_accepts_tool_string_shorthand() -> None:
+    chat = ChatV2(
+        model="GigaChat-2-Max",
+        messages=[{"role": "user", "content": "hi"}],
+        tools=["web_search", "image_generate"],
+    )
+
+    assert [tool.model_dump(exclude_none=True) for tool in chat.tools or []] == [
+        {"web_search": {}},
+        {"image_generate": {}},
+    ]
 
 
 def test_chat_v2_tool_config_forced_requires_exactly_one_target() -> None:

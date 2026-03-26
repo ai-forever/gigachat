@@ -303,6 +303,24 @@ class ChatV2Tool(BaseModel):
     functions: Optional[ChatV2FunctionsTool] = Field(default=None, description="Client functions tool config.")
 
     @classmethod
+    def from_name(cls, name: str) -> ChatV2Tool:
+        """Create a built-in tool from its shorthand name."""
+
+        tool_factories = {
+            "code_interpreter": cls.code_interpreter_tool,
+            "image_generate": cls.image_generate_tool,
+            "web_search": cls.web_search_tool,
+            "url_content_extraction": cls.url_content_extraction_tool,
+            "model_3d_generate": cls.model_3d_generate_tool,
+            "functions": cls.functions_tool,
+        }
+        try:
+            return tool_factories[name]()
+        except KeyError as exc:
+            allowed = ", ".join(sorted(tool_factories))
+            raise ValueError(f"Unknown tool shorthand {name!r}. Expected one of: {allowed}") from exc
+
+    @classmethod
     def code_interpreter_tool(cls) -> ChatV2Tool:
         """Create a code interpreter tool with default configuration."""
 
@@ -387,11 +405,22 @@ class ChatV2(BaseModel):
 
     @model_validator(mode="before")
     @classmethod
-    def _coerce_response_format(cls, values: Any) -> Any:
+    def _coerce_input_shorthands(cls, values: Any) -> Any:
         if not isinstance(values, dict):
             return values
 
         values = dict(values)
+
+        tools = values.get("tools")
+        if isinstance(tools, list):
+            coerced_tools = []
+            for tool in tools:
+                if isinstance(tool, str):
+                    coerced_tools.append(ChatV2Tool.from_name(tool).model_dump(exclude_none=True))
+                else:
+                    coerced_tools.append(tool)
+            values["tools"] = coerced_tools
+
         model_options = values.get("model_options")
         if not isinstance(model_options, dict):
             return values
