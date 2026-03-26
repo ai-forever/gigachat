@@ -1,5 +1,6 @@
 import asyncio
 import json
+from typing import Dict
 
 import httpx
 import pytest
@@ -241,7 +242,7 @@ async def test_stream_v2_async(httpx_mock: HTTPXMock) -> None:
 
 
 async def test_headers_in_async_v2_request(httpx_mock: HTTPXMock) -> None:
-    async def call_with_headers(client: httpx.AsyncClient, headers: dict[str, str]) -> None:
+    async def call_with_headers(client: httpx.AsyncClient, headers: Dict[str, str]) -> None:
         token_custom_headers_cvar = custom_headers_cvar.set(headers)
         try:
             await chat_v2.chat_v2_async(client, chat=ChatV2.model_validate(CHAT_V2), base_url=CHAT_V2_BASE_URL)

@@ -1,4 +1,4 @@
-from typing import Literal
+from typing import List, Literal
 
 import pydantic
 import pytest
@@ -113,7 +113,7 @@ def test_chat_v2_response_format_bare_basemodel() -> None:
 
 
 def test_chat_v2_response_format_bare_type_adapter() -> None:
-    adapter = pydantic.TypeAdapter(list[Literal["yes", "no"]])
+    adapter = pydantic.TypeAdapter(List[Literal["yes", "no"]])
 
     chat = ChatV2(
         model="GigaChat-2-Max",
