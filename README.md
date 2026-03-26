@@ -110,6 +110,8 @@ with GigaChat(credentials="<your_authorization_key>") as client:
     print(response.messages[0].content[0].text)
 ```
 
+For structured JSON output in v2, use `chat_parse_v2()` (or `achat_parse_v2()` for async) to set `model_options.response_format`, call the API, and validate the first text response in one step.
+
 > **Migration note:** v1 returns `choices[0].message`, while v2 returns top-level `messages[]`.
 > The SDK derives the default v2 endpoint from a `base_url` ending with `/api/v1`. For custom deployments, set `chat_v2_url_cvar`.
 
