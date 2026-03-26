@@ -1,4 +1,4 @@
-from local.function_call_v2_example import build_followup_chat, build_initial_chat, extract_function_call
+from local.v2.function_call_v2_example import build_followup_chat, build_initial_chat, extract_function_call
 
 from gigachat.models.chat_v2 import ChatCompletionV2
 

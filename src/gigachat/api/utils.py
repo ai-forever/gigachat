@@ -1,6 +1,6 @@
 import logging
 from http import HTTPStatus
-from typing import Any, AsyncIterator, Dict, Iterator, NoReturn, Optional, Type, TypeVar, Union
+from typing import Any, AsyncIterator, Dict, Iterator, List, NoReturn, Optional, Type, TypeVar, Union
 
 import httpx
 from pydantic import BaseModel
@@ -85,7 +85,7 @@ def parse_chunk(line: str, model_class: Type[T]) -> Optional[T]:
         return None
 
 
-def _parse_sse_event(event: Optional[str], data_lines: list[str], model_class: Type[T]) -> Optional[T]:
+def _parse_sse_event(event: Optional[str], data_lines: List[str], model_class: Type[T]) -> Optional[T]:
     """Parse one SSE event accumulated from event/data lines."""
     if not data_lines:
         return None

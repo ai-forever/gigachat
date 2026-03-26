@@ -302,6 +302,48 @@ class ChatV2Tool(BaseModel):
     model_3d_generate: Optional[Dict[str, Any]] = Field(default=None, description="3D model generation tool config.")
     functions: Optional[ChatV2FunctionsTool] = Field(default=None, description="Client functions tool config.")
 
+    @classmethod
+    def code_interpreter_tool(cls) -> ChatV2Tool:
+        """Create a code interpreter tool with default configuration."""
+
+        return cls(code_interpreter={})
+
+    @classmethod
+    def image_generate_tool(cls) -> ChatV2Tool:
+        """Create an image generation tool with default configuration."""
+
+        return cls(image_generate={})
+
+    @classmethod
+    def web_search_tool(
+        cls,
+        *,
+        type: Optional[str] = None,
+        indexes: Optional[List[str]] = None,
+        flags: Optional[List[str]] = None,
+    ) -> ChatV2Tool:
+        """Create a web search tool with optional configuration."""
+
+        return cls(web_search=ChatV2WebSearchTool(type=type, indexes=indexes, flags=flags))
+
+    @classmethod
+    def url_content_extraction_tool(cls) -> ChatV2Tool:
+        """Create a URL content extraction tool with default configuration."""
+
+        return cls(url_content_extraction={})
+
+    @classmethod
+    def model_3d_generate_tool(cls) -> ChatV2Tool:
+        """Create a 3D model generation tool with default configuration."""
+
+        return cls(model_3d_generate={})
+
+    @classmethod
+    def functions_tool(cls, specifications: Optional[List[Function]] = None) -> ChatV2Tool:
+        """Create a client functions tool with optional specifications."""
+
+        return cls(functions=ChatV2FunctionsTool(specifications=specifications))
+
     @model_validator(mode="after")
     def _validate_single_tool_kind(self) -> ChatV2Tool:
         kinds = (

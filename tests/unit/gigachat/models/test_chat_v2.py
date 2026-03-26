@@ -33,6 +33,29 @@ def test_chat_v2_tool_requires_exactly_one_kind() -> None:
         ChatV2Tool(code_interpreter={}, image_generate={})
 
 
+def test_chat_v2_tool_web_search_factory_serializes_to_empty_config() -> None:
+    tool = ChatV2Tool.web_search_tool()
+
+    assert tool.model_dump(exclude_none=True) == {"web_search": {}}
+
+
+def test_chat_v2_tool_web_search_factory_accepts_config() -> None:
+    tool = ChatV2Tool.web_search_tool(type="search", indexes=["news"], flags=["fresh"])
+
+    assert tool.model_dump(exclude_none=True) == {
+        "web_search": {"type": "search", "indexes": ["news"], "flags": ["fresh"]}
+    }
+
+
+def test_chat_v2_tool_builtin_factories_dump_expected_payloads() -> None:
+    assert ChatV2Tool.code_interpreter_tool().model_dump(exclude_none=True) == {"code_interpreter": {}}
+    assert ChatV2Tool.image_generate_tool().model_dump(exclude_none=True) == {"image_generate": {}}
+    assert ChatV2Tool.url_content_extraction_tool().model_dump(exclude_none=True) == {
+        "url_content_extraction": {}
+    }
+    assert ChatV2Tool.model_3d_generate_tool().model_dump(exclude_none=True) == {"model_3d_generate": {}}
+
+
 def test_chat_v2_tool_config_forced_requires_exactly_one_target() -> None:
     with pytest.raises(ValidationError):
         ChatV2(
