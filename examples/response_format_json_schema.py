@@ -12,17 +12,19 @@ Set GIGACHAT_CREDENTIALS (or other auth env vars) before running.
 from __future__ import annotations
 
 import json
+from typing import List
 
+from dotenv import load_dotenv
 from pydantic import BaseModel
 
 from gigachat import GigaChat
 from gigachat.models import Chat, Messages, MessagesRole
-
+load_dotenv()
 # -- Pydantic model describing the desired output shape --------------------
 
 
 class MathAnswer(BaseModel):
-    steps: list[str]
+    steps: List[str]
     final_answer: str
 
 
@@ -32,7 +34,6 @@ PROMPT = "Solve the equation 8x + 7 = -23. Explain step by step in English."
 def example_raw_dict_schema() -> None:
     """1. Pass a raw dict JSON Schema (sent as-is, no normalization)."""
     chat = Chat(
-        model="GigaChat-2-Max",
         messages=[Messages(role=MessagesRole.USER, content=PROMPT)],
         response_format={
             "type": "json_schema",
@@ -50,7 +51,7 @@ def example_raw_dict_schema() -> None:
 
     with GigaChat() as client:
         resp = client.chat(chat)
-
+    print(resp)
     data = json.loads(resp.choices[0].message.content)
     print("=== Raw dict schema ===")
     print("Steps:", data["steps"])
@@ -61,7 +62,6 @@ def example_raw_dict_schema() -> None:
 def example_pydantic_model_schema() -> None:
     """2. Pass a Pydantic BaseModel — SDK generates + normalizes JSON Schema."""
     chat = Chat(
-        model="GigaChat-2-Max",
         messages=[Messages(role=MessagesRole.USER, content=PROMPT)],
         response_format={
             "type": "json_schema",
@@ -72,7 +72,7 @@ def example_pydantic_model_schema() -> None:
 
     with GigaChat() as client:
         resp = client.chat(chat)
-
+    print(resp)
     data = json.loads(resp.choices[0].message.content)
     parsed = MathAnswer.model_validate(data)
     print("=== Pydantic model as schema ===")
@@ -83,7 +83,7 @@ def example_pydantic_model_schema() -> None:
 
 def example_chat_parse() -> None:
     """3. Use chat_parse() — one call to send, parse, and validate."""
-    with GigaChat(model="GigaChat-2-Max") as client:
+    with GigaChat() as client:
         completion, parsed = client.chat_parse(
             PROMPT,
             response_model=MathAnswer,
