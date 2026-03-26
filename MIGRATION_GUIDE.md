@@ -139,7 +139,7 @@ Use this table when converting typed payloads or raw dict payloads.
 | `storage.assistant_id` | `assistant_id` | Moved to top-level |
 | `storage.is_stateful` | `storage=True` or `storage={...}` | No direct `is_stateful` field in v2 |
 | `messages[].attachments` | `messages[].content[].files` | Files are now content parts |
-| `profanity_check` | no direct equivalent | Review `disable_filter` and `filter_config` in v2 |
+| `profanity_check` | `disable_filter` | Review `disable_filter` and `filter_config` in v2 |
 
 ## Response Mapping
 

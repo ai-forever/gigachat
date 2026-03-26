@@ -139,7 +139,7 @@ with GigaChat(credentials="<your_authorization_key>") as client:
 | `storage.assistant_id` | `assistant_id` | Перемещено на верхний уровень |
 | `storage.is_stateful` | `storage=True` или `storage={...}` | Прямого поля `is_stateful` в v2 больше нет |
 | `messages[].attachments` | `messages[].content[].files` | Файлы теперь представляются как content parts |
-| `profanity_check` | прямого аналога нет | В v2 смотрите `disable_filter` и `filter_config` |
+| `profanity_check` | `disable_filter` | В v2 смотрите `disable_filter` и `filter_config` |
 
 ## Соответствие ответа
 
