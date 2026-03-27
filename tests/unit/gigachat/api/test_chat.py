@@ -132,6 +132,21 @@ def test_chat_sync_additional_fields_passthrough_preset(httpx_mock: HTTPXMock) -
     assert request_content["preset"] == "my-preset"
 
 
+def test_chat_sync_sanitizes_lone_surrogates(httpx_mock: HTTPXMock) -> None:
+    httpx_mock.add_response(url=MOCK_URL, json=CHAT_COMPLETION)
+
+    chat_data = Chat(
+        messages=[Messages(role=MessagesRole.USER, content="broken \udcd0 text")],
+    )
+
+    with httpx.Client(base_url=BASE_URL) as client:
+        chat.chat_sync(client, chat=chat_data)
+
+    requests = httpx_mock.get_requests()
+    request_content = json.loads(requests[0].content.decode("utf-8"))
+    assert request_content["messages"][0]["content"] == r"broken \udcd0 text"
+
+
 def test_chat_sync_value_error(httpx_mock: HTTPXMock) -> None:
     httpx_mock.add_response(url=MOCK_URL, json={})
 
@@ -260,6 +275,21 @@ def test_stream_sync_additional_fields(httpx_mock: HTTPXMock) -> None:
     requests = httpx_mock.get_requests()
     request_content = json.loads(requests[0].content.decode("utf-8"))
     assert request_content["additional_field"] == "val"
+
+
+def test_stream_sync_sanitizes_lone_surrogates(httpx_mock: HTTPXMock) -> None:
+    httpx_mock.add_response(url=MOCK_URL, content=CHAT_COMPLETION_STREAM, headers=HEADERS_STREAM)
+
+    chat_data = Chat(
+        messages=[Messages(role=MessagesRole.USER, content="broken \udcd0 text")],
+    )
+
+    with httpx.Client(base_url=BASE_URL) as client:
+        list(chat.stream_sync(client, chat=chat_data))
+
+    requests = httpx_mock.get_requests()
+    request_content = json.loads(requests[0].content.decode("utf-8"))
+    assert request_content["messages"][0]["content"] == r"broken \udcd0 text"
 
 
 def test_stream_sync_content_type_error(httpx_mock: HTTPXMock) -> None:

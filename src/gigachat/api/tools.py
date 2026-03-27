@@ -1,10 +1,9 @@
-import json
 from http import HTTPStatus
 from typing import Any, Dict, List, Optional, Union
 
 import httpx
 
-from gigachat.api.utils import build_headers, execute_request_async, execute_request_sync
+from gigachat.api.utils import build_headers, dumps_json, execute_request_async, execute_request_sync
 from gigachat.exceptions import AuthenticationError, ResponseError
 from gigachat.models.chat import Function
 from gigachat.models.tools import (
@@ -31,7 +30,7 @@ def _get_tokens_count_kwargs(
         "method": "POST",
         "url": "/tokens/count",
         "headers": headers,
-        "content": json.dumps(json_data, ensure_ascii=False),
+        "content": dumps_json(json_data),
     }
 
 

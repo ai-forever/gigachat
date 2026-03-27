@@ -1,3 +1,4 @@
+import json
 import logging
 from http import HTTPStatus
 from typing import Any, AsyncIterator, Dict, Iterator, NoReturn, Optional, Type, TypeVar, Union
@@ -32,6 +33,24 @@ logger = logging.getLogger(__name__)
 
 USER_AGENT = "GigaChat-python-lib"
 EVENT_STREAM = "text/event-stream"
+
+
+def sanitize_for_json(value: Any) -> Any:
+    """Recursively normalize strings so JSON serialization stays UTF-8 safe."""
+    if isinstance(value, str):
+        return value.encode("utf-8", errors="backslashreplace").decode("utf-8")
+    if isinstance(value, dict):
+        return {sanitize_for_json(key): sanitize_for_json(item) for key, item in value.items()}
+    if isinstance(value, list):
+        return [sanitize_for_json(item) for item in value]
+    if isinstance(value, tuple):
+        return tuple(sanitize_for_json(item) for item in value)
+    return value
+
+
+def dumps_json(value: Any) -> str:
+    """Serialize JSON payload after normalizing unsupported surrogate characters."""
+    return json.dumps(sanitize_for_json(value), ensure_ascii=False)
 
 
 def build_headers(access_token: Optional[str] = None) -> Dict[str, str]:
@@ -150,18 +169,24 @@ def build_response(response: httpx.Response, model_class: Type[T]) -> T:
 
 def execute_request_sync(client: httpx.Client, kwargs: Dict[str, Any], model_class: Type[T]) -> T:
     """Execute sync request and parse response."""
+    if "json" in kwargs:
+        kwargs = {**kwargs, "json": sanitize_for_json(kwargs["json"])}
     response = client.request(**kwargs)
     return build_response(response, model_class)
 
 
 async def execute_request_async(client: httpx.AsyncClient, kwargs: Dict[str, Any], model_class: Type[T]) -> T:
     """Execute async request and parse response."""
+    if "json" in kwargs:
+        kwargs = {**kwargs, "json": sanitize_for_json(kwargs["json"])}
     response = await client.request(**kwargs)
     return build_response(response, model_class)
 
 
 def execute_stream_sync(client: httpx.Client, kwargs: Dict[str, Any], model_class: Type[T]) -> Iterator[T]:
     """Execute sync streaming request and yield parsed chunks."""
+    if "json" in kwargs:
+        kwargs = {**kwargs, "json": sanitize_for_json(kwargs["json"])}
     with client.stream(**kwargs) as response:
         _check_response(response)
         x_headers = build_x_headers(response)
@@ -176,6 +201,8 @@ async def execute_stream_async(
     client: httpx.AsyncClient, kwargs: Dict[str, Any], model_class: Type[T]
 ) -> AsyncIterator[T]:
     """Execute async streaming request and yield parsed chunks."""
+    if "json" in kwargs:
+        kwargs = {**kwargs, "json": sanitize_for_json(kwargs["json"])}
     async with client.stream(**kwargs) as response:
         await _acheck_response(response)
         x_headers = build_x_headers(response)

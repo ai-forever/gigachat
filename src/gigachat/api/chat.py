@@ -1,4 +1,3 @@
-import json
 from typing import Any, AsyncIterator, Dict, Iterator, Optional
 
 import httpx
@@ -6,6 +5,7 @@ import httpx
 from gigachat.api.utils import (
     EVENT_STREAM,
     build_headers,
+    dumps_json,
     execute_request_async,
     execute_request_sync,
     execute_stream_async,
@@ -35,7 +35,7 @@ def _get_chat_kwargs(
     return {
         "method": "POST",
         "url": chat_url_cvar.get(),
-        "content": json.dumps(json_data, ensure_ascii=False),
+        "content": dumps_json(json_data),
         "headers": headers,
     }
 
@@ -84,7 +84,7 @@ def _get_stream_kwargs(
     return {
         "method": "POST",
         "url": chat_url_cvar.get(),
-        "content": json.dumps({**json_data, **{"stream": True}}, ensure_ascii=False),
+        "content": dumps_json({**json_data, **{"stream": True}}),
         "headers": headers,
     }
 
