@@ -1,9 +1,8 @@
-import json
 from typing import Any, Dict, List, Optional
 
 import httpx
 
-from gigachat.api.utils import build_headers, execute_request_async, execute_request_sync
+from gigachat.api.utils import build_headers, dumps_json, execute_request_async, execute_request_sync
 from gigachat.models.embeddings import Embeddings
 
 
@@ -19,7 +18,7 @@ def _get_embeddings_kwargs(
     return {
         "method": "POST",
         "url": "/embeddings",
-        "content": json.dumps({"input": input_, "model": model}, ensure_ascii=False),
+        "content": dumps_json({"input": input_, "model": model}),
         "headers": headers,
     }
 

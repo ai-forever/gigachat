@@ -72,6 +72,16 @@ def test_ai_check_sync(httpx_mock: HTTPXMock) -> None:
     assert isinstance(response, AICheckResult)
 
 
+def test_ai_check_sync_sanitizes_lone_surrogates(httpx_mock: HTTPXMock) -> None:
+    httpx_mock.add_response(url=AI_CHECK_URL, json=AI_CHECK)
+
+    with httpx.Client(base_url=BASE_URL) as client:
+        ai_check_sync(client, input_="broken \udcd0 text", model="model")
+
+    request_content = json.loads(httpx_mock.get_requests()[0].content.decode("utf-8"))
+    assert request_content["input"] == r"broken \udcd0 text"
+
+
 async def test_ai_check_async(httpx_mock: HTTPXMock) -> None:
     httpx_mock.add_response(url=AI_CHECK_URL, json=AI_CHECK)
 
