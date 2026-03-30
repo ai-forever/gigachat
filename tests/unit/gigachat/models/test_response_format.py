@@ -132,6 +132,16 @@ class MathSolution(BaseModel):
     final_answer: str = Field(description="The final answer.")
 
 
+class CalculateAction(BaseModel):
+    action: str = Field(description="Action discriminator.")
+    expression: str = Field(description="Math expression to evaluate.")
+
+
+class FinalAnswerAction(BaseModel):
+    action: str = Field(description="Action discriminator.")
+    answer: str = Field(description="Final human-readable answer.")
+
+
 def test_schema_from_basemodel() -> None:
     rf = JsonSchemaResponseFormat(schema=MathSolution)
     dumped = rf.model_dump(exclude_none=True, by_alias=True)
@@ -153,6 +163,13 @@ def test_schema_from_basemodel_strict() -> None:
 def test_schema_from_type_adapter_union() -> None:
     adapter: TypeAdapter[Union[int, str]] = TypeAdapter(Union[int, str])
     rf = JsonSchemaResponseFormat(schema=adapter)
+    dumped = rf.model_dump(exclude_none=True, by_alias=True)
+    schema = dumped["schema"]
+    assert "anyOf" in schema
+
+
+def test_schema_from_typing_union() -> None:
+    rf = JsonSchemaResponseFormat(schema=Union[CalculateAction, FinalAnswerAction])
     dumped = rf.model_dump(exclude_none=True, by_alias=True)
     schema = dumped["schema"]
     assert "anyOf" in schema
