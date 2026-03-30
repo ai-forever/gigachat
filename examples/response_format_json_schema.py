@@ -19,6 +19,7 @@ from pydantic import BaseModel
 
 from gigachat import GigaChat
 from gigachat.models import Chat, Messages, MessagesRole
+
 load_dotenv()
 # -- Pydantic model describing the desired output shape --------------------
 
