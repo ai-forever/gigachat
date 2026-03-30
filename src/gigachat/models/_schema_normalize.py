@@ -18,14 +18,14 @@ from __future__ import annotations
 
 import copy
 import inspect
-from typing import Any
+from typing import Any, Dict, Tuple, Type, Union
 
 import pydantic
 
 
 def to_strict_json_schema(
-    model: type[pydantic.BaseModel] | pydantic.TypeAdapter[Any],
-) -> dict[str, Any]:
+    model: Union[Type[pydantic.BaseModel], pydantic.TypeAdapter[Any]],
+) -> Dict[str, Any]:
     """Generate and normalize a JSON Schema from a Pydantic model / TypeAdapter."""
     if inspect.isclass(model) and issubclass(model, pydantic.BaseModel):
         schema = model.model_json_schema()
@@ -46,9 +46,9 @@ def to_strict_json_schema(
 def _ensure_strict_json_schema(
     json_schema: object,
     *,
-    path: tuple[str, ...],
-    root: dict[str, object],
-) -> dict[str, Any]:
+    path: Tuple[str, ...],
+    root: Dict[str, object],
+) -> Dict[str, Any]:
     """Recursively mutate *json_schema* to conform to the strict standard."""
     if not isinstance(json_schema, dict):
         raise TypeError(f"Expected dict, got {type(json_schema)}; path={path}")
@@ -63,7 +63,7 @@ def _ensure_strict_json_schema(
     return _maybe_inline_ref(json_schema, path=path, root=root)
 
 
-def _normalize_defs(schema: dict[str, Any], *, path: tuple[str, ...], root: dict[str, object]) -> None:
+def _normalize_defs(schema: Dict[str, Any], *, path: Tuple[str, ...], root: Dict[str, object]) -> None:
     for key in ("$defs", "definitions"):
         defs = schema.get(key)
         if isinstance(defs, dict):
@@ -71,7 +71,7 @@ def _normalize_defs(schema: dict[str, Any], *, path: tuple[str, ...], root: dict
                 _ensure_strict_json_schema(sub, path=(*path, key, name), root=root)
 
 
-def _normalize_object(schema: dict[str, Any], *, path: tuple[str, ...], root: dict[str, object]) -> None:
+def _normalize_object(schema: Dict[str, Any], *, path: Tuple[str, ...], root: Dict[str, object]) -> None:
     if schema.get("type") == "object" and "additionalProperties" not in schema:
         schema["additionalProperties"] = False
 
@@ -83,13 +83,13 @@ def _normalize_object(schema: dict[str, Any], *, path: tuple[str, ...], root: di
         }
 
 
-def _normalize_items(schema: dict[str, Any], *, path: tuple[str, ...], root: dict[str, object]) -> None:
+def _normalize_items(schema: Dict[str, Any], *, path: Tuple[str, ...], root: Dict[str, object]) -> None:
     items = schema.get("items")
     if isinstance(items, dict):
         schema["items"] = _ensure_strict_json_schema(items, path=(*path, "items"), root=root)
 
 
-def _normalize_any_of(schema: dict[str, Any], *, path: tuple[str, ...], root: dict[str, object]) -> None:
+def _normalize_any_of(schema: Dict[str, Any], *, path: Tuple[str, ...], root: Dict[str, object]) -> None:
     any_of = schema.get("anyOf")
     if isinstance(any_of, list):
         schema["anyOf"] = [
@@ -97,7 +97,7 @@ def _normalize_any_of(schema: dict[str, Any], *, path: tuple[str, ...], root: di
         ]
 
 
-def _normalize_all_of(schema: dict[str, Any], *, path: tuple[str, ...], root: dict[str, object]) -> None:
+def _normalize_all_of(schema: Dict[str, Any], *, path: Tuple[str, ...], root: Dict[str, object]) -> None:
     all_of = schema.get("allOf")
     if not isinstance(all_of, list):
         return
@@ -110,17 +110,17 @@ def _normalize_all_of(schema: dict[str, Any], *, path: tuple[str, ...], root: di
         ]
 
 
-def _strip_none_default(schema: dict[str, Any]) -> None:
+def _strip_none_default(schema: Dict[str, Any]) -> None:
     if "default" in schema and schema["default"] is None:
         schema.pop("default")
 
 
 def _maybe_inline_ref(
-    schema: dict[str, Any],
+    schema: Dict[str, Any],
     *,
-    path: tuple[str, ...],
-    root: dict[str, object],
-) -> dict[str, Any]:
+    path: Tuple[str, ...],
+    root: Dict[str, object],
+) -> Dict[str, Any]:
     ref = schema.get("$ref")
     if ref and _has_more_than_n_keys(schema, 1):
         if not isinstance(ref, str):
@@ -137,7 +137,7 @@ def _maybe_inline_ref(
     return schema
 
 
-def _resolve_ref(*, root: dict[str, object], ref: str) -> object:
+def _resolve_ref(*, root: Dict[str, object], ref: str) -> object:
     """Resolve a JSON Pointer ``#/...`` against *root*."""
     if not ref.startswith("#/"):
         raise ValueError(f"Unsupported $ref format {ref!r}; must start with #/")
@@ -151,7 +151,7 @@ def _resolve_ref(*, root: dict[str, object], ref: str) -> object:
     return current
 
 
-def _has_more_than_n_keys(d: dict[str, object], n: int) -> bool:
+def _has_more_than_n_keys(d: Dict[str, object], n: int) -> bool:
     i = 0
     for _ in d:
         i += 1

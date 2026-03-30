@@ -13,11 +13,12 @@ from __future__ import annotations
 
 import json
 
+from dotenv import load_dotenv
 from pydantic import BaseModel
 
 from gigachat import GigaChat
 from gigachat.models import Chat, Messages, MessagesRole
-
+load_dotenv()
 # -- Pydantic model describing the desired output shape --------------------
 
 

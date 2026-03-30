@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import inspect
-from typing import Any, Literal, Union, get_origin
+from typing import Any, Dict, Literal, Type, Union, get_origin
 
 import pydantic
 from pydantic import BaseModel, Field, model_validator
@@ -24,8 +24,8 @@ class JsonSchemaResponseFormat(BaseModel):
     """
 
     type: Literal["json_schema"] = Field(default="json_schema", description="Response format type.")
-    schema_: dict[str, Any] = Field(alias="schema", description="JSON Schema that the response must conform to.")
-    strict: bool | None = Field(default=None, description="Request strict schema adherence (best-effort).")
+    schema_: Dict[str, Any] = Field(alias="schema", description="JSON Schema that the response must conform to.")
+    strict: Union[bool, None] = Field(default=None, description="Request strict schema adherence (best-effort).")
 
     @model_validator(mode="before")
     @classmethod
@@ -66,7 +66,7 @@ class JsonSchemaResponseFormat(BaseModel):
         )
 
 
-ResponseFormat = Union[JsonSchemaResponseFormat, dict[str, Any], type[pydantic.BaseModel], Any]
+ResponseFormat = Union[JsonSchemaResponseFormat, Dict[str, Any], Type[pydantic.BaseModel], Any]
 """Accepted types for ``Chat.response_format``:
 
 * ``JsonSchemaResponseFormat`` — fully typed object.
