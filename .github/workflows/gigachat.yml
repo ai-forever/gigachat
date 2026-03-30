@@ -24,7 +24,7 @@ jobs:
       - name: Format
         run: uv run ruff format --check src tests
       - name: Lint
-        run: uv run ruff check src tests
+        run: uv run ruff check --config "lint.pyupgrade.keep-runtime-typing = true" src tests
       - name: Type Check
         run: uv run mypy src tests
 
