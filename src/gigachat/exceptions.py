@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Optional, Union
+from typing import TYPE_CHECKING
 
 import httpx
 
@@ -34,10 +34,10 @@ class ResponseError(GigaChatException):
 
     def __init__(
         self,
-        url: Union[httpx.URL, str],
+        url: httpx.URL | str,
         status_code: int,
-        content: Optional[bytes],
-        headers: Optional[httpx.Headers],
+        content: bytes | None,
+        headers: httpx.Headers | None,
     ) -> None:
         self.url = url
         self.status_code = status_code
@@ -96,7 +96,7 @@ class ServerError(ResponseError):
 class ContentParseError(GigaChatException):
     """Exception raised when model response content is not valid JSON."""
 
-    def __init__(self, content: str, completion: "ChatCompletion") -> None:
+    def __init__(self, content: str, completion: ChatCompletion) -> None:
         self.content = content
         self.completion = completion
         super().__init__(f"Failed to parse response content as JSON: {content!r:.200}")
@@ -105,7 +105,7 @@ class ContentParseError(GigaChatException):
 class ContentValidationError(GigaChatException):
     """Exception raised when parsed JSON does not match the expected model schema."""
 
-    def __init__(self, content: str, completion: "ChatCompletion", cause: Exception) -> None:
+    def __init__(self, content: str, completion: ChatCompletion, cause: Exception) -> None:
         self.content = content
         self.completion = completion
         self.cause = cause
@@ -115,7 +115,7 @@ class ContentValidationError(GigaChatException):
 class LengthFinishReasonError(GigaChatException):
     """Exception raised when finish_reason is 'length' (response truncated)."""
 
-    def __init__(self, completion: "ChatCompletion") -> None:
+    def __init__(self, completion: ChatCompletion) -> None:
         self.completion = completion
         super().__init__("Response was truncated (finish_reason='length'); JSON may be incomplete")
 
@@ -123,6 +123,6 @@ class LengthFinishReasonError(GigaChatException):
 class ContentFilterFinishReasonError(GigaChatException):
     """Exception raised when finish_reason is 'content_filter'."""
 
-    def __init__(self, completion: "ChatCompletion") -> None:
+    def __init__(self, completion: ChatCompletion) -> None:
         self.completion = completion
         super().__init__("Response was filtered (finish_reason='content_filter')")
