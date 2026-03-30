@@ -13,6 +13,10 @@ __all__ = [
     "UnprocessableEntityError",
     "RateLimitError",
     "ServerError",
+    "ContentParseError",
+    "ContentValidationError",
+    "LengthFinishReasonError",
+    "ContentFilterFinishReasonError",
 ]
 
 
@@ -82,3 +86,38 @@ class RateLimitError(ResponseError):
 
 class ServerError(ResponseError):
     """Exception raised for 5xx Server Errors."""
+
+
+class ContentParseError(GigaChatException):
+    """Exception raised when model response content is not valid JSON."""
+
+    def __init__(self, content: str, completion: "ChatCompletion") -> None:
+        self.content = content
+        self.completion = completion
+        super().__init__(f"Failed to parse response content as JSON: {content!r:.200}")
+
+
+class ContentValidationError(GigaChatException):
+    """Exception raised when parsed JSON does not match the expected model schema."""
+
+    def __init__(self, content: str, completion: "ChatCompletion", cause: Exception) -> None:
+        self.content = content
+        self.completion = completion
+        self.cause = cause
+        super().__init__(f"Response JSON does not match the expected schema: {cause}")
+
+
+class LengthFinishReasonError(GigaChatException):
+    """Exception raised when finish_reason is 'length' (response truncated)."""
+
+    def __init__(self, completion: "ChatCompletion") -> None:
+        self.completion = completion
+        super().__init__("Response was truncated (finish_reason='length'); JSON may be incomplete")
+
+
+class ContentFilterFinishReasonError(GigaChatException):
+    """Exception raised when finish_reason is 'content_filter'."""
+
+    def __init__(self, completion: "ChatCompletion") -> None:
+        self.completion = completion
+        super().__init__("Response was filtered (finish_reason='content_filter')")

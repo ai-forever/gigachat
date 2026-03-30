@@ -1,0 +1,139 @@
+interactions:
+- request:
+    body: scope=REDACTED
+    headers:
+      Accept:
+      - '*/*'
+      Accept-Encoding:
+      - gzip, deflate
+      Connection:
+      - keep-alive
+      Content-Length:
+      - '23'
+      Content-Type:
+      - application/x-www-form-urlencoded
+      Host:
+      - ngw.devices.sberbank.ru:9443
+      RqUID:
+      - 044ce626-2ebb-48ed-9498-23c74d8f24a7
+      User-Agent:
+      - GigaChat-python-lib
+      authorization:
+      - Bearer REDACTED
+    method: POST
+    uri: https://ngw.devices.sberbank.ru:9443/api/v2/oauth
+  response:
+    body:
+      string: '{"access_token": "REDACTED", "expires_at": 4102444800000}'
+    headers:
+      Allow:
+      - GET, POST
+      Cache-Control:
+      - no-cache, no-store, max-age=0, must-revalidate
+      Connection:
+      - keep-alive
+      Content-Length:
+      - '1279'
+      Content-Type:
+      - application/json
+      Date:
+      - Mon, 16 Feb 2026 14:17:42 GMT
+      Expires:
+      - '0'
+      Pragma:
+      - no-cache
+      Referrer-Policy:
+      - no-referrer
+      Server:
+      - SynGX
+      Strict-Transport-Security:
+      - max-age=31536000 ; includeSubDomains
+      - max-age=31536000; includeSubDomains
+      Vary:
+      - Origin
+      - Access-Control-Request-Method
+      - Access-Control-Request-Headers
+      X-Content-Type-Options:
+      - nosniff
+      - nosniff
+      X-Frame-Options:
+      - DENY
+      - SAMEORIGIN
+      X-XSS-Protection:
+      - '0'
+      - 1; mode=block
+    status:
+      code: 200
+      message: OK
+- request:
+    body: '{"model": "GigaChat", "messages": [{"role": "system", "content": "You are
+      a JSON API. Output must be a single JSON object and NOTHING else. Do not use
+      markdown. Do not wrap in ``` code fences. Do not add comments. Do not add trailing
+      text."}, {"role": "user", "content": "Return {\"answer\":\"ok\",\"n\":3} exactly."}],
+      "response_format": {"type": "json_schema", "schema": {"properties": {"answer":
+      {"title": "Answer", "type": "string"}, "n": {"maximum": 10, "minimum": 0, "title":
+      "N", "type": "integer"}}, "required": ["answer", "n"], "title": "Out", "type":
+      "object", "additionalProperties": false}, "strict": true}}'
+    headers:
+      Accept:
+      - '*/*'
+      Accept-Encoding:
+      - gzip, deflate
+      Connection:
+      - keep-alive
+      Content-Length:
+      - '619'
+      Content-Type:
+      - application/json
+      Host:
+      - gigachat.devices.sberbank.ru
+      User-Agent:
+      - GigaChat-python-lib
+      authorization:
+      - Bearer REDACTED
+    method: POST
+    uri: https://gigachat.devices.sberbank.ru/api/v1/chat/completions
+  response:
+    body:
+      string: '{"choices": [{"message": {"content": "{\"answer\":\"ok\",\"n\":3}",
+        "role": "assistant"}, "index": 0, "finish_reason": "stop"}], "created": 1771251462,
+        "model": "GigaChat:2.0.28.2", "object": "chat.completion", "usage": {"prompt_tokens":
+        68, "completion_tokens": 10, "total_tokens": 78, "precached_prompt_tokens":
+        1}}'
+    headers:
+      Access-Control-Allow-Credentials:
+      - 'true'
+      Access-Control-Allow-Headers:
+      - Origin, X-Requested-With, Content-Type, Accept, Authorization
+      Access-Control-Allow-Methods:
+      - GET, POST, DELETE, OPTIONS
+      Access-Control-Allow-Origin:
+      - https://beta.saluteai.sberdevices.ru
+      Allow:
+      - GET, POST
+      Connection:
+      - keep-alive
+      Content-Length:
+      - '293'
+      Content-Type:
+      - application/json; charset=utf-8
+      Date:
+      - Mon, 16 Feb 2026 14:17:42 GMT
+      Server:
+      - SynGX
+      Strict-Transport-Security:
+      - max-age=31536000; includeSubDomains
+      X-Content-Type-Options:
+      - nosniff
+      X-Frame-Options:
+      - SAMEORIGIN
+      X-Request-Id:
+      - 48cea8d8-f551-4db5-a7aa-3d4630f5c4af
+      X-Session-Id:
+      - f4ed3d70-299b-47d7-934c-ce26c2be99da
+      X-XSS-Protection:
+      - 1; mode=block
+    status:
+      code: 200
+      message: OK
+version: 1
