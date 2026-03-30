@@ -26,7 +26,7 @@ from gigachat.models.chat import (
     Usage,
 )
 from gigachat.models.embeddings import Embedding, Embeddings, EmbeddingsUsage
-from gigachat.models.files import DeletedFile, Image, UploadedFile, UploadedFiles
+from gigachat.models.files import DeletedFile, File, Image, UploadedFile, UploadedFiles
 from gigachat.models.models import Model, Models
 from gigachat.models.threads import (
     Thread,
@@ -69,6 +69,7 @@ __all__ = (
     "Embedding",
     "Embeddings",
     "EmbeddingsUsage",
+    "File",
     "Function",
     "FunctionCall",
     "FunctionParameters",
