@@ -21,6 +21,7 @@ This library is part of [GigaChain](https://github.com/ai-forever/gigachain) and
   - [Async](#async)
   - [Embeddings](#embeddings)
   - [Function Calling](#function-calling)
+  - [Structured Output (JSON Schema)](#structured-output-json-schema)
   - [More Examples](#more-examples)
 - [Configuration](#configuration)
   - [Constructor Parameters](#constructor-parameters)
@@ -183,6 +184,91 @@ with GigaChat() as client:
         print(f"Function: {message.function_call.name}")
         print(f"Arguments: {message.function_call.arguments}")
 ```
+
+### Structured Output (JSON Schema)
+
+Force the model to reply with JSON matching your schema by setting `response_format.type="json_schema"`.
+
+> **Important:** The API returns JSON as a **string** in `choices[0].message.content`.
+> You must parse it yourself or use `chat_parse()` (see below).
+
+#### Pass a Pydantic model as schema
+
+You can pass a Pydantic `BaseModel` subclass (or a `TypeAdapter`) directly as `schema`.
+The SDK generates the JSON Schema, normalizes it (OpenAI-style: `additionalProperties: false`,
+all properties required, `$ref` with sibling keywords inlined), and sends the result on the wire.
+
+```python
+import json
+from typing import List
+from pydantic import BaseModel
+
+from gigachat import GigaChat
+from gigachat.models import Chat, Messages, MessagesRole
+
+
+class MathAnswer(BaseModel):
+    steps: List[str]
+    final_answer: str
+
+
+chat = Chat(
+    messages=[
+        Messages(role=MessagesRole.USER, content="Solve 8x + 7 = -23. Explain step by step."),
+    ],
+    response_format={
+        "type": "json_schema",
+        "schema": MathAnswer,
+        "strict": True,
+    },
+)
+
+with GigaChat() as client:
+    resp = client.chat(chat)
+    data = json.loads(resp.choices[0].message.content)
+    parsed = MathAnswer.model_validate(data)
+    print(parsed.final_answer)
+```
+
+You can also pass a raw `dict` JSON Schema instead of a Pydantic model — in that case the SDK sends it as-is (no normalization).
+
+Pydantic schemas may include `anyOf` / `oneOf` (for example, when using `Union[...]`). This is supported by the API, so you can model multiple valid JSON shapes and validate the output accordingly.
+
+#### Automatic parsing with `chat_parse()`
+
+Instead of calling `json.loads` + `model_validate` manually, use `chat_parse()` (or `achat_parse()` for async).
+It sets `response_format` from the model, calls the API, parses and validates the response in one step:
+
+```python
+from typing import List
+from pydantic import BaseModel
+
+from gigachat import GigaChat
+
+
+class MathAnswer(BaseModel):
+    steps: List[str]
+    final_answer: str
+
+
+with GigaChat() as client:
+    completion, parsed = client.chat_parse(
+        "Solve 8x + 7 = -23. Explain step by step.",
+        response_model=MathAnswer,
+        strict=True,
+    )
+    print(parsed.steps)
+    print(parsed.final_answer)
+```
+
+`chat_parse` raises specific exceptions when parsing fails:
+
+| Exception | When |
+|-----------|------|
+| `ContentParseError` | `message.content` is not valid JSON |
+| `ContentValidationError` | JSON does not match `response_model` |
+| `LengthFinishReasonError` | `finish_reason == "length"` (response truncated) |
+| `ContentFilterFinishReasonError` | `finish_reason == "content_filter"` |
 
 ### More examples
 See the [examples/](https://github.com/ai-forever/gigachat/tree/main/examples/) folder for complete working examples including chat, functions, context variables, AI detection, and vision.

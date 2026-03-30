@@ -27,6 +27,7 @@ from gigachat.models.chat import (
 from gigachat.models.embeddings import Embedding, Embeddings, EmbeddingsUsage
 from gigachat.models.files import DeletedFile, Image, UploadedFile, UploadedFiles
 from gigachat.models.models import Model, Models
+from gigachat.models.response_format import JsonSchemaResponseFormat, ResponseFormat
 from gigachat.models.threads import (
     Thread,
     ThreadCompletion,
@@ -67,12 +68,14 @@ __all__ = (
     "FunctionCall",
     "FunctionParameters",
     "Image",
+    "JsonSchemaResponseFormat",
     "Messages",
     "MessagesChunk",
     "MessagesRole",
     "Model",
     "Models",
     "OpenApiFunctions",
+    "ResponseFormat",
     "Storage",
     "Thread",
     "ThreadCompletion",

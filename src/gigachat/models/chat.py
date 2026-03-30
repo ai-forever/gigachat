@@ -1,9 +1,12 @@
+import inspect
 from enum import Enum
-from typing import Any, Dict, List, Literal, Optional, Union
+from typing import Any, Dict, List, Literal, Optional, Union, get_origin
 
+import pydantic
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 from gigachat.models.base import APIResponse
+from gigachat.models.response_format import ResponseFormat
 
 
 class MessagesRole(str, Enum):
@@ -174,6 +177,32 @@ class ChoicesChunk(BaseModel):
 class Chat(BaseModel):
     """Chat completion request parameters."""
 
+    @model_validator(mode="before")
+    @classmethod
+    def _coerce_response_format(cls, values: Any) -> Any:
+        """Allow ``response_format=SomePydanticModel`` shorthand.
+
+        Automatically wraps a bare ``type[BaseModel]`` or ``TypeAdapter``
+        into ``{"type": "json_schema", "schema": <model>}`` so that
+        ``JsonSchemaResponseFormat`` can handle the rest.
+        """
+        if not isinstance(values, dict):
+            return values
+        rf = values.get("response_format")
+        if rf is None:
+            return values
+        # Support bare typing annotations such as Union[Foo, Bar] and list[Foo].
+        # JsonSchemaResponseFormat already knows how to turn them into JSON Schema.
+        if (
+            (inspect.isclass(rf) and issubclass(rf, pydantic.BaseModel))
+            or isinstance(rf, pydantic.TypeAdapter)
+            or get_origin(rf) is not None
+        ):
+            values = dict(values)
+            values["response_format"] = {"type": "json_schema", "schema": rf}
+            return values
+        return values
+
     model: Optional[str] = Field(default=None, description="Name of the model to use.")
     messages: List[Messages] = Field(description="List of messages in the conversation.")
     temperature: Optional[float] = Field(default=None, description="Sampling temperature.")
@@ -190,6 +219,7 @@ class Chat(BaseModel):
     functions: Optional[List[Function]] = Field(default=None, description="List of functions available to the model.")
     flags: Optional[List[str]] = Field(default=None, description="List of feature flags.")
     storage: Optional[Storage] = Field(default=None, description="Context storage settings.")
+    response_format: Optional[ResponseFormat] = Field(default=None, description="Response format (e.g. JSON Schema).")
     additional_fields: Optional[Dict[str, Any]] = Field(
         default=None, description="Additional fields to pass to the API."
     )

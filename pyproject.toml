@@ -95,6 +95,10 @@ ignore = ["S311"]
 [tool.ruff.lint.isort]
 known-first-party = ["gigachat"]
 
+# To preserve python 3.8 and 3.9 support
+[tool.ruff.lint.pyupgrade]
+keep-runtime-typing = true
+
 [tool.ruff.format]
 docstring-code-format = true
 
