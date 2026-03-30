@@ -504,8 +504,7 @@ class GigaChatSyncClient(_BaseClient):
         *,
         response_model: Type[_ModelT],
         strict: Optional[bool] = None,
-    ) -> Tuple[ChatCompletion, _ModelT]:
-        ...
+    ) -> Tuple[ChatCompletion, _ModelT]: ...
 
     @overload
     def chat_parse(
@@ -514,8 +513,7 @@ class GigaChatSyncClient(_BaseClient):
         *,
         response_model: pydantic.TypeAdapter[_AdaptedT],
         strict: Optional[bool] = None,
-    ) -> Tuple[ChatCompletion, _AdaptedT]:
-        ...
+    ) -> Tuple[ChatCompletion, _AdaptedT]: ...
 
     @overload
     def chat_parse(
@@ -524,8 +522,7 @@ class GigaChatSyncClient(_BaseClient):
         *,
         response_model: Any,
         strict: Optional[bool] = None,
-    ) -> Tuple[ChatCompletion, Any]:
-        ...
+    ) -> Tuple[ChatCompletion, Any]: ...
 
     def chat_parse(
         self,
@@ -786,8 +783,7 @@ class GigaChatAsyncClient(_BaseClient):
         *,
         response_model: Type[_ModelT],
         strict: Optional[bool] = None,
-    ) -> Tuple[ChatCompletion, _ModelT]:
-        ...
+    ) -> Tuple[ChatCompletion, _ModelT]: ...
 
     @overload
     async def achat_parse(
@@ -796,8 +792,7 @@ class GigaChatAsyncClient(_BaseClient):
         *,
         response_model: pydantic.TypeAdapter[_AdaptedT],
         strict: Optional[bool] = None,
-    ) -> Tuple[ChatCompletion, _AdaptedT]:
-        ...
+    ) -> Tuple[ChatCompletion, _AdaptedT]: ...
 
     @overload
     async def achat_parse(
@@ -806,8 +801,7 @@ class GigaChatAsyncClient(_BaseClient):
         *,
         response_model: Any,
         strict: Optional[bool] = None,
-    ) -> Tuple[ChatCompletion, Any]:
-        ...
+    ) -> Tuple[ChatCompletion, Any]: ...
 
     async def achat_parse(
         self,

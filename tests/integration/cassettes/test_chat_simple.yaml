@@ -15,7 +15,7 @@ interactions:
       Host:
       - ngw.devices.sberbank.ru:9443
       RqUID:
-      - 2d6f2357-68fd-417c-b215-abf99dd07276
+      - 8da54264-2463-42be-9aa7-c844d5e45180
       User-Agent:
       - GigaChat-python-lib
       authorization:
@@ -37,7 +37,7 @@ interactions:
       Content-Type:
       - application/json
       Date:
-      - Mon, 16 Feb 2026 14:08:26 GMT
+      - Wed, 21 Jan 2026 11:49:30 GMT
       Expires:
       - '0'
       Pragma:
@@ -89,11 +89,10 @@ interactions:
     uri: https://gigachat.devices.sberbank.ru/api/v1/chat/completions
   response:
     body:
-      string: '{"choices": [{"message": {"content": "\u041f\u0440\u0438\u0432\u0435\u0442.",
-        "role": "assistant"}, "index": 0, "finish_reason": "stop"}], "created": 1771250906,
-        "model": "GigaChat:2.0.28.2", "object": "chat.completion", "usage": {"prompt_tokens":
-        17, "completion_tokens": 4, "total_tokens": 21, "precached_prompt_tokens":
-        2}}'
+      string: '{"choices": [{"message": {"content": "Hello.", "role": "assistant"},
+        "index": 0, "finish_reason": "stop"}], "created": 1768996171, "model": "GigaChat:2.0.28.2",
+        "object": "chat.completion", "usage": {"prompt_tokens": 17, "completion_tokens":
+        3, "total_tokens": 20, "precached_prompt_tokens": 2}}'
     headers:
       Access-Control-Allow-Credentials:
       - 'true'
@@ -108,11 +107,11 @@ interactions:
       Connection:
       - keep-alive
       Content-Length:
-      - '278'
+      - '271'
       Content-Type:
       - application/json; charset=utf-8
       Date:
-      - Mon, 16 Feb 2026 14:08:26 GMT
+      - Wed, 21 Jan 2026 11:49:31 GMT
       Server:
       - SynGX
       Strict-Transport-Security:
@@ -122,9 +121,9 @@ interactions:
       X-Frame-Options:
       - SAMEORIGIN
       X-Request-Id:
-      - d0964514-8ab7-4643-8477-2d8f2ef885c3
+      - 4c4994bb-1d5a-4b1d-ac15-fd5036950252
       X-Session-Id:
-      - 25101993-dcf6-4466-b76f-7c1e3be9a5b0
+      - 63a5fc18-73ca-4d9c-b1e3-be6c48766b14
       X-XSS-Protection:
       - 1; mode=block
     status:

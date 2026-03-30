@@ -15,7 +15,7 @@ interactions:
       Host:
       - ngw.devices.sberbank.ru:9443
       RqUID:
-      - df65d477-b3e5-45e6-a8e0-24bf38597ff7
+      - eb32aed9-5f26-49ff-a1d9-0656828d224a
       User-Agent:
       - GigaChat-python-lib
       authorization:
@@ -37,7 +37,7 @@ interactions:
       Content-Type:
       - application/json
       Date:
-      - Mon, 16 Feb 2026 14:08:26 GMT
+      - Wed, 21 Jan 2026 11:49:35 GMT
       Expires:
       - '0'
       Pragma:
@@ -91,16 +91,18 @@ interactions:
     uri: https://gigachat.devices.sberbank.ru/api/v1/chat/completions
   response:
     body:
-      string: 'data: {"choices":[{"delta":{"content":"$1\\, 2\\, 3$","role":"assistant"},"index":0}],"created":1771250907,"model":"GigaChat:2.0.28.2","object":"chat.completion"}
-
-
-        data: {"choices":[{"delta":{"content":""},"index":0,"finish_reason":"stop"}],"created":1771250907,"model":"GigaChat:2.0.28.2","object":"chat.completion","usage":{"prompt_tokens":17,"completion_tokens":10,"total_tokens":27,"precached_prompt_tokens":2}}
-
-
-        data: [DONE]
-
-
-        '
+      string: "data: {\"choices\":[{\"delta\":{\"content\":\"$1\\\\, 2\\\\, 3$  \\n\\n**\u041F\u043E\u0434\u0440\u043E\u0431\u043D\u044B\u0439
+        \u0440\u0430\u0437\u0431\u043E\u0440:\",\"role\":\"assistant\"},\"index\":0}],\"created\":1768996176,\"model\":\"GigaChat:2.0.28.2\",\"object\":\"chat.completion\"}\n\ndata:
+        {\"choices\":[{\"delta\":{\"content\":\"**\\n- \u041D\u0430\u0447\u0438\u043D\u0430\u0435\u043C
+        \u0441\u0447\u0451\u0442 \u0441 \u0435\u0434\u0438\u043D\u0438\u0446\u044B.\"},\"index\":0}],\"created\":1768996176,\"model\":\"GigaChat:2.0.28.2\",\"object\":\"chat.completion\"}\n\ndata:
+        {\"choices\":[{\"delta\":{\"content\":\"\\n- \u0414\u043E\u0431\u0430\u0432\u043B\u044F\u0435\u043C
+        \u0441\u043B\u0435\u0434\u0443\u044E\u0449\u0435\u0435 \u0447\u0438\u0441\u043B\u043E
+        \u2014 \u0434\u0432\u043E\u0439\u043A\u0443.\"},\"index\":0}],\"created\":1768996176,\"model\":\"GigaChat:2.0.28.2\",\"object\":\"chat.completion\"}\n\ndata:
+        {\"choices\":[{\"delta\":{\"content\":\"\\n- \u0417\u0430\u043A\u0430\u043D\u0447\u0438\u0432\u0430\u0435\u043C
+        \u0441\u0447\u0451\u0442\u043E\u043C \u0447\u0438\u0441\u043B\u043E\u043C
+        \u0442\u0440\u0438.\"},\"index\":0}],\"created\":1768996176,\"model\":\"GigaChat:2.0.28.2\",\"object\":\"chat.completion\"}\n\ndata:
+        {\"choices\":[{\"delta\":{\"content\":\"\"},\"index\":0,\"finish_reason\":\"stop\"}],\"created\":1768996176,\"model\":\"GigaChat:2.0.28.2\",\"object\":\"chat.completion\",\"usage\":{\"prompt_tokens\":17,\"completion_tokens\":42,\"total_tokens\":59,\"precached_prompt_tokens\":2}}\n\ndata:
+        [DONE]\n\n"
     headers:
       Access-Control-Allow-Credentials:
       - 'true'
@@ -117,7 +119,7 @@ interactions:
       Content-Type:
       - text/event-stream
       Date:
-      - Mon, 16 Feb 2026 14:08:27 GMT
+      - Wed, 21 Jan 2026 11:49:36 GMT
       Server:
       - SynGX
       Strict-Transport-Security:
@@ -129,9 +131,9 @@ interactions:
       X-Frame-Options:
       - SAMEORIGIN
       X-Request-Id:
-      - 4186de1e-99e7-45d3-ad52-47c32d64c5ff
+      - a6c1229b-a0aa-4f75-96a0-3b74f1defd62
       X-Session-Id:
-      - 578a1165-000a-494e-bade-a2f94e73542d
+      - d1102deb-406b-4f42-ba4d-3b7ccc402570
       X-XSS-Protection:
       - 1; mode=block
     status:
