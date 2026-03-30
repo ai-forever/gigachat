@@ -1,6 +1,11 @@
-from typing import Optional, Union
+from __future__ import annotations
+
+from typing import TYPE_CHECKING, Optional, Union
 
 import httpx
+
+if TYPE_CHECKING:
+    from gigachat.models.chat import ChatCompletion
 
 __all__ = [
     "GigaChatException",
