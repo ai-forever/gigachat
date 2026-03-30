@@ -3,7 +3,13 @@ from typing import Any, Dict, List, Literal, Optional, Union
 import httpx
 
 from gigachat._types import FileContent
-from gigachat.api.utils import _raise_for_status, build_headers, build_x_headers, execute_request_async, execute_request_sync
+from gigachat.api.utils import (
+    _raise_for_status,
+    build_headers,
+    build_x_headers,
+    execute_request_async,
+    execute_request_sync,
+)
 from gigachat.models.batches import Batch, Batches
 
 
