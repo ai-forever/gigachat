@@ -68,10 +68,10 @@ def test_get_token_credentials(httpx_mock: HTTPXMock) -> None:
     access_token = model.get_token()
 
     assert model._access_token is not None
-    assert model._access_token.access_token == OAUTH_TOKEN_VALID["access_token"]
+    assert model._access_token.access_token.get_secret_value() == OAUTH_TOKEN_VALID["access_token"]
     assert model._access_token.expires_at == OAUTH_TOKEN_VALID["expires_at"]
     assert access_token is not None
-    assert access_token.access_token == OAUTH_TOKEN_VALID["access_token"]
+    assert access_token.access_token.get_secret_value() == OAUTH_TOKEN_VALID["access_token"]
     assert access_token.expires_at == OAUTH_TOKEN_VALID["expires_at"]
 
 
@@ -86,10 +86,10 @@ def test_get_token_password(httpx_mock: HTTPXMock) -> None:
     access_token = model.get_token()
 
     assert model._access_token is not None
-    assert model._access_token.access_token == PASSWORD_TOKEN_VALID["tok"]
+    assert model._access_token.access_token.get_secret_value() == PASSWORD_TOKEN_VALID["tok"]
     assert model._access_token.expires_at == PASSWORD_TOKEN_VALID["exp"]
     assert access_token is not None
-    assert access_token.access_token == PASSWORD_TOKEN_VALID["tok"]
+    assert access_token.access_token.get_secret_value() == PASSWORD_TOKEN_VALID["tok"]
     assert access_token.expires_at == PASSWORD_TOKEN_VALID["exp"]
 
 
@@ -99,10 +99,10 @@ def test_get_token_manual() -> None:
     access_token = model.get_token()
 
     assert model._access_token is not None
-    assert model._access_token.access_token == token_str
+    assert model._access_token.access_token.get_secret_value() == token_str
     assert model._access_token.expires_at == 0
     assert access_token is not None
-    assert access_token.access_token == token_str
+    assert access_token.access_token.get_secret_value() == token_str
 
 
 def test_get_token_context_var() -> None:
@@ -143,10 +143,10 @@ async def test_aget_token_credentials(httpx_mock: HTTPXMock) -> None:
     access_token = await model.aget_token()
 
     assert model._access_token is not None
-    assert model._access_token.access_token == OAUTH_TOKEN_VALID["access_token"]
+    assert model._access_token.access_token.get_secret_value() == OAUTH_TOKEN_VALID["access_token"]
     assert model._access_token.expires_at == OAUTH_TOKEN_VALID["expires_at"]
     assert access_token is not None
-    assert access_token.access_token == OAUTH_TOKEN_VALID["access_token"]
+    assert access_token.access_token.get_secret_value() == OAUTH_TOKEN_VALID["access_token"]
     assert access_token.expires_at == OAUTH_TOKEN_VALID["expires_at"]
 
 
@@ -161,10 +161,10 @@ async def test_aget_token_password(httpx_mock: HTTPXMock) -> None:
     access_token = await model.aget_token()
 
     assert model._access_token is not None
-    assert model._access_token.access_token == PASSWORD_TOKEN_VALID["tok"]
+    assert model._access_token.access_token.get_secret_value() == PASSWORD_TOKEN_VALID["tok"]
     assert model._access_token.expires_at == PASSWORD_TOKEN_VALID["exp"]
     assert access_token is not None
-    assert access_token.access_token == PASSWORD_TOKEN_VALID["tok"]
+    assert access_token.access_token.get_secret_value() == PASSWORD_TOKEN_VALID["tok"]
     assert access_token.expires_at == PASSWORD_TOKEN_VALID["exp"]
 
 
@@ -174,10 +174,10 @@ async def test_aget_token_manual() -> None:
     access_token = await model.aget_token()
 
     assert model._access_token is not None
-    assert model._access_token.access_token == token_str
+    assert model._access_token.access_token.get_secret_value() == token_str
     assert model._access_token.expires_at == 0
     assert access_token is not None
-    assert access_token.access_token == token_str
+    assert access_token.access_token.get_secret_value() == token_str
 
 
 async def test_aget_token_context_var() -> None:

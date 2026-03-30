@@ -127,11 +127,35 @@ class ChatFunctionCall(BaseModel):
     partial_arguments: Optional[Dict[str, Any]] = Field(default=None, description="Partial arguments for the function.")
 
 
+class FunctionRanker(BaseModel):
+    """Function/tool ranking settings."""
+
+    enabled: Optional[bool] = Field(default=None, description="Enable function ranking.")
+    top_n: Optional[int] = Field(default=None, description="Number of ranked functions to pass to the model.")
+
+
+class LogProbToken(BaseModel):
+    """A token and its log probability."""
+
+    token: str = Field(description="Token text.")
+    logprob: float = Field(description="Log probability for the token.")
+
+
+class MessageLogProb(BaseModel):
+    """Log probability information for one generated token position."""
+
+    chosen: LogProbToken = Field(description="The token chosen by the model.")
+    top: List[LogProbToken] = Field(description="Top candidate tokens for this position.")
+
+
 class Messages(BaseModel):
     """Message in a chat conversation."""
 
     role: MessagesRole = Field(description="Role of the message author.")
     content: str = Field(default="", description="Text content of the message.")
+    logprobs: Optional[List[MessageLogProb]] = Field(
+        default=None, description="Token-level log probabilities for the generated message."
+    )
     function_call: Optional[FunctionCall] = Field(default=None, description="Function call details.")
     name: Optional[str] = Field(default=None, description="Function name. Required if role is 'function'.")
     attachments: Optional[List[str]] = Field(default=None, description="List of attached file IDs.")
@@ -190,11 +214,21 @@ class Chat(BaseModel):
     functions: Optional[List[Function]] = Field(default=None, description="List of functions available to the model.")
     flags: Optional[List[str]] = Field(default=None, description="List of feature flags.")
     storage: Optional[Storage] = Field(default=None, description="Context storage settings.")
+    function_ranker: Optional[FunctionRanker] = Field(default=None, description="Function/tool ranking settings.")
     additional_fields: Optional[Dict[str, Any]] = Field(
         default=None, description="Additional fields to pass to the API."
     )
     reasoning_effort: Optional[Literal["low", "medium", "high"]] = Field(
         default=None, description="Reasoning effort level."
+    )
+    top_logprobs: Optional[int] = Field(
+        default=None,
+        description="Number of most likely tokens to return with log probabilities.",
+        ge=0,
+        le=5,
+    )
+    unnormalized_history: Optional[bool] = Field(
+        default=None, description="Disable automatic normalization of the message history."
     )
 
 

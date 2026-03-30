@@ -59,19 +59,23 @@ def test_env_override(monkeypatch: pytest.MonkeyPatch) -> None:
 
     assert settings.base_url == "http://custom-base"
     assert settings.auth_url == "http://custom-auth"
-    assert settings.credentials == "custom-creds"
+    assert settings.credentials is not None
+    assert settings.credentials.get_secret_value() == "custom-creds"
     assert settings.scope == "custom-scope"
-    assert settings.access_token == "custom-token"
+    assert settings.access_token is not None
+    assert settings.access_token.get_secret_value() == "custom-token"
     assert settings.model == "custom-model"
     assert settings.profanity_check is True
     assert settings.user == "custom-user"
-    assert settings.password == "custom-password"
+    assert settings.password is not None
+    assert settings.password.get_secret_value() == "custom-password"
     assert settings.timeout == 60.0
     assert settings.verify_ssl_certs is False
     assert settings.ca_bundle_file == "ca.pem"
     assert settings.cert_file == "cert.pem"
     assert settings.key_file == "key.pem"
-    assert settings.key_file_password == "key-pass"
+    assert settings.key_file_password is not None
+    assert settings.key_file_password.get_secret_value() == "key-pass"
     assert settings.max_connections == 100
     assert settings.max_retries == 5
     assert settings.retry_backoff_factor == 1.5

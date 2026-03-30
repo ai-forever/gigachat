@@ -17,6 +17,7 @@ from typing import (
 )
 
 import httpx
+from pydantic import SecretStr
 from typing_extensions import Self
 
 from gigachat._types import FileTypes
@@ -45,6 +46,15 @@ T = TypeVar("T")
 logger = logging.getLogger(__name__)
 
 GIGACHAT_MODEL = "GigaChat"
+SecretValue = Union[str, SecretStr]
+
+
+def _unwrap_secret(value: Optional[SecretValue]) -> Optional[str]:
+    if value is None:
+        return None
+    if isinstance(value, SecretStr):
+        return value.get_secret_value()
+    return value
 
 
 def _get_kwargs(settings: Settings) -> Dict[str, Any]:
@@ -62,7 +72,7 @@ def _get_kwargs(settings: Settings) -> Dict[str, Any]:
         kwargs["cert"] = (
             settings.cert_file,
             settings.key_file,
-            settings.key_file_password,
+            _unwrap_secret(settings.key_file_password),
         )
     if settings.max_connections is not None:
         kwargs["limits"] = httpx.Limits(max_connections=settings.max_connections)
@@ -109,19 +119,19 @@ class _BaseClient:
         *,
         base_url: Optional[str] = None,
         auth_url: Optional[str] = None,
-        credentials: Optional[str] = None,
+        credentials: Optional[SecretValue] = None,
         scope: Optional[str] = None,
-        access_token: Optional[str] = None,
+        access_token: Optional[SecretValue] = None,
         model: Optional[str] = None,
         profanity_check: Optional[bool] = None,
         user: Optional[str] = None,
-        password: Optional[str] = None,
+        password: Optional[SecretValue] = None,
         timeout: Optional[float] = None,
         verify_ssl_certs: Optional[bool] = None,
         ca_bundle_file: Optional[str] = None,
         cert_file: Optional[str] = None,
         key_file: Optional[str] = None,
-        key_file_password: Optional[str] = None,
+        key_file_password: Optional[SecretValue] = None,
         ssl_context: Optional[ssl.SSLContext] = None,
         flags: Optional[List[str]] = None,
         max_connections: Optional[int] = None,
@@ -159,12 +169,15 @@ class _BaseClient:
         config = {k: v for k, v in kwargs.items() if v is not None}
         self._settings = Settings(**config)
         if self._settings.access_token:
-            self._access_token = AccessToken(access_token=self._settings.access_token, expires_at=0)
+            self._access_token = AccessToken(
+                access_token=self._settings.access_token,
+                expires_at=0,
+            )
 
     @property
     def token(self) -> Optional[str]:
         if self._access_token:
-            return self._access_token.access_token
+            return self._access_token.access_token.get_secret_value()
         else:
             return None
 
@@ -220,19 +233,19 @@ class GigaChatSyncClient(_BaseClient):
         *,
         base_url: Optional[str] = None,
         auth_url: Optional[str] = None,
-        credentials: Optional[str] = None,
+        credentials: Optional[SecretValue] = None,
         scope: Optional[str] = None,
-        access_token: Optional[str] = None,
+        access_token: Optional[SecretValue] = None,
         model: Optional[str] = None,
         profanity_check: Optional[bool] = None,
         user: Optional[str] = None,
-        password: Optional[str] = None,
+        password: Optional[SecretValue] = None,
         timeout: Optional[float] = None,
         verify_ssl_certs: Optional[bool] = None,
         ca_bundle_file: Optional[str] = None,
         cert_file: Optional[str] = None,
         key_file: Optional[str] = None,
-        key_file_password: Optional[str] = None,
+        key_file_password: Optional[SecretValue] = None,
         ssl_context: Optional[ssl.SSLContext] = None,
         flags: Optional[List[str]] = None,
         max_connections: Optional[int] = None,
@@ -308,19 +321,21 @@ class GigaChatSyncClient(_BaseClient):
                 return
 
             if self._settings.credentials:
+                credentials = self._settings.credentials.get_secret_value()
                 self._access_token = auth.auth_sync(
                     self._auth_client,
                     url=self._settings.auth_url,
-                    credentials=self._settings.credentials,
+                    credentials=credentials,
                     scope=self._settings.scope,
                 )
                 logger.debug("Token refreshed via OAuth")
             elif self._settings.user and self._settings.password:
+                password = self._settings.password.get_secret_value()
                 self._access_token = _build_access_token(
                     auth.token_sync(
                         self._client,
                         user=self._settings.user,
-                        password=self._settings.password,
+                        password=password,
                     )
                 )
                 logger.debug("Token refreshed via password auth")
@@ -473,19 +488,19 @@ class GigaChatAsyncClient(_BaseClient):
         *,
         base_url: Optional[str] = None,
         auth_url: Optional[str] = None,
-        credentials: Optional[str] = None,
+        credentials: Optional[SecretValue] = None,
         scope: Optional[str] = None,
-        access_token: Optional[str] = None,
+        access_token: Optional[SecretValue] = None,
         model: Optional[str] = None,
         profanity_check: Optional[bool] = None,
         user: Optional[str] = None,
-        password: Optional[str] = None,
+        password: Optional[SecretValue] = None,
         timeout: Optional[float] = None,
         verify_ssl_certs: Optional[bool] = None,
         ca_bundle_file: Optional[str] = None,
         cert_file: Optional[str] = None,
         key_file: Optional[str] = None,
-        key_file_password: Optional[str] = None,
+        key_file_password: Optional[SecretValue] = None,
         ssl_context: Optional[ssl.SSLContext] = None,
         flags: Optional[List[str]] = None,
         max_connections: Optional[int] = None,
@@ -555,19 +570,21 @@ class GigaChatAsyncClient(_BaseClient):
             if self._is_token_usable():
                 return
             if self._settings.credentials:
+                credentials = self._settings.credentials.get_secret_value()
                 self._access_token = await auth.auth_async(
                     self._auth_aclient,
                     url=self._settings.auth_url,
-                    credentials=self._settings.credentials,
+                    credentials=credentials,
                     scope=self._settings.scope,
                 )
                 logger.debug("Token refreshed via OAuth")
             elif self._settings.user and self._settings.password:
+                password = self._settings.password.get_secret_value()
                 self._access_token = _build_access_token(
                     await auth.token_async(
                         self._aclient,
                         user=self._settings.user,
-                        password=self._settings.password,
+                        password=password,
                     )
                 )
                 logger.debug("Token refreshed via password auth")
@@ -734,19 +751,19 @@ class GigaChat(GigaChatSyncClient, GigaChatAsyncClient):
         *,
         base_url: Optional[str] = None,
         auth_url: Optional[str] = None,
-        credentials: Optional[str] = None,
+        credentials: Optional[SecretValue] = None,
         scope: Optional[str] = None,
-        access_token: Optional[str] = None,
+        access_token: Optional[SecretValue] = None,
         model: Optional[str] = None,
         profanity_check: Optional[bool] = None,
         user: Optional[str] = None,
-        password: Optional[str] = None,
+        password: Optional[SecretValue] = None,
         timeout: Optional[float] = None,
         verify_ssl_certs: Optional[bool] = None,
         ca_bundle_file: Optional[str] = None,
         cert_file: Optional[str] = None,
         key_file: Optional[str] = None,
-        key_file_password: Optional[str] = None,
+        key_file_password: Optional[SecretValue] = None,
         ssl_context: Optional[ssl.SSLContext] = None,
         flags: Optional[List[str]] = None,
         max_connections: Optional[int] = None,
