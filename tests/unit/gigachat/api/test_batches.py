@@ -35,10 +35,20 @@ def test_get_batches_sync(httpx_mock: HTTPXMock) -> None:
 
 
 async def test_get_batches_async(httpx_mock: HTTPXMock) -> None:
-    httpx_mock.add_response(url=BATCH_BY_ID_URL, json=BATCHES)
+    httpx_mock.add_response(url=BATCH_BY_ID_URL, json=BATCH)
 
     async with httpx.AsyncClient(base_url=BASE_URL) as client:
         response = await get_batches_async(client, batch_id="batch_1")
+
+    assert isinstance(response, Batches)
+    assert response.batches[0].id_ == "batch_1"
+
+
+def test_get_batches_sync_supports_list_payload(httpx_mock: HTTPXMock) -> None:
+    httpx_mock.add_response(url=BATCHES_URL, json=BATCHES["batches"])
+
+    with httpx.Client(base_url=BASE_URL) as client:
+        response = get_batches_sync(client)
 
     assert isinstance(response, Batches)
     assert response.batches[0].id_ == "batch_1"
