@@ -6,7 +6,7 @@ from pydantic import BaseModel, Field, TypeAdapter, ValidationError
 
 from gigachat.models._schema_normalize import to_strict_json_schema
 from gigachat.models.chat import Chat, Messages, MessagesRole
-from gigachat.models.response_format import JsonSchemaResponseFormat
+from gigachat.models.response_format import JsonSchemaResponseFormat, ResponseFormat
 
 SAMPLE_SCHEMA: Dict[str, Any] = {
     "type": "object",
@@ -69,6 +69,10 @@ def test_json_schema_response_format_invalid_schema_type() -> None:
 def test_json_schema_response_format_missing_schema() -> None:
     with pytest.raises(ValidationError):
         JsonSchemaResponseFormat.model_validate({"type": "json_schema"})
+
+
+def test_response_format_public_alias_is_importable() -> None:
+    assert ResponseFormat is not None
 
 
 def test_chat_with_response_format_typed() -> None:
