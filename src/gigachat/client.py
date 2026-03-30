@@ -15,12 +15,9 @@ from typing import (
     TypeVar,
     Union,
     cast,
-    get_origin,
-    overload,
 )
 
 import httpx
-import pydantic
 from pydantic import SecretStr
 from typing_extensions import Self
 
@@ -174,7 +171,7 @@ class _BaseClient:
         self._settings = Settings(**config)
         if self._settings.access_token:
             self._access_token = AccessToken(
-                access_token=cast(SecretStr, self._settings.access_token),
+                access_token=self._settings.access_token,
                 expires_at=0,
             )
 

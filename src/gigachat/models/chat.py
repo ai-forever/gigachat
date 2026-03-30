@@ -222,7 +222,8 @@ class Chat(BaseModel):
         default=None, description="Reasoning effort level."
     )
     top_logprobs: Optional[int] = Field(
-        default=None, description="Number of most likely tokens to return with log probabilities.",
+        default=None,
+        description="Number of most likely tokens to return with log probabilities.",
         ge=0,
         le=5,
     )
