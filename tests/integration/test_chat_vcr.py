@@ -9,12 +9,6 @@ from gigachat import GigaChat
 from gigachat.exceptions import NotFoundError
 from gigachat.models import Chat, ChatCompletion, ChatCompletionChunk, Messages, MessagesRole
 
-_NO_MARKDOWN_NO_FENCES_SYSTEM = (
-    "You are a JSON API. Output must be a single JSON object and NOTHING else. "
-    "Do not use markdown. Do not wrap in ``` code fences. Do not add comments. "
-    "Do not add trailing text."
-)
-
 
 @pytest.mark.integration
 @pytest.mark.vcr
@@ -37,11 +31,7 @@ def test_chat_response_format_json_schema(gigachat_client: GigaChat) -> None:
     """Test response_format=json_schema returns JSON (as a string) in message.content."""
     payload = Chat(
         messages=[
-            Messages(role=MessagesRole.SYSTEM, content=_NO_MARKDOWN_NO_FENCES_SYSTEM),
-            Messages(
-                role=MessagesRole.USER,
-                content='Return {"answer":"ok","n":3} exactly.',
-            ),
+            Messages(role=MessagesRole.USER, content='Return {"answer":"ok","n":3} exactly.'),
         ],
         response_format={
             "type": "json_schema",
@@ -87,11 +77,7 @@ async def test_achat_response_format_json_schema(gigachat_async_client: GigaChat
     """Test async response_format=json_schema returns JSON in message.content."""
     payload = Chat(
         messages=[
-            Messages(role=MessagesRole.SYSTEM, content=_NO_MARKDOWN_NO_FENCES_SYSTEM),
-            Messages(
-                role=MessagesRole.USER,
-                content='Return {"answer":"ok","n":3} exactly.',
-            ),
+            Messages(role=MessagesRole.USER, content='Return {"answer":"ok","n":3} exactly.'),
         ],
         response_format={
             "type": "json_schema",
@@ -127,7 +113,6 @@ def test_chat_parse_json_schema(gigachat_client: GigaChat) -> None:
 
     payload = Chat(
         messages=[
-            Messages(role=MessagesRole.SYSTEM, content=_NO_MARKDOWN_NO_FENCES_SYSTEM),
             Messages(role=MessagesRole.USER, content='Return {"answer":"ok","n":3} exactly.'),
         ]
     )
@@ -148,7 +133,6 @@ async def test_achat_parse_json_schema(gigachat_async_client: GigaChat) -> None:
 
     payload = Chat(
         messages=[
-            Messages(role=MessagesRole.SYSTEM, content=_NO_MARKDOWN_NO_FENCES_SYSTEM),
             Messages(role=MessagesRole.USER, content='Return {"answer":"ok","n":3} exactly.'),
         ]
     )

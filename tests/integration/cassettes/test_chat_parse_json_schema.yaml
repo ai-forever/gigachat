@@ -66,14 +66,12 @@ interactions:
       code: 200
       message: OK
 - request:
-    body: '{"model": "GigaChat", "messages": [{"role": "system", "content": "You are
-      a JSON API. Output must be a single JSON object and NOTHING else. Do not use
-      markdown. Do not wrap in ``` code fences. Do not add comments. Do not add trailing
-      text."}, {"role": "user", "content": "Return {\"answer\":\"ok\",\"n\":3} exactly."}],
-      "response_format": {"type": "json_schema", "schema": {"properties": {"answer":
-      {"title": "Answer", "type": "string"}, "n": {"maximum": 10, "minimum": 0, "title":
-      "N", "type": "integer"}}, "required": ["answer", "n"], "title": "Out", "type":
-      "object", "additionalProperties": false}, "strict": true}}'
+    body: '{"model": "GigaChat", "messages": [{"role": "user", "content": "Return
+      {\"answer\":\"ok\",\"n\":3} exactly."}], "response_format": {"type": "json_schema",
+      "schema": {"properties": {"answer": {"title": "Answer", "type": "string"}, "n":
+      {"maximum": 10, "minimum": 0, "title": "N", "type": "integer"}}, "required":
+      ["answer", "n"], "title": "Out", "type": "object", "additionalProperties": false},
+      "strict": true}}'
     headers:
       Accept:
       - '*/*'
@@ -82,7 +80,7 @@ interactions:
       Connection:
       - keep-alive
       Content-Length:
-      - '619'
+      - '411'
       Content-Type:
       - application/json
       Host:
@@ -95,11 +93,11 @@ interactions:
     uri: https://gigachat.devices.sberbank.ru/api/v1/chat/completions
   response:
     body:
-      string: '{"choices": [{"message": {"content": "{\"answer\":\"ok\",\"n\":3}",
-        "role": "assistant"}, "index": 0, "finish_reason": "stop"}], "created": 1771251462,
-        "model": "GigaChat:2.0.28.2", "object": "chat.completion", "usage": {"prompt_tokens":
-        1, "completion_tokens": 10, "total_tokens": 11, "precached_prompt_tokens":
-        68}}'
+      string: '{"choices": [{"message": {"content": "{\n    \"answer\": \"ok\",\n    \"n\":
+        3\n}", "role": "assistant"}, "index": 0, "finish_reason": "stop"}], "created":
+        1775060049, "model": "GigaChat:2.0.28.2", "object": "chat.completion", "usage":
+        {"prompt_tokens": 24, "completion_tokens": 21, "total_tokens": 45, "precached_prompt_tokens":
+        0}}'
     headers:
       Access-Control-Allow-Credentials:
       - 'true'
