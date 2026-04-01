@@ -8,7 +8,7 @@ The normalization ensures the generated schema is compatible with server-side
 ``response_format=json_schema`` enforcement:
 
 * ``additionalProperties: false`` on every object schema (unless already set)
-* ``required`` includes all ``properties`` keys (unless already set)
+* ``required`` is set to all ``properties`` keys (strict mode requires every property)
 * single-entry ``allOf`` is flattened
 * ``$ref`` with sibling keywords is inlined (resolved from root)
 * ``default: None`` is stripped (the schema is still nullable via ``anyOf``)

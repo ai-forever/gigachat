@@ -15,14 +15,10 @@ from gigachat.context import chat_url_cvar
 from gigachat.models.chat import Chat, ChatCompletion, ChatCompletionChunk
 
 
-def _get_chat_kwargs(
-    *,
-    chat: Chat,
-    access_token: Optional[str] = None,
-) -> Dict[str, Any]:
-    headers = build_headers(access_token)
-    headers["Content-Type"] = "application/json"
-    json_data = chat.model_dump(exclude_none=True, by_alias=True, exclude={"stream"})
+def _build_request_json(chat: Chat, *, exclude_stream: bool = False) -> Dict[str, Any]:
+    """Serialize *chat* to a JSON-ready dict, merging additional_fields without clobbering response_format."""
+    exclude = {"stream"} if exclude_stream else set()
+    json_data = chat.model_dump(exclude_none=True, by_alias=True, exclude=exclude)
     fields = json_data.pop("additional_fields", None)
     response_format = json_data.get("response_format")
 
@@ -31,6 +27,18 @@ def _get_chat_kwargs(
 
     if response_format is not None:
         json_data["response_format"] = response_format
+
+    return json_data
+
+
+def _get_chat_kwargs(
+    *,
+    chat: Chat,
+    access_token: Optional[str] = None,
+) -> Dict[str, Any]:
+    headers = build_headers(access_token)
+    headers["Content-Type"] = "application/json"
+    json_data = _build_request_json(chat, exclude_stream=True)
 
     return {
         "method": "POST",
@@ -71,15 +79,7 @@ def _get_stream_kwargs(
     headers["Accept"] = EVENT_STREAM
     headers["Cache-Control"] = "no-store"
     headers["Content-Type"] = "application/json"
-    json_data = chat.model_dump(exclude_none=True, by_alias=True)
-    fields = json_data.pop("additional_fields", None)
-    response_format = json_data.get("response_format")
-
-    if fields:
-        json_data = {**json_data, **fields}
-
-    if response_format is not None:
-        json_data["response_format"] = response_format
+    json_data = _build_request_json(chat)
 
     return {
         "method": "POST",

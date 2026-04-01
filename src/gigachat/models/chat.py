@@ -1,6 +1,6 @@
 import inspect
 from enum import Enum
-from typing import Any, Dict, List, Literal, Optional, Union, get_origin
+from typing import Any, Dict, List, Literal, Optional, Union
 
 import pydantic
 from pydantic import BaseModel, ConfigDict, Field, model_validator
@@ -191,13 +191,7 @@ class Chat(BaseModel):
         rf = values.get("response_format")
         if rf is None:
             return values
-        # Support bare typing annotations such as Union[Foo, Bar] and list[Foo].
-        # JsonSchemaResponseFormat already knows how to turn them into JSON Schema.
-        if (
-            (inspect.isclass(rf) and issubclass(rf, pydantic.BaseModel))
-            or isinstance(rf, pydantic.TypeAdapter)
-            or get_origin(rf) is not None
-        ):
+        if (inspect.isclass(rf) and issubclass(rf, pydantic.BaseModel)) or isinstance(rf, pydantic.TypeAdapter):
             values = dict(values)
             values["response_format"] = {"type": "json_schema", "schema": rf}
             return values

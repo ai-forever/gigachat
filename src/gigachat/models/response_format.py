@@ -1,5 +1,5 @@
 import inspect
-from typing import Any, Dict, Literal, Optional, Type, Union, get_origin
+from typing import Any, Dict, Literal, Optional, Type, Union
 
 import pydantic
 from pydantic import BaseModel, Field, model_validator
@@ -17,8 +17,6 @@ class JsonSchemaResponseFormat(BaseModel):
       ``model_json_schema()`` and normalized (OpenAI-style).
     * ``pydantic.TypeAdapter``  -- auto-converted via ``.json_schema()``
       and normalized (OpenAI-style).
-    * supported typing annotations such as ``Union[Foo, Bar]`` --
-      auto-converted through ``pydantic.TypeAdapter`` and normalized.
     """
 
     type: Literal["json_schema"] = Field(default="json_schema", description="Response format type.")
@@ -47,28 +45,22 @@ class JsonSchemaResponseFormat(BaseModel):
             values["schema"] = to_strict_json_schema(schema)
             return values
 
-        # Supported typing annotation (e.g. Union[Foo, Bar]) -> TypeAdapter
-        if get_origin(schema) is not None:
-            values = dict(values)
-            values["schema"] = to_strict_json_schema(pydantic.TypeAdapter(schema))
-            return values
-
         # Plain dict -> passthrough (no normalization)
         if isinstance(schema, dict):
             return values
 
         raise ValueError(
             f"'schema' must be a dict, a pydantic.BaseModel subclass, "
-            f"a supported typing annotation, or a pydantic.TypeAdapter; "
-            f"got {type(schema).__name__}"
+            f"or a pydantic.TypeAdapter; got {type(schema).__name__}"
         )
 
 
-ResponseFormat = Union[JsonSchemaResponseFormat, Dict[str, Any], Type[pydantic.BaseModel], Any]
+ResponseFormat = Union[JsonSchemaResponseFormat, Dict[str, Any], Type[pydantic.BaseModel]]
 """Accepted types for ``Chat.response_format``:
 
 * ``JsonSchemaResponseFormat`` — fully typed object.
 * ``dict`` — raw JSON passed through as-is.
 * ``type[BaseModel]`` — Pydantic model class (auto-converted to JSON Schema).
-* ``TypeAdapter`` — Pydantic TypeAdapter (auto-converted to JSON Schema).
+* ``pydantic.TypeAdapter`` — also accepted at runtime (via ``Chat._coerce_response_format``)
+  but not expressible in the type alias without breaking Pydantic schema generation.
 """

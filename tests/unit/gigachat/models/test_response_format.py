@@ -173,7 +173,7 @@ def test_schema_from_type_adapter_union() -> None:
 
 
 def test_schema_from_typing_union() -> None:
-    rf = JsonSchemaResponseFormat(schema=Union[CalculateAction, FinalAnswerAction])
+    rf = JsonSchemaResponseFormat(schema=TypeAdapter(Union[CalculateAction, FinalAnswerAction]))
     dumped = rf.model_dump(exclude_none=True, by_alias=True)
     schema = dumped["schema"]
     assert "anyOf" in schema

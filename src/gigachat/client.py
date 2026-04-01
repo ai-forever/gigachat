@@ -17,7 +17,6 @@ from typing import (
     Type,
     TypeVar,
     Union,
-    get_origin,
     overload,
 )
 
@@ -112,6 +111,19 @@ def _parse_chat(payload: Union[Chat, Dict[str, Any], str], settings: Settings) -
     return chat
 
 
+def _coerce_to_type_adapter(response_model: Any) -> Any:
+    """Wrap bare typing annotations (e.g. ``Union[Foo, Bar]``) in a ``TypeAdapter``.
+
+    Returns the original *response_model* unchanged if it is already a
+    ``BaseModel`` subclass, a ``TypeAdapter``, or a ``dict``.
+    """
+    if isinstance(response_model, (dict, pydantic.TypeAdapter)):
+        return response_model
+    if inspect.isclass(response_model) and issubclass(response_model, pydantic.BaseModel):
+        return response_model
+    return pydantic.TypeAdapter(response_model)
+
+
 def _prepare_chat_for_parse(
     payload: Union[Chat, Dict[str, Any], str],
     settings: Settings,
@@ -120,22 +132,20 @@ def _prepare_chat_for_parse(
 ) -> Chat:
     """Prepare a Chat object with response_format derived from *response_model*."""
     chat_data = _parse_chat(payload, settings)
-    chat_data.response_format = JsonSchemaResponseFormat(schema=response_model, strict=strict)
+    chat_data.response_format = JsonSchemaResponseFormat(schema=_coerce_to_type_adapter(response_model), strict=strict)
     return chat_data
 
 
 def _get_response_model_adapter(response_model: Any) -> Optional[pydantic.TypeAdapter[Any]]:
-    """Return a TypeAdapter for supported typing annotations and adapters."""
+    """Return a TypeAdapter for *response_model*, or ``None`` for BaseModel subclasses."""
     if isinstance(response_model, pydantic.TypeAdapter):
         return response_model
 
     if inspect.isclass(response_model) and issubclass(response_model, pydantic.BaseModel):
         return None
 
-    if get_origin(response_model) is not None:
-        return pydantic.TypeAdapter(response_model)
-
-    return None
+    # Bare typing annotation (e.g. Union[Foo, Bar]) — wrap in TypeAdapter.
+    return pydantic.TypeAdapter(response_model)
 
 
 def _parse_response_content(
