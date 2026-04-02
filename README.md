@@ -184,8 +184,34 @@ with GigaChat() as client:
         print(f"Arguments: {message.function_call.arguments}")
 ```
 
+### Structured Output (JSON Schema)
+
+Get structured JSON responses validated against a schema:
+
+```python
+from typing import List
+from pydantic import BaseModel
+from gigachat import GigaChat
+
+class MathAnswer(BaseModel):
+    steps: List[str]
+    final_answer: str
+
+with GigaChat() as client:
+    completion, parsed = client.chat_parse(
+        "Solve 8x + 7 = -23 step by step",
+        response_model=MathAnswer,
+        strict=True,
+    )
+
+print(parsed.steps)
+print(parsed.final_answer)
+```
+
+See [examples/example_structured_output.ipynb](examples/example_structured_output.ipynb) for more approaches (raw dict schema, Pydantic model schema, `chat_parse()`).
+
 ### More examples
-See the [examples/](https://github.com/ai-forever/gigachat/tree/main/examples/) folder for complete working examples including chat, functions, context variables, AI detection, and vision.
+See the [examples/](https://github.com/ai-forever/gigachat/tree/main/examples/) folder for complete working examples including chat, functions, context variables, AI detection, vision, and structured output.
 
 ## Configuration
 
