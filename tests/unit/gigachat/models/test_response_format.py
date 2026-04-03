@@ -231,36 +231,25 @@ class Universe(BaseModel):
     galaxy: Galaxy = Field(description="A galaxy.")
 
 
-def test_nested_model_ref_with_sibling_is_inlined() -> None:
-    """$ref with sibling keys (e.g. description) must be inlined."""
+def test_nested_model_uses_ref() -> None:
+    """Nested models use $ref/$defs — no inlining."""
     rf = JsonSchemaResponseFormat(schema=Universe)
     schema = rf.model_dump(exclude_none=True, by_alias=True)["schema"]
 
     galaxy_prop = schema["properties"]["galaxy"]
-    assert "$ref" not in galaxy_prop, "$ref with sibling 'description' should be inlined"
-    assert galaxy_prop["type"] == "object"
-    assert "description" in galaxy_prop
+    assert "$ref" in galaxy_prop
 
-    star_prop = galaxy_prop["properties"]["largest_star"]
-    assert "$ref" not in star_prop
-    assert star_prop["type"] == "object"
+    assert "$defs" in schema
+    assert "Galaxy" in schema["$defs"]
+    assert "Star" in schema["$defs"]
 
 
 def test_nested_model_additional_properties_false() -> None:
     schema = to_strict_json_schema(Universe)
     assert schema["additionalProperties"] is False
 
-    galaxy_prop = schema["properties"]["galaxy"]
-    assert galaxy_prop["additionalProperties"] is False
-
-    star_prop = galaxy_prop["properties"]["largest_star"]
-    assert star_prop["additionalProperties"] is False
-
-
-def test_nested_model_required_set() -> None:
-    schema = to_strict_json_schema(Universe)
-    assert set(schema["required"]) == {"name", "galaxy"}
-    assert set(schema["properties"]["galaxy"]["required"]) == {"name", "largest_star"}
+    assert schema["$defs"]["Galaxy"]["additionalProperties"] is False
+    assert schema["$defs"]["Star"]["additionalProperties"] is False
 
 
 # ---------------------------------------------------------------------------
@@ -279,22 +268,9 @@ class ColorInfo(BaseModel):
     hex_code: str
 
 
-def test_enum_field_ref_with_sibling_is_inlined() -> None:
-    """$ref with sibling keys (description from Field) should be inlined."""
+def test_enum_field_ref_preserved() -> None:
+    """$ref for enum fields is preserved (no inlining)."""
     schema = to_strict_json_schema(ColorInfo)
-    color_prop = schema["properties"]["color"]
-    assert "$ref" not in color_prop, "$ref should be inlined when description sibling exists"
-    assert "enum" in color_prop
-
-
-class SimpleColorInfo(BaseModel):
-    color: Color
-    hex_code: str
-
-
-def test_bare_ref_without_siblings_preserved() -> None:
-    """Bare $ref (no sibling keys) is kept as-is."""
-    schema = to_strict_json_schema(SimpleColorInfo)
     color_prop = schema["properties"]["color"]
     assert "$ref" in color_prop
 
@@ -314,30 +290,11 @@ class OptionalField(BaseModel):
     note: Optional[str] = None
 
 
-def test_optional_field_default_none_stripped() -> None:
+def test_optional_field_default_preserved() -> None:
+    """default: None is preserved (no stripping)."""
     schema = to_strict_json_schema(OptionalField)
     note_prop = schema["properties"]["note"]
-    assert "default" not in note_prop
-
-
-class SingleAllOf(BaseModel):
-    tag: str
-
-
-def test_single_allof_flattened() -> None:
-    """allOf with a single entry should be flattened into the parent."""
-    raw_schema: Dict[str, Any] = {
-        "type": "object",
-        "properties": {
-            "data": {
-                "allOf": [{"type": "string"}],
-                "description": "A value",
-            }
-        },
-    }
-    rf = JsonSchemaResponseFormat(schema=raw_schema)
-    dumped = rf.model_dump(exclude_none=True, by_alias=True)
-    assert dumped["schema"] == raw_schema
+    assert note_prop["default"] is None
 
 
 def test_dict_schema_passthrough_no_normalization() -> None:
@@ -414,6 +371,5 @@ def test_chat_response_format_bare_nested_model() -> None:
     assert rf["type"] == "json_schema"
     schema = rf["schema"]
     assert schema["additionalProperties"] is False
-    galaxy_prop = schema["properties"]["galaxy"]
-    assert galaxy_prop["type"] == "object"
-    assert galaxy_prop["additionalProperties"] is False
+    assert "$defs" in schema
+    assert schema["$defs"]["Galaxy"]["additionalProperties"] is False

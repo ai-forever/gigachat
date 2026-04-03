@@ -16,18 +16,12 @@ from gigachat.models.chat import Chat, ChatCompletion, ChatCompletionChunk
 
 
 def _build_request_json(chat: Chat, *, exclude_stream: bool = False) -> Dict[str, Any]:
-    """Serialize *chat* to a JSON-ready dict, merging additional_fields without clobbering response_format."""
+    """Serialize *chat* to a JSON-ready dict, merging additional_fields."""
     exclude = {"stream"} if exclude_stream else set()
     json_data = chat.model_dump(exclude_none=True, by_alias=True, exclude=exclude)
     fields = json_data.pop("additional_fields", None)
-    response_format = json_data.get("response_format")
-
     if fields:
         json_data = {**json_data, **fields}
-
-    if response_format is not None:
-        json_data["response_format"] = response_format
-
     return json_data
 
 
