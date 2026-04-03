@@ -184,7 +184,9 @@ with GigaChat() as client:
         print(f"Arguments: {message.function_call.arguments}")
 ```
 
-### Structured Output (JSON Schema)
+### Structured Output (JSON Schema) — Beta
+
+> **Note:** This feature is in beta. It may not work correctly with all model versions.
 
 Get structured JSON responses validated against a schema:
 

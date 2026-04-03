@@ -10,6 +10,8 @@ from gigachat.models._schema_normalize import to_strict_json_schema
 class JsonSchemaResponseFormat(BaseModel):
     """Response format requesting JSON output conforming to a JSON Schema.
 
+    .. note:: **Beta.** This feature may not work correctly with all model versions.
+
     ``schema`` accepts:
 
     * ``dict``  -- raw JSON Schema, sent as-is (passthrough).

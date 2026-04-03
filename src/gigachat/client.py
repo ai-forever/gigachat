@@ -550,6 +550,8 @@ class GigaChatSyncClient(_BaseClient):
     ) -> Tuple[ChatCompletion, Any]:
         """Send a chat request and parse the response into *response_model*.
 
+        .. note:: **Beta.** This feature may not work correctly with all model versions.
+
         Automatically set ``response_format`` from *response_model*, call
         :meth:`chat`, then parse ``message.content`` as JSON and validate it
         against *response_model*.
@@ -828,6 +830,8 @@ class GigaChatAsyncClient(_BaseClient):
         strict: Optional[bool] = None,
     ) -> Tuple[ChatCompletion, Any]:
         """Send a chat request and parse the response into *response_model*.
+
+        .. note:: **Beta.** This feature may not work correctly with all model versions.
 
         Async version of :meth:`GigaChatSyncClient.chat_parse`.
         """
