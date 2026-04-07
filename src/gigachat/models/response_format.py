@@ -15,7 +15,6 @@ class JsonSchemaResponseFormat(BaseModel):
     * ``dict``  -- raw JSON Schema, sent as-is (passthrough).
     * ``type[pydantic.BaseModel]``  -- auto-converted via
       ``model_json_schema()``.
-    * ``pydantic.TypeAdapter``  -- auto-converted via ``.json_schema()``.
     """
 
     type: Literal["json_schema"] = Field(default="json_schema", description="Response format type.")
@@ -38,20 +37,11 @@ class JsonSchemaResponseFormat(BaseModel):
             values["schema"] = schema.model_json_schema()
             return values
 
-        # Pydantic TypeAdapter -> generate JSON Schema
-        if isinstance(schema, pydantic.TypeAdapter):
-            values = dict(values)
-            values["schema"] = schema.json_schema()
-            return values
-
-        # Plain dict -> passthrough (no normalization)
+        # Plain dict -> passthrough
         if isinstance(schema, dict):
             return values
 
-        raise ValueError(
-            f"'schema' must be a dict, a pydantic.BaseModel subclass, "
-            f"or a pydantic.TypeAdapter; got {type(schema).__name__}"
-        )
+        raise ValueError(f"'schema' must be a dict or a pydantic.BaseModel subclass; got {type(schema).__name__}")
 
 
 ResponseFormat = Union[JsonSchemaResponseFormat, Dict[str, Any]]

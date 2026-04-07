@@ -1,7 +1,7 @@
-from typing import Any, Dict, List, Union
+from typing import Any, Dict, List
 
 import pytest
-from pydantic import BaseModel, Field, TypeAdapter, ValidationError
+from pydantic import BaseModel, Field, ValidationError
 
 from gigachat.models.chat import Chat, Messages, MessagesRole
 from gigachat.models.response_format import JsonSchemaResponseFormat, ResponseFormat
@@ -125,23 +125,13 @@ def test_chat_validate_response_format_from_dict() -> None:
 
 
 # ---------------------------------------------------------------------------
-# Pydantic BaseModel / TypeAdapter as schema
+# Pydantic BaseModel as schema
 # ---------------------------------------------------------------------------
 
 
 class MathSolution(BaseModel):
     steps: List[str] = Field(description="Solution steps.")
     final_answer: str = Field(description="The final answer.")
-
-
-class CalculateAction(BaseModel):
-    action: str = Field(description="Action discriminator.")
-    expression: str = Field(description="Math expression to evaluate.")
-
-
-class FinalAnswerAction(BaseModel):
-    action: str = Field(description="Action discriminator.")
-    answer: str = Field(description="Final human-readable answer.")
 
 
 def test_schema_from_basemodel() -> None:
@@ -159,29 +149,6 @@ def test_schema_from_basemodel_strict() -> None:
     dumped = rf.model_dump(exclude_none=True, by_alias=True)
     assert dumped["strict"] is True
     assert dumped["schema"]["type"] == "object"
-
-
-def test_schema_from_type_adapter_union() -> None:
-    adapter: TypeAdapter[Union[int, str]] = TypeAdapter(Union[int, str])
-    rf = JsonSchemaResponseFormat(schema=adapter)
-    dumped = rf.model_dump(exclude_none=True, by_alias=True)
-    schema = dumped["schema"]
-    assert "anyOf" in schema
-
-
-def test_schema_from_typing_union() -> None:
-    rf = JsonSchemaResponseFormat(schema=TypeAdapter(Union[CalculateAction, FinalAnswerAction]))
-    dumped = rf.model_dump(exclude_none=True, by_alias=True)
-    schema = dumped["schema"]
-    assert "anyOf" in schema
-
-
-def test_schema_from_type_adapter_model() -> None:
-    adapter: TypeAdapter[MathSolution] = TypeAdapter(MathSolution)
-    rf = JsonSchemaResponseFormat(schema=adapter)
-    dumped = rf.model_dump(exclude_none=True, by_alias=True)
-    schema = dumped["schema"]
-    assert schema["type"] == "object"
 
 
 def test_schema_from_basemodel_in_chat() -> None:

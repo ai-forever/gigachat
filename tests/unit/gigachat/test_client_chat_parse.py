@@ -2,7 +2,7 @@
 
 import copy
 import json
-from typing import List, Literal, Union
+from typing import List
 
 import pytest
 from pydantic import BaseModel, ValidationError
@@ -26,19 +26,6 @@ CHAT_COMPLETION_JSON = get_json("chat_completion_json.json")
 class MathResult(BaseModel):
     steps: List[str]
     final_answer: str
-
-
-class CalculateStep(BaseModel):
-    action: Literal["calculate"]
-    expression: str
-
-
-class FinalAnswerStep(BaseModel):
-    action: Literal["final_answer"]
-    answer: str
-
-
-AgentStep = Union[CalculateStep, FinalAnswerStep]
 
 
 # ---------------------------------------------------------------------------
@@ -70,17 +57,6 @@ def test_prepare_chat_for_parse_strict_false() -> None:
     assert chat_data.response_format.strict is False
 
 
-def test_prepare_chat_for_parse_union_sets_response_format() -> None:
-    from gigachat.models.response_format import JsonSchemaResponseFormat
-
-    settings = Settings(model="GigaChat")
-    chat_data = _prepare_chat_for_parse("Solve 2+2", settings, AgentStep, strict=True)
-    assert chat_data.response_format is not None
-    assert isinstance(chat_data.response_format, JsonSchemaResponseFormat)
-    assert "anyOf" in chat_data.response_format.schema_
-    assert chat_data.response_format.strict is True
-
-
 # ---------------------------------------------------------------------------
 # _parse_completion — happy path
 # ---------------------------------------------------------------------------
@@ -92,16 +68,6 @@ def test_parse_completion_happy_path() -> None:
     assert isinstance(parsed, MathResult)
     assert parsed.final_answer == "x = -3.75"
     assert len(parsed.steps) == 2
-
-
-def test_parse_completion_union_happy_path() -> None:
-    data = copy.deepcopy(CHAT_COMPLETION_JSON)
-    data["choices"][0]["message"]["content"] = json.dumps({"action": "final_answer", "answer": "42"})
-    completion = ChatCompletion.model_validate(data)
-
-    parsed = _parse_completion(completion, AgentStep)
-    assert isinstance(parsed, FinalAnswerStep)
-    assert parsed.answer == "42"
 
 
 # ---------------------------------------------------------------------------
@@ -167,24 +133,6 @@ def test_chat_parse_sync_happy(httpx_mock: HTTPXMock) -> None:
     assert body["response_format"]["type"] == "json_schema"
     assert "schema" in body["response_format"]
     assert isinstance(body["response_format"]["schema"], dict)
-
-
-def test_chat_parse_sync_union_response_format(httpx_mock: HTTPXMock) -> None:
-    data = copy.deepcopy(CHAT_COMPLETION_JSON)
-    data["choices"][0]["message"]["content"] = json.dumps({"action": "final_answer", "answer": "42"})
-    httpx_mock.add_response(url=CHAT_URL, json=data)
-
-    with GigaChatSyncClient(base_url=BASE_URL, access_token=ACCESS_TOKEN) as client:
-        completion, parsed = client.chat_parse("Solve 8x+7=-23", response_format=AgentStep)
-
-    assert isinstance(completion, ChatCompletion)
-    assert isinstance(parsed, FinalAnswerStep)
-    assert parsed.answer == "42"
-
-    request = httpx_mock.get_requests()[0]
-    body = json.loads(request.content)
-    assert body["response_format"]["type"] == "json_schema"
-    assert "anyOf" in body["response_format"]["schema"]
 
 
 def test_chat_parse_sync_strict(httpx_mock: HTTPXMock) -> None:
