@@ -179,22 +179,17 @@ class Chat(BaseModel):
 
     @model_validator(mode="before")
     @classmethod
-    def _coerce_response_format(cls, values: Any) -> Any:
-        """Allow ``response_format=SomePydanticModel`` shorthand.
-
-        Automatically wraps a bare ``type[BaseModel]`` or ``TypeAdapter``
-        into ``{"type": "json_schema", "schema": <model>}`` so that
-        ``JsonSchemaResponseFormat`` can handle the rest.
-        """
+    def _validate_response_format(cls, values: Any) -> Any:
         if not isinstance(values, dict):
             return values
         rf = values.get("response_format")
-        if rf is None:
-            return values
-        if (inspect.isclass(rf) and issubclass(rf, pydantic.BaseModel)) or isinstance(rf, pydantic.TypeAdapter):
-            values = dict(values)
-            values["response_format"] = {"type": "json_schema", "schema": rf}
-            return values
+        if rf is not None and (
+            (inspect.isclass(rf) and issubclass(rf, pydantic.BaseModel)) or isinstance(rf, pydantic.TypeAdapter)
+        ):
+            raise TypeError(
+                "You tried to pass a Pydantic model to `Chat(response_format=...)`; "
+                "use `client.chat_parse(payload, response_format=...)` instead"
+            )
         return values
 
     model: Optional[str] = Field(default=None, description="Name of the model to use.")

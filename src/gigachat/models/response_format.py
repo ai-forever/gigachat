@@ -1,5 +1,5 @@
 import inspect
-from typing import Any, Dict, Literal, Optional, Type, Union
+from typing import Any, Dict, Literal, Optional, Union
 
 import pydantic
 from pydantic import BaseModel, Field, model_validator
@@ -54,12 +54,9 @@ class JsonSchemaResponseFormat(BaseModel):
         )
 
 
-ResponseFormat = Union[JsonSchemaResponseFormat, Dict[str, Any], Type[pydantic.BaseModel]]
+ResponseFormat = Union[JsonSchemaResponseFormat, Dict[str, Any]]
 """Accepted types for ``Chat.response_format``:
 
 * ``JsonSchemaResponseFormat`` — fully typed object.
 * ``dict`` — raw JSON passed through as-is.
-* ``type[BaseModel]`` — Pydantic model class (auto-converted to JSON Schema).
-* ``pydantic.TypeAdapter`` — also accepted at runtime (via ``Chat._coerce_response_format``)
-  but not expressible in the type alias without breaking Pydantic schema generation.
 """
