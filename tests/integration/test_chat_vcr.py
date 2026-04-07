@@ -117,7 +117,7 @@ def test_chat_parse_json_schema(gigachat_client: GigaChat) -> None:
         ]
     )
 
-    completion, parsed = gigachat_client.chat_parse(payload, response_model=Out, strict=True)
+    completion, parsed = gigachat_client.chat_parse(payload, response_format=Out, strict=True)
     assert isinstance(completion, ChatCompletion)
     assert parsed.model_dump() == {"answer": "ok", "n": 3}
 
@@ -137,7 +137,7 @@ async def test_achat_parse_json_schema(gigachat_async_client: GigaChat) -> None:
         ]
     )
 
-    completion, parsed = await gigachat_async_client.achat_parse(payload, response_model=Out, strict=True)
+    completion, parsed = await gigachat_async_client.achat_parse(payload, response_format=Out, strict=True)
     assert isinstance(completion, ChatCompletion)
     assert parsed.model_dump() == {"answer": "ok", "n": 3}
 

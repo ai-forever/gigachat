@@ -65,14 +65,14 @@ def test_prepare_chat_for_parse_sets_response_format() -> None:
     assert chat_data.response_format.strict is True
 
 
-def test_prepare_chat_for_parse_strict_none() -> None:
+def test_prepare_chat_for_parse_strict_false() -> None:
     from gigachat.models.response_format import JsonSchemaResponseFormat
 
     settings = Settings(model="GigaChat")
-    chat_data = _prepare_chat_for_parse("Solve 2+2", settings, MathResult, strict=None)
+    chat_data = _prepare_chat_for_parse("Solve 2+2", settings, MathResult, strict=False)
     assert chat_data.response_format is not None
     assert isinstance(chat_data.response_format, JsonSchemaResponseFormat)
-    assert chat_data.response_format.strict is None
+    assert chat_data.response_format.strict is False
 
 
 def test_prepare_chat_for_parse_union_sets_response_format() -> None:
@@ -176,7 +176,7 @@ def test_chat_parse_sync_happy(httpx_mock: HTTPXMock) -> None:
     httpx_mock.add_response(url=CHAT_URL, json=CHAT_COMPLETION_JSON)
 
     with GigaChatSyncClient(base_url=BASE_URL, access_token=ACCESS_TOKEN) as client:
-        completion, parsed = client.chat_parse("Solve 8x+7=-23", response_model=MathResult)
+        completion, parsed = client.chat_parse("Solve 8x+7=-23", response_format=MathResult)
 
     assert isinstance(completion, ChatCompletion)
     assert isinstance(parsed, MathResult)
@@ -189,13 +189,13 @@ def test_chat_parse_sync_happy(httpx_mock: HTTPXMock) -> None:
     assert isinstance(body["response_format"]["schema"], dict)
 
 
-def test_chat_parse_sync_union_response_model(httpx_mock: HTTPXMock) -> None:
+def test_chat_parse_sync_union_response_format(httpx_mock: HTTPXMock) -> None:
     data = copy.deepcopy(CHAT_COMPLETION_JSON)
     data["choices"][0]["message"]["content"] = json.dumps({"action": "final_answer", "answer": "42"})
     httpx_mock.add_response(url=CHAT_URL, json=data)
 
     with GigaChatSyncClient(base_url=BASE_URL, access_token=ACCESS_TOKEN) as client:
-        completion, parsed = client.chat_parse("Solve 8x+7=-23", response_model=AgentStep)
+        completion, parsed = client.chat_parse("Solve 8x+7=-23", response_format=AgentStep)
 
     assert isinstance(completion, ChatCompletion)
     assert isinstance(parsed, FinalAnswerStep)
@@ -211,7 +211,7 @@ def test_chat_parse_sync_strict(httpx_mock: HTTPXMock) -> None:
     httpx_mock.add_response(url=CHAT_URL, json=CHAT_COMPLETION_JSON)
 
     with GigaChatSyncClient(base_url=BASE_URL, access_token=ACCESS_TOKEN) as client:
-        completion, parsed = client.chat_parse("Solve 8x+7=-23", response_model=MathResult, strict=True)
+        completion, parsed = client.chat_parse("Solve 8x+7=-23", response_format=MathResult, strict=True)
 
     request = httpx_mock.get_requests()[0]
     body = json.loads(request.content)
@@ -225,7 +225,7 @@ def test_chat_parse_sync_invalid_json(httpx_mock: HTTPXMock) -> None:
 
     with GigaChatSyncClient(base_url=BASE_URL, access_token=ACCESS_TOKEN) as client:
         with pytest.raises(ContentParseError):
-            client.chat_parse("Solve 8x+7=-23", response_model=MathResult)
+            client.chat_parse("Solve 8x+7=-23", response_format=MathResult)
 
 
 def test_chat_parse_sync_validation_error(httpx_mock: HTTPXMock) -> None:
@@ -235,7 +235,7 @@ def test_chat_parse_sync_validation_error(httpx_mock: HTTPXMock) -> None:
 
     with GigaChatSyncClient(base_url=BASE_URL, access_token=ACCESS_TOKEN) as client:
         with pytest.raises(ContentValidationError):
-            client.chat_parse("Solve 8x+7=-23", response_model=MathResult)
+            client.chat_parse("Solve 8x+7=-23", response_format=MathResult)
 
 
 def test_chat_parse_sync_length_error(httpx_mock: HTTPXMock) -> None:
@@ -245,7 +245,7 @@ def test_chat_parse_sync_length_error(httpx_mock: HTTPXMock) -> None:
 
     with GigaChatSyncClient(base_url=BASE_URL, access_token=ACCESS_TOKEN) as client:
         with pytest.raises(LengthFinishReasonError):
-            client.chat_parse("Solve 8x+7=-23", response_model=MathResult)
+            client.chat_parse("Solve 8x+7=-23", response_format=MathResult)
 
 
 def test_chat_parse_sync_content_filter_error(httpx_mock: HTTPXMock) -> None:
@@ -255,7 +255,7 @@ def test_chat_parse_sync_content_filter_error(httpx_mock: HTTPXMock) -> None:
 
     with GigaChatSyncClient(base_url=BASE_URL, access_token=ACCESS_TOKEN) as client:
         with pytest.raises(ContentFilterFinishReasonError):
-            client.chat_parse("Solve 8x+7=-23", response_model=MathResult)
+            client.chat_parse("Solve 8x+7=-23", response_format=MathResult)
 
 
 def test_chat_parse_sync_with_chat_object(httpx_mock: HTTPXMock) -> None:
@@ -266,7 +266,7 @@ def test_chat_parse_sync_with_chat_object(httpx_mock: HTTPXMock) -> None:
         messages=[Messages(role=MessagesRole.USER, content="Solve 8x+7=-23")],
     )
     with GigaChatSyncClient(base_url=BASE_URL, access_token=ACCESS_TOKEN) as client:
-        completion, parsed = client.chat_parse(chat_obj, response_model=MathResult)
+        completion, parsed = client.chat_parse(chat_obj, response_format=MathResult)
 
     assert isinstance(parsed, MathResult)
 
@@ -280,7 +280,7 @@ async def test_achat_parse_happy(httpx_mock: HTTPXMock) -> None:
     httpx_mock.add_response(url=CHAT_URL, json=CHAT_COMPLETION_JSON)
 
     async with GigaChatAsyncClient(base_url=BASE_URL, access_token=ACCESS_TOKEN) as client:
-        completion, parsed = await client.achat_parse("Solve 8x+7=-23", response_model=MathResult)
+        completion, parsed = await client.achat_parse("Solve 8x+7=-23", response_format=MathResult)
 
     assert isinstance(completion, ChatCompletion)
     assert isinstance(parsed, MathResult)
@@ -294,7 +294,7 @@ async def test_achat_parse_invalid_json(httpx_mock: HTTPXMock) -> None:
 
     async with GigaChatAsyncClient(base_url=BASE_URL, access_token=ACCESS_TOKEN) as client:
         with pytest.raises(ContentParseError):
-            await client.achat_parse("Solve 8x+7=-23", response_model=MathResult)
+            await client.achat_parse("Solve 8x+7=-23", response_format=MathResult)
 
 
 async def test_achat_parse_validation_error(httpx_mock: HTTPXMock) -> None:
@@ -304,7 +304,7 @@ async def test_achat_parse_validation_error(httpx_mock: HTTPXMock) -> None:
 
     async with GigaChatAsyncClient(base_url=BASE_URL, access_token=ACCESS_TOKEN) as client:
         with pytest.raises(ContentValidationError):
-            await client.achat_parse("Solve 8x+7=-23", response_model=MathResult)
+            await client.achat_parse("Solve 8x+7=-23", response_format=MathResult)
 
 
 async def test_achat_parse_length_error(httpx_mock: HTTPXMock) -> None:
@@ -314,4 +314,4 @@ async def test_achat_parse_length_error(httpx_mock: HTTPXMock) -> None:
 
     async with GigaChatAsyncClient(base_url=BASE_URL, access_token=ACCESS_TOKEN) as client:
         with pytest.raises(LengthFinishReasonError):
-            await client.achat_parse("Solve 8x+7=-23", response_model=MathResult)
+            await client.achat_parse("Solve 8x+7=-23", response_format=MathResult)

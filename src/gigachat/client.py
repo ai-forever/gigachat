@@ -111,47 +111,47 @@ def _parse_chat(payload: Union[Chat, Dict[str, Any], str], settings: Settings) -
     return chat
 
 
-def _coerce_to_type_adapter(response_model: Any) -> Any:
+def _coerce_to_type_adapter(response_format: Any) -> Any:
     """Wrap bare typing annotations (e.g. ``Union[Foo, Bar]``) in a ``TypeAdapter``.
 
-    Returns the original *response_model* unchanged if it is already a
+    Returns the original *response_format* unchanged if it is already a
     ``BaseModel`` subclass, a ``TypeAdapter``, or a ``dict``.
     """
-    if isinstance(response_model, (dict, pydantic.TypeAdapter)):
-        return response_model
-    if inspect.isclass(response_model) and issubclass(response_model, pydantic.BaseModel):
-        return response_model
-    return pydantic.TypeAdapter(response_model)
+    if isinstance(response_format, (dict, pydantic.TypeAdapter)):
+        return response_format
+    if inspect.isclass(response_format) and issubclass(response_format, pydantic.BaseModel):
+        return response_format
+    return pydantic.TypeAdapter(response_format)
 
 
 def _prepare_chat_for_parse(
     payload: Union[Chat, Dict[str, Any], str],
     settings: Settings,
-    response_model: Any,
-    strict: Optional[bool],
+    response_format: Any,
+    strict: bool,
 ) -> Chat:
-    """Prepare a Chat object with response_format derived from *response_model*."""
+    """Prepare a Chat object with response_format derived from *response_format*."""
     chat_data = _parse_chat(payload, settings)
-    chat_data.response_format = JsonSchemaResponseFormat(schema=_coerce_to_type_adapter(response_model), strict=strict)
+    chat_data.response_format = JsonSchemaResponseFormat(schema=_coerce_to_type_adapter(response_format), strict=strict)
     return chat_data
 
 
-def _get_response_model_adapter(response_model: Any) -> Optional[pydantic.TypeAdapter[Any]]:
-    """Return a TypeAdapter for *response_model*, or ``None`` for BaseModel subclasses."""
-    if isinstance(response_model, pydantic.TypeAdapter):
-        return response_model
+def _get_response_format_adapter(response_format: Any) -> Optional[pydantic.TypeAdapter[Any]]:
+    """Return a TypeAdapter for *response_format*, or ``None`` for BaseModel subclasses."""
+    if isinstance(response_format, pydantic.TypeAdapter):
+        return response_format
 
-    if inspect.isclass(response_model) and issubclass(response_model, pydantic.BaseModel):
+    if inspect.isclass(response_format) and issubclass(response_format, pydantic.BaseModel):
         return None
 
     # Bare typing annotation (e.g. Union[Foo, Bar]) — wrap in TypeAdapter.
-    return pydantic.TypeAdapter(response_model)
+    return pydantic.TypeAdapter(response_format)
 
 
 def _parse_response_content(
     content: Any,
     completion: ChatCompletion,
-    response_model: Any,
+    response_format: Any,
 ) -> Any:
     try:
         data = json.loads(content)
@@ -159,34 +159,34 @@ def _parse_response_content(
         raise ContentParseError(content, completion) from exc
 
     try:
-        adapter = _get_response_model_adapter(response_model)
+        adapter = _get_response_format_adapter(response_format)
         if adapter is not None:
             return adapter.validate_python(data)
-        return response_model.model_validate(data)
+        return response_format.model_validate(data)
     except pydantic.ValidationError as exc:
         raise ContentValidationError(content, completion, exc) from exc
 
 
 @overload
-def _parse_completion(completion: ChatCompletion, response_model: Type[_ModelT]) -> _ModelT: ...
+def _parse_completion(completion: ChatCompletion, response_format: Type[_ModelT]) -> _ModelT: ...
 
 
 @overload
-def _parse_completion(completion: ChatCompletion, response_model: pydantic.TypeAdapter[_AdaptedT]) -> _AdaptedT: ...
+def _parse_completion(completion: ChatCompletion, response_format: pydantic.TypeAdapter[_AdaptedT]) -> _AdaptedT: ...
 
 
 @overload
 def _parse_completion(
     completion: ChatCompletion,
-    response_model: Any,
+    response_format: Any,
 ) -> Any: ...
 
 
 def _parse_completion(
     completion: ChatCompletion,
-    response_model: Any,
+    response_format: Any,
 ) -> Any:
-    """Parse and validate message content from *completion* into *response_model*.
+    """Parse and validate message content from *completion* into *response_format*.
 
     Raise on bad finish_reason, invalid JSON, or schema validation failure.
     """
@@ -200,7 +200,7 @@ def _parse_completion(
     if choice.finish_reason == "content_filter":
         raise ContentFilterFinishReasonError(completion)
 
-    return _parse_response_content(choice.message.content, completion, response_model)
+    return _parse_response_content(choice.message.content, completion, response_format)
 
 
 def _build_access_token(token: Token) -> AccessToken:
@@ -519,8 +519,8 @@ class GigaChatSyncClient(_BaseClient):
         self,
         payload: Union[Chat, Dict[str, Any], str],
         *,
-        response_model: Type[_ModelT],
-        strict: Optional[bool] = None,
+        response_format: Type[_ModelT],
+        strict: bool = True,
     ) -> Tuple[ChatCompletion, _ModelT]: ...
 
     @overload
@@ -528,8 +528,8 @@ class GigaChatSyncClient(_BaseClient):
         self,
         payload: Union[Chat, Dict[str, Any], str],
         *,
-        response_model: pydantic.TypeAdapter[_AdaptedT],
-        strict: Optional[bool] = None,
+        response_format: pydantic.TypeAdapter[_AdaptedT],
+        strict: bool = True,
     ) -> Tuple[ChatCompletion, _AdaptedT]: ...
 
     @overload
@@ -537,24 +537,25 @@ class GigaChatSyncClient(_BaseClient):
         self,
         payload: Union[Chat, Dict[str, Any], str],
         *,
-        response_model: Any,
-        strict: Optional[bool] = None,
+        response_format: Any,
+        strict: bool = True,
     ) -> Tuple[ChatCompletion, Any]: ...
 
     def chat_parse(
         self,
         payload: Union[Chat, Dict[str, Any], str],
         *,
-        response_model: Any,
-        strict: Optional[bool] = None,
+        response_format: Any,
+        strict: bool = True,
     ) -> Tuple[ChatCompletion, Any]:
-        """Send a chat request and parse the response into *response_model*.
+        """Send a chat request and parse the response into a structured object.
 
         .. note:: **Beta.** This feature may not work correctly with all model versions.
 
-        Automatically set ``response_format`` from *response_model*, call
-        :meth:`chat`, then parse ``message.content`` as JSON and validate it
-        against *response_model*.
+        *response_format* accepts a Pydantic ``BaseModel`` subclass,
+        ``TypeAdapter``, or a bare typing annotation (e.g. ``Union[A, B]``).
+        The method derives a JSON Schema from it, sends the request via
+        :meth:`chat`, then parses and validates ``message.content``.
 
         Raise :class:`~gigachat.exceptions.LengthFinishReasonError` if
         ``finish_reason`` is ``"length"`` (truncated response).
@@ -566,11 +567,11 @@ class GigaChatSyncClient(_BaseClient):
         ``message.content`` is not valid JSON.
 
         Raise :class:`~gigachat.exceptions.ContentValidationError` if
-        the parsed JSON does not match *response_model*.
+        the parsed JSON does not match *response_format*.
         """
-        chat_data = _prepare_chat_for_parse(payload, self._settings, response_model, strict)
+        chat_data = _prepare_chat_for_parse(payload, self._settings, response_format, strict)
         completion = self.chat(chat_data)
-        parsed: Any = _parse_completion(completion, response_model)
+        parsed: Any = _parse_completion(completion, response_format)
         return completion, parsed
 
     @_with_retry
@@ -800,8 +801,8 @@ class GigaChatAsyncClient(_BaseClient):
         self,
         payload: Union[Chat, Dict[str, Any], str],
         *,
-        response_model: Type[_ModelT],
-        strict: Optional[bool] = None,
+        response_format: Type[_ModelT],
+        strict: bool = True,
     ) -> Tuple[ChatCompletion, _ModelT]: ...
 
     @overload
@@ -809,8 +810,8 @@ class GigaChatAsyncClient(_BaseClient):
         self,
         payload: Union[Chat, Dict[str, Any], str],
         *,
-        response_model: pydantic.TypeAdapter[_AdaptedT],
-        strict: Optional[bool] = None,
+        response_format: pydantic.TypeAdapter[_AdaptedT],
+        strict: bool = True,
     ) -> Tuple[ChatCompletion, _AdaptedT]: ...
 
     @overload
@@ -818,26 +819,26 @@ class GigaChatAsyncClient(_BaseClient):
         self,
         payload: Union[Chat, Dict[str, Any], str],
         *,
-        response_model: Any,
-        strict: Optional[bool] = None,
+        response_format: Any,
+        strict: bool = True,
     ) -> Tuple[ChatCompletion, Any]: ...
 
     async def achat_parse(
         self,
         payload: Union[Chat, Dict[str, Any], str],
         *,
-        response_model: Any,
-        strict: Optional[bool] = None,
+        response_format: Any,
+        strict: bool = True,
     ) -> Tuple[ChatCompletion, Any]:
-        """Send a chat request and parse the response into *response_model*.
+        """Send a chat request and parse the response into *response_format*.
 
         .. note:: **Beta.** This feature may not work correctly with all model versions.
 
         Async version of :meth:`GigaChatSyncClient.chat_parse`.
         """
-        chat_data = _prepare_chat_for_parse(payload, self._settings, response_model, strict)
+        chat_data = _prepare_chat_for_parse(payload, self._settings, response_format, strict)
         completion = await self.achat(chat_data)
-        parsed: Any = _parse_completion(completion, response_model)
+        parsed: Any = _parse_completion(completion, response_format)
         return completion, parsed
 
     @_awith_retry
