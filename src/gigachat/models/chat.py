@@ -1,8 +1,6 @@
-import inspect
 from enum import Enum
 from typing import Any, Dict, List, Literal, Optional, Union
 
-import pydantic
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 from gigachat.models.base import APIResponse
@@ -176,21 +174,6 @@ class ChoicesChunk(BaseModel):
 
 class Chat(BaseModel):
     """Chat completion request parameters."""
-
-    @model_validator(mode="before")
-    @classmethod
-    def _validate_response_format(cls, values: Any) -> Any:
-        if not isinstance(values, dict):
-            return values
-        rf = values.get("response_format")
-        if rf is not None and (
-            (inspect.isclass(rf) and issubclass(rf, pydantic.BaseModel)) or isinstance(rf, pydantic.TypeAdapter)
-        ):
-            raise TypeError(
-                "You tried to pass a Pydantic model to `Chat(response_format=...)`; "
-                "use `client.chat_parse(payload, response_format=...)` instead"
-            )
-        return values
 
     model: Optional[str] = Field(default=None, description="Name of the model to use.")
     messages: List[Messages] = Field(description="List of messages in the conversation.")

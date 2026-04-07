@@ -31,8 +31,6 @@ from gigachat.authentication import _awith_auth, _awith_auth_stream, _with_auth,
 from gigachat.context import authorization_cvar
 from gigachat.exceptions import (
     ContentFilterFinishReasonError,
-    ContentParseError,
-    ContentValidationError,
     LengthFinishReasonError,
 )
 from gigachat.models.auth import AccessToken, Token
@@ -96,6 +94,23 @@ def _get_auth_kwargs(settings: Settings) -> Dict[str, Any]:
     return kwargs
 
 
+def _validate_response_format(payload: Union[Chat, Dict[str, Any], str]) -> None:
+    """Raise TypeError if response_format is a Pydantic model (use chat_parse instead)."""
+    if isinstance(payload, dict):
+        rf = payload.get("response_format")
+    elif isinstance(payload, Chat):
+        rf = payload.response_format
+    else:
+        return
+    if rf is not None and (
+        (inspect.isclass(rf) and issubclass(rf, pydantic.BaseModel)) or isinstance(rf, pydantic.TypeAdapter)
+    ):
+        raise TypeError(
+            "You tried to pass a Pydantic model to `chat(response_format=...)`; "
+            "use `client.chat_parse(payload, response_format=...)` instead"
+        )
+
+
 def _parse_chat(payload: Union[Chat, Dict[str, Any], str], settings: Settings) -> Chat:
     if isinstance(payload, str):
         chat = Chat(messages=[Messages(role=MessagesRole.USER, content=payload)])
@@ -150,21 +165,13 @@ def _get_response_format_adapter(response_format: Any) -> Optional[pydantic.Type
 
 def _parse_response_content(
     content: Any,
-    completion: ChatCompletion,
     response_format: Any,
 ) -> Any:
-    try:
-        data = json.loads(content)
-    except (json.JSONDecodeError, TypeError) as exc:
-        raise ContentParseError(content, completion) from exc
-
-    try:
-        adapter = _get_response_format_adapter(response_format)
-        if adapter is not None:
-            return adapter.validate_python(data)
-        return response_format.model_validate(data)
-    except pydantic.ValidationError as exc:
-        raise ContentValidationError(content, completion, exc) from exc
+    data = json.loads(content)
+    adapter = _get_response_format_adapter(response_format)
+    if adapter is not None:
+        return adapter.validate_python(data)
+    return response_format.model_validate(data)
 
 
 @overload
@@ -191,7 +198,7 @@ def _parse_completion(
     Raise on bad finish_reason, invalid JSON, or schema validation failure.
     """
     if not completion.choices:
-        raise ContentParseError("", completion)
+        raise ValueError("Response has no choices")
 
     choice = completion.choices[0]
 
@@ -200,7 +207,7 @@ def _parse_completion(
     if choice.finish_reason == "content_filter":
         raise ContentFilterFinishReasonError(completion)
 
-    return _parse_response_content(choice.message.content, completion, response_format)
+    return _parse_response_content(choice.message.content, response_format)
 
 
 def _build_access_token(token: Token) -> AccessToken:
@@ -511,6 +518,7 @@ class GigaChatSyncClient(_BaseClient):
     @_with_auth
     def chat(self, payload: Union[Chat, Dict[str, Any], str]) -> ChatCompletion:
         """Return a model response based on the provided messages."""
+        _validate_response_format(payload)
         chat_data = _parse_chat(payload, self._settings)
         return chat.chat_sync(self._client, chat=chat_data, access_token=self.token)
 
@@ -792,6 +800,7 @@ class GigaChatAsyncClient(_BaseClient):
     @_awith_auth
     async def achat(self, payload: Union[Chat, Dict[str, Any], str]) -> ChatCompletion:
         """Return a model response based on the provided messages."""
+        _validate_response_format(payload)
         chat_data = _parse_chat(payload, self._settings)
 
         return await chat.chat_async(self._aclient, chat=chat_data, access_token=self.token)

@@ -5,7 +5,7 @@ import json
 from typing import List, Literal, Union
 
 import pytest
-from pydantic import BaseModel
+from pydantic import BaseModel, ValidationError
 from pytest_httpx import HTTPXMock
 
 from gigachat.client import (
@@ -16,8 +16,6 @@ from gigachat.client import (
 )
 from gigachat.exceptions import (
     ContentFilterFinishReasonError,
-    ContentParseError,
-    ContentValidationError,
     LengthFinishReasonError,
 )
 from gigachat.models import Chat, ChatCompletion, Messages, MessagesRole
@@ -141,10 +139,8 @@ def test_parse_completion_invalid_json() -> None:
     data["choices"][0]["message"]["content"] = "not valid json at all"
     completion = ChatCompletion.model_validate(data)
 
-    with pytest.raises(ContentParseError) as exc_info:
+    with pytest.raises(json.JSONDecodeError):
         _parse_completion(completion, MathResult)
-    assert exc_info.value.completion is completion
-    assert exc_info.value.content == "not valid json at all"
 
 
 def test_parse_completion_schema_mismatch() -> None:
@@ -152,10 +148,8 @@ def test_parse_completion_schema_mismatch() -> None:
     data["choices"][0]["message"]["content"] = json.dumps({"wrong_field": 42})
     completion = ChatCompletion.model_validate(data)
 
-    with pytest.raises(ContentValidationError) as exc_info:
+    with pytest.raises(ValidationError):
         _parse_completion(completion, MathResult)
-    assert exc_info.value.completion is completion
-    assert exc_info.value.content == '{"wrong_field": 42}'
 
 
 def test_parse_completion_empty_choices() -> None:
@@ -163,7 +157,7 @@ def test_parse_completion_empty_choices() -> None:
     data["choices"] = []
     completion = ChatCompletion.model_validate(data)
 
-    with pytest.raises(ContentParseError):
+    with pytest.raises(ValueError, match="no choices"):
         _parse_completion(completion, MathResult)
 
 
@@ -224,7 +218,7 @@ def test_chat_parse_sync_invalid_json(httpx_mock: HTTPXMock) -> None:
     httpx_mock.add_response(url=CHAT_URL, json=data)
 
     with GigaChatSyncClient(base_url=BASE_URL, access_token=ACCESS_TOKEN) as client:
-        with pytest.raises(ContentParseError):
+        with pytest.raises(json.JSONDecodeError):
             client.chat_parse("Solve 8x+7=-23", response_format=MathResult)
 
 
@@ -234,7 +228,7 @@ def test_chat_parse_sync_validation_error(httpx_mock: HTTPXMock) -> None:
     httpx_mock.add_response(url=CHAT_URL, json=data)
 
     with GigaChatSyncClient(base_url=BASE_URL, access_token=ACCESS_TOKEN) as client:
-        with pytest.raises(ContentValidationError):
+        with pytest.raises(ValidationError):
             client.chat_parse("Solve 8x+7=-23", response_format=MathResult)
 
 
@@ -293,7 +287,7 @@ async def test_achat_parse_invalid_json(httpx_mock: HTTPXMock) -> None:
     httpx_mock.add_response(url=CHAT_URL, json=data)
 
     async with GigaChatAsyncClient(base_url=BASE_URL, access_token=ACCESS_TOKEN) as client:
-        with pytest.raises(ContentParseError):
+        with pytest.raises(json.JSONDecodeError):
             await client.achat_parse("Solve 8x+7=-23", response_format=MathResult)
 
 
@@ -303,7 +297,7 @@ async def test_achat_parse_validation_error(httpx_mock: HTTPXMock) -> None:
     httpx_mock.add_response(url=CHAT_URL, json=data)
 
     async with GigaChatAsyncClient(base_url=BASE_URL, access_token=ACCESS_TOKEN) as client:
-        with pytest.raises(ContentValidationError):
+        with pytest.raises(ValidationError):
             await client.achat_parse("Solve 8x+7=-23", response_format=MathResult)
 
 
