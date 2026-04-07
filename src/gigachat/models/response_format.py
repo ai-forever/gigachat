@@ -4,8 +4,6 @@ from typing import Any, Dict, Literal, Optional, Type, Union
 import pydantic
 from pydantic import BaseModel, Field, model_validator
 
-from gigachat.models._schema_normalize import to_strict_json_schema
-
 
 class JsonSchemaResponseFormat(BaseModel):
     """Response format requesting JSON output conforming to a JSON Schema.
@@ -16,9 +14,8 @@ class JsonSchemaResponseFormat(BaseModel):
 
     * ``dict``  -- raw JSON Schema, sent as-is (passthrough).
     * ``type[pydantic.BaseModel]``  -- auto-converted via
-      ``model_json_schema()`` and normalized (OpenAI-style).
-    * ``pydantic.TypeAdapter``  -- auto-converted via ``.json_schema()``
-      and normalized (OpenAI-style).
+      ``model_json_schema()``.
+    * ``pydantic.TypeAdapter``  -- auto-converted via ``.json_schema()``.
     """
 
     type: Literal["json_schema"] = Field(default="json_schema", description="Response format type.")
@@ -35,16 +32,16 @@ class JsonSchemaResponseFormat(BaseModel):
         if schema is None:
             return values
 
-        # Pydantic BaseModel subclass -> generate + normalize
+        # Pydantic BaseModel subclass -> generate JSON Schema
         if inspect.isclass(schema) and issubclass(schema, pydantic.BaseModel):
             values = dict(values)
-            values["schema"] = to_strict_json_schema(schema)
+            values["schema"] = schema.model_json_schema()
             return values
 
-        # Pydantic TypeAdapter -> generate + normalize
+        # Pydantic TypeAdapter -> generate JSON Schema
         if isinstance(schema, pydantic.TypeAdapter):
             values = dict(values)
-            values["schema"] = to_strict_json_schema(schema)
+            values["schema"] = schema.json_schema()
             return values
 
         # Plain dict -> passthrough (no normalization)

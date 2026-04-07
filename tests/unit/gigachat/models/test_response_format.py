@@ -1,10 +1,8 @@
-from enum import Enum
-from typing import Any, Dict, List, Optional, Union
+from typing import Any, Dict, List, Union
 
 import pytest
 from pydantic import BaseModel, Field, TypeAdapter, ValidationError
 
-from gigachat.models._schema_normalize import to_strict_json_schema
 from gigachat.models.chat import Chat, Messages, MessagesRole
 from gigachat.models.response_format import JsonSchemaResponseFormat, ResponseFormat
 
@@ -127,7 +125,7 @@ def test_chat_validate_response_format_from_dict() -> None:
 
 
 # ---------------------------------------------------------------------------
-# A+ tests: Pydantic BaseModel / TypeAdapter as schema
+# Pydantic BaseModel / TypeAdapter as schema
 # ---------------------------------------------------------------------------
 
 
@@ -153,7 +151,6 @@ def test_schema_from_basemodel() -> None:
     assert schema["type"] == "object"
     assert "steps" in schema["properties"]
     assert "final_answer" in schema["properties"]
-    assert schema["additionalProperties"] is False
     assert set(schema["required"]) == {"steps", "final_answer"}
 
 
@@ -185,7 +182,6 @@ def test_schema_from_type_adapter_model() -> None:
     dumped = rf.model_dump(exclude_none=True, by_alias=True)
     schema = dumped["schema"]
     assert schema["type"] == "object"
-    assert schema["additionalProperties"] is False
 
 
 def test_schema_from_basemodel_in_chat() -> None:
@@ -198,7 +194,6 @@ def test_schema_from_basemodel_in_chat() -> None:
     rf = dumped["response_format"]
     assert rf["type"] == "json_schema"
     assert rf["schema"]["type"] == "object"
-    assert rf["schema"]["additionalProperties"] is False
     assert rf["strict"] is False
 
 
@@ -213,7 +208,7 @@ def test_schema_invalid_class_rejected() -> None:
 
 
 # ---------------------------------------------------------------------------
-# A+ tests: nested models with $defs / $ref handling
+# Nested models with $defs / $ref
 # ---------------------------------------------------------------------------
 
 
@@ -242,59 +237,6 @@ def test_nested_model_uses_ref() -> None:
     assert "$defs" in schema
     assert "Galaxy" in schema["$defs"]
     assert "Star" in schema["$defs"]
-
-
-def test_nested_model_additional_properties_false() -> None:
-    schema = to_strict_json_schema(Universe)
-    assert schema["additionalProperties"] is False
-
-    assert schema["$defs"]["Galaxy"]["additionalProperties"] is False
-    assert schema["$defs"]["Star"]["additionalProperties"] is False
-
-
-# ---------------------------------------------------------------------------
-# A+ tests: normalization details
-# ---------------------------------------------------------------------------
-
-
-class Color(str, Enum):
-    RED = "red"
-    GREEN = "green"
-    BLUE = "blue"
-
-
-class ColorInfo(BaseModel):
-    color: Color = Field(description="The detected color")
-    hex_code: str
-
-
-def test_enum_field_ref_preserved() -> None:
-    """$ref for enum fields is preserved (no inlining)."""
-    schema = to_strict_json_schema(ColorInfo)
-    color_prop = schema["properties"]["color"]
-    assert "$ref" in color_prop
-
-
-class ItemWrapper(BaseModel):
-    items_list: List[Star]
-
-
-def test_array_of_models_normalized() -> None:
-    schema = to_strict_json_schema(ItemWrapper)
-    items_prop = schema["properties"]["items_list"]
-    assert items_prop["type"] == "array"
-
-
-class OptionalField(BaseModel):
-    name: str
-    note: Optional[str] = None
-
-
-def test_optional_field_default_preserved() -> None:
-    """default: None is preserved (no stripping)."""
-    schema = to_strict_json_schema(OptionalField)
-    note_prop = schema["properties"]["note"]
-    assert note_prop["default"] is None
 
 
 def test_dict_schema_passthrough_no_normalization() -> None:
@@ -331,7 +273,6 @@ def test_chat_response_format_bare_basemodel() -> None:
     assert rf["schema"]["type"] == "object"
     assert "name" in rf["schema"]["properties"]
     assert "age" in rf["schema"]["properties"]
-    assert rf["schema"]["additionalProperties"] is False
 
 
 def test_chat_response_format_bare_basemodel_validate() -> None:
@@ -361,7 +302,7 @@ def test_chat_response_format_bare_type_adapter() -> None:
 
 
 def test_chat_response_format_bare_nested_model() -> None:
-    """Nested BaseModel as response_format is normalized correctly."""
+    """Nested BaseModel as response_format uses $ref/$defs."""
     chat = Chat(
         messages=[Messages(role=MessagesRole.USER, content="hi")],
         response_format=Universe,
@@ -370,6 +311,5 @@ def test_chat_response_format_bare_nested_model() -> None:
     rf = dumped["response_format"]
     assert rf["type"] == "json_schema"
     schema = rf["schema"]
-    assert schema["additionalProperties"] is False
     assert "$defs" in schema
-    assert schema["$defs"]["Galaxy"]["additionalProperties"] is False
+    assert "Galaxy" in schema["$defs"]
