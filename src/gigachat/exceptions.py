@@ -19,7 +19,6 @@ __all__ = [
     "RateLimitError",
     "ServerError",
     "LengthFinishReasonError",
-    "ContentFilterFinishReasonError",
 ]
 
 
@@ -97,11 +96,3 @@ class LengthFinishReasonError(GigaChatException):
     def __init__(self, completion: ChatCompletion) -> None:
         self.completion = completion
         super().__init__("Response was truncated (finish_reason='length'); JSON may be incomplete")
-
-
-class ContentFilterFinishReasonError(GigaChatException):
-    """Exception raised when finish_reason is 'content_filter'."""
-
-    def __init__(self, completion: ChatCompletion) -> None:
-        self.completion = completion
-        super().__init__("Response was filtered (finish_reason='content_filter')")

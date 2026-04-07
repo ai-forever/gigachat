@@ -5,7 +5,6 @@ from gigachat.context import custom_headers_cvar, request_id_cvar, session_id_cv
 from gigachat.exceptions import (
     AuthenticationError,
     BadRequestError,
-    ContentFilterFinishReasonError,
     ForbiddenError,
     GigaChatException,
     LengthFinishReasonError,
@@ -41,7 +40,6 @@ __all__ = [
     "AuthenticationError",
     "RateLimitError",
     "BadRequestError",
-    "ContentFilterFinishReasonError",
     "ForbiddenError",
     "LengthFinishReasonError",
     "NotFoundError",

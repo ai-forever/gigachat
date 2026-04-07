@@ -14,10 +14,7 @@ from gigachat.client import (
     _parse_completion,
     _prepare_chat_for_parse,
 )
-from gigachat.exceptions import (
-    ContentFilterFinishReasonError,
-    LengthFinishReasonError,
-)
+from gigachat.exceptions import LengthFinishReasonError
 from gigachat.models import Chat, ChatCompletion, Messages, MessagesRole
 from gigachat.settings import Settings
 from tests.constants import ACCESS_TOKEN, BASE_URL, CHAT_URL
@@ -119,17 +116,6 @@ def test_parse_completion_length_finish_reason() -> None:
     completion = ChatCompletion.model_validate(data)
 
     with pytest.raises(LengthFinishReasonError) as exc_info:
-        _parse_completion(completion, MathResult)
-    assert exc_info.value.completion is completion
-
-
-def test_parse_completion_content_filter_finish_reason() -> None:
-    data = copy.deepcopy(CHAT_COMPLETION_JSON)
-    data["choices"][0]["finish_reason"] = "content_filter"
-    data["choices"][0]["message"]["content"] = ""
-    completion = ChatCompletion.model_validate(data)
-
-    with pytest.raises(ContentFilterFinishReasonError) as exc_info:
         _parse_completion(completion, MathResult)
     assert exc_info.value.completion is completion
 
@@ -239,16 +225,6 @@ def test_chat_parse_sync_length_error(httpx_mock: HTTPXMock) -> None:
 
     with GigaChatSyncClient(base_url=BASE_URL, access_token=ACCESS_TOKEN) as client:
         with pytest.raises(LengthFinishReasonError):
-            client.chat_parse("Solve 8x+7=-23", response_format=MathResult)
-
-
-def test_chat_parse_sync_content_filter_error(httpx_mock: HTTPXMock) -> None:
-    data = copy.deepcopy(CHAT_COMPLETION_JSON)
-    data["choices"][0]["finish_reason"] = "content_filter"
-    httpx_mock.add_response(url=CHAT_URL, json=data)
-
-    with GigaChatSyncClient(base_url=BASE_URL, access_token=ACCESS_TOKEN) as client:
-        with pytest.raises(ContentFilterFinishReasonError):
             client.chat_parse("Solve 8x+7=-23", response_format=MathResult)
 
 

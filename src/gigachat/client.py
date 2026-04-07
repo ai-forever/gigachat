@@ -29,10 +29,7 @@ from gigachat.api import auth, chat, embeddings, files, models, tools
 from gigachat.assistants import AssistantsAsyncClient, AssistantsSyncClient
 from gigachat.authentication import _awith_auth, _awith_auth_stream, _with_auth, _with_auth_stream
 from gigachat.context import authorization_cvar
-from gigachat.exceptions import (
-    ContentFilterFinishReasonError,
-    LengthFinishReasonError,
-)
+from gigachat.exceptions import LengthFinishReasonError
 from gigachat.models.auth import AccessToken, Token
 from gigachat.models.chat import (
     Chat,
@@ -204,8 +201,6 @@ def _parse_completion(
 
     if choice.finish_reason == "length":
         raise LengthFinishReasonError(completion)
-    if choice.finish_reason == "content_filter":
-        raise ContentFilterFinishReasonError(completion)
 
     return _parse_response_content(choice.message.content, response_format)
 
@@ -567,15 +562,6 @@ class GigaChatSyncClient(_BaseClient):
 
         Raise :class:`~gigachat.exceptions.LengthFinishReasonError` if
         ``finish_reason`` is ``"length"`` (truncated response).
-
-        Raise :class:`~gigachat.exceptions.ContentFilterFinishReasonError` if
-        ``finish_reason`` is ``"content_filter"``.
-
-        Raise :class:`~gigachat.exceptions.ContentParseError` if
-        ``message.content`` is not valid JSON.
-
-        Raise :class:`~gigachat.exceptions.ContentValidationError` if
-        the parsed JSON does not match *response_format*.
         """
         chat_data = _prepare_chat_for_parse(payload, self._settings, response_format, strict)
         completion = self.chat(chat_data)
