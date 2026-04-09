@@ -70,8 +70,7 @@ interactions:
       {\"answer\":\"ok\",\"n\":3} exactly."}], "response_format": {"type": "json_schema",
       "schema": {"properties": {"answer": {"title": "Answer", "type": "string"}, "n":
       {"maximum": 10, "minimum": 0, "title": "N", "type": "integer"}}, "required":
-      ["answer", "n"], "title": "Out", "type": "object", "additionalProperties": false},
-      "strict": true}}'
+      ["answer", "n"], "title": "Out", "type": "object"}, "strict": true}}'
     headers:
       Accept:
       - '*/*'
@@ -80,7 +79,7 @@ interactions:
       Connection:
       - keep-alive
       Content-Length:
-      - '411'
+      - '380'
       Content-Type:
       - application/json
       Host:
