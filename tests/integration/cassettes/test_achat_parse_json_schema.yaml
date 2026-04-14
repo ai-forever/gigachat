@@ -62,7 +62,7 @@ interactions:
       message: OK
 - request:
     body: '{"model": "GigaChat-3-Ultra", "messages": [{"role": "user", "content":
-      "Return {\"answer\":\"ok\",\"n\":3} exactly."}], "profanity_check": false, "response_format":
+      "Return {\"answer\":\"ok\",\"n\":3} exactly."}], "response_format":
       {"type": "json_schema", "schema": {"properties": {"answer": {"title": "Answer",
       "type": "string"}, "n": {"maximum": 10, "minimum": 0, "title": "N", "type":
       "integer"}}, "required": ["answer", "n"], "title": "Out", "type": "object"},
