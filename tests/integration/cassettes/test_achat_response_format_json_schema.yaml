@@ -1,6 +1,6 @@
 interactions:
 - request:
-    body: ''
+    body: scope=REDACTED
     headers:
       Accept:
       - '*/*'
@@ -17,10 +17,10 @@ interactions:
       authorization:
       - Bearer REDACTED
     method: POST
-    uri: https://gigachat.sberdevices.ru/v1/token
+    uri: https://ngw.devices.sberbank.ru:9443/api/v2/oauth
   response:
     body:
-      string: '{"tok": "REDACTED", "exp": 1776249919}'
+      string: '{"access_token": "REDACTED", "expires_at": 4102444800000}'
     headers:
       Connection:
       - keep-alive
@@ -86,7 +86,7 @@ interactions:
       authorization:
       - Bearer REDACTED
     method: POST
-    uri: https://gigachat.sberdevices.ru/v1/chat/completions
+    uri: https://gigachat.devices.sberbank.ru/api/v1/chat/completions
   response:
     body:
       string: '{"choices": [{"message": {"content": "{\n    \"answer\": \"ok\",\n    \"n\":
