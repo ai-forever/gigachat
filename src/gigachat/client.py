@@ -46,8 +46,7 @@ from gigachat.retry import _awith_retry, _awith_retry_stream, _with_retry, _with
 from gigachat.settings import Settings
 from gigachat.threads import ThreadsAsyncClient, ThreadsSyncClient
 
-T = TypeVar("T")
-_ModelT = TypeVar("_ModelT", bound=pydantic.BaseModel)
+ModelT = TypeVar("ModelT", bound=pydantic.BaseModel)
 
 logger = logging.getLogger(__name__)
 
@@ -92,12 +91,16 @@ def _get_auth_kwargs(settings: Settings) -> Dict[str, Any]:
 def _validate_response_format(payload: Union[Chat, Dict[str, Any], str]) -> None:
     """Raise TypeError if response_format is a Pydantic model (use chat_parse instead)."""
     if isinstance(payload, dict):
-        rf = payload.get("response_format")
+        response_format = payload.get("response_format")
     elif isinstance(payload, Chat):
-        rf = payload.response_format
+        response_format = payload.response_format
     else:
         return
-    if rf is not None and inspect.isclass(rf) and issubclass(rf, pydantic.BaseModel):
+    if (
+        response_format is not None
+        and inspect.isclass(response_format)
+        and issubclass(response_format, pydantic.BaseModel)
+    ):
         raise TypeError(
             "You tried to pass a Pydantic model to `chat(response_format=...)`; "
             "use `client.chat_parse(payload, response_format=...)` instead"
@@ -133,8 +136,8 @@ def _prepare_chat_for_parse(
 
 def _parse_completion(
     completion: ChatCompletion,
-    response_format: Type[_ModelT],
-) -> _ModelT:
+    response_format: Type[ModelT],
+) -> ModelT:
     """Parse and validate message content from *completion* into *response_format*."""
     if not completion.choices:
         raise ValueError("Response has no choices")
@@ -464,9 +467,9 @@ class GigaChatSyncClient(_BaseClient):
         self,
         payload: Union[Chat, Dict[str, Any], str],
         *,
-        response_format: Type[_ModelT],
+        response_format: Type[ModelT],
         strict: bool = True,
-    ) -> Tuple[ChatCompletion, _ModelT]:
+    ) -> Tuple[ChatCompletion, ModelT]:
         """Send a chat request and parse the response into a structured object.
 
         .. note:: **Beta.** This feature may not work correctly with all model versions.
@@ -710,14 +713,17 @@ class GigaChatAsyncClient(_BaseClient):
         self,
         payload: Union[Chat, Dict[str, Any], str],
         *,
-        response_format: Type[_ModelT],
+        response_format: Type[ModelT],
         strict: bool = True,
-    ) -> Tuple[ChatCompletion, _ModelT]:
+    ) -> Tuple[ChatCompletion, ModelT]:
         """Send a chat request and parse the response into *response_format*.
 
         .. note:: **Beta.** This feature may not work correctly with all model versions.
 
         Async version of :meth:`GigaChatSyncClient.chat_parse`.
+
+        Raise :class:`~gigachat.exceptions.LengthFinishReasonError` if
+        ``finish_reason`` is ``"length"`` (truncated response).
         """
         chat_data = _prepare_chat_for_parse(payload, self._settings, response_format, strict)
         completion = await self.achat(chat_data)

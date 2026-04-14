@@ -30,6 +30,7 @@ def test_chat_simple(gigachat_client: GigaChat) -> None:
 def test_chat_response_format_json_schema(gigachat_client: GigaChat) -> None:
     """Test response_format=json_schema returns JSON (as a string) in message.content."""
     payload = Chat(
+        model="GigaChat-3-Ultra",
         messages=[
             Messages(role=MessagesRole.USER, content='Return {"answer":"ok","n":3} exactly.'),
         ],
@@ -76,6 +77,7 @@ async def test_achat_simple(gigachat_async_client: GigaChat) -> None:
 async def test_achat_response_format_json_schema(gigachat_async_client: GigaChat) -> None:
     """Test async response_format=json_schema returns JSON in message.content."""
     payload = Chat(
+        model="GigaChat-3-Ultra",
         messages=[
             Messages(role=MessagesRole.USER, content='Return {"answer":"ok","n":3} exactly.'),
         ],
@@ -112,9 +114,10 @@ def test_chat_parse_json_schema(gigachat_client: GigaChat) -> None:
         n: int = Field(ge=0, le=10)
 
     payload = Chat(
+        model="GigaChat-3-Ultra",
         messages=[
             Messages(role=MessagesRole.USER, content='Return {"answer":"ok","n":3} exactly.'),
-        ]
+        ],
     )
 
     completion, parsed = gigachat_client.chat_parse(payload, response_format=Out, strict=True)
@@ -132,9 +135,10 @@ async def test_achat_parse_json_schema(gigachat_async_client: GigaChat) -> None:
         n: int = Field(ge=0, le=10)
 
     payload = Chat(
+        model="GigaChat-3-Ultra",
         messages=[
             Messages(role=MessagesRole.USER, content='Return {"answer":"ok","n":3} exactly.'),
-        ]
+        ],
     )
 
     completion, parsed = await gigachat_async_client.achat_parse(payload, response_format=Out, strict=True)

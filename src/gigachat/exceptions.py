@@ -95,4 +95,4 @@ class LengthFinishReasonError(GigaChatException):
 
     def __init__(self, completion: ChatCompletion) -> None:
         self.completion = completion
-        super().__init__("Response was truncated (finish_reason='length'); JSON may be incomplete")
+        super().__init__("Could not parse response content as the length limit was reached")

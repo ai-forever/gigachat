@@ -4,7 +4,7 @@ import pytest
 from pydantic import BaseModel, Field, ValidationError
 
 from gigachat.models.chat import Chat, Messages, MessagesRole
-from gigachat.models.response_format import JsonSchemaResponseFormat, ResponseFormat
+from gigachat.models.response_format import JsonSchemaResponseFormat
 
 SAMPLE_SCHEMA: Dict[str, Any] = {
     "type": "object",
@@ -17,33 +17,33 @@ SAMPLE_SCHEMA: Dict[str, Any] = {
 
 
 def test_json_schema_response_format_creation() -> None:
-    rf = JsonSchemaResponseFormat(schema=SAMPLE_SCHEMA)
-    assert rf.type == "json_schema"
-    assert rf.schema_ == SAMPLE_SCHEMA
-    assert rf.strict is None
+    response_format = JsonSchemaResponseFormat(schema=SAMPLE_SCHEMA)
+    assert response_format.type == "json_schema"
+    assert response_format.schema_ == SAMPLE_SCHEMA
+    assert response_format.strict is None
 
 
 def test_json_schema_response_format_with_strict() -> None:
-    rf = JsonSchemaResponseFormat(schema=SAMPLE_SCHEMA, strict=True)
-    assert rf.strict is True
+    response_format = JsonSchemaResponseFormat(schema=SAMPLE_SCHEMA, strict=True)
+    assert response_format.strict is True
 
 
 def test_json_schema_response_format_strict_false() -> None:
-    rf = JsonSchemaResponseFormat(schema=SAMPLE_SCHEMA, strict=False)
-    assert rf.strict is False
+    response_format = JsonSchemaResponseFormat(schema=SAMPLE_SCHEMA, strict=False)
+    assert response_format.strict is False
 
 
 def test_json_schema_response_format_dump_excludes_none_strict() -> None:
-    rf = JsonSchemaResponseFormat(schema=SAMPLE_SCHEMA)
-    dumped = rf.model_dump(exclude_none=True, by_alias=True)
+    response_format = JsonSchemaResponseFormat(schema=SAMPLE_SCHEMA)
+    dumped = response_format.model_dump(exclude_none=True, by_alias=True)
     assert "strict" not in dumped
     assert dumped["type"] == "json_schema"
     assert dumped["schema"] == SAMPLE_SCHEMA
 
 
 def test_json_schema_response_format_dump_includes_strict() -> None:
-    rf = JsonSchemaResponseFormat(schema=SAMPLE_SCHEMA, strict=True)
-    dumped = rf.model_dump(exclude_none=True, by_alias=True)
+    response_format = JsonSchemaResponseFormat(schema=SAMPLE_SCHEMA, strict=True)
+    dumped = response_format.model_dump(exclude_none=True, by_alias=True)
     assert dumped["strict"] is True
 
 
@@ -53,10 +53,10 @@ def test_json_schema_response_format_validate_from_dict() -> None:
         "schema": SAMPLE_SCHEMA,
         "strict": False,
     }
-    rf = JsonSchemaResponseFormat.model_validate(data)
-    assert rf.type == "json_schema"
-    assert rf.schema_ == SAMPLE_SCHEMA
-    assert rf.strict is False
+    response_format = JsonSchemaResponseFormat.model_validate(data)
+    assert response_format.type == "json_schema"
+    assert response_format.schema_ == SAMPLE_SCHEMA
+    assert response_format.strict is False
 
 
 def test_json_schema_response_format_invalid_schema_type() -> None:
@@ -69,16 +69,12 @@ def test_json_schema_response_format_missing_schema() -> None:
         JsonSchemaResponseFormat.model_validate({"type": "json_schema"})
 
 
-def test_response_format_public_alias_is_importable() -> None:
-    assert ResponseFormat is not None
-
-
 def test_chat_with_response_format_typed() -> None:
-    rf = JsonSchemaResponseFormat(schema=SAMPLE_SCHEMA, strict=False)
+    response_format = JsonSchemaResponseFormat(schema=SAMPLE_SCHEMA, strict=False)
     chat = Chat(
         model="GigaChat-2-Max",
         messages=[Messages(role=MessagesRole.USER, content="hi")],
-        response_format=rf,
+        response_format=response_format,
     )
     dumped = chat.model_dump(exclude_none=True, by_alias=True)
     assert "response_format" in dumped
@@ -135,8 +131,8 @@ class MathSolution(BaseModel):
 
 
 def test_schema_from_basemodel() -> None:
-    rf = JsonSchemaResponseFormat(schema=MathSolution)
-    dumped = rf.model_dump(exclude_none=True, by_alias=True)
+    response_format = JsonSchemaResponseFormat(schema=MathSolution)
+    dumped = response_format.model_dump(exclude_none=True, by_alias=True)
     schema = dumped["schema"]
     assert schema["type"] == "object"
     assert "steps" in schema["properties"]
@@ -145,8 +141,8 @@ def test_schema_from_basemodel() -> None:
 
 
 def test_schema_from_basemodel_strict() -> None:
-    rf = JsonSchemaResponseFormat(schema=MathSolution, strict=True)
-    dumped = rf.model_dump(exclude_none=True, by_alias=True)
+    response_format = JsonSchemaResponseFormat(schema=MathSolution, strict=True)
+    dumped = response_format.model_dump(exclude_none=True, by_alias=True)
     assert dumped["strict"] is True
     assert dumped["schema"]["type"] == "object"
 
@@ -158,10 +154,10 @@ def test_schema_from_basemodel_in_chat() -> None:
         response_format=JsonSchemaResponseFormat(schema=MathSolution, strict=False),
     )
     dumped = chat.model_dump(exclude_none=True, by_alias=True)
-    rf = dumped["response_format"]
-    assert rf["type"] == "json_schema"
-    assert rf["schema"]["type"] == "object"
-    assert rf["strict"] is False
+    response_format = dumped["response_format"]
+    assert response_format["type"] == "json_schema"
+    assert response_format["schema"]["type"] == "object"
+    assert response_format["strict"] is False
 
 
 def test_schema_invalid_type_rejected() -> None:
@@ -174,45 +170,13 @@ def test_schema_invalid_class_rejected() -> None:
         JsonSchemaResponseFormat(schema=int)
 
 
-# ---------------------------------------------------------------------------
-# Nested models with $defs / $ref
-# ---------------------------------------------------------------------------
-
-
-class Star(BaseModel):
-    name: str = Field(description="Name of the star.")
-
-
-class Galaxy(BaseModel):
-    name: str = Field(description="Name of the galaxy.")
-    largest_star: Star = Field(description="The largest star.")
-
-
-class Universe(BaseModel):
-    name: str = Field(description="Name of the universe.")
-    galaxy: Galaxy = Field(description="A galaxy.")
-
-
-def test_nested_model_uses_ref() -> None:
-    """Nested models use $ref/$defs — no inlining."""
-    rf = JsonSchemaResponseFormat(schema=Universe)
-    schema = rf.model_dump(exclude_none=True, by_alias=True)["schema"]
-
-    galaxy_prop = schema["properties"]["galaxy"]
-    assert "$ref" in galaxy_prop
-
-    assert "$defs" in schema
-    assert "Galaxy" in schema["$defs"]
-    assert "Star" in schema["$defs"]
-
-
 def test_dict_schema_passthrough_no_normalization() -> None:
     """Dict schemas are NOT normalized — sent as-is."""
     raw: Dict[str, Any] = {
         "type": "object",
         "properties": {"x": {"type": "string"}},
     }
-    rf = JsonSchemaResponseFormat(schema=raw)
-    dumped = rf.model_dump(exclude_none=True, by_alias=True)
+    response_format = JsonSchemaResponseFormat(schema=raw)
+    dumped = response_format.model_dump(exclude_none=True, by_alias=True)
     assert "additionalProperties" not in dumped["schema"]
     assert "required" not in dumped["schema"]

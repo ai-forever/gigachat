@@ -1,6 +1,7 @@
-from typing import Optional
+from typing import Any, Optional, cast
 
 import pytest
+from pydantic import BaseModel
 from pytest_httpx import HTTPXMock
 
 from gigachat.client import (
@@ -14,6 +15,8 @@ from gigachat.models import (
     Chat,
     ChatCompletion,
     ChatCompletionChunk,
+    Messages,
+    MessagesRole,
 )
 from gigachat.settings import Settings
 from tests.constants import (
@@ -85,6 +88,20 @@ def test_chat(httpx_mock: HTTPXMock) -> None:
         response = client.chat("text")
 
     assert isinstance(response, ChatCompletion)
+
+
+def test_chat_rejects_pydantic_response_format_on_chat() -> None:
+    class MathResult(BaseModel):
+        answer: str
+
+    payload = {
+        "messages": [{"role": "user", "content": "Solve 2+2"}],
+        "response_format": MathResult,
+    }
+
+    with GigaChatSyncClient(base_url=BASE_URL, access_token=ACCESS_TOKEN) as client:
+        with pytest.raises(TypeError, match="use `client.chat_parse\\(payload, response_format=.*instead"):
+            client.chat(payload)
 
 
 def test_chat_access_token(httpx_mock: HTTPXMock) -> None:
@@ -322,6 +339,20 @@ async def test_achat(httpx_mock: HTTPXMock) -> None:
         response = await client.achat("text")
 
     assert isinstance(response, ChatCompletion)
+
+
+async def test_achat_rejects_pydantic_response_format_on_chat() -> None:
+    class MathResult(BaseModel):
+        answer: str
+
+    payload = Chat.model_construct(
+        messages=[Messages(role=MessagesRole.USER, content="Solve 2+2")],
+        response_format=cast(Any, MathResult),
+    )
+
+    async with GigaChatAsyncClient(base_url=BASE_URL, access_token=ACCESS_TOKEN) as client:
+        with pytest.raises(TypeError, match="use `client.chat_parse\\(payload, response_format=.*instead"):
+            await client.achat(payload)
 
 
 async def test_achat_access_token(httpx_mock: HTTPXMock) -> None:

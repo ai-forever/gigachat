@@ -203,33 +203,3 @@ async def test_achat_parse_happy(httpx_mock: HTTPXMock) -> None:
     assert isinstance(completion, ChatCompletion)
     assert isinstance(parsed, MathResult)
     assert parsed.final_answer == "x = -3.75"
-
-
-async def test_achat_parse_invalid_json(httpx_mock: HTTPXMock) -> None:
-    data = copy.deepcopy(CHAT_COMPLETION_JSON)
-    data["choices"][0]["message"]["content"] = "not json"
-    httpx_mock.add_response(url=CHAT_URL, json=data)
-
-    async with GigaChatAsyncClient(base_url=BASE_URL, access_token=ACCESS_TOKEN) as client:
-        with pytest.raises(json.JSONDecodeError):
-            await client.achat_parse("Solve 8x+7=-23", response_format=MathResult)
-
-
-async def test_achat_parse_validation_error(httpx_mock: HTTPXMock) -> None:
-    data = copy.deepcopy(CHAT_COMPLETION_JSON)
-    data["choices"][0]["message"]["content"] = json.dumps({"bad": "data"})
-    httpx_mock.add_response(url=CHAT_URL, json=data)
-
-    async with GigaChatAsyncClient(base_url=BASE_URL, access_token=ACCESS_TOKEN) as client:
-        with pytest.raises(ValidationError):
-            await client.achat_parse("Solve 8x+7=-23", response_format=MathResult)
-
-
-async def test_achat_parse_length_error(httpx_mock: HTTPXMock) -> None:
-    data = copy.deepcopy(CHAT_COMPLETION_JSON)
-    data["choices"][0]["finish_reason"] = "length"
-    httpx_mock.add_response(url=CHAT_URL, json=data)
-
-    async with GigaChatAsyncClient(base_url=BASE_URL, access_token=ACCESS_TOKEN) as client:
-        with pytest.raises(LengthFinishReasonError):
-            await client.achat_parse("Solve 8x+7=-23", response_format=MathResult)

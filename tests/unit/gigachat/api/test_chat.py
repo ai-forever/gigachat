@@ -151,10 +151,10 @@ def test_chat_sync_response_format_json_schema(httpx_mock: HTTPXMock) -> None:
 
     requests = httpx_mock.get_requests()
     request_content = json.loads(requests[0].content.decode("utf-8"))
-    rf = request_content["response_format"]
-    assert rf["type"] == "json_schema"
-    assert rf["schema"] == SAMPLE_SCHEMA
-    assert rf["strict"] is False
+    response_format = request_content["response_format"]
+    assert response_format["type"] == "json_schema"
+    assert response_format["schema"] == SAMPLE_SCHEMA
+    assert response_format["strict"] is False
 
 
 def test_chat_sync_response_format_dict_passthrough(httpx_mock: HTTPXMock) -> None:
@@ -172,9 +172,9 @@ def test_chat_sync_response_format_dict_passthrough(httpx_mock: HTTPXMock) -> No
 
     requests = httpx_mock.get_requests()
     request_content = json.loads(requests[0].content.decode("utf-8"))
-    rf = request_content["response_format"]
-    assert rf["type"] == "json_schema"
-    assert rf["schema"] == SAMPLE_SCHEMA
+    response_format = request_content["response_format"]
+    assert response_format["type"] == "json_schema"
+    assert response_format["schema"] == SAMPLE_SCHEMA
 
 
 def test_stream_sync_response_format_json_schema(httpx_mock: HTTPXMock) -> None:
@@ -191,10 +191,10 @@ def test_stream_sync_response_format_json_schema(httpx_mock: HTTPXMock) -> None:
 
     requests = httpx_mock.get_requests()
     request_content = json.loads(requests[0].content.decode("utf-8"))
-    rf = request_content["response_format"]
-    assert rf["type"] == "json_schema"
-    assert rf["schema"] == SAMPLE_SCHEMA
-    assert rf["strict"] is True
+    response_format = request_content["response_format"]
+    assert response_format["type"] == "json_schema"
+    assert response_format["schema"] == SAMPLE_SCHEMA
+    assert response_format["strict"] is True
 
 
 def test_chat_sync_value_error(httpx_mock: HTTPXMock) -> None:
