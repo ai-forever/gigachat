@@ -1,0 +1,133 @@
+interactions:
+- request:
+    body: scope=REDACTED
+    headers:
+      Accept:
+      - '*/*'
+      Accept-Encoding:
+      - gzip, deflate
+      Connection:
+      - keep-alive
+      Content-Length:
+      - '0'
+      Host:
+      - gigachat.sberdevices.ru
+      User-Agent:
+      - GigaChat-python-lib
+      authorization:
+      - Bearer REDACTED
+    method: POST
+    uri: https://ngw.devices.sberbank.ru:9443/api/v2/oauth
+  response:
+    body:
+      string: '{"access_token": "REDACTED", "expires_at": 4102444800000}'
+    headers:
+      Connection:
+      - keep-alive
+      Content-Type:
+      - application/json; charset=utf-8
+      Date:
+      - Tue, 14 Apr 2026 10:45:19 GMT
+      Keep-Alive:
+      - timeout=15
+      Server:
+      - nginx
+      Transfer-Encoding:
+      - chunked
+      Vary:
+      - Accept-Encoding
+      X-Backend:
+      - itsme
+      X-SP-CRID:
+      - '2074691834:1'
+      access-control-allow-credentials:
+      - 'true'
+      access-control-allow-headers:
+      - Origin, X-Requested-With, Content-Type, Accept, Authorization
+      access-control-allow-methods:
+      - GET, POST, DELETE, OPTIONS
+      access-control-allow-origin:
+      - https://gigachat.sberdevices.ru
+      content-length:
+      - '200'
+      set-cookie:
+      - spid=1776163519485_51eb38a45b6d04738d371bbd1d183b31_g0w2hb0kka9luu63; Expires=Tue,
+        19 Jan 2038 03:14:07 GMT; Path=/; Secure; SameSite=None
+      x-request-id:
+      - 0c551e7e-3b4a-4472-8447-b7f74e5fafd2
+      x-session-id:
+      - f1dddb93-39e4-40cd-999b-4f88224f422a
+    status:
+      code: 200
+      message: OK
+- request:
+    body: '{"model": "GigaChat-3-Ultra", "messages": [{"role": "user", "content":
+      "Return {\"answer\":\"ok\",\"n\":3} exactly."}], "response_format":
+      {"type": "json_schema", "schema": {"type": "object", "properties": {"answer":
+      {"type": "string"}, "n": {"type": "integer"}}, "required": ["answer", "n"],
+      "additionalProperties": false}, "strict": true}}'
+    headers:
+      Accept:
+      - '*/*'
+      Accept-Encoding:
+      - gzip, deflate
+      Connection:
+      - keep-alive
+      Content-Length:
+      - '367'
+      Content-Type:
+      - application/json
+      Cookie:
+      - spid=1776163519485_51eb38a45b6d04738d371bbd1d183b31_g0w2hb0kka9luu63
+      Host:
+      - gigachat.sberdevices.ru
+      User-Agent:
+      - GigaChat-python-lib
+      authorization:
+      - Bearer REDACTED
+    method: POST
+    uri: https://gigachat.devices.sberbank.ru/api/v1/chat/completions
+  response:
+    body:
+      string: '{"choices": [{"message": {"content": "{\n    \"answer\": \"ok\",\n    \"n\":
+        3\n}", "role": "assistant"}, "index": 0, "finish_reason": "stop"}], "created":
+        1776163522, "model": "GigaChat-3-Ultra:32.3.7.3", "object": "chat.completions",
+        "usage": {"prompt_tokens": 24, "completion_tokens": 21, "total_tokens": 45,
+        "precached_prompt_tokens": 0}}'
+    headers:
+      Connection:
+      - keep-alive
+      Content-Type:
+      - application/json; charset=utf-8
+      Date:
+      - Tue, 14 Apr 2026 10:45:22 GMT
+      Keep-Alive:
+      - timeout=15
+      Server:
+      - nginx
+      Transfer-Encoding:
+      - chunked
+      Vary:
+      - Accept-Encoding
+      X-Backend:
+      - itsme
+      X-SP-CRID:
+      - '624024841:1'
+      access-control-allow-credentials:
+      - 'true'
+      access-control-allow-headers:
+      - Origin, X-Requested-With, Content-Type, Accept, Authorization
+      access-control-allow-methods:
+      - GET, POST, DELETE, OPTIONS
+      access-control-allow-origin:
+      - https://gigachat.sberdevices.ru
+      content-length:
+      - '318'
+      x-request-id:
+      - 0217d34e-1270-41bb-8ff1-7813d45b21ac
+      x-session-id:
+      - b364d2d9-6402-4f4b-983e-a8bbfe9777df
+    status:
+      code: 200
+      message: OK
+version: 1

@@ -184,8 +184,42 @@ with GigaChat() as client:
         print(f"Arguments: {message.function_call.arguments}")
 ```
 
+### Structured Output (JSON Schema) — Beta
+
+> **Note:** This feature is in beta. It may not work correctly with all model versions.
+
+Get structured JSON responses validated against a schema:
+
+```python
+from typing import List
+from pydantic import BaseModel
+from gigachat import GigaChat
+
+class MathAnswer(BaseModel):
+    steps: List[str]
+    final_answer: str
+
+with GigaChat() as client:
+    completion, parsed = client.chat_parse(
+        "Solve 8x + 7 = -23 step by step",
+        response_format=MathAnswer,
+        strict=True,
+    )
+
+print(parsed.steps)
+print(parsed.final_answer)
+```
+
+`chat_parse()` / `achat_parse()` may raise:
+
+- `LengthFinishReasonError` if the response ended with `finish_reason="length"` and was truncated
+- `json.JSONDecodeError` if the model returned invalid JSON
+- `pydantic.ValidationError` if the JSON is valid but does not match the schema
+
+See [examples/example_structured_output.ipynb](examples/example_structured_output.ipynb) for more approaches (raw dict schema, Pydantic model schema, `chat_parse()`).
+
 ### More examples
-See the [examples/](https://github.com/ai-forever/gigachat/tree/main/examples/) folder for complete working examples including chat, functions, context variables, AI detection, and vision.
+See the [examples/](https://github.com/ai-forever/gigachat/tree/main/examples/) folder for complete working examples including chat, functions, context variables, AI detection, vision, and structured output.
 
 ## Configuration
 
@@ -416,6 +450,7 @@ from gigachat.exceptions import (
     ForbiddenError,
     NotFoundError,
     RequestEntityTooLargeError,
+    UnprocessableEntityError,
     ServerError,
 )
 
@@ -435,6 +470,8 @@ except NotFoundError as e:
     print(f"Resource not found: {e}")
 except RequestEntityTooLargeError as e:
     print(f"Request payload too large: {e}")
+except UnprocessableEntityError as e:
+    print(f"Request validation failed: {e}")
 except ServerError as e:
     print(f"Server error: {e}")
 except GigaChatException as e:
@@ -452,8 +489,10 @@ except GigaChatException as e:
 | `ForbiddenError` | 403 | Access denied (insufficient permissions) |
 | `NotFoundError` | 404 | Requested resource not found |
 | `RequestEntityTooLargeError` | 413 | Request payload too large |
+| `UnprocessableEntityError` | 422 | Request is well-formed but semantically invalid |
 | `RateLimitError` | 429 | Too many requests (use `e.retry_after`) |
 | `ServerError` | 5xx | Server-side error |
+| `LengthFinishReasonError` | — | Structured output parsing stopped because the model response was truncated (`finish_reason="length"`) |
 
 ## Advanced Features
 

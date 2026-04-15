@@ -22,6 +22,8 @@ from gigachat.context import (
 )
 from gigachat.exceptions import AuthenticationError, BadRequestError
 from gigachat.models import Chat, ChatCompletion, ChatCompletionChunk
+from gigachat.models.chat import Messages, MessagesRole
+from gigachat.models.response_format import JsonSchemaResponseFormat
 from tests.constants import (
     BASE_URL,
     CHAT,
@@ -32,6 +34,15 @@ from tests.constants import (
     X_CUSTOM_HEADER,
 )
 from tests.utils import get_json
+
+SAMPLE_SCHEMA = {
+    "type": "object",
+    "properties": {
+        "steps": {"type": "array", "items": {"type": "string"}},
+        "final_answer": {"type": "string"},
+    },
+    "required": ["steps", "final_answer"],
+}
 
 
 def test_chat_kwargs_context_vars() -> None:
@@ -103,6 +114,87 @@ def test_chat_sync_additional_fields(httpx_mock: HTTPXMock) -> None:
     requests = httpx_mock.get_requests()
     request_content = json.loads(requests[0].content.decode("utf-8"))
     assert request_content["additional_field"] == "val"
+
+
+def test_chat_sync_additional_fields_passthrough_preset(httpx_mock: HTTPXMock) -> None:
+    """Test that response_format is preserved when additional_fields are used."""
+    httpx_mock.add_response(url=MOCK_URL, json=CHAT_COMPLETION)
+
+    chat_data = Chat(
+        messages=[Messages(role=MessagesRole.USER, content="hello")],
+        response_format=JsonSchemaResponseFormat(schema=SAMPLE_SCHEMA, strict=True),
+        additional_fields={"extra": "val"},
+    )
+
+    with httpx.Client(base_url=BASE_URL) as client:
+        chat.chat_sync(client, chat=chat_data)
+
+    requests = httpx_mock.get_requests()
+    request_content = json.loads(requests[0].content.decode("utf-8"))
+    assert request_content["extra"] == "val"
+    assert request_content["response_format"]["type"] == "json_schema"
+    assert request_content["response_format"]["schema"] == SAMPLE_SCHEMA
+    assert request_content["response_format"]["strict"] is True
+
+
+def test_chat_sync_response_format_json_schema(httpx_mock: HTTPXMock) -> None:
+    """Test that response_format with JSON schema is sent correctly."""
+    httpx_mock.add_response(url=MOCK_URL, json=CHAT_COMPLETION)
+
+    chat_data = Chat(
+        messages=[Messages(role=MessagesRole.USER, content="solve 2+2")],
+        response_format=JsonSchemaResponseFormat(schema=SAMPLE_SCHEMA, strict=False),
+    )
+
+    with httpx.Client(base_url=BASE_URL) as client:
+        chat.chat_sync(client, chat=chat_data)
+
+    requests = httpx_mock.get_requests()
+    request_content = json.loads(requests[0].content.decode("utf-8"))
+    response_format = request_content["response_format"]
+    assert response_format["type"] == "json_schema"
+    assert response_format["schema"] == SAMPLE_SCHEMA
+    assert response_format["strict"] is False
+
+
+def test_chat_sync_response_format_dict_passthrough(httpx_mock: HTTPXMock) -> None:
+    """Test that a dict response_format is sent as-is."""
+    httpx_mock.add_response(url=MOCK_URL, json=CHAT_COMPLETION)
+
+    raw_rf = {"type": "json_schema", "schema": SAMPLE_SCHEMA, "strict": True}
+    chat_data = Chat(
+        messages=[Messages(role=MessagesRole.USER, content="solve 2+2")],
+        response_format=raw_rf,
+    )
+
+    with httpx.Client(base_url=BASE_URL) as client:
+        chat.chat_sync(client, chat=chat_data)
+
+    requests = httpx_mock.get_requests()
+    request_content = json.loads(requests[0].content.decode("utf-8"))
+    response_format = request_content["response_format"]
+    assert response_format["type"] == "json_schema"
+    assert response_format["schema"] == SAMPLE_SCHEMA
+
+
+def test_stream_sync_response_format_json_schema(httpx_mock: HTTPXMock) -> None:
+    """Test that streaming request includes response_format."""
+    httpx_mock.add_response(url=MOCK_URL, content=CHAT_COMPLETION_STREAM, headers=HEADERS_STREAM)
+
+    chat_data = Chat(
+        messages=[Messages(role=MessagesRole.USER, content="solve 2+2")],
+        response_format=JsonSchemaResponseFormat(schema=SAMPLE_SCHEMA, strict=True),
+    )
+
+    with httpx.Client(base_url=BASE_URL) as client:
+        list(chat.stream_sync(client, chat=chat_data))
+
+    requests = httpx_mock.get_requests()
+    request_content = json.loads(requests[0].content.decode("utf-8"))
+    response_format = request_content["response_format"]
+    assert response_format["type"] == "json_schema"
+    assert response_format["schema"] == SAMPLE_SCHEMA
+    assert response_format["strict"] is True
 
 
 def test_chat_sync_value_error(httpx_mock: HTTPXMock) -> None:

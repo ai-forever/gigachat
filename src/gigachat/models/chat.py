@@ -4,6 +4,7 @@ from typing import Any, Dict, List, Literal, Optional, Union
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 from gigachat.models.base import APIResponse
+from gigachat.models.response_format import ResponseFormat
 
 
 class MessagesRole(str, Enum):
@@ -190,6 +191,7 @@ class Chat(BaseModel):
     functions: Optional[List[Function]] = Field(default=None, description="List of functions available to the model.")
     flags: Optional[List[str]] = Field(default=None, description="List of feature flags.")
     storage: Optional[Storage] = Field(default=None, description="Context storage settings.")
+    response_format: Optional[ResponseFormat] = Field(default=None, description="Response format (e.g. JSON Schema).")
     additional_fields: Optional[Dict[str, Any]] = Field(
         default=None, description="Additional fields to pass to the API."
     )

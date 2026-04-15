@@ -8,6 +8,7 @@ from gigachat.exceptions import (
     AuthenticationError,
     BadRequestError,
     ForbiddenError,
+    LengthFinishReasonError,
     NotFoundError,
     RateLimitError,
     RequestEntityTooLargeError,
@@ -58,6 +59,13 @@ def test_rate_limit_retry_after_invalid() -> None:
 def test_rate_limit_retry_after_none_headers() -> None:
     exc = RateLimitError("url", 429, b"", None)
     assert exc.retry_after == 0.0
+
+
+def test_length_finish_reason_error_message() -> None:
+    completion = object()
+    exc = LengthFinishReasonError(completion=completion)  # type: ignore[arg-type]
+    assert exc.completion is completion
+    assert str(exc) == "Could not parse response content as the length limit was reached"
 
 
 @pytest.mark.parametrize(

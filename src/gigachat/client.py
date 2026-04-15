@@ -1,4 +1,6 @@
 import asyncio
+import inspect
+import json
 import logging
 import ssl
 import threading
@@ -12,11 +14,13 @@ from typing import (
     Literal,
     Optional,
     Tuple,
+    Type,
     TypeVar,
     Union,
 )
 
 import httpx
+import pydantic
 from typing_extensions import Self
 
 from gigachat._types import FileTypes
@@ -24,6 +28,7 @@ from gigachat.api import auth, chat, embeddings, files, models, tools
 from gigachat.assistants import AssistantsAsyncClient, AssistantsSyncClient
 from gigachat.authentication import _awith_auth, _awith_auth_stream, _with_auth, _with_auth_stream
 from gigachat.context import authorization_cvar
+from gigachat.exceptions import LengthFinishReasonError
 from gigachat.models.auth import AccessToken, Token
 from gigachat.models.chat import (
     Chat,
@@ -35,12 +40,13 @@ from gigachat.models.chat import (
 from gigachat.models.embeddings import Embeddings
 from gigachat.models.files import DeletedFile, Image, UploadedFile, UploadedFiles
 from gigachat.models.models import Model, Models
+from gigachat.models.response_format import JsonSchemaResponseFormat
 from gigachat.models.tools import AICheckResult, Balance, OpenApiFunctions, TokensCount
 from gigachat.retry import _awith_retry, _awith_retry_stream, _with_retry, _with_retry_stream
 from gigachat.settings import Settings
 from gigachat.threads import ThreadsAsyncClient, ThreadsSyncClient
 
-T = TypeVar("T")
+ModelT = TypeVar("ModelT", bound=pydantic.BaseModel)
 
 logger = logging.getLogger(__name__)
 
@@ -82,6 +88,25 @@ def _get_auth_kwargs(settings: Settings) -> Dict[str, Any]:
     return kwargs
 
 
+def _validate_response_format(payload: Union[Chat, Dict[str, Any], str]) -> None:
+    """Raise TypeError if response_format is a Pydantic model (use chat_parse instead)."""
+    if isinstance(payload, dict):
+        response_format = payload.get("response_format")
+    elif isinstance(payload, Chat):
+        response_format = payload.response_format
+    else:
+        return
+    if (
+        response_format is not None
+        and inspect.isclass(response_format)
+        and issubclass(response_format, pydantic.BaseModel)
+    ):
+        raise TypeError(
+            "You tried to pass a Pydantic model to `chat(response_format=...)`; "
+            "use `client.chat_parse(payload, response_format=...)` instead"
+        )
+
+
 def _parse_chat(payload: Union[Chat, Dict[str, Any], str], settings: Settings) -> Chat:
     if isinstance(payload, str):
         chat = Chat(messages=[Messages(role=MessagesRole.USER, content=payload)])
@@ -95,6 +120,35 @@ def _parse_chat(payload: Union[Chat, Dict[str, Any], str], settings: Settings) -
     if chat.flags is None:
         chat.flags = settings.flags
     return chat
+
+
+def _prepare_chat_for_parse(
+    payload: Union[Chat, Dict[str, Any], str],
+    settings: Settings,
+    response_format: Type[pydantic.BaseModel],
+    strict: bool,
+) -> Chat:
+    """Prepare a Chat object with response_format derived from *response_format*."""
+    chat_data = _parse_chat(payload, settings)
+    chat_data.response_format = JsonSchemaResponseFormat(schema=response_format, strict=strict)
+    return chat_data
+
+
+def _parse_completion(
+    completion: ChatCompletion,
+    response_format: Type[ModelT],
+) -> ModelT:
+    """Parse and validate message content from *completion* into *response_format*."""
+    if not completion.choices:
+        raise ValueError("Response has no choices")
+
+    choice = completion.choices[0]
+
+    if choice.finish_reason == "length":
+        raise LengthFinishReasonError(completion)
+
+    data = json.loads(choice.message.content)
+    return response_format.model_validate(data)
 
 
 def _build_access_token(token: Token) -> AccessToken:
@@ -405,8 +459,32 @@ class GigaChatSyncClient(_BaseClient):
     @_with_auth
     def chat(self, payload: Union[Chat, Dict[str, Any], str]) -> ChatCompletion:
         """Return a model response based on the provided messages."""
+        _validate_response_format(payload)
         chat_data = _parse_chat(payload, self._settings)
         return chat.chat_sync(self._client, chat=chat_data, access_token=self.token)
+
+    def chat_parse(
+        self,
+        payload: Union[Chat, Dict[str, Any], str],
+        *,
+        response_format: Type[ModelT],
+        strict: bool = True,
+    ) -> Tuple[ChatCompletion, ModelT]:
+        """Send a chat request and parse the response into a structured object.
+
+        .. note:: **Beta.** This feature may not work correctly with all model versions.
+
+        *response_format* accepts a Pydantic ``BaseModel`` subclass.
+        The method derives a JSON Schema from it, sends the request via
+        :meth:`chat`, then parses and validates ``message.content``.
+
+        Raise :class:`~gigachat.exceptions.LengthFinishReasonError` if
+        ``finish_reason`` is ``"length"`` (truncated response).
+        """
+        chat_data = _prepare_chat_for_parse(payload, self._settings, response_format, strict)
+        completion = self.chat(chat_data)
+        parsed = _parse_completion(completion, response_format)
+        return completion, parsed
 
     @_with_retry
     @_with_auth
@@ -626,9 +704,31 @@ class GigaChatAsyncClient(_BaseClient):
     @_awith_auth
     async def achat(self, payload: Union[Chat, Dict[str, Any], str]) -> ChatCompletion:
         """Return a model response based on the provided messages."""
+        _validate_response_format(payload)
         chat_data = _parse_chat(payload, self._settings)
 
         return await chat.chat_async(self._aclient, chat=chat_data, access_token=self.token)
+
+    async def achat_parse(
+        self,
+        payload: Union[Chat, Dict[str, Any], str],
+        *,
+        response_format: Type[ModelT],
+        strict: bool = True,
+    ) -> Tuple[ChatCompletion, ModelT]:
+        """Send a chat request and parse the response into *response_format*.
+
+        .. note:: **Beta.** This feature may not work correctly with all model versions.
+
+        Async version of :meth:`GigaChatSyncClient.chat_parse`.
+
+        Raise :class:`~gigachat.exceptions.LengthFinishReasonError` if
+        ``finish_reason`` is ``"length"`` (truncated response).
+        """
+        chat_data = _prepare_chat_for_parse(payload, self._settings, response_format, strict)
+        completion = await self.achat(chat_data)
+        parsed = _parse_completion(completion, response_format)
+        return completion, parsed
 
     @_awith_retry
     @_awith_auth
