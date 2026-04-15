@@ -21,7 +21,7 @@ def _build_request_json(chat: Chat, *, exclude_stream: bool = False) -> Dict[str
     json_data = chat.model_dump(exclude_none=True, by_alias=True, exclude=exclude)
     fields = json_data.pop("additional_fields", None)
     if fields:
-        json_data = {**json_data, **fields}
+        json_data = {**fields, **json_data}
     return json_data
 
 
