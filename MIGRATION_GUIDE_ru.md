@@ -231,7 +231,7 @@ class MathAnswer(BaseModel):
 with GigaChat() as client:
     completion, parsed = client.chat_parse(
         "Solve 8x + 7 = -23. Explain step by step.",
-        response_model=MathAnswer,
+        response_format=MathAnswer,
         strict=True,
     )
 
@@ -253,7 +253,7 @@ class MathAnswer(BaseModel):
 with GigaChat() as client:
     completion, parsed = client.chat_parse_v2(
         "Solve 8x + 7 = -23. Explain step by step.",
-        response_model=MathAnswer,
+        response_format=MathAnswer,
         strict=True,
     )
 

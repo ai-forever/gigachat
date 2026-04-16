@@ -3,11 +3,11 @@
 The agent decides its next action by returning a typed JSON object.
 Each iteration:
 
-1. Call ``chat_parse()`` with a ``Union[...]`` response model.
+1. Call ``chat_parse()`` with a structured response model.
 2. Inspect the parsed result to determine the action type.
 3. Execute the action (call a tool, compute something, etc.).
 4. Append the tool result back to the conversation.
-5. Repeat until the model returns ``FinalAnswer``.
+5. Repeat until the model returns ``final_answer``.
 
 Set GIGACHAT_CREDENTIALS (or other auth env vars) before running.
 """
@@ -16,7 +16,7 @@ from __future__ import annotations
 
 import json
 import math
-from typing import Literal, Union
+from typing import Literal, Optional
 
 from dotenv import load_dotenv
 from pydantic import BaseModel, Field
@@ -28,22 +28,13 @@ load_dotenv()
 # -- Action models (what the agent can do) ---------------------------------
 
 
-class Calculate(BaseModel):
-    """Ask for a mathematical expression to be evaluated."""
+class AgentStep(BaseModel):
+    """One agent action encoded as a single structured response model."""
 
-    action: Literal["calculate"] = "calculate"
-    expression: str = Field(description="A Python math expression, e.g. '2**10 + 3'")
-
-
-class FinalAnswer(BaseModel):
-    """Return the final answer to the user."""
-
-    action: Literal["final_answer"] = "final_answer"
-    answer: str = Field(description="Human-readable final answer")
-    reasoning: str = Field(description="Brief explanation of the reasoning")
-
-
-AgentStep = Union[Calculate, FinalAnswer]
+    action: Literal["calculate", "final_answer"]
+    expression: Optional[str] = Field(default=None, description="Math expression to evaluate.")
+    answer: Optional[str] = Field(default=None, description="Human-readable final answer.")
+    reasoning: Optional[str] = Field(default=None, description="Brief explanation of the reasoning.")
 
 SYSTEM_PROMPT = """\
 You are a helpful math assistant. You solve problems step by step.
@@ -91,29 +82,33 @@ def run_agent(question: str, *, model: str = "GigaChat-2-Max", max_steps: int = 
             from gigachat.models import Chat
 
             chat = Chat(model=model, messages=messages)
-            completion, parsed = client.chat_parse(chat, response_model=AgentStep)
+            completion, parsed = client.chat_parse(chat, response_format=AgentStep)
 
-            if isinstance(parsed, FinalAnswer):
+            if parsed.action == "final_answer":
+                if parsed.answer is None or parsed.reasoning is None:
+                    raise RuntimeError("Model returned final_answer without answer/reasoning")
                 print(f"Final answer: {parsed.answer}")
                 print(f"Reasoning: {parsed.reasoning}")
                 return parsed.answer
 
-            if isinstance(parsed, Calculate):
-                result = execute_calculate(parsed.expression)
-                print(f"Calculate: {parsed.expression} = {result}")
+            if parsed.expression is None:
+                raise RuntimeError("Model returned calculate without expression")
 
-                messages.append(
-                    Messages(
-                        role=MessagesRole.ASSISTANT,
-                        content=json.dumps(parsed.model_dump(), ensure_ascii=False),
-                    )
+            result = execute_calculate(parsed.expression)
+            print(f"Calculate: {parsed.expression} = {result}")
+
+            messages.append(
+                Messages(
+                    role=MessagesRole.ASSISTANT,
+                    content=json.dumps(parsed.model_dump(), ensure_ascii=False),
                 )
-                messages.append(
-                    Messages(
-                        role=MessagesRole.USER,
-                        content=f"Result of calculation: {result}",
-                    )
+            )
+            messages.append(
+                Messages(
+                    role=MessagesRole.USER,
+                    content=f"Result of calculation: {result}",
                 )
+            )
 
     raise RuntimeError(f"Agent did not reach a final answer within {max_steps} steps")
 

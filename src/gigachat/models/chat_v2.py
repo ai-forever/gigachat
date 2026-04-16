@@ -1,14 +1,12 @@
 from __future__ import annotations
 
-import inspect
-from typing import Any, Dict, List, Literal, Optional, Type, Union, get_origin
+from typing import Any, Dict, List, Literal, Optional, Union
 
-import pydantic
 from pydantic import AliasChoices, BaseModel, Field, model_validator
 
-from gigachat.models._schema_normalize import to_strict_json_schema
 from gigachat.models.base import APIResponse
 from gigachat.models.chat import Function, FunctionCall
+from gigachat.models.response_format import JsonSchemaResponseFormat, ResponseFormat
 
 
 class ChatV2FileDescriptor(BaseModel):
@@ -154,52 +152,9 @@ class ChatV2Reasoning(BaseModel):
     effort: Literal["low", "medium", "high"] = Field(description="Reasoning effort.")
 
 
-class ChatV2ResponseFormat(BaseModel):
-    """Response format configuration for v2 chat completions."""
-
-    type: Literal["text", "json_schema"] = Field(description="Response format type.")
-    schema_: Optional[Dict[str, Any]] = Field(default=None, alias="schema", description="JSON Schema definition.")
-    strict: Optional[bool] = Field(default=None, description="Strict schema adherence.")
-
-    @model_validator(mode="before")
-    @classmethod
-    def _validate_and_convert_schema(cls, values: Any) -> Any:
-        if not isinstance(values, dict):
-            return values
-
-        values = dict(values)
-        schema = values.get("schema")
-        if schema is None:
-            return values
-
-        if inspect.isclass(schema) and issubclass(schema, pydantic.BaseModel):
-            values["schema"] = to_strict_json_schema(schema)
-            return values
-
-        if isinstance(schema, pydantic.TypeAdapter):
-            values["schema"] = to_strict_json_schema(schema)
-            return values
-
-        if get_origin(schema) is not None:
-            values["schema"] = to_strict_json_schema(pydantic.TypeAdapter(schema))
-            return values
-
-        if isinstance(schema, dict):
-            return values
-
-        raise ValueError(
-            "'schema' must be a dict, a pydantic.BaseModel subclass, a supported typing annotation, "
-            f"or a pydantic.TypeAdapter; got {type(schema).__name__}"
-        )
-
-    @model_validator(mode="after")
-    def _require_schema_for_json_schema(self) -> ChatV2ResponseFormat:
-        if self.type == "json_schema" and self.schema_ is None:
-            raise ValueError("response_format.schema is required when response_format.type='json_schema'")
-        return self
-
-
-ChatV2ResponseFormatInput = Union[ChatV2ResponseFormat, Dict[str, Any], Type[pydantic.BaseModel], Any]
+# v2 uses the same response_format structure as v1; only the nesting differs.
+ChatV2ResponseFormat = JsonSchemaResponseFormat
+ChatV2ResponseFormatInput = ResponseFormat
 
 
 class ChatV2ModelOptions(BaseModel):
@@ -214,7 +169,7 @@ class ChatV2ModelOptions(BaseModel):
     unnormalized_history: Optional[bool] = Field(default=None, description="Disable history normalization.")
     top_logprobs: Optional[int] = Field(default=None, description="Top log-prob count.", ge=1, le=5)
     reasoning: Optional[ChatV2Reasoning] = Field(default=None, description="Reasoning settings.")
-    response_format: Optional[ChatV2ResponseFormat] = Field(default=None, description="Response format settings.")
+    response_format: Optional[ResponseFormat] = Field(default=None, description="Response format settings.")
 
 
 class ChatV2FilterRequestContent(BaseModel):
@@ -420,23 +375,6 @@ class ChatV2(BaseModel):
                 else:
                     coerced_tools.append(tool)
             values["tools"] = coerced_tools
-
-        model_options = values.get("model_options")
-        if not isinstance(model_options, dict):
-            return values
-
-        response_format = model_options.get("response_format")
-        if response_format is None:
-            return values
-
-        if (
-            (inspect.isclass(response_format) and issubclass(response_format, pydantic.BaseModel))
-            or isinstance(response_format, pydantic.TypeAdapter)
-            or get_origin(response_format) is not None
-        ):
-            values["model_options"] = dict(model_options)
-            values["model_options"]["response_format"] = {"type": "json_schema", "schema": response_format}
-            return values
 
         return values
 

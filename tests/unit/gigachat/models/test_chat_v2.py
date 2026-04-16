@@ -1,4 +1,4 @@
-from typing import List, Literal
+from typing import List
 
 import pydantic
 import pytest
@@ -10,6 +10,7 @@ from gigachat.models.chat_v2 import (
     ChatV2ContentPart,
     ChatV2Tool,
 )
+from gigachat.models.response_format import JsonSchemaResponseFormat
 from tests.utils import get_json
 
 
@@ -97,42 +98,54 @@ def test_chat_v2_tool_config_forced_requires_exactly_one_target() -> None:
         )
 
 
-def test_chat_v2_response_format_bare_basemodel() -> None:
+def test_chat_v2_response_format_matches_v1_shape() -> None:
     class Answer(BaseModel):
         answer: str
 
     chat = ChatV2(
         model="GigaChat-2-Max",
         messages=[{"role": "user", "content": "hi"}],
-        model_options={"response_format": Answer},
+        model_options={"response_format": JsonSchemaResponseFormat(schema=Answer, strict=True)},
     )
 
     dumped = chat.model_dump(exclude_none=True, by_alias=True)
     assert dumped["model_options"]["response_format"]["type"] == "json_schema"
     assert dumped["model_options"]["response_format"]["schema"]["type"] == "object"
+    assert dumped["model_options"]["response_format"]["strict"] is True
 
 
-def test_chat_v2_response_format_bare_type_adapter() -> None:
-    adapter = pydantic.TypeAdapter(List[Literal["yes", "no"]])
+def test_chat_v2_response_format_bare_basemodel_rejected() -> None:
+    class Answer(BaseModel):
+        answer: str
 
-    chat = ChatV2(
-        model="GigaChat-2-Max",
-        messages=[{"role": "user", "content": "hi"}],
-        model_options={"response_format": adapter},
-    )
-
-    dumped = chat.model_dump(exclude_none=True, by_alias=True)
-    assert dumped["model_options"]["response_format"]["type"] == "json_schema"
-    assert dumped["model_options"]["response_format"]["schema"]["type"] == "array"
-
-
-def test_chat_v2_json_schema_requires_schema() -> None:
     with pytest.raises(ValidationError):
         ChatV2(
             model="GigaChat-2-Max",
             messages=[{"role": "user", "content": "hi"}],
-            model_options={"response_format": {"type": "json_schema"}},
+            model_options={"response_format": Answer},
         )
+
+
+def test_chat_v2_response_format_type_adapter_rejected() -> None:
+    adapter = pydantic.TypeAdapter(List[str])
+
+    with pytest.raises(ValidationError):
+        ChatV2(
+            model="GigaChat-2-Max",
+            messages=[{"role": "user", "content": "hi"}],
+            model_options={"response_format": adapter},
+        )
+
+
+def test_chat_v2_response_format_raw_dict_passthrough() -> None:
+    chat = ChatV2(
+        model="GigaChat-2-Max",
+        messages=[{"role": "user", "content": "hi"}],
+        model_options={"response_format": {"type": "json_schema"}},
+    )
+
+    dumped = chat.model_dump(exclude_none=True, by_alias=True)
+    assert dumped["model_options"]["response_format"] == {"type": "json_schema"}
 
 
 def test_chat_v2_assistant_and_model_are_mutually_exclusive() -> None:

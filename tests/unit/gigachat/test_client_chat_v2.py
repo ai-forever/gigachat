@@ -1,6 +1,7 @@
 from typing import Optional
 
 import pytest
+from pydantic import BaseModel
 from pytest_httpx import HTTPXMock
 
 from gigachat.client import (
@@ -85,6 +86,20 @@ def test_chat_v2(httpx_mock: HTTPXMock) -> None:
     assert str(request.url) == CHAT_V2_URL
 
 
+def test_chat_v2_rejects_pydantic_response_format_on_direct_request() -> None:
+    class MathResult(BaseModel):
+        answer: str
+
+    payload = {
+        "messages": [{"role": "user", "content": "Solve 2+2"}],
+        "model_options": {"response_format": MathResult},
+    }
+
+    with GigaChatSyncClient(base_url=CHAT_V2_BASE_URL, access_token=ACCESS_TOKEN) as client:
+        with pytest.raises(TypeError, match="use `client.chat_parse_v2\\(payload, response_format=.*instead"):
+            client.chat_v2(payload)
+
+
 def test_chat_v2_with_credentials(httpx_mock: HTTPXMock) -> None:
     httpx_mock.add_response(url=AUTH_URL, json=OAUTH_TOKEN_VALID)
     httpx_mock.add_response(url=CHAT_V2_URL, json=CHAT_COMPLETION_V2)
@@ -121,6 +136,20 @@ async def test_achat_v2(httpx_mock: HTTPXMock) -> None:
         response = await client.achat_v2("text")
 
     assert response.model == "GigaChat-2-Max"
+
+
+async def test_achat_v2_rejects_pydantic_response_format_on_direct_request() -> None:
+    class MathResult(BaseModel):
+        answer: str
+
+    payload = {
+        "messages": [{"role": "user", "content": "Solve 2+2"}],
+        "model_options": {"response_format": MathResult},
+    }
+
+    async with GigaChatAsyncClient(base_url=CHAT_V2_BASE_URL, access_token=ACCESS_TOKEN) as client:
+        with pytest.raises(TypeError, match="use `client.chat_parse_v2\\(payload, response_format=.*instead"):
+            await client.achat_v2(payload)
 
 
 async def test_astream_v2(httpx_mock: HTTPXMock) -> None:

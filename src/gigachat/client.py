@@ -55,7 +55,6 @@ from gigachat.models.chat_v2 import (
     ChatV2ContentPart,
     ChatV2Message,
     ChatV2ModelOptions,
-    ChatV2ResponseFormat,
     ChatV2Storage,
 )
 from gigachat.models.embeddings import Embeddings
@@ -151,6 +150,34 @@ def _validate_response_format(payload: Union[Chat, Dict[str, Any], str]) -> None
         )
 
 
+def _validate_response_format_v2(payload: Union[ChatV2, Dict[str, Any], str]) -> None:
+    """Reject schema shorthands in direct v2 requests.
+
+    v2 keeps the same response_format structure as v1, but nested under
+    ``model_options.response_format``.
+    """
+    if isinstance(payload, dict):
+        model_options = payload.get("model_options")
+        response_format = model_options.get("response_format") if isinstance(model_options, dict) else None
+    elif isinstance(payload, ChatV2):
+        response_format = payload.model_options.response_format if payload.model_options is not None else None
+    else:
+        return
+
+    if (
+        response_format is not None
+        and (
+            (inspect.isclass(response_format) and issubclass(response_format, pydantic.BaseModel))
+            or isinstance(response_format, pydantic.TypeAdapter)
+            or get_origin(response_format) is not None
+        )
+    ):
+        raise TypeError(
+            "You tried to pass a model to `chat_v2(model_options.response_format=...)`; "
+            "use `client.chat_parse_v2(payload, response_format=...)` instead"
+        )
+
+
 def _parse_chat(payload: Union[Chat, Dict[str, Any], str], settings: Settings) -> Chat:
     if isinstance(payload, str):
         chat = Chat(messages=[Messages(role=MessagesRole.USER, content=payload)])
@@ -181,18 +208,14 @@ def _prepare_chat_for_parse(
 def _prepare_chat_v2_for_parse(
     payload: Union[ChatV2, Dict[str, Any], str],
     settings: Settings,
-    response_model: Any,
-    strict: Optional[bool],
+    response_format: Type[pydantic.BaseModel],
+    strict: bool,
 ) -> ChatV2:
-    """Prepare a ChatV2 object with response_format derived from *response_model*."""
+    """Prepare a ChatV2 object with response_format derived from *response_format*."""
     chat_data = _parse_chat_v2(payload, settings)
     if chat_data.model_options is None:
         chat_data.model_options = ChatV2ModelOptions()
-    chat_data.model_options.response_format = ChatV2ResponseFormat(
-        type="json_schema",
-        schema=response_model,
-        strict=strict,
-    )
+    chat_data.model_options.response_format = JsonSchemaResponseFormat(schema=response_format, strict=strict)
     return chat_data
 
 
@@ -646,6 +669,7 @@ class GigaChatSyncClient(_BaseClient):
     @_with_auth
     def chat_v2(self, payload: Union[ChatV2, Dict[str, Any], str]) -> ChatCompletionV2:
         """Return a v2 model response based on the provided messages."""
+        _validate_response_format_v2(payload)
         chat_data = _parse_chat_v2(payload, self._settings)
         return chat_v2.chat_v2_sync(
             self._client,
@@ -675,39 +699,28 @@ class GigaChatSyncClient(_BaseClient):
         self,
         payload: Union[ChatV2, Dict[str, Any], str],
         *,
-        response_model: Type[_ModelT],
-        strict: Optional[bool] = None,
-    ) -> Tuple[ChatCompletionV2, _ModelT]: ...
-
-    @overload
-    def chat_parse_v2(
-        self,
-        payload: Union[ChatV2, Dict[str, Any], str],
-        *,
-        response_model: pydantic.TypeAdapter[_AdaptedT],
-        strict: Optional[bool] = None,
-    ) -> Tuple[ChatCompletionV2, _AdaptedT]: ...
-
-    @overload
-    def chat_parse_v2(
-        self,
-        payload: Union[ChatV2, Dict[str, Any], str],
-        *,
-        response_model: Any,
-        strict: Optional[bool] = None,
-    ) -> Tuple[ChatCompletionV2, Any]: ...
+        response_format: Type[ModelT],
+        strict: bool = True,
+    ) -> Tuple[ChatCompletionV2, ModelT]: ...
 
     def chat_parse_v2(
         self,
         payload: Union[ChatV2, Dict[str, Any], str],
         *,
-        response_model: Any,
-        strict: Optional[bool] = None,
+        response_format: Optional[Type[ModelT]] = None,
+        response_model: Optional[Type[ModelT]] = None,
+        strict: bool = True,
     ) -> Tuple[ChatCompletionV2, Any]:
-        """Send a v2 chat request and parse the first text response into *response_model*."""
-        chat_data = _prepare_chat_v2_for_parse(payload, self._settings, response_model, strict)
+        """Send a v2 chat request and parse the first text response into *response_format*."""
+        if (response_format is None) == (response_model is None):
+            raise TypeError("Provide exactly one of `response_format` or `response_model`")
+
+        parse_model = response_format if response_format is not None else response_model
+        assert parse_model is not None
+
+        chat_data = _prepare_chat_v2_for_parse(payload, self._settings, parse_model, strict)
         completion = self.chat_v2(chat_data)
-        parsed: Any = _parse_completion_v2(completion, response_model)
+        parsed: Any = _parse_completion_v2(completion, parse_model)
         return completion, parsed
 
     @_with_retry
@@ -980,6 +993,7 @@ class GigaChatAsyncClient(_BaseClient):
     @_awith_auth
     async def achat_v2(self, payload: Union[ChatV2, Dict[str, Any], str]) -> ChatCompletionV2:
         """Return an async v2 model response based on the provided messages."""
+        _validate_response_format_v2(payload)
         chat_data = _parse_chat_v2(payload, self._settings)
 
         return await chat_v2.chat_v2_async(
@@ -1010,39 +1024,28 @@ class GigaChatAsyncClient(_BaseClient):
         self,
         payload: Union[ChatV2, Dict[str, Any], str],
         *,
-        response_model: Type[_ModelT],
-        strict: Optional[bool] = None,
-    ) -> Tuple[ChatCompletionV2, _ModelT]: ...
-
-    @overload
-    async def achat_parse_v2(
-        self,
-        payload: Union[ChatV2, Dict[str, Any], str],
-        *,
-        response_model: pydantic.TypeAdapter[_AdaptedT],
-        strict: Optional[bool] = None,
-    ) -> Tuple[ChatCompletionV2, _AdaptedT]: ...
-
-    @overload
-    async def achat_parse_v2(
-        self,
-        payload: Union[ChatV2, Dict[str, Any], str],
-        *,
-        response_model: Any,
-        strict: Optional[bool] = None,
-    ) -> Tuple[ChatCompletionV2, Any]: ...
+        response_format: Type[ModelT],
+        strict: bool = True,
+    ) -> Tuple[ChatCompletionV2, ModelT]: ...
 
     async def achat_parse_v2(
         self,
         payload: Union[ChatV2, Dict[str, Any], str],
         *,
-        response_model: Any,
-        strict: Optional[bool] = None,
+        response_format: Optional[Type[ModelT]] = None,
+        response_model: Optional[Type[ModelT]] = None,
+        strict: bool = True,
     ) -> Tuple[ChatCompletionV2, Any]:
-        """Send an async v2 chat request and parse the first text response into *response_model*."""
-        chat_data = _prepare_chat_v2_for_parse(payload, self._settings, response_model, strict)
+        """Send an async v2 chat request and parse the first text response into *response_format*."""
+        if (response_format is None) == (response_model is None):
+            raise TypeError("Provide exactly one of `response_format` or `response_model`")
+
+        parse_model = response_format if response_format is not None else response_model
+        assert parse_model is not None
+
+        chat_data = _prepare_chat_v2_for_parse(payload, self._settings, parse_model, strict)
         completion = await self.achat_v2(chat_data)
-        parsed: Any = _parse_completion_v2(completion, response_model)
+        parsed: Any = _parse_completion_v2(completion, parse_model)
         return completion, parsed
 
     @_awith_retry
