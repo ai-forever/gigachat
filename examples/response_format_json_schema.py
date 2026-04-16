@@ -2,9 +2,9 @@
 
 Demonstrate three ways to get structured JSON from GigaChat:
 
-1. Raw dict schema  + ``json.loads`` (passthrough — no normalization).
-2. Pydantic model as schema  (A+ — auto-normalized OpenAI-style).
-3. ``chat_parse()`` helper  (B — one-step parse + validate).
+1. Raw dict schema + ``json.loads``.
+2. Pydantic model as schema.
+3. ``chat_parse()`` helper (one-step parse + validate).
 
 Set GIGACHAT_CREDENTIALS (or other auth env vars) before running.
 """
@@ -32,7 +32,7 @@ PROMPT = "Solve the equation 8x + 7 = -23. Explain step by step in English."
 
 
 def example_raw_dict_schema() -> None:
-    """1. Pass a raw dict JSON Schema (sent as-is, no normalization)."""
+    """1. Pass a raw dict JSON Schema (sent as-is)."""
     chat = Chat(
         messages=[Messages(role=MessagesRole.USER, content=PROMPT)],
         response_format={
@@ -60,7 +60,7 @@ def example_raw_dict_schema() -> None:
 
 
 def example_pydantic_model_schema() -> None:
-    """2. Pass a Pydantic BaseModel — SDK generates + normalizes JSON Schema."""
+    """2. Pass a Pydantic BaseModel and let the SDK generate the JSON Schema."""
     chat = Chat(
         messages=[Messages(role=MessagesRole.USER, content=PROMPT)],
         response_format={
@@ -86,7 +86,7 @@ def example_chat_parse() -> None:
     with GigaChat() as client:
         completion, parsed = client.chat_parse(
             PROMPT,
-            response_model=MathAnswer,
+            response_format=MathAnswer,
             strict=True,
         )
 

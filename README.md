@@ -215,6 +215,8 @@ with GigaChat() as client:
 
 ### Structured Output (JSON Schema)
 
+> **Note:** This feature is in beta. It may not work correctly with all model versions.
+
 Force the model to reply with JSON matching your schema by setting `response_format.type="json_schema"`.
 
 > **Important:** The API returns JSON as a **string** in `choices[0].message.content`.
@@ -222,9 +224,8 @@ Force the model to reply with JSON matching your schema by setting `response_for
 
 #### Pass a Pydantic model as schema
 
-You can pass a Pydantic `BaseModel` subclass (or a `TypeAdapter`) directly as `schema`.
-The SDK generates the JSON Schema, normalizes it (OpenAI-style: `additionalProperties: false`,
-all properties required, `$ref` with sibling keywords inlined), and sends the result on the wire.
+You can pass a Pydantic `BaseModel` subclass directly as `schema`.
+The SDK generates the JSON Schema and sends the result on the wire.
 
 ```python
 import json
@@ -258,9 +259,7 @@ with GigaChat() as client:
     print(parsed.final_answer)
 ```
 
-You can also pass a raw `dict` JSON Schema instead of a Pydantic model — in that case the SDK sends it as-is (no normalization).
-
-Pydantic schemas may include `anyOf` / `oneOf` (for example, when using `Union[...]`). This is supported by the API, so you can model multiple valid JSON shapes and validate the output accordingly.
+You can also pass a raw `dict` JSON Schema instead of a Pydantic model — in that case the SDK sends it as-is.
 
 #### Automatic parsing with `chat_parse()`
 
@@ -280,23 +279,16 @@ class MathAnswer(BaseModel):
 
 
 with GigaChat() as client:
-    completion, parsed = client.chat_parse(
-        "Solve 8x + 7 = -23. Explain step by step.",
-        response_model=MathAnswer,
-        strict=True,
-    )
+    completion, parsed = client.chat_parse("Solve 8x + 7 = -23. Explain step by step.", response_format=MathAnswer)
     print(parsed.steps)
     print(parsed.final_answer)
 ```
 
-`chat_parse` raises specific exceptions when parsing fails:
+`chat_parse()` / `achat_parse()` may raise:
 
-| Exception | When |
-|-----------|------|
-| `ContentParseError` | `message.content` is not valid JSON |
-| `ContentValidationError` | JSON does not match `response_model` |
-| `LengthFinishReasonError` | `finish_reason == "length"` (response truncated) |
-| `ContentFilterFinishReasonError` | `finish_reason == "content_filter"` |
+- `LengthFinishReasonError` if the response ended with `finish_reason="length"` and was truncated
+- `json.JSONDecodeError` if the model returned invalid JSON
+- `pydantic.ValidationError` if the JSON is valid but does not match the schema
 
 ### More examples
 See the [examples/](https://github.com/ai-forever/gigachat/tree/main/examples/) folder for complete working examples including chat, functions, context variables, AI detection, and vision.
