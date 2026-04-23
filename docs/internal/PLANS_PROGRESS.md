@@ -11,7 +11,7 @@
 ## Срезы
 
 1. `[done]` Создать `src/gigachat/resources/chat.py` и `src/gigachat/resources/__init__.py`.
-2. `[pending]` Добавить `cached_property` namespaces/resources в client classes.
+2. `[done]` Добавить `cached_property` namespaces/resources в client classes.
 3. `[pending]` Вынести текущую legacy chat-логику в private helper methods.
 4. `[pending]` Перевести `assistants` / `threads` / `a_assistants` / `a_threads` на `cached_property`.
 5. `[pending]` Добавить deprecated shims.
@@ -23,3 +23,4 @@
 ## Журнал
 
 - 2026-04-23: завершён срез 1. Добавлен пакет `src/gigachat/resources/` с chat namespace/resource-классами и зафиксированы правила исполнения плана.
+- 2026-04-23: завершён срез 2. `client.chat` и `client.achat` переведены на `cached_property` namespace-объекты; для рабочей маршрутизации добавлены private legacy chat helper methods, но отдельные deprecated shims и doc updates остаются следующими срезами.
