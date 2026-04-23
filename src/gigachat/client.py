@@ -62,7 +62,7 @@ ModelT = TypeVar("ModelT", bound=pydantic.BaseModel)
 
 logger = logging.getLogger(__name__)
 
-GIGACHAT_MODEL = "GigaChat"
+GIGACHAT_MODEL = "GigaChat-2"
 
 
 def _warn_deprecated_legacy_api(old_path: str, new_path: str) -> None:
