@@ -384,7 +384,7 @@ Blockers:
 - [x] S8 — Подключить async primary stream
 - [x] S9 — Подключить async primary parse
 - [x] S10 — Закрыть regression matrix для primary vs legacy
-- [ ] S11 — Обновить README и примеры
+- [x] S11 — Обновить README и примеры
 
 ## Execution log
 | Step | Slice | Status | Commit | Tests | Notes |
@@ -399,3 +399,4 @@ Blockers:
 | 8 | S8 | done | feat(chat): add async primary stream | `uv run pytest tests/unit/gigachat/api/test_chat_completions.py tests/unit/gigachat/test_client_chat.py`; `uv run ruff check src/gigachat/api/chat_completions.py src/gigachat/resources/chat.py src/gigachat/client.py tests/unit/gigachat/api/test_chat_completions.py tests/unit/gigachat/test_client_chat.py` | Added async primary SSE transport helpers, wired `client.achat.stream(...)` to the primary stream path with the new chunk model, and verified that `client.achat.legacy.stream(...)` stays on the legacy route and legacy chunk contract. |
 | 9 | S9 | done | feat(chat): add async primary parse | `uv run pytest tests/unit/gigachat/test_client_chat.py -k "achat_parse or chat_parse"`; `uv run ruff check src/gigachat/resources/chat.py src/gigachat/client.py tests/unit/gigachat/test_client_chat.py` | Added `client.achat.parse(...)` for the primary contract, wired the async namespace to a dedicated `_achat_parse(...)` helper, and covered async structured parsing, strict/non-strict payload setup, invalid JSON, validation, and length-finish error paths. |
 | 10 | S10 | done | test(chat): cover primary and legacy routing matrix | `uv run pytest tests/unit/gigachat/test_client_lifecycle.py tests/unit/gigachat/test_client_chat.py tests/unit/gigachat/test_client_chat_parse.py tests/unit/gigachat/models/test_chat.py`; `uv run ruff check tests/unit/gigachat/test_client_lifecycle.py tests/unit/gigachat/test_client_chat.py tests/unit/gigachat/test_client_chat_parse.py tests/unit/gigachat/models/test_chat.py` | Added explicit cached-property checks for `chat/achat` and their `.legacy` resources, covered deprecated sync/async root shims against divergent primary vs legacy routes, and locked the public model export matrix so legacy aliases and primary response contracts cannot silently collapse into one shape. |
+| 11 | S11 | done | docs(chat): document primary and legacy chat surfaces | `uv run pytest tests/unit/gigachat/test_client_chat.py tests/unit/gigachat/test_client_lifecycle.py`; `uv run ruff check examples/example_chat.py` | Updated README to present the primary `client.chat` / `client.achat` surfaces first, documented the explicit `.legacy` namespace and legacy model aliases during migration, and replaced `examples/example_chat.py` with a primary-surface example while refreshing `examples/README.md`. |
