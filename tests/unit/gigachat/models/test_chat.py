@@ -1,9 +1,14 @@
+import json
+from pathlib import Path
 from typing import Any, Dict
 
 import pytest
 from pydantic import ValidationError
 
+from gigachat.models import LegacyChat, LegacyChatCompletion
 from gigachat.models.chat import (
+    Chat,
+    ChatCompletion,
     Function,
     FunctionCall,
     FunctionParameters,
@@ -11,6 +16,8 @@ from gigachat.models.chat import (
     MessagesRole,
     Usage,
 )
+
+TEST_DATA_DIR = Path(__file__).resolve().parents[3] / "data"
 
 
 def test_messages_role_enum() -> None:
@@ -67,3 +74,29 @@ def test_usage_validation() -> None:
 def test_function_parameters_default() -> None:
     params = FunctionParameters()
     assert params.type_ == "object"
+
+
+def test_chat_module_exports_legacy_aliases() -> None:
+    assert issubclass(Chat, LegacyChat)
+    assert issubclass(ChatCompletion, LegacyChatCompletion)
+
+
+def test_legacy_chat_request_round_trip_unchanged() -> None:
+    payload = json.loads((TEST_DATA_DIR / "chat.json").read_text(encoding="utf-8"))
+
+    compat_model = Chat.model_validate(payload)
+    legacy_model = LegacyChat.model_validate(payload)
+
+    assert compat_model.model_dump(exclude_none=True, by_alias=True) == legacy_model.model_dump(
+        exclude_none=True, by_alias=True
+    )
+
+
+def test_legacy_chat_completion_response_round_trip_unchanged() -> None:
+    payload = json.loads((TEST_DATA_DIR / "chat_completion.json").read_text(encoding="utf-8"))
+
+    compat_model = ChatCompletion.model_validate(payload)
+    legacy_model = LegacyChatCompletion.model_validate(payload)
+
+    assert compat_model.model_dump(exclude_none=True, by_alias=True) == payload
+    assert legacy_model.model_dump(exclude_none=True, by_alias=True) == payload
