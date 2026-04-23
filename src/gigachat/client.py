@@ -5,6 +5,7 @@ import logging
 import ssl
 import threading
 import time
+import warnings
 from functools import cached_property
 from typing import (
     Any,
@@ -53,6 +54,14 @@ ModelT = TypeVar("ModelT", bound=pydantic.BaseModel)
 logger = logging.getLogger(__name__)
 
 GIGACHAT_MODEL = "GigaChat"
+
+
+def _warn_deprecated_legacy_api(old_path: str, new_path: str) -> None:
+    warnings.warn(
+        "`{old_path}` is deprecated; use `{new_path}`.".format(old_path=old_path, new_path=new_path),
+        DeprecationWarning,
+        stacklevel=3,
+    )
 
 
 def _get_kwargs(settings: Settings) -> Dict[str, Any]:
@@ -517,6 +526,10 @@ class GigaChatSyncClient(_BaseClient):
         Raise :class:`~gigachat.exceptions.LengthFinishReasonError` if
         ``finish_reason`` is ``"length"`` (truncated response).
         """
+        _warn_deprecated_legacy_api(
+            "client.chat_parse(...)",
+            "client.chat.legacy.parse(...)",
+        )
         return self._legacy_chat_parse(payload, response_format=response_format, strict=strict)
 
     @_with_retry
@@ -543,6 +556,10 @@ class GigaChatSyncClient(_BaseClient):
 
     def stream(self, payload: Union[Chat, Dict[str, Any], str]) -> Iterator[ChatCompletionChunk]:
         """Return a model response based on the provided messages (streaming)."""
+        _warn_deprecated_legacy_api(
+            "client.stream(...)",
+            "client.chat.legacy.stream(...)",
+        )
         yield from self._legacy_chat_stream(payload)
 
 
@@ -787,6 +804,10 @@ class GigaChatAsyncClient(_BaseClient):
         Raise :class:`~gigachat.exceptions.LengthFinishReasonError` if
         ``finish_reason`` is ``"length"`` (truncated response).
         """
+        _warn_deprecated_legacy_api(
+            "client.achat_parse(...)",
+            "client.achat.legacy.parse(...)",
+        )
         return await self._legacy_achat_parse(payload, response_format=response_format, strict=strict)
 
     @_awith_retry
@@ -853,6 +874,10 @@ class GigaChatAsyncClient(_BaseClient):
 
     def astream(self, payload: Union[Chat, Dict[str, Any], str]) -> AsyncIterator[ChatCompletionChunk]:
         """Return a model response based on the provided messages (streaming)."""
+        _warn_deprecated_legacy_api(
+            "client.astream(...)",
+            "client.achat.legacy.stream(...)",
+        )
         return self._legacy_achat_stream(payload)
 
 

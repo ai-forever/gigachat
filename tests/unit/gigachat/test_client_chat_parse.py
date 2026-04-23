@@ -122,7 +122,8 @@ def test_chat_parse_sync_happy(httpx_mock: HTTPXMock) -> None:
     httpx_mock.add_response(url=CHAT_URL, json=CHAT_COMPLETION_JSON)
 
     with GigaChatSyncClient(base_url=BASE_URL, access_token=ACCESS_TOKEN) as client:
-        completion, parsed = client.chat_parse("Solve 8x+7=-23", response_format=MathResult)
+        with pytest.warns(DeprecationWarning, match=r"client\.chat_parse\(\.\.\.\)"):
+            completion, parsed = client.chat_parse("Solve 8x+7=-23", response_format=MathResult)
 
     assert isinstance(completion, ChatCompletion)
     assert isinstance(parsed, MathResult)
@@ -198,7 +199,8 @@ async def test_achat_parse_happy(httpx_mock: HTTPXMock) -> None:
     httpx_mock.add_response(url=CHAT_URL, json=CHAT_COMPLETION_JSON)
 
     async with GigaChatAsyncClient(base_url=BASE_URL, access_token=ACCESS_TOKEN) as client:
-        completion, parsed = await client.achat_parse("Solve 8x+7=-23", response_format=MathResult)
+        with pytest.warns(DeprecationWarning, match=r"client\.achat_parse\(\.\.\.\)"):
+            completion, parsed = await client.achat_parse("Solve 8x+7=-23", response_format=MathResult)
 
     assert isinstance(completion, ChatCompletion)
     assert isinstance(parsed, MathResult)

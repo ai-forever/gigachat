@@ -85,7 +85,8 @@ def test_chat(httpx_mock: HTTPXMock) -> None:
     httpx_mock.add_response(url=CHAT_URL, json=CHAT_COMPLETION)
 
     with GigaChatSyncClient(base_url=BASE_URL, model="model") as client:
-        response = client.chat("text")
+        with pytest.warns(DeprecationWarning, match=r"client\.chat\(\.\.\.\)"):
+            response = client.chat("text")
 
     assert isinstance(response, ChatCompletion)
 
@@ -287,7 +288,8 @@ def test_stream_access_token(httpx_mock: HTTPXMock) -> None:
     httpx_mock.add_response(url=CHAT_URL, content=CHAT_COMPLETION_STREAM, headers=HEADERS_STREAM)
 
     with GigaChatSyncClient(base_url=BASE_URL, access_token=ACCESS_TOKEN, user=USER, password=PASSWORD) as client:
-        response = list(client.stream(CHAT))
+        with pytest.warns(DeprecationWarning, match=r"client\.stream\(\.\.\.\)"):
+            response = list(client.stream(CHAT))
 
     assert len(response) == 3
     assert all(isinstance(chunk, ChatCompletionChunk) for chunk in response)
@@ -336,7 +338,8 @@ async def test_achat(httpx_mock: HTTPXMock) -> None:
     httpx_mock.add_response(url=CHAT_URL, json=CHAT_COMPLETION)
 
     async with GigaChatAsyncClient(base_url=BASE_URL) as client:
-        response = await client.achat("text")
+        with pytest.warns(DeprecationWarning, match=r"client\.achat\(\.\.\.\)"):
+            response = await client.achat("text")
 
     assert isinstance(response, ChatCompletion)
 
@@ -498,7 +501,8 @@ async def test_astream_access_token(httpx_mock: HTTPXMock) -> None:
     async with GigaChatAsyncClient(
         base_url=BASE_URL, access_token=ACCESS_TOKEN, user=USER, password=PASSWORD
     ) as client:
-        response = [chunk async for chunk in client.astream(CHAT)]
+        with pytest.warns(DeprecationWarning, match=r"client\.astream\(\.\.\.\)"):
+            response = [chunk async for chunk in client.astream(CHAT)]
 
     assert len(response) == 3
     assert all(isinstance(chunk, ChatCompletionChunk) for chunk in response)
