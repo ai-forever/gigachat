@@ -43,3 +43,17 @@ def test_stream_sync_parses_primary_chunk(httpx_mock: HTTPXMock) -> None:
     assert response[0].messages is not None
     assert response[0].messages[0].content is not None
     assert response[0].messages[0].content[0].text == "primary chunk"
+
+
+async def test_stream_async_parses_primary_chunk(httpx_mock: HTTPXMock) -> None:
+    httpx_mock.add_response(url=MOCK_URL, content=PRIMARY_CHAT_COMPLETION_STREAM, headers=HEADERS_STREAM)
+    chat_data = ChatCompletionRequest(messages=[ChatMessage(role="user", content="solve 2+2")])
+
+    async with httpx.AsyncClient(base_url=BASE_URL) as client:
+        response = [chunk async for chunk in chat_completions.stream_async(client, chat=chat_data)]
+
+    assert len(response) == 1
+    assert all(isinstance(chunk, ChatCompletionChunk) for chunk in response)
+    assert response[0].messages is not None
+    assert response[0].messages[0].content is not None
+    assert response[0].messages[0].content[0].text == "primary chunk"
