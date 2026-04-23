@@ -64,6 +64,20 @@ class ChatNamespace:
         """Stream a primary chat completion."""
         return self._base_client._chat_stream(payload)
 
+    def parse(
+        self,
+        payload: Union[ChatCompletionRequest, Dict[str, Any], str],
+        *,
+        response_format: Type[ModelT],
+        strict: bool = True,
+    ) -> Tuple[ChatCompletionResponse, ModelT]:
+        """Parse a primary chat completion into a model."""
+        return self._base_client._chat_parse(
+            payload,
+            response_format=response_format,
+            strict=strict,
+        )
+
     def __call__(self, payload: Union[Chat, Dict[str, Any], str]) -> ChatCompletion:
         """Call the deprecated root chat compatibility shim."""
         warnings.warn(
