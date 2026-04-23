@@ -58,7 +58,7 @@ GIGACHAT_MODEL = "GigaChat"
 
 def _warn_deprecated_legacy_api(old_path: str, new_path: str) -> None:
     warnings.warn(
-        "`{old_path}` is deprecated; use `{new_path}`.".format(old_path=old_path, new_path=new_path),
+        f"`{old_path}` is deprecated; use `{new_path}`.",
         DeprecationWarning,
         stacklevel=3,
     )
@@ -516,7 +516,7 @@ class GigaChatSyncClient(_BaseClient):
         response_format: Type[ModelT],
         strict: bool = True,
     ) -> Tuple[ChatCompletion, ModelT]:
-        """Deprecated shim for ``client.chat.legacy.parse(...)``.
+        """Parse via deprecated ``client.chat.legacy.parse(...)`` shim.
 
         .. note:: **Beta.** This feature may not work correctly with all model versions.
 
@@ -556,7 +556,7 @@ class GigaChatSyncClient(_BaseClient):
         return tools.ai_check_sync(self._client, input_=text, model=model, access_token=self.token)
 
     def stream(self, payload: Union[Chat, Dict[str, Any], str]) -> Iterator[ChatCompletionChunk]:
-        """Deprecated shim for ``client.chat.legacy.stream(...)``."""
+        """Stream via deprecated ``client.chat.legacy.stream(...)`` shim."""
         _warn_deprecated_legacy_api(
             "client.stream(...)",
             "client.chat.legacy.stream(...)",
@@ -796,7 +796,7 @@ class GigaChatAsyncClient(_BaseClient):
         response_format: Type[ModelT],
         strict: bool = True,
     ) -> Tuple[ChatCompletion, ModelT]:
-        """Deprecated shim for ``client.achat.legacy.parse(...)``.
+        """Parse via deprecated ``client.achat.legacy.parse(...)`` shim.
 
         .. note:: **Beta.** This feature may not work correctly with all model versions.
 
@@ -874,7 +874,7 @@ class GigaChatAsyncClient(_BaseClient):
         return await tools.ai_check_async(self._aclient, input_=text, model=model, access_token=self.token)
 
     def astream(self, payload: Union[Chat, Dict[str, Any], str]) -> AsyncIterator[ChatCompletionChunk]:
-        """Deprecated shim for ``client.achat.legacy.stream(...)``."""
+        """Stream via deprecated ``client.achat.legacy.stream(...)`` shim."""
         _warn_deprecated_legacy_api(
             "client.astream(...)",
             "client.achat.legacy.stream(...)",
