@@ -166,3 +166,5 @@ cython_debug/
 .aider*
 *.tmp
 **/.free-code-logs/
+local/
+docs/internal/
