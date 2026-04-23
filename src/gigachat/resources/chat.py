@@ -15,6 +15,8 @@ ModelT = TypeVar("ModelT", bound=pydantic.BaseModel)
 
 
 class LegacyChatSyncResource:
+    """Legacy chat resource exposed under ``client.chat.legacy``."""
+
     def __init__(self, base_client: "GigaChatSyncClient") -> None:
         self._base_client = base_client
 
@@ -42,15 +44,18 @@ class LegacyChatSyncResource:
 
 
 class ChatNamespace:
+    """Chat namespace reserved for chat resources and compatibility shims."""
+
     def __init__(self, base_client: "GigaChatSyncClient") -> None:
         self._base_client = base_client
 
     @cached_property
     def legacy(self) -> LegacyChatSyncResource:
-        """Return the legacy chat resource."""
+        """Return the legacy chat resource namespace."""
         return LegacyChatSyncResource(self._base_client)
 
     def __call__(self, payload: Union[Chat, Dict[str, Any], str]) -> ChatCompletion:
+        """Call the deprecated root chat compatibility shim."""
         warnings.warn(
             "`client.chat(...)` is deprecated; use `client.chat.legacy.create(...)`.",
             DeprecationWarning,
@@ -60,6 +65,8 @@ class ChatNamespace:
 
 
 class LegacyChatAsyncResource:
+    """Legacy async chat resource exposed under ``client.achat.legacy``."""
+
     def __init__(self, base_client: "GigaChatAsyncClient") -> None:
         self._base_client = base_client
 
@@ -87,15 +94,18 @@ class LegacyChatAsyncResource:
 
 
 class AsyncChatNamespace:
+    """Async chat namespace reserved for chat resources and compatibility shims."""
+
     def __init__(self, base_client: "GigaChatAsyncClient") -> None:
         self._base_client = base_client
 
     @cached_property
     def legacy(self) -> LegacyChatAsyncResource:
-        """Return the async legacy chat resource."""
+        """Return the async legacy chat resource namespace."""
         return LegacyChatAsyncResource(self._base_client)
 
     async def __call__(self, payload: Union[Chat, Dict[str, Any], str]) -> ChatCompletion:
+        """Call the deprecated async root chat compatibility shim."""
         warnings.warn(
             "`client.achat(...)` is deprecated; use `client.achat.legacy.create(...)`.",
             DeprecationWarning,

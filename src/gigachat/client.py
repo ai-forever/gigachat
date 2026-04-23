@@ -100,7 +100,7 @@ def _get_auth_kwargs(settings: Settings) -> Dict[str, Any]:
 
 
 def _validate_response_format(payload: Union[Chat, Dict[str, Any], str]) -> None:
-    """Raise TypeError if response_format is a Pydantic model (use chat_parse instead)."""
+    """Raise TypeError if response_format is a Pydantic model on the legacy chat create path."""
     if isinstance(payload, dict):
         response_format = payload.get("response_format")
     elif isinstance(payload, Chat):
@@ -114,7 +114,8 @@ def _validate_response_format(payload: Union[Chat, Dict[str, Any], str]) -> None
     ):
         raise TypeError(
             "You tried to pass a Pydantic model to `chat(response_format=...)`; "
-            "use `client.chat_parse(payload, response_format=...)` instead"
+            "use `client.chat.legacy.parse(payload, response_format=...)` or "
+            "`client.achat.legacy.parse(payload, response_format=...)` instead"
         )
 
 
@@ -336,7 +337,7 @@ class GigaChatSyncClient(_BaseClient):
 
     @cached_property
     def chat(self) -> ChatNamespace:
-        """Return the chat namespace."""
+        """Return the chat namespace with legacy chat methods under ``.legacy``."""
         return ChatNamespace(self)
 
     @cached_property
@@ -482,7 +483,7 @@ class GigaChatSyncClient(_BaseClient):
     @_with_retry
     @_with_auth
     def _legacy_chat_create(self, payload: Union[Chat, Dict[str, Any], str]) -> ChatCompletion:
-        """Return a model response based on the provided messages."""
+        """Return a legacy chat completion based on the provided messages."""
         _validate_response_format(payload)
         chat_data = _parse_chat(payload, self._settings)
         return chat.chat_sync(self._client, chat=chat_data, access_token=self.token)
@@ -490,7 +491,7 @@ class GigaChatSyncClient(_BaseClient):
     @_with_retry_stream
     @_with_auth_stream
     def _legacy_chat_stream(self, payload: Union[Chat, Dict[str, Any], str]) -> Iterator[ChatCompletionChunk]:
-        """Return a model response based on the provided messages (streaming)."""
+        """Return a legacy streaming chat completion based on the provided messages."""
         chat_data = _parse_chat(payload, self._settings)
 
         yield from chat.stream_sync(self._client, chat=chat_data, access_token=self.token)
@@ -502,7 +503,7 @@ class GigaChatSyncClient(_BaseClient):
         response_format: Type[ModelT],
         strict: bool = True,
     ) -> Tuple[ChatCompletion, ModelT]:
-        """Send a chat request and parse the response into a structured object."""
+        """Send a legacy chat request and parse the response into a structured object."""
         chat_data = _prepare_chat_for_parse(payload, self._settings, response_format, strict)
         completion = self._legacy_chat_create(chat_data)
         parsed = _parse_completion(completion, response_format)
@@ -515,13 +516,13 @@ class GigaChatSyncClient(_BaseClient):
         response_format: Type[ModelT],
         strict: bool = True,
     ) -> Tuple[ChatCompletion, ModelT]:
-        """Send a chat request and parse the response into a structured object.
+        """Deprecated shim for ``client.chat.legacy.parse(...)``.
 
         .. note:: **Beta.** This feature may not work correctly with all model versions.
 
         *response_format* accepts a Pydantic ``BaseModel`` subclass.
         The method derives a JSON Schema from it, sends the request via
-        :meth:`chat`, then parses and validates ``message.content``.
+        :meth:`client.chat.legacy.parse`, then parses and validates ``message.content``.
 
         Raise :class:`~gigachat.exceptions.LengthFinishReasonError` if
         ``finish_reason`` is ``"length"`` (truncated response).
@@ -555,7 +556,7 @@ class GigaChatSyncClient(_BaseClient):
         return tools.ai_check_sync(self._client, input_=text, model=model, access_token=self.token)
 
     def stream(self, payload: Union[Chat, Dict[str, Any], str]) -> Iterator[ChatCompletionChunk]:
-        """Return a model response based on the provided messages (streaming)."""
+        """Deprecated shim for ``client.chat.legacy.stream(...)``."""
         _warn_deprecated_legacy_api(
             "client.stream(...)",
             "client.chat.legacy.stream(...)",
@@ -648,7 +649,7 @@ class GigaChatAsyncClient(_BaseClient):
 
     @cached_property
     def achat(self) -> AsyncChatNamespace:
-        """Return the async chat namespace."""
+        """Return the async chat namespace with legacy chat methods under ``.legacy``."""
         return AsyncChatNamespace(self)
 
     @cached_property
@@ -762,7 +763,7 @@ class GigaChatAsyncClient(_BaseClient):
     @_awith_retry
     @_awith_auth
     async def _legacy_achat_create(self, payload: Union[Chat, Dict[str, Any], str]) -> ChatCompletion:
-        """Return a model response based on the provided messages."""
+        """Return a legacy chat completion based on the provided messages."""
         _validate_response_format(payload)
         chat_data = _parse_chat(payload, self._settings)
 
@@ -771,7 +772,7 @@ class GigaChatAsyncClient(_BaseClient):
     @_awith_retry_stream
     @_awith_auth_stream
     def _legacy_achat_stream(self, payload: Union[Chat, Dict[str, Any], str]) -> AsyncIterator[ChatCompletionChunk]:
-        """Return a model response based on the provided messages (streaming)."""
+        """Return a legacy streaming chat completion based on the provided messages."""
         chat_data = _parse_chat(payload, self._settings)
         return chat.stream_async(self._aclient, chat=chat_data, access_token=self.token)
 
@@ -782,7 +783,7 @@ class GigaChatAsyncClient(_BaseClient):
         response_format: Type[ModelT],
         strict: bool = True,
     ) -> Tuple[ChatCompletion, ModelT]:
-        """Send a chat request and parse the response into *response_format*."""
+        """Send a legacy chat request and parse the response into *response_format*."""
         chat_data = _prepare_chat_for_parse(payload, self._settings, response_format, strict)
         completion = await self._legacy_achat_create(chat_data)
         parsed = _parse_completion(completion, response_format)
@@ -795,7 +796,7 @@ class GigaChatAsyncClient(_BaseClient):
         response_format: Type[ModelT],
         strict: bool = True,
     ) -> Tuple[ChatCompletion, ModelT]:
-        """Send a chat request and parse the response into *response_format*.
+        """Deprecated shim for ``client.achat.legacy.parse(...)``.
 
         .. note:: **Beta.** This feature may not work correctly with all model versions.
 
@@ -873,7 +874,7 @@ class GigaChatAsyncClient(_BaseClient):
         return await tools.ai_check_async(self._aclient, input_=text, model=model, access_token=self.token)
 
     def astream(self, payload: Union[Chat, Dict[str, Any], str]) -> AsyncIterator[ChatCompletionChunk]:
-        """Return a model response based on the provided messages (streaming)."""
+        """Deprecated shim for ``client.achat.legacy.stream(...)``."""
         _warn_deprecated_legacy_api(
             "client.astream(...)",
             "client.achat.legacy.stream(...)",
