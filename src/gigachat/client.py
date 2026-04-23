@@ -896,6 +896,19 @@ class GigaChatAsyncClient(_BaseClient):
         chat_data = _parse_chat(payload, self._settings)
         return legacy_chat.stream_async(self._aclient, chat=chat_data, access_token=self.token)
 
+    async def _achat_parse(
+        self,
+        payload: Union[ChatCompletionRequest, Dict[str, Any], str],
+        *,
+        response_format: Type[ModelT],
+        strict: bool = True,
+    ) -> Tuple[ChatCompletionResponse, ModelT]:
+        """Send a primary chat request and parse the response into a structured object."""
+        chat_data = _prepare_chat_completion_for_parse(payload, self._settings, response_format, strict)
+        completion = await self._achat_create(chat_data)
+        parsed = _parse_primary_completion(completion, response_format)
+        return completion, parsed
+
     async def _legacy_achat_parse(
         self,
         payload: Union[Chat, Dict[str, Any], str],
