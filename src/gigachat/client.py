@@ -46,6 +46,7 @@ from gigachat.models.chat_completions import (
     ChatCompletionRequest,
     ChatCompletionResponse,
     ChatMessage,
+    ChatResponseFormat,
 )
 from gigachat.models.embeddings import Embeddings
 from gigachat.models.files import DeletedFile, Image, UploadedFile, UploadedFiles
@@ -154,6 +155,18 @@ def _prepare_chat_for_parse(
     return chat_data
 
 
+def _prepare_chat_completion_for_parse(
+    payload: Union[ChatCompletionRequest, Dict[str, Any], str],
+    settings: Settings,
+    response_format: Type[pydantic.BaseModel],
+    strict: bool,
+) -> ChatCompletionRequest:
+    """Prepare a primary chat completion request with a structured response schema."""
+    chat_data = _parse_chat_completion(payload, settings)
+    chat_data.response_format = ChatResponseFormat(type="json_schema", schema=response_format, strict=strict)
+    return chat_data
+
+
 def _parse_chat_completion(
     payload: Union[ChatCompletionRequest, Dict[str, Any], str],
     settings: Settings,
@@ -188,6 +201,41 @@ def _parse_completion(
 
     data = json.loads(choice.message.content)
     return response_format.model_validate(data)
+
+
+def _parse_primary_completion(
+    completion: ChatCompletionResponse,
+    response_format: Type[ModelT],
+) -> ModelT:
+    """Parse and validate assistant text content from *completion* into *response_format*."""
+    if not completion.messages:
+        raise ValueError("Response has no messages")
+
+    found_assistant_message = False
+
+    for message in completion.messages:
+        if message.role != "assistant":
+            continue
+
+        found_assistant_message = True
+
+        if message.finish_reason == "length":
+            raise LengthFinishReasonError(completion)
+
+        if not message.content:
+            continue
+
+        raw_content = "".join(part.text for part in message.content if part.text is not None)
+        if not raw_content:
+            continue
+
+        data = json.loads(raw_content)
+        return response_format.model_validate(data)
+
+    if not found_assistant_message:
+        raise ValueError("Response has no assistant messages")
+
+    raise ValueError("Response has no assistant text content")
 
 
 def _build_access_token(token: Token) -> AccessToken:
@@ -522,6 +570,19 @@ class GigaChatSyncClient(_BaseClient):
         """Return a primary streaming chat completion based on the provided messages."""
         chat_data = _parse_chat_completion(payload, self._settings)
         yield from chat_completions.stream_sync(self._client, chat=chat_data, access_token=self.token)
+
+    def _chat_parse(
+        self,
+        payload: Union[ChatCompletionRequest, Dict[str, Any], str],
+        *,
+        response_format: Type[ModelT],
+        strict: bool = True,
+    ) -> Tuple[ChatCompletionResponse, ModelT]:
+        """Send a primary chat request and parse the response into a structured object."""
+        chat_data = _prepare_chat_completion_for_parse(payload, self._settings, response_format, strict)
+        completion = self._chat_create(chat_data)
+        parsed = _parse_primary_completion(completion, response_format)
+        return completion, parsed
 
     @_with_retry
     @_with_auth

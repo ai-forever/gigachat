@@ -1,8 +1,10 @@
+import copy
+import json
 import warnings
-from typing import Any, Optional, cast
+from typing import Any, List, Optional, cast
 
 import pytest
-from pydantic import BaseModel
+from pydantic import BaseModel, ValidationError
 from pytest_httpx import HTTPXMock
 
 from gigachat.api import chat_completions, legacy_chat
@@ -14,7 +16,7 @@ from gigachat.client import (
     _parse_chat_completion,
 )
 from gigachat.context import chat_completions_url_cvar, chat_url_cvar
-from gigachat.exceptions import AuthenticationError
+from gigachat.exceptions import AuthenticationError, LengthFinishReasonError
 from gigachat.models import (
     Chat,
     ChatCompletion,
@@ -72,6 +74,11 @@ PRIMARY_CHAT_COMPLETION_STREAM = (
     b'"messages":[{"role":"assistant","content":"primary chunk"}]}\n\n'
     b"data: [DONE]\n\n"
 )
+
+
+class MathResult(BaseModel):
+    steps: List[str]
+    final_answer: str
 
 
 @pytest.mark.parametrize(
@@ -159,9 +166,6 @@ def test_chat(httpx_mock: HTTPXMock) -> None:
 
 
 def test_chat_rejects_pydantic_response_format_on_chat() -> None:
-    class MathResult(BaseModel):
-        answer: str
-
     payload = {
         "messages": [{"role": "user", "content": "Solve 2+2"}],
         "response_format": MathResult,
@@ -334,6 +338,86 @@ def test_chat_stream_uses_explicit_primary_transport(monkeypatch: pytest.MonkeyP
     assert isinstance(captured["chat"], ChatCompletionRequest)
     assert captured["chat"].messages[0].content is not None
     assert captured["chat"].messages[0].content[0].text == "text"
+
+
+def test_chat_parse_uses_primary_route(httpx_mock: HTTPXMock) -> None:
+    primary_url_token = chat_completions_url_cvar.set("/chat/completions/primary")
+    legacy_url_token = chat_url_cvar.set("/chat/completions/legacy")
+    response_payload = copy.deepcopy(PRIMARY_CHAT_COMPLETION)
+    response_payload["messages"][0]["content"] = [
+        {"text": '{"steps": ["Переносим 7 в правую часть", "Делим на 8"], '},
+        {"text": '"final_answer": "x = -3.75"}'},
+    ]
+
+    try:
+        httpx_mock.add_response(url=f"{BASE_URL}/chat/completions/primary", json=response_payload)
+
+        with GigaChatSyncClient(base_url=BASE_URL, access_token=ACCESS_TOKEN) as client:
+            completion, parsed = client.chat.parse("Solve 8x+7=-23", response_format=MathResult)
+    finally:
+        chat_completions_url_cvar.reset(primary_url_token)
+        chat_url_cvar.reset(legacy_url_token)
+
+    requests = httpx_mock.get_requests()
+    request_body = json.loads(requests[0].content)
+
+    assert isinstance(completion, ChatCompletionResponse)
+    assert isinstance(parsed, MathResult)
+    assert parsed.final_answer == "x = -3.75"
+    assert request_body["response_format"]["type"] == "json_schema"
+    assert isinstance(request_body["response_format"]["schema"], dict)
+    assert request_body["response_format"]["strict"] is True
+    assert len(requests) == 1
+    assert str(requests[0].url) == f"{BASE_URL}/chat/completions/primary"
+
+
+def test_chat_parse_sets_primary_response_format_strict_false(httpx_mock: HTTPXMock) -> None:
+    response_payload = copy.deepcopy(PRIMARY_CHAT_COMPLETION)
+    response_payload["messages"][0]["content"] = [
+        {"text": '{"steps": ["Шаг"], "final_answer": "4"}'},
+    ]
+    httpx_mock.add_response(url=CHAT_URL, json=response_payload)
+
+    with GigaChatSyncClient(base_url=BASE_URL, access_token=ACCESS_TOKEN) as client:
+        completion, parsed = client.chat.parse("Solve 2+2", response_format=MathResult, strict=False)
+
+    request = httpx_mock.get_requests()[0]
+    body = json.loads(request.content)
+
+    assert isinstance(completion, ChatCompletionResponse)
+    assert isinstance(parsed, MathResult)
+    assert body["response_format"]["strict"] is False
+
+
+def test_chat_parse_raises_for_invalid_primary_json(httpx_mock: HTTPXMock) -> None:
+    response_payload = copy.deepcopy(PRIMARY_CHAT_COMPLETION)
+    response_payload["messages"][0]["content"] = [{"text": "not json"}]
+    httpx_mock.add_response(url=CHAT_URL, json=response_payload)
+
+    with GigaChatSyncClient(base_url=BASE_URL, access_token=ACCESS_TOKEN) as client:
+        with pytest.raises(json.JSONDecodeError):
+            client.chat.parse("Solve 2+2", response_format=MathResult)
+
+
+def test_chat_parse_raises_for_primary_schema_mismatch(httpx_mock: HTTPXMock) -> None:
+    response_payload = copy.deepcopy(PRIMARY_CHAT_COMPLETION)
+    response_payload["messages"][0]["content"] = [{"text": '{"wrong_field": 42}'}]
+    httpx_mock.add_response(url=CHAT_URL, json=response_payload)
+
+    with GigaChatSyncClient(base_url=BASE_URL, access_token=ACCESS_TOKEN) as client:
+        with pytest.raises(ValidationError):
+            client.chat.parse("Solve 2+2", response_format=MathResult)
+
+
+def test_chat_parse_raises_for_primary_length_finish_reason(httpx_mock: HTTPXMock) -> None:
+    response_payload = copy.deepcopy(PRIMARY_CHAT_COMPLETION)
+    response_payload["messages"][0]["finish_reason"] = "length"
+    response_payload["messages"][0]["content"] = [{"text": '{"steps": ["Шаг"]'}]
+    httpx_mock.add_response(url=CHAT_URL, json=response_payload)
+
+    with GigaChatSyncClient(base_url=BASE_URL, access_token=ACCESS_TOKEN) as client:
+        with pytest.raises(LengthFinishReasonError):
+            client.chat.parse("Solve 2+2", response_format=MathResult)
 
 
 def test_chat_access_token(httpx_mock: HTTPXMock) -> None:
