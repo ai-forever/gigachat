@@ -138,6 +138,20 @@ class AsyncChatNamespace:
         """Stream a primary chat completion."""
         return self._base_client._achat_stream(payload)
 
+    async def parse(
+        self,
+        payload: Union[ChatCompletionRequest, Dict[str, Any], str],
+        *,
+        response_format: Type[ModelT],
+        strict: bool = True,
+    ) -> Tuple[ChatCompletionResponse, ModelT]:
+        """Parse a primary chat completion into a model."""
+        return await self._base_client._achat_parse(
+            payload,
+            response_format=response_format,
+            strict=strict,
+        )
+
     async def __call__(self, payload: Union[Chat, Dict[str, Any], str]) -> ChatCompletion:
         """Call the deprecated async root chat compatibility shim."""
         warnings.warn(

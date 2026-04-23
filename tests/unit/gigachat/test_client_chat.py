@@ -902,6 +902,86 @@ async def test_achat_stream_uses_explicit_primary_transport(monkeypatch: pytest.
     assert captured["chat"].messages[0].content[0].text == "text"
 
 
+async def test_achat_parse_uses_primary_route(httpx_mock: HTTPXMock) -> None:
+    primary_url_token = chat_completions_url_cvar.set("/chat/completions/primary")
+    legacy_url_token = chat_url_cvar.set("/chat/completions/legacy")
+    response_payload = copy.deepcopy(PRIMARY_CHAT_COMPLETION)
+    response_payload["messages"][0]["content"] = [
+        {"text": '{"steps": ["Переносим 7 в правую часть", "Делим на 8"], '},
+        {"text": '"final_answer": "x = -3.75"}'},
+    ]
+
+    try:
+        httpx_mock.add_response(url=f"{BASE_URL}/chat/completions/primary", json=response_payload)
+
+        async with GigaChatAsyncClient(base_url=BASE_URL, access_token=ACCESS_TOKEN) as client:
+            completion, parsed = await client.achat.parse("Solve 8x+7=-23", response_format=MathResult)
+    finally:
+        chat_completions_url_cvar.reset(primary_url_token)
+        chat_url_cvar.reset(legacy_url_token)
+
+    requests = httpx_mock.get_requests()
+    request_body = json.loads(requests[0].content)
+
+    assert isinstance(completion, ChatCompletionResponse)
+    assert isinstance(parsed, MathResult)
+    assert parsed.final_answer == "x = -3.75"
+    assert request_body["response_format"]["type"] == "json_schema"
+    assert isinstance(request_body["response_format"]["schema"], dict)
+    assert request_body["response_format"]["strict"] is True
+    assert len(requests) == 1
+    assert str(requests[0].url) == f"{BASE_URL}/chat/completions/primary"
+
+
+async def test_achat_parse_sets_primary_response_format_strict_false(httpx_mock: HTTPXMock) -> None:
+    response_payload = copy.deepcopy(PRIMARY_CHAT_COMPLETION)
+    response_payload["messages"][0]["content"] = [
+        {"text": '{"steps": ["Шаг"], "final_answer": "4"}'},
+    ]
+    httpx_mock.add_response(url=CHAT_URL, json=response_payload)
+
+    async with GigaChatAsyncClient(base_url=BASE_URL, access_token=ACCESS_TOKEN) as client:
+        completion, parsed = await client.achat.parse("Solve 2+2", response_format=MathResult, strict=False)
+
+    request = httpx_mock.get_requests()[0]
+    body = json.loads(request.content)
+
+    assert isinstance(completion, ChatCompletionResponse)
+    assert isinstance(parsed, MathResult)
+    assert body["response_format"]["strict"] is False
+
+
+async def test_achat_parse_raises_for_invalid_primary_json(httpx_mock: HTTPXMock) -> None:
+    response_payload = copy.deepcopy(PRIMARY_CHAT_COMPLETION)
+    response_payload["messages"][0]["content"] = [{"text": "not json"}]
+    httpx_mock.add_response(url=CHAT_URL, json=response_payload)
+
+    async with GigaChatAsyncClient(base_url=BASE_URL, access_token=ACCESS_TOKEN) as client:
+        with pytest.raises(json.JSONDecodeError):
+            await client.achat.parse("Solve 2+2", response_format=MathResult)
+
+
+async def test_achat_parse_raises_for_primary_schema_mismatch(httpx_mock: HTTPXMock) -> None:
+    response_payload = copy.deepcopy(PRIMARY_CHAT_COMPLETION)
+    response_payload["messages"][0]["content"] = [{"text": '{"wrong_field": 42}'}]
+    httpx_mock.add_response(url=CHAT_URL, json=response_payload)
+
+    async with GigaChatAsyncClient(base_url=BASE_URL, access_token=ACCESS_TOKEN) as client:
+        with pytest.raises(ValidationError):
+            await client.achat.parse("Solve 2+2", response_format=MathResult)
+
+
+async def test_achat_parse_raises_for_primary_length_finish_reason(httpx_mock: HTTPXMock) -> None:
+    response_payload = copy.deepcopy(PRIMARY_CHAT_COMPLETION)
+    response_payload["messages"][0]["finish_reason"] = "length"
+    response_payload["messages"][0]["content"] = [{"text": '{"steps": ["Шаг"]'}]
+    httpx_mock.add_response(url=CHAT_URL, json=response_payload)
+
+    async with GigaChatAsyncClient(base_url=BASE_URL, access_token=ACCESS_TOKEN) as client:
+        with pytest.raises(LengthFinishReasonError):
+            await client.achat.parse("Solve 2+2", response_format=MathResult)
+
+
 async def test_achat_legacy_stream_uses_explicit_legacy_transport(monkeypatch: pytest.MonkeyPatch) -> None:
     captured = {}
 

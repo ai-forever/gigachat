@@ -382,7 +382,7 @@ Blockers:
 - [x] S6 — Подключить sync primary parse
 - [x] S7 — Подключить async primary create
 - [x] S8 — Подключить async primary stream
-- [ ] S9 — Подключить async primary parse
+- [x] S9 — Подключить async primary parse
 - [ ] S10 — Закрыть regression matrix для primary vs legacy
 - [ ] S11 — Обновить README и примеры
 
@@ -397,3 +397,4 @@ Blockers:
 | 6 | S6 | done | feat(chat): add sync primary parse | `uv run pytest tests/unit/gigachat/test_client_chat.py tests/unit/gigachat/test_client_chat_parse.py tests/unit/gigachat/test_exceptions.py`; `uv run ruff check src/gigachat/client.py src/gigachat/resources/chat.py src/gigachat/exceptions.py tests/unit/gigachat/test_client_chat.py` | Added `client.chat.parse(...)` for the primary contract, derived JSON Schema payloads from Pydantic models, parsed assistant JSON from `messages[].content[].text`, and covered strict/non-strict plus invalid JSON, validation, and length-finish error paths. |
 | 7 | S7 | done | feat(chat): wire async primary create | `uv run pytest tests/unit/gigachat/test_client_chat.py tests/unit/gigachat/test_client_lifecycle.py`; `uv run ruff check src/gigachat/api/chat_completions.py src/gigachat/resources/chat.py src/gigachat/client.py tests/unit/gigachat/test_client_chat.py` | Added async primary create transport helpers, wired `await client.achat.create(...)` to the primary request/response contract, kept `await client.achat.legacy.create(...)` on the legacy route, and covered async route separation plus explicit primary transport usage. |
 | 8 | S8 | done | feat(chat): add async primary stream | `uv run pytest tests/unit/gigachat/api/test_chat_completions.py tests/unit/gigachat/test_client_chat.py`; `uv run ruff check src/gigachat/api/chat_completions.py src/gigachat/resources/chat.py src/gigachat/client.py tests/unit/gigachat/api/test_chat_completions.py tests/unit/gigachat/test_client_chat.py` | Added async primary SSE transport helpers, wired `client.achat.stream(...)` to the primary stream path with the new chunk model, and verified that `client.achat.legacy.stream(...)` stays on the legacy route and legacy chunk contract. |
+| 9 | S9 | done | feat(chat): add async primary parse | `uv run pytest tests/unit/gigachat/test_client_chat.py -k "achat_parse or chat_parse"`; `uv run ruff check src/gigachat/resources/chat.py src/gigachat/client.py tests/unit/gigachat/test_client_chat.py` | Added `client.achat.parse(...)` for the primary contract, wired the async namespace to a dedicated `_achat_parse(...)` helper, and covered async structured parsing, strict/non-strict payload setup, invalid JSON, validation, and length-finish error paths. |
