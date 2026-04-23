@@ -839,6 +839,69 @@ async def test_achat_create_uses_explicit_primary_transport(monkeypatch: pytest.
     assert captured["chat"].messages[0].content[0].text == "text"
 
 
+async def test_achat_stream_uses_primary_route(httpx_mock: HTTPXMock) -> None:
+    primary_url_token = chat_completions_url_cvar.set("/chat/completions/primary")
+    legacy_url_token = chat_url_cvar.set("/chat/completions/legacy")
+
+    try:
+        httpx_mock.add_response(
+            url=f"{BASE_URL}/chat/completions/primary",
+            content=PRIMARY_CHAT_COMPLETION_STREAM,
+            headers=HEADERS_STREAM,
+        )
+
+        async with GigaChatAsyncClient(base_url=BASE_URL, access_token=ACCESS_TOKEN) as client:
+            response = [chunk async for chunk in client.achat.stream("text")]
+    finally:
+        chat_completions_url_cvar.reset(primary_url_token)
+        chat_url_cvar.reset(legacy_url_token)
+
+    requests = httpx_mock.get_requests()
+    assert len(response) == 1
+    assert all(isinstance(chunk, PrimaryChatCompletionChunk) for chunk in response)
+    assert response[0].messages is not None
+    assert response[0].messages[0].content is not None
+    assert response[0].messages[0].content[0].text == "primary chunk"
+    assert len(requests) == 1
+    assert str(requests[0].url) == f"{BASE_URL}/chat/completions/primary"
+
+
+async def test_achat_stream_uses_explicit_primary_transport(monkeypatch: pytest.MonkeyPatch) -> None:
+    captured = {}
+
+    async def iterate() -> Any:
+        yield PrimaryChatCompletionChunk.model_validate(
+            {
+                "model": "GigaChat-2-Max",
+                "created_at": 1760434637,
+                "messages": [{"role": "assistant", "content": "primary chunk"}],
+            }
+        )
+
+    def fake_stream_async(
+        client: Any,
+        *,
+        chat: ChatCompletionRequest,
+        access_token: Optional[str] = None,
+    ) -> Any:
+        captured["client"] = client
+        captured["chat"] = chat
+        captured["access_token"] = access_token
+        return iterate()
+
+    monkeypatch.setattr(chat_completions, "stream_async", fake_stream_async)
+
+    async with GigaChatAsyncClient(base_url=BASE_URL, access_token=ACCESS_TOKEN) as client:
+        response = [chunk async for chunk in client.achat.stream("text")]
+
+    assert len(response) == 1
+    assert isinstance(response[0], PrimaryChatCompletionChunk)
+    assert captured["access_token"] == ACCESS_TOKEN
+    assert isinstance(captured["chat"], ChatCompletionRequest)
+    assert captured["chat"].messages[0].content is not None
+    assert captured["chat"].messages[0].content[0].text == "text"
+
+
 async def test_achat_legacy_stream_uses_explicit_legacy_transport(monkeypatch: pytest.MonkeyPatch) -> None:
     captured = {}
 

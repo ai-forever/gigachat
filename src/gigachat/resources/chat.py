@@ -132,6 +132,12 @@ class AsyncChatNamespace:
         """Create a primary chat completion."""
         return await self._base_client._achat_create(payload)
 
+    def stream(
+        self, payload: Union[ChatCompletionRequest, Dict[str, Any], str]
+    ) -> AsyncIterator[PrimaryChatCompletionChunk]:
+        """Stream a primary chat completion."""
+        return self._base_client._achat_stream(payload)
+
     async def __call__(self, payload: Union[Chat, Dict[str, Any], str]) -> ChatCompletion:
         """Call the deprecated async root chat compatibility shim."""
         warnings.warn(
