@@ -205,6 +205,40 @@ def test_chat_completion_response_parses_primary_contract() -> None:
     assert response.additional_data.execution_steps[0].model_dump()["type"] == "tool_call"
 
 
+def test_chat_completion_request_normalizes_string_tools() -> None:
+    request = ChatCompletionRequest.model_validate(
+        {
+            "messages": [{"role": "user", "content": "Найди свежие новости"}],
+            "tools": ["code_interpreter", "web_search", "functions"],
+        }
+    )
+
+    dumped = request.model_dump(exclude_none=True, by_alias=True)
+
+    assert request.tools is not None
+    assert request.tools[0].code_interpreter == {}
+    assert request.tools[1].web_search is not None
+    assert request.tools[1].web_search.model_dump(exclude_none=True, by_alias=True) == {}
+    assert request.tools[2].functions is not None
+    assert request.tools[2].functions.model_dump(exclude_none=True, by_alias=True) == {}
+    assert dumped["tools"] == [
+        {"code_interpreter": {}},
+        {"web_search": {}},
+        {"functions": {}},
+    ]
+
+
+def test_chat_tool_accepts_string_shorthand() -> None:
+    tool = ChatCompletionRequest.model_validate(
+        {
+            "messages": [{"role": "user", "content": "Запусти код"}],
+            "tools": ["code_interpreter"],
+        }
+    ).tools[0]
+
+    assert tool.code_interpreter == {}
+
+
 def test_chat_message_normalizes_ambiguous_content() -> None:
     message = ChatMessage.model_validate(
         {
