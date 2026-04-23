@@ -17,7 +17,7 @@
 5. `[done]` Добавить deprecated shims.
 6. `[done]` Обновить error messages/docstrings.
 7. `[done]` Обновить README/examples.
-8. `[pending]` Добавить/обновить unit tests.
+8. `[done]` Добавить/обновить unit tests.
 9. `[pending]` Прогнать `make fmt`, `make mypy`, `make test`.
 
 ## Журнал
@@ -29,3 +29,4 @@
 - 2026-04-23: завершён срез 5. Корневые legacy compatibility methods `stream`, `chat_parse`, `astream` и `achat_parse` теперь выдают `DeprecationWarning` и делегируют в `client.chat.legacy.*` / `client.achat.legacy.*`; добавлены smoke-tests на deprecated shim warnings и повторно прогнаны chat/client unit tests.
 - 2026-04-23: завершён срез 6. Сообщение `_validate_response_format(...)` теперь направляет на `client.chat.legacy.parse(...)` / `client.achat.legacy.parse(...)`, а docstrings в `client.py` и `resources/chat.py` описывают `chat`/`achat` как namespace с legacy surface и помечают root compatibility shims как deprecated; профильные tests на deprecated namespace/shim вызовы прогнаны успешно.
 - 2026-04-23: завершён срез 7. `README.md`, `examples/README.md` и публичные notebook-примеры переведены на канонический `client.chat.legacy.*` / `client.achat.legacy.*`, добавлен migration note про deprecated root shims и резервирование namespace под будущий `v2/chat/completions`.
+- 2026-04-23: завершён срез 8. Unit tests переведены на канонический `client.chat.legacy.*` / `client.achat.legacy.*`, добавлены явные проверки отсутствия `DeprecationWarning` для legacy resources и кеширования `chat`/`achat` namespaces; локально успешно прогнаны `uv run pytest tests/unit/gigachat/test_client_chat.py`, `tests/unit/gigachat/test_client_chat_parse.py` и `tests/unit/gigachat/test_client_lifecycle.py`.

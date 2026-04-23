@@ -110,12 +110,16 @@ async def test_hybrid_cleanup_partial_usage() -> None:
 def test_sync_resources_are_cached_properties() -> None:
     client = GigaChatSyncClient()
 
+    assert "chat" not in client.__dict__
     assert "assistants" not in client.__dict__
     assert "threads" not in client.__dict__
 
+    chat = client.chat
     assistants = client.assistants
     threads = client.threads
 
+    assert chat is client.chat
+    assert chat.legacy is chat.legacy
     assert assistants is client.assistants
     assert threads is client.threads
 
@@ -123,11 +127,15 @@ def test_sync_resources_are_cached_properties() -> None:
 async def test_async_resources_are_cached_properties() -> None:
     client = GigaChatAsyncClient()
 
+    assert "achat" not in client.__dict__
     assert "a_assistants" not in client.__dict__
     assert "a_threads" not in client.__dict__
 
+    chat = client.achat
     assistants = client.a_assistants
     threads = client.a_threads
 
+    assert chat is client.achat
+    assert chat.legacy is chat.legacy
     assert assistants is client.a_assistants
     assert threads is client.a_threads
