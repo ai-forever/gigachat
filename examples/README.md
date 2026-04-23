@@ -6,5 +6,5 @@ This directory contains Jupyter notebook examples demonstrating how to use the G
 * [Functions](./example_functions.ipynb) - Function calling with the GigaChat API
 * [Context Variables](./example_contextvars.ipynb) - Using context variables to pass optional headers (X-Session-ID, X-Request-ID, etc.)
 * [AI Check](./example_ai_check.ipynb) - Detecting AI-generated text using GigaCheckDetection model
-* [Structured Output](./example_structured_output.ipynb) - Getting structured JSON responses using JSON Schema and `chat_parse()`
+* [Structured Output](./example_structured_output.ipynb) - Getting structured JSON responses using JSON Schema and `client.chat.legacy.parse()`
 * [Vision](./vision/example_vision.ipynb) - Image analysis using GigaChat Vision capabilities
