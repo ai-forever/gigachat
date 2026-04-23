@@ -3,6 +3,7 @@ import threading
 from unittest.mock import MagicMock, patch
 
 from gigachat import GigaChat
+from gigachat.client import GigaChatAsyncClient, GigaChatSyncClient
 
 
 def test_lazy_init_sync() -> None:
@@ -104,3 +105,29 @@ async def test_hybrid_cleanup_partial_usage() -> None:
     # Assert
     mock_async_client.aclose.assert_called_once()
     # Should not raise error regarding NoneType for sync client
+
+
+def test_sync_resources_are_cached_properties() -> None:
+    client = GigaChatSyncClient()
+
+    assert "assistants" not in client.__dict__
+    assert "threads" not in client.__dict__
+
+    assistants = client.assistants
+    threads = client.threads
+
+    assert assistants is client.assistants
+    assert threads is client.threads
+
+
+async def test_async_resources_are_cached_properties() -> None:
+    client = GigaChatAsyncClient()
+
+    assert "a_assistants" not in client.__dict__
+    assert "a_threads" not in client.__dict__
+
+    assistants = client.a_assistants
+    threads = client.a_threads
+
+    assert assistants is client.a_assistants
+    assert threads is client.a_threads

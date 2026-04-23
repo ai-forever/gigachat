@@ -321,8 +321,6 @@ class GigaChatSyncClient(_BaseClient):
             retry_on_status_codes=retry_on_status_codes,
             **kwargs,
         )
-        self.assistants = AssistantsSyncClient(self)
-        self.threads = ThreadsSyncClient(self)
         self._sync_token_lock = threading.RLock()
         self._client_instance: Optional[httpx.Client] = None
         self._auth_client_instance: Optional[httpx.Client] = None
@@ -331,6 +329,16 @@ class GigaChatSyncClient(_BaseClient):
     def chat(self) -> ChatNamespace:
         """Return the chat namespace."""
         return ChatNamespace(self)
+
+    @cached_property
+    def assistants(self) -> AssistantsSyncClient:
+        """Return the assistants resource."""
+        return AssistantsSyncClient(self)
+
+    @cached_property
+    def threads(self) -> ThreadsSyncClient:
+        """Return the threads resource."""
+        return ThreadsSyncClient(self)
 
     @property
     def _client(self) -> httpx.Client:
@@ -617,8 +625,6 @@ class GigaChatAsyncClient(_BaseClient):
             retry_on_status_codes=retry_on_status_codes,
             **kwargs,
         )
-        self.a_assistants = AssistantsAsyncClient(self)
-        self.a_threads = ThreadsAsyncClient(self)
         self._async_token_lock = asyncio.Lock()
         self._aclient_instance: Optional[httpx.AsyncClient] = None
         self._auth_aclient_instance: Optional[httpx.AsyncClient] = None
@@ -627,6 +633,16 @@ class GigaChatAsyncClient(_BaseClient):
     def achat(self) -> AsyncChatNamespace:
         """Return the async chat namespace."""
         return AsyncChatNamespace(self)
+
+    @cached_property
+    def a_assistants(self) -> AssistantsAsyncClient:
+        """Return the async assistants resource."""
+        return AssistantsAsyncClient(self)
+
+    @cached_property
+    def a_threads(self) -> ThreadsAsyncClient:
+        """Return the async threads resource."""
+        return ThreadsAsyncClient(self)
 
     @property
     def _aclient(self) -> httpx.AsyncClient:
