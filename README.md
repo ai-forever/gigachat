@@ -76,13 +76,28 @@ set `GIGACHAT_VERIFY_SSL_CERTS=false` or pass `verify_ssl_certs=False` to `GigaC
 
 > The examples below assume authentication is configured via environment variables (for example, `GIGACHAT_CREDENTIALS`). See [Authentication](#authentication).
 
+### Migration Note
+
+`client.chat` and `client.achat` are namespace objects. For the current legacy chat API, use:
+
+- `client.chat.legacy.create(...)`
+- `client.chat.legacy.stream(...)`
+- `client.chat.legacy.parse(...)`
+- `await client.achat.legacy.create(...)`
+- `client.achat.legacy.stream(...)`
+- `await client.achat.legacy.parse(...)`
+
+Root compatibility shims such as `client.chat(...)`, `client.stream(...)`, `client.chat_parse(...)`, `client.achat(...)`, `client.astream(...)`, and `client.achat_parse(...)` still work, but they are deprecated and emit `DeprecationWarning`.
+
+The `client.chat` / `client.achat` namespaces are reserved for the future primary `v2/chat/completions` surface.
+
 ### Basic Chat
 
 ```python
 from gigachat import GigaChat
 
 with GigaChat(credentials="<your_authorization_key>") as client:
-    response = client.chat("Hello, GigaChat!")
+    response = client.chat.legacy.create("Hello, GigaChat!")
     print(response.choices[0].message.content)
 ```
 
@@ -94,7 +109,7 @@ Receive tokens as they are generated:
 from gigachat import GigaChat
 
 with GigaChat() as client:
-    for chunk in client.stream("Write a short poem about programming"):
+    for chunk in client.chat.legacy.stream("Write a short poem about programming"):
         print(chunk.choices[0].delta.content, end="", flush=True)
     print()  # Newline at the end
 ```
@@ -110,12 +125,12 @@ from gigachat import GigaChat
 async def main():
     async with GigaChat() as client:
         # Async chat
-        response = await client.achat("Explain quantum computing in simple terms")
+        response = await client.achat.legacy.create("Explain quantum computing in simple terms")
         print(response.choices[0].message.content)
 
         # Async streaming
         print("Streaming response:")
-        async for chunk in client.astream("Tell me a joke"):
+        async for chunk in client.achat.legacy.stream("Tell me a joke"):
             print(chunk.choices[0].delta.content, end="", flush=True)
         print()
 
@@ -176,7 +191,7 @@ chat = Chat(
 )
 
 with GigaChat() as client:
-    response = client.chat(chat)
+    response = client.chat.legacy.create(chat)
     message = response.choices[0].message
 
     if response.choices[0].finish_reason == "function_call":
@@ -200,7 +215,7 @@ class MathAnswer(BaseModel):
     final_answer: str
 
 with GigaChat() as client:
-    completion, parsed = client.chat_parse(
+    completion, parsed = client.chat.legacy.parse(
         "Solve 8x + 7 = -23 step by step",
         response_format=MathAnswer,
         strict=True,
@@ -210,13 +225,13 @@ print(parsed.steps)
 print(parsed.final_answer)
 ```
 
-`chat_parse()` / `achat_parse()` may raise:
+`client.chat.legacy.parse()` / `client.achat.legacy.parse()` may raise:
 
 - `LengthFinishReasonError` if the response ended with `finish_reason="length"` and was truncated
 - `json.JSONDecodeError` if the model returned invalid JSON
 - `pydantic.ValidationError` if the JSON is valid but does not match the schema
 
-See [examples/example_structured_output.ipynb](examples/example_structured_output.ipynb) for more approaches (raw dict schema, Pydantic model schema, `chat_parse()`).
+See [examples/example_structured_output.ipynb](examples/example_structured_output.ipynb) for more approaches (raw dict schema, Pydantic model schema, `client.chat.legacy.parse()`).
 
 ### More examples
 See the [examples/](https://github.com/ai-forever/gigachat/tree/main/examples/) folder for complete working examples including chat, functions, context variables, AI detection, vision, and structured output.
@@ -287,7 +302,7 @@ from gigachat import GigaChat
 
 # Configuration loaded from environment variables
 with GigaChat() as client:
-    response = client.chat("Hello!")
+    response = client.chat.legacy.create("Hello!")
 ```
 
 ## Authentication
@@ -403,7 +418,7 @@ export GIGACHAT_CA_BUNDLE_FILE="<path_to_root_ca_file>"
 from gigachat import GigaChat
 
 with GigaChat(ca_bundle_file="<path_to_root_ca_file>") as client:
-    response = client.chat("Hello!")
+    response = client.chat.legacy.create("Hello!")
     print(response.choices[0].message.content)
 ```
 
@@ -456,7 +471,7 @@ from gigachat.exceptions import (
 
 try:
     with GigaChat() as client:
-        response = client.chat("Hello!")
+        response = client.chat.legacy.create("Hello!")
         print(response.choices[0].message.content)
 except AuthenticationError as e:
     print(f"Authentication failed: {e}")
@@ -512,7 +527,7 @@ request_id_cvar.set(str(uuid.uuid4()))
 custom_headers_cvar.set({"X-Custom-Header": "custom-value"})
 
 with GigaChat() as client:
-    response = client.chat("Hello!")
+    response = client.chat.legacy.create("Hello!")
 ```
 
 Available context variables:
