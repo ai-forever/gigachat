@@ -228,6 +228,34 @@ def test_chat_create_uses_primary_route(httpx_mock: HTTPXMock) -> None:
     assert str(requests[0].url) == f"{BASE_URL}/chat/completions/primary"
 
 
+def test_chat_create_normalizes_string_tools_in_request_body(httpx_mock: HTTPXMock) -> None:
+    primary_url_token = chat_completions_url_cvar.set("/chat/completions/primary")
+    legacy_url_token = chat_url_cvar.set("/chat/completions/legacy")
+
+    try:
+        httpx_mock.add_response(url=f"{BASE_URL}/chat/completions/primary", json=PRIMARY_CHAT_COMPLETION)
+
+        with GigaChatSyncClient(base_url=BASE_URL, access_token=ACCESS_TOKEN) as client:
+            response = client.chat.create(
+                {
+                    "messages": [{"role": "user", "content": "text"}],
+                    "tools": ["code_interpreter", "web_search"],
+                }
+            )
+    finally:
+        chat_completions_url_cvar.reset(primary_url_token)
+        chat_url_cvar.reset(legacy_url_token)
+
+    requests = httpx_mock.get_requests()
+    request_body = json.loads(requests[0].content)
+
+    assert isinstance(response, ChatCompletionResponse)
+    assert request_body["tools"] == [
+        {"code_interpreter": {}},
+        {"web_search": {}},
+    ]
+
+
 def test_chat_legacy_create_uses_legacy_route_when_primary_route_differs(httpx_mock: HTTPXMock) -> None:
     primary_url_token = chat_completions_url_cvar.set("/chat/completions/primary")
     legacy_url_token = chat_url_cvar.set("/chat/completions/legacy")

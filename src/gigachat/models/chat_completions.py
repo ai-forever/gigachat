@@ -30,6 +30,27 @@ def _normalize_content_parts(value: Any) -> Any:
     return value
 
 
+def _normalize_tool(value: Any) -> Any:
+    """Normalize a shorthand tool name into the full tool object format."""
+    supported_tools = (
+        "code_interpreter",
+        "image_generate",
+        "web_search",
+        "url_content_extraction",
+        "model_3d_generate",
+        "functions",
+    )
+    if isinstance(value, str):
+        if value not in supported_tools:
+            raise ValueError(
+                "'tools' string items must be one of {supported}; got '{tool}'".format(
+                    supported=", ".join(supported_tools), tool=value
+                )
+            )
+        return {value: {}}
+    return value
+
+
 class _ChatCompletionsModel(BaseModel):
     model_config = ConfigDict(extra="allow", populate_by_name=True)
 
@@ -302,6 +323,11 @@ class ChatTool(_ChatCompletionsModel):
     url_content_extraction: Optional[Dict[str, Any]] = Field(default=None, description="URL extraction config.")
     model_3d_generate: Optional[Dict[str, Any]] = Field(default=None, description="3D generation config.")
     functions: Optional[ChatFunctionsTool] = Field(default=None, description="Client function tool config.")
+
+    @model_validator(mode="before")
+    @classmethod
+    def _normalize_shorthand_tool(cls, values: Any) -> Any:
+        return _normalize_tool(values)
 
 
 class _ChatMessageBase(_ChatCompletionsModel):
