@@ -5,6 +5,7 @@ import pytest
 from pydantic import BaseModel
 from pytest_httpx import HTTPXMock
 
+from gigachat.api import legacy_chat
 from gigachat.client import (
     GIGACHAT_MODEL,
     GigaChatAsyncClient,
@@ -322,6 +323,55 @@ def test_chat_legacy_stream_does_not_warn(httpx_mock: HTTPXMock) -> None:
     assert not [warning for warning in caught if issubclass(warning.category, DeprecationWarning)]
 
 
+def test_chat_legacy_create_uses_explicit_legacy_transport(monkeypatch: pytest.MonkeyPatch) -> None:
+    captured = {}
+
+    def fake_chat_sync(client: Any, *, chat: Chat, access_token: Optional[str] = None) -> ChatCompletion:
+        captured["client"] = client
+        captured["chat"] = chat
+        captured["access_token"] = access_token
+        return ChatCompletion.model_validate(CHAT_COMPLETION)
+
+    monkeypatch.setattr(legacy_chat, "chat_sync", fake_chat_sync)
+
+    with GigaChatSyncClient(base_url=BASE_URL, access_token=ACCESS_TOKEN) as client:
+        response = client.chat.legacy.create("text")
+
+    assert isinstance(response, ChatCompletion)
+    assert captured["access_token"] == ACCESS_TOKEN
+    assert isinstance(captured["chat"], Chat)
+
+
+def test_chat_legacy_stream_uses_explicit_legacy_transport(monkeypatch: pytest.MonkeyPatch) -> None:
+    captured = {}
+
+    def fake_stream_sync(client: Any, *, chat: Chat, access_token: Optional[str] = None) -> Any:
+        captured["client"] = client
+        captured["chat"] = chat
+        captured["access_token"] = access_token
+        return iter(
+            [
+                ChatCompletionChunk.model_validate(
+                    {
+                        "choices": [{"delta": {"content": "hello"}, "index": 0, "finish_reason": None}],
+                        "created": 0,
+                        "model": "test-model",
+                        "object": "chat.completion.chunk",
+                    }
+                )
+            ]
+        )
+
+    monkeypatch.setattr(legacy_chat, "stream_sync", fake_stream_sync)
+
+    with GigaChatSyncClient(base_url=BASE_URL, access_token=ACCESS_TOKEN) as client:
+        response = list(client.chat.legacy.stream("text"))
+
+    assert len(response) == 1
+    assert captured["access_token"] == ACCESS_TOKEN
+    assert isinstance(captured["chat"], Chat)
+
+
 def test_stream_authentication_error(httpx_mock: HTTPXMock) -> None:
     httpx_mock.add_response(url=AUTH_URL, json=OAUTH_TOKEN_VALID)
     httpx_mock.add_response(url=CHAT_URL, status_code=401)
@@ -403,6 +453,54 @@ async def test_achat_access_token(httpx_mock: HTTPXMock) -> None:
         response = await client.achat.legacy.create(CHAT)
 
     assert isinstance(response, ChatCompletion)
+
+
+async def test_achat_legacy_create_uses_explicit_legacy_transport(monkeypatch: pytest.MonkeyPatch) -> None:
+    captured = {}
+
+    async def fake_chat_async(client: Any, *, chat: Chat, access_token: Optional[str] = None) -> ChatCompletion:
+        captured["client"] = client
+        captured["chat"] = chat
+        captured["access_token"] = access_token
+        return ChatCompletion.model_validate(CHAT_COMPLETION)
+
+    monkeypatch.setattr(legacy_chat, "chat_async", fake_chat_async)
+
+    async with GigaChatAsyncClient(base_url=BASE_URL, access_token=ACCESS_TOKEN) as client:
+        response = await client.achat.legacy.create("text")
+
+    assert isinstance(response, ChatCompletion)
+    assert captured["access_token"] == ACCESS_TOKEN
+    assert isinstance(captured["chat"], Chat)
+
+
+async def test_achat_legacy_stream_uses_explicit_legacy_transport(monkeypatch: pytest.MonkeyPatch) -> None:
+    captured = {}
+
+    async def iterate() -> Any:
+        yield ChatCompletionChunk.model_validate(
+            {
+                "choices": [{"delta": {"content": "hello"}, "index": 0, "finish_reason": None}],
+                "created": 0,
+                "model": "test-model",
+                "object": "chat.completion.chunk",
+            }
+        )
+
+    def fake_stream_async(client: Any, *, chat: Chat, access_token: Optional[str] = None) -> Any:
+        captured["client"] = client
+        captured["chat"] = chat
+        captured["access_token"] = access_token
+        return iterate()
+
+    monkeypatch.setattr(legacy_chat, "stream_async", fake_stream_async)
+
+    async with GigaChatAsyncClient(base_url=BASE_URL, access_token=ACCESS_TOKEN) as client:
+        response = [chunk async for chunk in client.achat.legacy.stream("text")]
+
+    assert len(response) == 1
+    assert captured["access_token"] == ACCESS_TOKEN
+    assert isinstance(captured["chat"], Chat)
 
 
 async def test_achat_credentials(httpx_mock: HTTPXMock) -> None:

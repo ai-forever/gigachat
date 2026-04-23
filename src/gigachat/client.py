@@ -26,7 +26,7 @@ import pydantic
 from typing_extensions import Self
 
 from gigachat._types import FileTypes
-from gigachat.api import auth, chat, embeddings, files, models, tools
+from gigachat.api import auth, embeddings, files, legacy_chat, models, tools
 from gigachat.assistants import AssistantsAsyncClient, AssistantsSyncClient
 from gigachat.authentication import _awith_auth, _awith_auth_stream, _with_auth, _with_auth_stream
 from gigachat.context import authorization_cvar
@@ -486,7 +486,7 @@ class GigaChatSyncClient(_BaseClient):
         """Return a legacy chat completion based on the provided messages."""
         _validate_response_format(payload)
         chat_data = _parse_chat(payload, self._settings)
-        return chat.chat_sync(self._client, chat=chat_data, access_token=self.token)
+        return legacy_chat.chat_sync(self._client, chat=chat_data, access_token=self.token)
 
     @_with_retry_stream
     @_with_auth_stream
@@ -494,7 +494,7 @@ class GigaChatSyncClient(_BaseClient):
         """Return a legacy streaming chat completion based on the provided messages."""
         chat_data = _parse_chat(payload, self._settings)
 
-        yield from chat.stream_sync(self._client, chat=chat_data, access_token=self.token)
+        yield from legacy_chat.stream_sync(self._client, chat=chat_data, access_token=self.token)
 
     def _legacy_chat_parse(
         self,
@@ -767,14 +767,14 @@ class GigaChatAsyncClient(_BaseClient):
         _validate_response_format(payload)
         chat_data = _parse_chat(payload, self._settings)
 
-        return await chat.chat_async(self._aclient, chat=chat_data, access_token=self.token)
+        return await legacy_chat.chat_async(self._aclient, chat=chat_data, access_token=self.token)
 
     @_awith_retry_stream
     @_awith_auth_stream
     def _legacy_achat_stream(self, payload: Union[Chat, Dict[str, Any], str]) -> AsyncIterator[ChatCompletionChunk]:
         """Return a legacy streaming chat completion based on the provided messages."""
         chat_data = _parse_chat(payload, self._settings)
-        return chat.stream_async(self._aclient, chat=chat_data, access_token=self.token)
+        return legacy_chat.stream_async(self._aclient, chat=chat_data, access_token=self.token)
 
     async def _legacy_achat_parse(
         self,
