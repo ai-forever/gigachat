@@ -3,7 +3,13 @@ from typing import Any, Dict, Iterator, Optional
 
 import httpx
 
-from gigachat.api.utils import EVENT_STREAM, build_headers, execute_request_sync, execute_stream_sync
+from gigachat.api.utils import (
+    EVENT_STREAM,
+    build_headers,
+    execute_request_async,
+    execute_request_sync,
+    execute_stream_sync,
+)
 from gigachat.context import chat_completions_url_cvar
 from gigachat.models.chat_completions import ChatCompletionChunk, ChatCompletionRequest, ChatCompletionResponse
 
@@ -61,6 +67,17 @@ def chat_sync(
     return execute_request_sync(client, kwargs, ChatCompletionResponse)
 
 
+async def chat_async(
+    client: httpx.AsyncClient,
+    *,
+    chat: ChatCompletionRequest,
+    access_token: Optional[str] = None,
+) -> ChatCompletionResponse:
+    """Return a primary chat completion based on the provided messages."""
+    kwargs = _get_chat_kwargs(chat=chat, access_token=access_token)
+    return await execute_request_async(client, kwargs, ChatCompletionResponse)
+
+
 def stream_sync(
     client: httpx.Client,
     *,
@@ -76,6 +93,7 @@ __all__ = [
     "_build_request_json",
     "_get_chat_kwargs",
     "_get_stream_kwargs",
+    "chat_async",
     "chat_sync",
     "stream_sync",
 ]
