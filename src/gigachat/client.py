@@ -39,7 +39,14 @@ from gigachat.models.chat import (
     Messages,
     MessagesRole,
 )
-from gigachat.models.chat_completions import ChatCompletionRequest, ChatCompletionResponse, ChatMessage
+from gigachat.models.chat_completions import (
+    ChatCompletionChunk as PrimaryChatCompletionChunk,
+)
+from gigachat.models.chat_completions import (
+    ChatCompletionRequest,
+    ChatCompletionResponse,
+    ChatMessage,
+)
 from gigachat.models.embeddings import Embeddings
 from gigachat.models.files import DeletedFile, Image, UploadedFile, UploadedFiles
 from gigachat.models.models import Model, Models
@@ -506,6 +513,15 @@ class GigaChatSyncClient(_BaseClient):
         """Return a primary chat completion based on the provided messages."""
         chat_data = _parse_chat_completion(payload, self._settings)
         return chat_completions.chat_sync(self._client, chat=chat_data, access_token=self.token)
+
+    @_with_retry_stream
+    @_with_auth_stream
+    def _chat_stream(
+        self, payload: Union[ChatCompletionRequest, Dict[str, Any], str]
+    ) -> Iterator[PrimaryChatCompletionChunk]:
+        """Return a primary streaming chat completion based on the provided messages."""
+        chat_data = _parse_chat_completion(payload, self._settings)
+        yield from chat_completions.stream_sync(self._client, chat=chat_data, access_token=self.token)
 
     @_with_retry
     @_with_auth

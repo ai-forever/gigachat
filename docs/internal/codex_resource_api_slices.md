@@ -35,6 +35,7 @@ await client.achat.legacy.parse(...)
 9. Нельзя делать opportunistic cleanup вне текущего среза.
 10. Если уперся в blocker, остановись, опиши blocker и **не** начинай следующий срез.
 11. Если сомневаешься, дроби задачу еще сильнее.
+12. Файл `docs/internal/chat_completions_format.md` не должен быть закоммичен ни при каких обстоятельствах.
 
 ## Правило именования
 ### Legacy-стек
@@ -377,7 +378,7 @@ Blockers:
 - [x] S2 — Вынести текущий transport в explicit legacy
 - [x] S3 — Добавить типизированные primary-модели
 - [x] S4 — Подключить sync primary create
-- [ ] S5 — Подключить sync primary stream
+- [x] S5 — Подключить sync primary stream
 - [ ] S6 — Подключить sync primary parse
 - [ ] S7 — Подключить async primary create
 - [ ] S8 — Подключить async primary stream
@@ -392,3 +393,4 @@ Blockers:
 | 2 | S2 | done | refactor(chat): move legacy transport under explicit legacy module | `uv run pytest tests/unit/gigachat/api/test_chat.py tests/unit/gigachat/test_client_chat.py tests/unit/gigachat/test_client_chat_parse.py`; `uv run ruff check src/gigachat/api/legacy_chat.py src/gigachat/api/chat.py src/gigachat/api/__init__.py src/gigachat/client.py tests/unit/gigachat/test_client_chat.py` | Moved legacy transport into `api/legacy_chat.py`, kept `api/chat.py` as a compatibility shim, rewired legacy client internals to the explicit module, and added sync/async routing checks for `client.chat.legacy` and `client.achat.legacy`. |
 | 3 | S3 | done | feat(chat): add primary chat completion models | `uv run pytest tests/unit/gigachat/models/test_chat_completions.py tests/unit/gigachat/models/test_chat.py tests/unit/gigachat/models/test_response_format.py`; `uv run ruff check src/gigachat/models/chat_completions.py src/gigachat/models/__init__.py tests/unit/gigachat/models/test_chat_completions.py` | Added a dedicated `models/chat_completions.py` primary contract model set, exported the new request/response roots via `gigachat.models`, and covered request round-trip, response parsing, stream chunk tolerance, and ambiguous content normalization. |
 | 4 | S4 | done | feat(chat): wire sync primary create | `uv run pytest tests/unit/gigachat/test_client_chat.py tests/unit/gigachat/test_context.py tests/unit/gigachat/test_client_lifecycle.py`; `uv run ruff check src/gigachat/api/chat_completions.py src/gigachat/api/__init__.py src/gigachat/client.py src/gigachat/context.py src/gigachat/resources/chat.py tests/unit/gigachat/test_client_chat.py tests/unit/gigachat/test_context.py` | Added a dedicated sync primary transport module, wired `client.chat.create(...)` to the primary request/response contract with separate route context, kept `client.chat(...)` and `client.chat.legacy.create(...)` on legacy behavior, and covered primary payload normalization plus route separation. |
+| 5 | S5 | done | feat(chat): add sync primary stream | `uv run pytest tests/unit/gigachat/api/test_chat_completions.py tests/unit/gigachat/test_client_chat.py`; `uv run ruff check src/gigachat/api/chat_completions.py src/gigachat/resources/chat.py src/gigachat/client.py tests/unit/gigachat/api/test_chat_completions.py tests/unit/gigachat/test_client_chat.py` | Added primary sync SSE transport helpers, wired `client.chat.stream(...)` to the primary stream path with the new chunk model, and verified that `client.chat.legacy.stream(...)` stays on the legacy route and legacy chunk contract. |

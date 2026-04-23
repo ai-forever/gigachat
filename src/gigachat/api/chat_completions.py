@@ -1,11 +1,11 @@
 import json
-from typing import Any, Dict, Optional
+from typing import Any, Dict, Iterator, Optional
 
 import httpx
 
-from gigachat.api.utils import build_headers, execute_request_sync
+from gigachat.api.utils import EVENT_STREAM, build_headers, execute_request_sync, execute_stream_sync
 from gigachat.context import chat_completions_url_cvar
-from gigachat.models.chat_completions import ChatCompletionRequest, ChatCompletionResponse
+from gigachat.models.chat_completions import ChatCompletionChunk, ChatCompletionRequest, ChatCompletionResponse
 
 
 def _build_request_json(chat: ChatCompletionRequest) -> Dict[str, Any]:
@@ -29,6 +29,27 @@ def _get_chat_kwargs(
     }
 
 
+def _get_stream_kwargs(
+    *,
+    chat: ChatCompletionRequest,
+    access_token: Optional[str] = None,
+) -> Dict[str, Any]:
+    headers = build_headers(access_token)
+    headers["Accept"] = EVENT_STREAM
+    headers["Cache-Control"] = "no-store"
+    headers["Content-Type"] = "application/json"
+
+    request_data = _build_request_json(chat)
+    request_data["stream"] = True
+
+    return {
+        "method": "POST",
+        "url": chat_completions_url_cvar.get(),
+        "content": json.dumps(request_data, ensure_ascii=False),
+        "headers": headers,
+    }
+
+
 def chat_sync(
     client: httpx.Client,
     *,
@@ -40,8 +61,21 @@ def chat_sync(
     return execute_request_sync(client, kwargs, ChatCompletionResponse)
 
 
+def stream_sync(
+    client: httpx.Client,
+    *,
+    chat: ChatCompletionRequest,
+    access_token: Optional[str] = None,
+) -> Iterator[ChatCompletionChunk]:
+    """Return a primary chat completion stream based on the provided messages."""
+    kwargs = _get_stream_kwargs(chat=chat, access_token=access_token)
+    return execute_stream_sync(client, kwargs, ChatCompletionChunk)
+
+
 __all__ = [
     "_build_request_json",
     "_get_chat_kwargs",
+    "_get_stream_kwargs",
     "chat_sync",
+    "stream_sync",
 ]
