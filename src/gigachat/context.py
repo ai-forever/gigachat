@@ -12,6 +12,7 @@ __all__ = [
     "agent_id_cvar",
     "custom_headers_cvar",
     "chat_url_cvar",
+    "chat_completions_url_cvar",
 ]
 
 authorization_cvar: ContextVar[Optional[str]] = ContextVar("authorization_cvar", default=None)
@@ -34,3 +35,5 @@ custom_headers_cvar: ContextVar[Optional[Dict[str, str]]] = ContextVar("custom_h
 """Additional HTTP headers to be added to the request."""
 chat_url_cvar: ContextVar[str] = ContextVar("chat_url_cvar", default="/chat/completions")
 """Custom URL for chat/completions if a different chat URL is required."""
+chat_completions_url_cvar: ContextVar[str] = ContextVar("chat_completions_url_cvar", default="/chat/completions")
+"""Custom URL for the primary chat/completions endpoint."""

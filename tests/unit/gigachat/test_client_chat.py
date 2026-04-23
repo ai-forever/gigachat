@@ -5,18 +5,23 @@ import pytest
 from pydantic import BaseModel
 from pytest_httpx import HTTPXMock
 
-from gigachat.api import legacy_chat
+from gigachat.api import chat_completions, legacy_chat
 from gigachat.client import (
     GIGACHAT_MODEL,
     GigaChatAsyncClient,
     GigaChatSyncClient,
     _parse_chat,
+    _parse_chat_completion,
 )
+from gigachat.context import chat_completions_url_cvar, chat_url_cvar
 from gigachat.exceptions import AuthenticationError
 from gigachat.models import (
     Chat,
     ChatCompletion,
     ChatCompletionChunk,
+    ChatCompletionRequest,
+    ChatCompletionResponse,
+    ChatMessage,
     Messages,
     MessagesRole,
 )
@@ -41,6 +46,25 @@ from tests.constants import (
     TOKEN_URL,
     USER,
 )
+
+PRIMARY_CHAT_COMPLETION = {
+    "model": "GigaChat-2-Max",
+    "created_at": 1760434636,
+    "thread_id": "thread-1",
+    "message_id": "message-1",
+    "messages": [
+        {
+            "role": "assistant",
+            "content": [{"text": "primary response"}],
+            "finish_reason": "stop",
+        }
+    ],
+    "usage": {
+        "input_tokens": 10,
+        "output_tokens": 4,
+        "total_tokens": 14,
+    },
+}
 
 
 @pytest.mark.parametrize(
@@ -83,6 +107,40 @@ def test__parse_chat_profanity_check(
     assert actual.profanity_check is expected
 
 
+@pytest.mark.parametrize(
+    ("payload_value", "setting_value", "expected"),
+    [
+        (None, None, GIGACHAT_MODEL),
+        (None, "setting_model", "setting_model"),
+        ("payload_model", None, "payload_model"),
+        ("payload_model", "setting_model", "payload_model"),
+    ],
+)
+def test__parse_chat_completion_model(
+    payload_value: Optional[str],
+    setting_value: Optional[str],
+    expected: str,
+) -> None:
+    actual = _parse_chat_completion(
+        ChatCompletionRequest(messages=[ChatMessage(role="user", content="text")], model=payload_value),
+        Settings(model=setting_value),
+    )
+    assert actual.model == expected
+
+
+def test__parse_chat_completion_preserves_missing_model_for_assistant() -> None:
+    actual = _parse_chat_completion(
+        {
+            "assistant_id": "assistant-1",
+            "messages": [{"role": "user", "content": "text"}],
+        },
+        Settings(model="setting_model"),
+    )
+
+    assert actual.model is None
+    assert actual.assistant_id == "assistant-1"
+
+
 def test_chat(httpx_mock: HTTPXMock) -> None:
     httpx_mock.add_response(url=CHAT_URL, json=CHAT_COMPLETION)
 
@@ -117,6 +175,70 @@ def test_chat_legacy_create_does_not_warn(httpx_mock: HTTPXMock) -> None:
 
     assert isinstance(response, ChatCompletion)
     assert not [warning for warning in caught if issubclass(warning.category, DeprecationWarning)]
+
+
+def test_chat_create_uses_primary_route(httpx_mock: HTTPXMock) -> None:
+    primary_url_token = chat_completions_url_cvar.set("/chat/completions/primary")
+    legacy_url_token = chat_url_cvar.set("/chat/completions/legacy")
+
+    try:
+        httpx_mock.add_response(url=f"{BASE_URL}/chat/completions/primary", json=PRIMARY_CHAT_COMPLETION)
+
+        with GigaChatSyncClient(base_url=BASE_URL, access_token=ACCESS_TOKEN) as client:
+            response = client.chat.create("text")
+    finally:
+        chat_completions_url_cvar.reset(primary_url_token)
+        chat_url_cvar.reset(legacy_url_token)
+
+    requests = httpx_mock.get_requests()
+    assert isinstance(response, ChatCompletionResponse)
+    assert len(requests) == 1
+    assert str(requests[0].url) == f"{BASE_URL}/chat/completions/primary"
+
+
+def test_chat_legacy_create_uses_legacy_route_when_primary_route_differs(httpx_mock: HTTPXMock) -> None:
+    primary_url_token = chat_completions_url_cvar.set("/chat/completions/primary")
+    legacy_url_token = chat_url_cvar.set("/chat/completions/legacy")
+
+    try:
+        httpx_mock.add_response(url=f"{BASE_URL}/chat/completions/legacy", json=CHAT_COMPLETION)
+
+        with GigaChatSyncClient(base_url=BASE_URL, access_token=ACCESS_TOKEN) as client:
+            response = client.chat.legacy.create("text")
+    finally:
+        chat_completions_url_cvar.reset(primary_url_token)
+        chat_url_cvar.reset(legacy_url_token)
+
+    requests = httpx_mock.get_requests()
+    assert isinstance(response, ChatCompletion)
+    assert len(requests) == 1
+    assert str(requests[0].url) == f"{BASE_URL}/chat/completions/legacy"
+
+
+def test_chat_create_uses_explicit_primary_transport(monkeypatch: pytest.MonkeyPatch) -> None:
+    captured = {}
+
+    def fake_chat_sync(
+        client: Any,
+        *,
+        chat: ChatCompletionRequest,
+        access_token: Optional[str] = None,
+    ) -> ChatCompletionResponse:
+        captured["client"] = client
+        captured["chat"] = chat
+        captured["access_token"] = access_token
+        return ChatCompletionResponse.model_validate(PRIMARY_CHAT_COMPLETION)
+
+    monkeypatch.setattr(chat_completions, "chat_sync", fake_chat_sync)
+
+    with GigaChatSyncClient(base_url=BASE_URL, access_token=ACCESS_TOKEN) as client:
+        response = client.chat.create("text")
+
+    assert isinstance(response, ChatCompletionResponse)
+    assert captured["access_token"] == ACCESS_TOKEN
+    assert isinstance(captured["chat"], ChatCompletionRequest)
+    assert captured["chat"].messages[0].content is not None
+    assert captured["chat"].messages[0].content[0].text == "text"
 
 
 def test_chat_access_token(httpx_mock: HTTPXMock) -> None:
