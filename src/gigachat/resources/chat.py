@@ -128,6 +128,10 @@ class AsyncChatNamespace:
         """Return the async legacy chat resource namespace."""
         return LegacyChatAsyncResource(self._base_client)
 
+    async def create(self, payload: Union[ChatCompletionRequest, Dict[str, Any], str]) -> ChatCompletionResponse:
+        """Create a primary chat completion."""
+        return await self._base_client._achat_create(payload)
+
     async def __call__(self, payload: Union[Chat, Dict[str, Any], str]) -> ChatCompletion:
         """Call the deprecated async root chat compatibility shim."""
         warnings.warn(

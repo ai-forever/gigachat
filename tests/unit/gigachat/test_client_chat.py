@@ -747,6 +747,44 @@ async def test_achat_legacy_create_does_not_warn(httpx_mock: HTTPXMock) -> None:
     assert not [warning for warning in caught if issubclass(warning.category, DeprecationWarning)]
 
 
+async def test_achat_create_uses_primary_route(httpx_mock: HTTPXMock) -> None:
+    primary_url_token = chat_completions_url_cvar.set("/chat/completions/primary")
+    legacy_url_token = chat_url_cvar.set("/chat/completions/legacy")
+
+    try:
+        httpx_mock.add_response(url=f"{BASE_URL}/chat/completions/primary", json=PRIMARY_CHAT_COMPLETION)
+
+        async with GigaChatAsyncClient(base_url=BASE_URL, access_token=ACCESS_TOKEN) as client:
+            response = await client.achat.create("text")
+    finally:
+        chat_completions_url_cvar.reset(primary_url_token)
+        chat_url_cvar.reset(legacy_url_token)
+
+    requests = httpx_mock.get_requests()
+    assert isinstance(response, ChatCompletionResponse)
+    assert len(requests) == 1
+    assert str(requests[0].url) == f"{BASE_URL}/chat/completions/primary"
+
+
+async def test_achat_legacy_create_uses_legacy_route_when_primary_route_differs(httpx_mock: HTTPXMock) -> None:
+    primary_url_token = chat_completions_url_cvar.set("/chat/completions/primary")
+    legacy_url_token = chat_url_cvar.set("/chat/completions/legacy")
+
+    try:
+        httpx_mock.add_response(url=f"{BASE_URL}/chat/completions/legacy", json=CHAT_COMPLETION)
+
+        async with GigaChatAsyncClient(base_url=BASE_URL, access_token=ACCESS_TOKEN) as client:
+            response = await client.achat.legacy.create("text")
+    finally:
+        chat_completions_url_cvar.reset(primary_url_token)
+        chat_url_cvar.reset(legacy_url_token)
+
+    requests = httpx_mock.get_requests()
+    assert isinstance(response, ChatCompletion)
+    assert len(requests) == 1
+    assert str(requests[0].url) == f"{BASE_URL}/chat/completions/legacy"
+
+
 async def test_achat_access_token(httpx_mock: HTTPXMock) -> None:
     httpx_mock.add_response(url=CHAT_URL, json=CHAT_COMPLETION)
 
@@ -773,6 +811,32 @@ async def test_achat_legacy_create_uses_explicit_legacy_transport(monkeypatch: p
     assert isinstance(response, ChatCompletion)
     assert captured["access_token"] == ACCESS_TOKEN
     assert isinstance(captured["chat"], Chat)
+
+
+async def test_achat_create_uses_explicit_primary_transport(monkeypatch: pytest.MonkeyPatch) -> None:
+    captured = {}
+
+    async def fake_chat_async(
+        client: Any,
+        *,
+        chat: ChatCompletionRequest,
+        access_token: Optional[str] = None,
+    ) -> ChatCompletionResponse:
+        captured["client"] = client
+        captured["chat"] = chat
+        captured["access_token"] = access_token
+        return ChatCompletionResponse.model_validate(PRIMARY_CHAT_COMPLETION)
+
+    monkeypatch.setattr(chat_completions, "chat_async", fake_chat_async)
+
+    async with GigaChatAsyncClient(base_url=BASE_URL, access_token=ACCESS_TOKEN) as client:
+        response = await client.achat.create("text")
+
+    assert isinstance(response, ChatCompletionResponse)
+    assert captured["access_token"] == ACCESS_TOKEN
+    assert isinstance(captured["chat"], ChatCompletionRequest)
+    assert captured["chat"].messages[0].content is not None
+    assert captured["chat"].messages[0].content[0].text == "text"
 
 
 async def test_achat_legacy_stream_uses_explicit_legacy_transport(monkeypatch: pytest.MonkeyPatch) -> None:

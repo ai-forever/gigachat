@@ -873,6 +873,13 @@ class GigaChatAsyncClient(_BaseClient):
 
         return await legacy_chat.chat_async(self._aclient, chat=chat_data, access_token=self.token)
 
+    @_awith_retry
+    @_awith_auth
+    async def _achat_create(self, payload: Union[ChatCompletionRequest, Dict[str, Any], str]) -> ChatCompletionResponse:
+        """Return a primary chat completion based on the provided messages."""
+        chat_data = _parse_chat_completion(payload, self._settings)
+        return await chat_completions.chat_async(self._aclient, chat=chat_data, access_token=self.token)
+
     @_awith_retry_stream
     @_awith_auth_stream
     def _legacy_achat_stream(self, payload: Union[Chat, Dict[str, Any], str]) -> AsyncIterator[ChatCompletionChunk]:
