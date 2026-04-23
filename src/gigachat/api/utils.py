@@ -1,6 +1,7 @@
 import logging
 from http import HTTPStatus
 from typing import Any, AsyncIterator, Dict, Iterator, NoReturn, Optional, Type, TypeVar, Union
+from urllib.parse import urlsplit, urlunsplit
 
 import httpx
 from pydantic import BaseModel
@@ -32,6 +33,33 @@ logger = logging.getLogger(__name__)
 
 USER_AGENT = "GigaChat-python-lib"
 EVENT_STREAM = "text/event-stream"
+
+
+def resolve_request_url(client: Union[httpx.Client, httpx.AsyncClient], url: str) -> str:
+    """Resolve request URL, allowing versioned API paths relative to the origin."""
+    parsed_url = urlsplit(url)
+    if parsed_url.scheme or parsed_url.netloc:
+        return url
+
+    if url.startswith("/v") or url.startswith("/api/v"):
+        base_url = urlsplit(str(client.base_url))
+        return urlunsplit((base_url.scheme, base_url.netloc, url, "", ""))
+
+    return url
+
+
+def resolve_primary_chat_url(client: Union[httpx.Client, httpx.AsyncClient], url: str) -> str:
+    """Resolve the primary chat route with a legacy ``/v1`` -> ``/v2`` fallback."""
+    if url not in ("/chat/completions", "chat/completions"):
+        return resolve_request_url(client, url)
+
+    base_url = urlsplit(str(client.base_url))
+    base_path = base_url.path.rstrip("/")
+    if not base_path.endswith("/v1"):
+        return url
+
+    path_prefix = base_path[:-3]
+    return urlunsplit((base_url.scheme, base_url.netloc, f"{path_prefix}/v2/chat/completions", "", ""))
 
 
 def build_headers(access_token: Optional[str] = None) -> Dict[str, str]:

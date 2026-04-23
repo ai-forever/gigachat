@@ -228,6 +228,21 @@ def test_chat_create_uses_primary_route(httpx_mock: HTTPXMock) -> None:
     assert str(requests[0].url) == f"{BASE_URL}/chat/completions/primary"
 
 
+def test_chat_create_uses_v2_primary_route_with_legacy_v1_base_url_and_token(httpx_mock: HTTPXMock) -> None:
+    versioned_base_url = "https://host/v1"
+    httpx_mock.add_response(url=f"{versioned_base_url}/token", json=PASSWORD_TOKEN_VALID)
+    httpx_mock.add_response(url="https://host/v2/chat/completions", json=PRIMARY_CHAT_COMPLETION)
+
+    with GigaChatSyncClient(base_url=versioned_base_url, user=USER, password=PASSWORD) as client:
+        response = client.chat.create("text")
+
+    requests = httpx_mock.get_requests()
+    assert isinstance(response, ChatCompletionResponse)
+    assert len(requests) == 2
+    assert str(requests[0].url) == f"{versioned_base_url}/token"
+    assert str(requests[1].url) == "https://host/v2/chat/completions"
+
+
 def test_chat_create_normalizes_string_tools_in_request_body(httpx_mock: HTTPXMock) -> None:
     primary_url_token = chat_completions_url_cvar.set("/chat/completions/primary")
     legacy_url_token = chat_url_cvar.set("/chat/completions/legacy")
@@ -860,6 +875,21 @@ async def test_achat_create_uses_primary_route(httpx_mock: HTTPXMock) -> None:
     assert isinstance(response, ChatCompletionResponse)
     assert len(requests) == 1
     assert str(requests[0].url) == f"{BASE_URL}/chat/completions/primary"
+
+
+async def test_achat_create_uses_v2_primary_route_with_legacy_v1_base_url_and_token(httpx_mock: HTTPXMock) -> None:
+    versioned_base_url = "https://host/v1"
+    httpx_mock.add_response(url=f"{versioned_base_url}/token", json=PASSWORD_TOKEN_VALID)
+    httpx_mock.add_response(url="https://host/v2/chat/completions", json=PRIMARY_CHAT_COMPLETION)
+
+    async with GigaChatAsyncClient(base_url=versioned_base_url, user=USER, password=PASSWORD) as client:
+        response = await client.achat.create("text")
+
+    requests = httpx_mock.get_requests()
+    assert isinstance(response, ChatCompletionResponse)
+    assert len(requests) == 2
+    assert str(requests[0].url) == f"{versioned_base_url}/token"
+    assert str(requests[1].url) == "https://host/v2/chat/completions"
 
 
 async def test_achat_legacy_create_uses_legacy_route_when_primary_route_differs(httpx_mock: HTTPXMock) -> None:

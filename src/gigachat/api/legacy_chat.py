@@ -1,5 +1,5 @@
 import json
-from typing import Any, AsyncIterator, Dict, Iterator, Optional
+from typing import Any, AsyncIterator, Dict, Iterator, Optional, Union
 
 import httpx
 
@@ -10,6 +10,7 @@ from gigachat.api.utils import (
     execute_request_sync,
     execute_stream_async,
     execute_stream_sync,
+    resolve_request_url,
 )
 from gigachat.context import chat_url_cvar
 from gigachat.models.chat import Chat, ChatCompletion, ChatCompletionChunk
@@ -26,6 +27,7 @@ def _build_request_json(chat: Chat, *, exclude_stream: bool = False) -> Dict[str
 
 
 def _get_chat_kwargs(
+    client: Union[httpx.Client, httpx.AsyncClient],
     *,
     chat: Chat,
     access_token: Optional[str] = None,
@@ -36,7 +38,7 @@ def _get_chat_kwargs(
 
     return {
         "method": "POST",
-        "url": chat_url_cvar.get(),
+        "url": resolve_request_url(client, chat_url_cvar.get()),
         "content": json.dumps(json_data, ensure_ascii=False),
         "headers": headers,
     }
@@ -49,7 +51,7 @@ def chat_sync(
     access_token: Optional[str] = None,
 ) -> ChatCompletion:
     """Return a legacy model response based on the provided messages."""
-    kwargs = _get_chat_kwargs(chat=chat, access_token=access_token)
+    kwargs = _get_chat_kwargs(client, chat=chat, access_token=access_token)
     return execute_request_sync(client, kwargs, ChatCompletion)
 
 
@@ -60,11 +62,12 @@ async def chat_async(
     access_token: Optional[str] = None,
 ) -> ChatCompletion:
     """Return a legacy model response based on the provided messages."""
-    kwargs = _get_chat_kwargs(chat=chat, access_token=access_token)
+    kwargs = _get_chat_kwargs(client, chat=chat, access_token=access_token)
     return await execute_request_async(client, kwargs, ChatCompletion)
 
 
 def _get_stream_kwargs(
+    client: Union[httpx.Client, httpx.AsyncClient],
     *,
     chat: Chat,
     access_token: Optional[str] = None,
@@ -77,7 +80,7 @@ def _get_stream_kwargs(
 
     return {
         "method": "POST",
-        "url": chat_url_cvar.get(),
+        "url": resolve_request_url(client, chat_url_cvar.get()),
         "content": json.dumps({**json_data, **{"stream": True}}, ensure_ascii=False),
         "headers": headers,
     }
@@ -90,7 +93,7 @@ def stream_sync(
     access_token: Optional[str] = None,
 ) -> Iterator[ChatCompletionChunk]:
     """Return a legacy model response based on the provided messages (streaming)."""
-    kwargs = _get_stream_kwargs(chat=chat, access_token=access_token)
+    kwargs = _get_stream_kwargs(client, chat=chat, access_token=access_token)
     return execute_stream_sync(client, kwargs, ChatCompletionChunk)
 
 
@@ -101,5 +104,5 @@ def stream_async(
     access_token: Optional[str] = None,
 ) -> AsyncIterator[ChatCompletionChunk]:
     """Return a legacy model response based on the provided messages (streaming)."""
-    kwargs = _get_stream_kwargs(chat=chat, access_token=access_token)
+    kwargs = _get_stream_kwargs(client, chat=chat, access_token=access_token)
     return execute_stream_async(client, kwargs, ChatCompletionChunk)

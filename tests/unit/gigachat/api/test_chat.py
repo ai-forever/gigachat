@@ -56,7 +56,8 @@ def test_chat_kwargs_context_vars() -> None:
     token_custom_headers_cvar = custom_headers_cvar.set({"custom_headers_cvar": "val"})
     token_chat_url_cvar = chat_url_cvar.set("/chat/completions")
 
-    assert chat._get_chat_kwargs(chat=Chat(messages=[]))
+    with httpx.Client(base_url=BASE_URL) as client:
+        assert chat._get_chat_kwargs(client, chat=Chat(messages=[]))
 
     authorization_cvar.reset(token_authorization_cvar)
     request_id_cvar.reset(token_request_id_cvar)
@@ -80,7 +81,8 @@ def test_stream_kwargs_context_vars() -> None:
     token_custom_headers_cvar = custom_headers_cvar.set({"custom_headers_cvar": "val"})
     token_chat_url_cvar = chat_url_cvar.set("/chat/completions")
 
-    assert chat._get_stream_kwargs(chat=Chat(messages=[]))
+    with httpx.Client(base_url=BASE_URL) as client:
+        assert chat._get_stream_kwargs(client, chat=Chat(messages=[]))
 
     authorization_cvar.reset(token_authorization_cvar)
     request_id_cvar.reset(token_request_id_cvar)
