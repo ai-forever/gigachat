@@ -26,7 +26,7 @@ import pydantic
 from typing_extensions import Self
 
 from gigachat._types import FileTypes
-from gigachat.api import auth, embeddings, files, legacy_chat, models, tools
+from gigachat.api import auth, chat_completions, embeddings, files, legacy_chat, models, tools
 from gigachat.assistants import AssistantsAsyncClient, AssistantsSyncClient
 from gigachat.authentication import _awith_auth, _awith_auth_stream, _with_auth, _with_auth_stream
 from gigachat.context import authorization_cvar
@@ -39,6 +39,7 @@ from gigachat.models.chat import (
     Messages,
     MessagesRole,
 )
+from gigachat.models.chat_completions import ChatCompletionRequest, ChatCompletionResponse, ChatMessage
 from gigachat.models.embeddings import Embeddings
 from gigachat.models.files import DeletedFile, Image, UploadedFile, UploadedFiles
 from gigachat.models.models import Model, Models
@@ -144,6 +145,25 @@ def _prepare_chat_for_parse(
     chat_data = _parse_chat(payload, settings)
     chat_data.response_format = JsonSchemaResponseFormat(schema=response_format, strict=strict)
     return chat_data
+
+
+def _parse_chat_completion(
+    payload: Union[ChatCompletionRequest, Dict[str, Any], str],
+    settings: Settings,
+) -> ChatCompletionRequest:
+    if isinstance(payload, str):
+        chat = ChatCompletionRequest(messages=[ChatMessage(role="user", content=payload)])
+    else:
+        chat = ChatCompletionRequest.model_validate(payload)
+
+    using_assistant = chat.assistant_id is not None or (
+        chat.storage is not None and (chat.storage.assistant_id is not None or chat.storage.thread_id is not None)
+    )
+    if not using_assistant and chat.model is None:
+        chat.model = settings.model or GIGACHAT_MODEL
+    if chat.flags is None:
+        chat.flags = settings.flags
+    return chat
 
 
 def _parse_completion(
@@ -479,6 +499,13 @@ class GigaChatSyncClient(_BaseClient):
     ) -> DeletedFile:
         """Delete a file."""
         return files.delete_file_sync(self._client, file=file, access_token=self.token)
+
+    @_with_retry
+    @_with_auth
+    def _chat_create(self, payload: Union[ChatCompletionRequest, Dict[str, Any], str]) -> ChatCompletionResponse:
+        """Return a primary chat completion based on the provided messages."""
+        chat_data = _parse_chat_completion(payload, self._settings)
+        return chat_completions.chat_sync(self._client, chat=chat_data, access_token=self.token)
 
     @_with_retry
     @_with_auth

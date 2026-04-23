@@ -88,6 +88,8 @@ await client.achat.legacy.parse(...)
 ## Что важно про новый контракт
 Новый request/response materially отличается от legacy, поэтому его нельзя натягивать на старые модели.
 
+Подробное поле-в-поле описание request/response primary-контракта см. в [docs/internal/chat_completions_format.md](/Users/riyakupov/PycharmProjects/gigachat/docs/internal/chat_completions_format.md).
+
 ### В request есть поля уровня root/message, которых нет в legacy
 - `messages[]`
 - `assistant_id`
@@ -374,7 +376,7 @@ Blockers:
 - [x] S1 — Вынести текущие chat-модели в explicit legacy
 - [x] S2 — Вынести текущий transport в explicit legacy
 - [x] S3 — Добавить типизированные primary-модели
-- [ ] S4 — Подключить sync primary create
+- [x] S4 — Подключить sync primary create
 - [ ] S5 — Подключить sync primary stream
 - [ ] S6 — Подключить sync primary parse
 - [ ] S7 — Подключить async primary create
@@ -389,3 +391,4 @@ Blockers:
 | 1 | S1 | done | refactor(chat): extract legacy chat models with compat aliases | `uv run pytest tests/unit/gigachat/models/test_chat.py tests/unit/gigachat/models/test_response_format.py tests/unit/gigachat/api/test_chat.py tests/unit/gigachat/test_client_chat.py tests/unit/gigachat/test_client_chat_parse.py`; `uv run ruff check src/gigachat/models/legacy_chat.py src/gigachat/models/chat.py src/gigachat/models/__init__.py tests/unit/gigachat/models/test_chat.py` | Extracted legacy chat models to `models/legacy_chat.py`, kept `models/chat.py` as compatibility shim, and exposed explicit `Legacy...` names via `gigachat.models`. |
 | 2 | S2 | done | refactor(chat): move legacy transport under explicit legacy module | `uv run pytest tests/unit/gigachat/api/test_chat.py tests/unit/gigachat/test_client_chat.py tests/unit/gigachat/test_client_chat_parse.py`; `uv run ruff check src/gigachat/api/legacy_chat.py src/gigachat/api/chat.py src/gigachat/api/__init__.py src/gigachat/client.py tests/unit/gigachat/test_client_chat.py` | Moved legacy transport into `api/legacy_chat.py`, kept `api/chat.py` as a compatibility shim, rewired legacy client internals to the explicit module, and added sync/async routing checks for `client.chat.legacy` and `client.achat.legacy`. |
 | 3 | S3 | done | feat(chat): add primary chat completion models | `uv run pytest tests/unit/gigachat/models/test_chat_completions.py tests/unit/gigachat/models/test_chat.py tests/unit/gigachat/models/test_response_format.py`; `uv run ruff check src/gigachat/models/chat_completions.py src/gigachat/models/__init__.py tests/unit/gigachat/models/test_chat_completions.py` | Added a dedicated `models/chat_completions.py` primary contract model set, exported the new request/response roots via `gigachat.models`, and covered request round-trip, response parsing, stream chunk tolerance, and ambiguous content normalization. |
+| 4 | S4 | done | feat(chat): wire sync primary create | `uv run pytest tests/unit/gigachat/test_client_chat.py tests/unit/gigachat/test_context.py tests/unit/gigachat/test_client_lifecycle.py`; `uv run ruff check src/gigachat/api/chat_completions.py src/gigachat/api/__init__.py src/gigachat/client.py src/gigachat/context.py src/gigachat/resources/chat.py tests/unit/gigachat/test_client_chat.py tests/unit/gigachat/test_context.py` | Added a dedicated sync primary transport module, wired `client.chat.create(...)` to the primary request/response contract with separate route context, kept `client.chat(...)` and `client.chat.legacy.create(...)` on legacy behavior, and covered primary payload normalization plus route separation. |

@@ -4,7 +4,7 @@ from typing import TYPE_CHECKING, Any, AsyncIterator, Dict, Iterator, Tuple, Typ
 
 import pydantic
 
-from gigachat.models import Chat, ChatCompletion, ChatCompletionChunk
+from gigachat.models import Chat, ChatCompletion, ChatCompletionChunk, ChatCompletionRequest, ChatCompletionResponse
 
 if TYPE_CHECKING:
     from gigachat.client import GigaChatAsyncClient, GigaChatSyncClient
@@ -51,6 +51,10 @@ class ChatNamespace:
     def legacy(self) -> LegacyChatSyncResource:
         """Return the legacy chat resource namespace."""
         return LegacyChatSyncResource(self._base_client)
+
+    def create(self, payload: Union[ChatCompletionRequest, Dict[str, Any], str]) -> ChatCompletionResponse:
+        """Create a primary chat completion."""
+        return self._base_client._chat_create(payload)
 
     def __call__(self, payload: Union[Chat, Dict[str, Any], str]) -> ChatCompletion:
         """Call the deprecated root chat compatibility shim."""
