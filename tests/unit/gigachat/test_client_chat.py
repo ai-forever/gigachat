@@ -155,6 +155,19 @@ def test__parse_chat_completion_preserves_missing_model_for_assistant() -> None:
     assert actual.assistant_id == "assistant-1"
 
 
+def test__parse_chat_completion_accepts_storage_bool() -> None:
+    actual = _parse_chat_completion(
+        {
+            "messages": [{"role": "user", "content": "text"}],
+            "storage": True,
+        },
+        Settings(model="setting_model"),
+    )
+
+    assert actual.storage is True
+    assert actual.model == "setting_model"
+
+
 def test_chat(httpx_mock: HTTPXMock) -> None:
     httpx_mock.add_response(url=CHAT_URL, json=CHAT_COMPLETION)
 
@@ -428,9 +441,10 @@ def test_chat_parse_uses_primary_route(httpx_mock: HTTPXMock) -> None:
     assert isinstance(completion, ChatCompletionResponse)
     assert isinstance(parsed, MathResult)
     assert parsed.final_answer == "x = -3.75"
-    assert request_body["response_format"]["type"] == "json_schema"
-    assert isinstance(request_body["response_format"]["schema"], dict)
-    assert request_body["response_format"]["strict"] is True
+    response_format = request_body["model_options"]["response_format"]
+    assert response_format["type"] == "json_schema"
+    assert isinstance(response_format["schema"], dict)
+    assert response_format["strict"] is True
     assert len(requests) == 1
     assert str(requests[0].url) == f"{BASE_URL}/chat/completions/primary"
 
@@ -450,7 +464,7 @@ def test_chat_parse_sets_primary_response_format_strict_false(httpx_mock: HTTPXM
 
     assert isinstance(completion, ChatCompletionResponse)
     assert isinstance(parsed, MathResult)
-    assert body["response_format"]["strict"] is False
+    assert body["model_options"]["response_format"]["strict"] is False
 
 
 def test_chat_parse_raises_for_invalid_primary_json(httpx_mock: HTTPXMock) -> None:
@@ -1052,9 +1066,10 @@ async def test_achat_parse_uses_primary_route(httpx_mock: HTTPXMock) -> None:
     assert isinstance(completion, ChatCompletionResponse)
     assert isinstance(parsed, MathResult)
     assert parsed.final_answer == "x = -3.75"
-    assert request_body["response_format"]["type"] == "json_schema"
-    assert isinstance(request_body["response_format"]["schema"], dict)
-    assert request_body["response_format"]["strict"] is True
+    response_format = request_body["model_options"]["response_format"]
+    assert response_format["type"] == "json_schema"
+    assert isinstance(response_format["schema"], dict)
+    assert response_format["strict"] is True
     assert len(requests) == 1
     assert str(requests[0].url) == f"{BASE_URL}/chat/completions/primary"
 
@@ -1074,7 +1089,7 @@ async def test_achat_parse_sets_primary_response_format_strict_false(httpx_mock:
 
     assert isinstance(completion, ChatCompletionResponse)
     assert isinstance(parsed, MathResult)
-    assert body["response_format"]["strict"] is False
+    assert body["model_options"]["response_format"]["strict"] is False
 
 
 async def test_achat_parse_raises_for_invalid_primary_json(httpx_mock: HTTPXMock) -> None:

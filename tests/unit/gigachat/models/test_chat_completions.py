@@ -48,9 +48,9 @@ def test_chat_completion_request_round_trip() -> None:
             "update_interval": 1,
             "unnormalized_history": False,
             "top_logprobs": 3,
+            "reasoning": {"effort": "medium"},
+            "response_format": {"type": "json_schema", "schema": WeatherAnswer, "strict": False},
         },
-        "reasoning": {"effort": "medium"},
-        "response_format": {"type": "json_schema", "schema": WeatherAnswer, "strict": False},
         "filter_config": {
             "request_content": {"neuro": True, "blacklist": True, "whitelist": False},
             "response_content": {"blacklist": True},
@@ -105,6 +105,7 @@ def test_chat_completion_request_round_trip() -> None:
 
     assert request.messages[0].content is not None
     assert request.messages[0].content[0].text == "Верни JSON-ответ"
+    assert request.model_options is not None
     assert isinstance(request.response_format, ChatResponseFormat)
     assert request.response_format.schema_ is not None
     assert request.tools is not None
@@ -113,8 +114,67 @@ def test_chat_completion_request_round_trip() -> None:
     assert request.tools[1].functions.specifications[0].name == "gismeteo-get_n_day_weather_forecast"
     assert request.tools[1].functions.specifications[0].parameters["type"] == "object"
     assert dumped["messages"][0]["content"] == [{"text": "Верни JSON-ответ"}]
-    assert dumped["response_format"]["schema"]["properties"]["answer"]["title"] == "Answer"
+    assert dumped["model_options"]["response_format"]["schema"]["properties"]["answer"]["title"] == "Answer"
     assert dumped["tools"][1]["functions"]["specifications"][0]["name"] == "gismeteo-get_n_day_weather_forecast"
+
+
+def test_chat_completion_request_moves_legacy_root_options_to_model_options() -> None:
+    request = ChatCompletionRequest.model_validate(
+        {
+            "messages": [{"role": "user", "content": "Верни JSON"}],
+            "model_options": {"temperature": 0.2},
+            "reasoning": {"effort": "medium"},
+            "response_format": {"type": "json_schema", "schema": WeatherAnswer, "strict": True},
+        }
+    )
+
+    dumped = request.model_dump(exclude_none=True, by_alias=True)
+
+    assert request.reasoning is not None
+    assert request.response_format is not None
+    assert request.response_format.strict is True
+    assert "reasoning" not in dumped
+    assert "response_format" not in dumped
+    assert dumped["model_options"]["temperature"] == 0.2
+    assert dumped["model_options"]["reasoning"]["effort"] == "medium"
+    assert dumped["model_options"]["response_format"]["type"] == "json_schema"
+
+
+def test_chat_completion_request_accepts_regex_response_format() -> None:
+    request = ChatCompletionRequest.model_validate(
+        {
+            "messages": [{"role": "user", "content": "Верни номер заявки"}],
+            "model_options": {
+                "response_format": {
+                    "type": "regex",
+                    "regex": "[A-Z]{2}-[0-9]{4}",
+                }
+            },
+        }
+    )
+
+    dumped = request.model_dump(exclude_none=True, by_alias=True)
+
+    assert request.response_format is not None
+    assert request.response_format.regex == "[A-Z]{2}-[0-9]{4}"
+    assert dumped["model_options"]["response_format"] == {
+        "type": "regex",
+        "regex": "[A-Z]{2}-[0-9]{4}",
+    }
+
+
+def test_chat_completion_request_accepts_storage_bool_future_shape() -> None:
+    request = ChatCompletionRequest.model_validate(
+        {
+            "messages": [{"role": "user", "content": "Сохрани контекст"}],
+            "storage": True,
+        }
+    )
+
+    dumped = request.model_dump(exclude_none=True, by_alias=True)
+
+    assert request.storage is True
+    assert dumped["storage"] is True
 
 
 def test_chat_completion_response_parses_primary_contract() -> None:
@@ -125,6 +185,7 @@ def test_chat_completion_response_parses_primary_contract() -> None:
         "message_id": "message-1",
         "messages": [
             {
+                "message_id": "message-in-array-1",
                 "role": "assistant",
                 "tools_state_id": "tools-state-1",
                 "content": [
@@ -132,6 +193,7 @@ def test_chat_completion_response_parses_primary_contract() -> None:
                         "text": "Вот результат",
                         "inline_data": {
                             "images": [],
+                            "widgets": [{"type": "search_result", "payload": {"query": "rates"}}],
                             "sources": {
                                 "1": {
                                     "url": "https://example.com/rates",
@@ -178,20 +240,20 @@ def test_chat_completion_response_parses_primary_contract() -> None:
             "output_tokens": 20,
             "total_tokens": 28,
         },
-        "additional_data": {
-            "execution_steps": [
-                {"type": "tool_call", "name": "image_generation"},
-            ]
-        },
+        "additional_data": [{"type": "tool_call", "name": "image_generation"}],
     }
 
     response = ChatCompletionResponse.model_validate(payload)
 
     assert response.thread_id == "thread-1"
+    assert response.messages[0].message_id == "message-in-array-1"
     assert response.messages[0].content is not None
     assert response.messages[0].content[0].inline_data is not None
     assert response.messages[0].content[0].inline_data.sources is not None
     assert response.messages[0].content[0].inline_data.sources["1"].title == "Официальные курсы валют"
+    assert response.messages[0].content[0].inline_data.widgets == [
+        {"type": "search_result", "payload": {"query": "rates"}}
+    ]
     assert response.messages[0].tool_execution is not None
     assert response.messages[0].tool_execution.status == "success"
     assert response.messages[0].logprobs is not None
@@ -200,9 +262,36 @@ def test_chat_completion_response_parses_primary_contract() -> None:
     assert response.usage is not None
     assert response.usage.input_tokens_details is not None
     assert response.usage.input_tokens_details.cached_tokens == 2
-    assert response.additional_data is not None
-    assert response.additional_data.execution_steps is not None
-    assert response.additional_data.execution_steps[0].model_dump()["type"] == "tool_call"
+    assert response.additional_data == [{"type": "tool_call", "name": "image_generation"}]
+
+
+def test_chat_completion_response_parses_content_function_call() -> None:
+    response = ChatCompletionResponse.model_validate(
+        {
+            "model": "GigaChat-2-Reasoning",
+            "created_at": 1776970679,
+            "messages": [
+                {
+                    "role": "assistant",
+                    "tool_state_id": "tool-state-1",
+                    "content": [
+                        {
+                            "function_call": {
+                                "name": "get_weather",
+                                "arguments": {"location": "Moscow"},
+                            }
+                        }
+                    ],
+                    "finish_reason": "function_call",
+                }
+            ],
+        }
+    )
+
+    assert response.messages[0].content is not None
+    assert response.messages[0].content[0].function_call is not None
+    assert response.messages[0].content[0].function_call.name == "get_weather"
+    assert response.messages[0].content[0].function_call.arguments == {"location": "Moscow"}
 
 
 def test_chat_completion_request_normalizes_string_tools() -> None:
@@ -229,13 +318,15 @@ def test_chat_completion_request_normalizes_string_tools() -> None:
 
 
 def test_chat_tool_accepts_string_shorthand() -> None:
-    tool = ChatCompletionRequest.model_validate(
+    request = ChatCompletionRequest.model_validate(
         {
             "messages": [{"role": "user", "content": "Запусти код"}],
             "tools": ["code_interpreter"],
         }
-    ).tools[0]
+    )
 
+    assert request.tools is not None
+    tool = request.tools[0]
     assert tool.code_interpreter == {}
 
 

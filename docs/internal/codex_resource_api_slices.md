@@ -97,8 +97,8 @@ await client.achat.legacy.parse(...)
 - `tools_state_id`
 - multipart `content[]`
 - `model_options`
-- `reasoning`
-- `response_format`
+- `model_options.reasoning`
+- `model_options.response_format`
 - `filter_config`
 - `storage.thread_id`
 - `ranker_options`
