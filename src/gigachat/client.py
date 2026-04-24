@@ -47,6 +47,7 @@ from gigachat.models.chat_completions import (
     ChatCompletionResponse,
     ChatMessage,
     ChatResponseFormat,
+    ChatStorage,
 )
 from gigachat.models.embeddings import Embeddings
 from gigachat.models.files import DeletedFile, Image, UploadedFile, UploadedFiles
@@ -177,7 +178,7 @@ def _parse_chat_completion(
         chat = ChatCompletionRequest.model_validate(payload)
 
     using_assistant = chat.assistant_id is not None or (
-        chat.storage is not None and (chat.storage.assistant_id is not None or chat.storage.thread_id is not None)
+        isinstance(chat.storage, ChatStorage) and chat.storage.thread_id is not None
     )
     if not using_assistant and chat.model is None:
         chat.model = settings.model or GIGACHAT_MODEL

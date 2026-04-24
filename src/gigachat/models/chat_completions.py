@@ -71,6 +71,7 @@ class ChatInlineData(_ChatCompletionsModel):
 
     images: Optional[List[Dict[str, Any]]] = Field(default=None, description="Inline images.")
     sources: Optional[Dict[str, ChatSource]] = Field(default=None, description="Inline sources.")
+    widgets: Optional[List[Dict[str, Any]]] = Field(default=None, description="Inline widgets.")
 
 
 class ChatContentFile(_ChatCompletionsModel):
@@ -93,6 +94,7 @@ class ChatContentPart(_ChatCompletionsModel):
 
     text: Optional[str] = Field(default=None, description="Text content.")
     files: Optional[List[ChatContentFile]] = Field(default=None, description="Referenced or generated files.")
+    function_call: Optional["ChatFunctionCall"] = Field(default=None, description="Tool call payload.")
     function_result: Optional[ChatFunctionResult] = Field(default=None, description="Tool result payload.")
     inline_data: Optional[ChatInlineData] = Field(default=None, description="Inline metadata.")
 
@@ -145,18 +147,6 @@ class ChatUsage(_ChatCompletionsModel):
     total_tokens: Optional[int] = Field(default=None, description="Total token count.")
 
 
-class ChatExecutionStep(_ChatCompletionsModel):
-    """Execution-step metadata returned by the service."""
-
-    pass
-
-
-class ChatAdditionalData(_ChatCompletionsModel):
-    """Additional response metadata."""
-
-    execution_steps: Optional[List[ChatExecutionStep]] = Field(default=None, description="Execution steps.")
-
-
 class ChatReasoning(_ChatCompletionsModel):
     """Reasoning controls."""
 
@@ -174,6 +164,8 @@ class ChatModelOptions(_ChatCompletionsModel):
     update_interval: Optional[float] = Field(default=None, description="Streaming update interval.")
     unnormalized_history: Optional[bool] = Field(default=None, description="Disable history normalization.")
     top_logprobs: Optional[int] = Field(default=None, description="Top logprobs count.")
+    reasoning: Optional[ChatReasoning] = Field(default=None, description="Reasoning settings.")
+    response_format: Optional["ChatResponseFormat"] = Field(default=None, description="Response format settings.")
 
 
 class ChatResponseFormat(_ChatCompletionsModel):
@@ -184,6 +176,7 @@ class ChatResponseFormat(_ChatCompletionsModel):
         alias="schema", default=None, description="JSON Schema or raw schema payload."
     )
     strict: Optional[bool] = Field(default=None, description="Strict schema adherence.")
+    regex: Optional[str] = Field(default=None, description="Regular expression response format.")
 
     @model_validator(mode="before")
     @classmethod
@@ -215,18 +208,24 @@ class ChatResponseFormat(_ChatCompletionsModel):
 
 
 class ChatFilterContentConfig(_ChatCompletionsModel):
-    """Filtering settings for one response/request content category."""
+    """Filtering settings for request content."""
 
     neuro: Optional[bool] = Field(default=None, description="Neuro censor toggle.")
     blacklist: Optional[bool] = Field(default=None, description="Blacklist filter toggle.")
     whitelist: Optional[bool] = Field(default=None, description="Whitelist filter toggle.")
 
 
+class ChatFilterResponseContentConfig(_ChatCompletionsModel):
+    """Filtering settings for response content."""
+
+    blacklist: Optional[bool] = Field(default=None, description="Blacklist filter toggle.")
+
+
 class ChatFilterConfig(_ChatCompletionsModel):
     """Filtering configuration."""
 
     request_content: Optional[ChatFilterContentConfig] = Field(default=None, description="Request filtering settings.")
-    response_content: Optional[ChatFilterContentConfig] = Field(
+    response_content: Optional[ChatFilterResponseContentConfig] = Field(
         default=None, description="Response filtering settings."
     )
 
@@ -235,7 +234,6 @@ class ChatStorage(_ChatCompletionsModel):
     """Context storage configuration."""
 
     limit: Optional[int] = Field(default=None, description="History size limit.")
-    assistant_id: Optional[str] = Field(default=None, description="Assistant identifier.")
     thread_id: Optional[str] = Field(default=None, description="Thread identifier.")
     metadata: Optional[Dict[str, Any]] = Field(default=None, description="Thread metadata.")
 
@@ -331,6 +329,7 @@ class ChatTool(_ChatCompletionsModel):
 
 
 class _ChatMessageBase(_ChatCompletionsModel):
+    message_id: Optional[str] = Field(default=None, description="Message identifier.")
     content: Optional[List[ChatContentPart]] = Field(default=None, description="Structured message content.")
     tools_state_id: Optional[str] = Field(default=None, description="Tool execution state identifier.")
     inline_data: Optional[ChatInlineData] = Field(default=None, description="Message-level inline data.")
@@ -376,10 +375,8 @@ class ChatCompletionRequest(_ChatCompletionsModel):
     assistant_id: Optional[str] = Field(default=None, description="Assistant identifier.")
     tools_state_id: Optional[str] = Field(default=None, description="Tool execution state identifier.")
     model_options: Optional[ChatModelOptions] = Field(default=None, description="Model generation options.")
-    reasoning: Optional[ChatReasoning] = Field(default=None, description="Reasoning settings.")
-    response_format: Optional[ChatResponseFormat] = Field(default=None, description="Response format settings.")
     filter_config: Optional[ChatFilterConfig] = Field(default=None, description="Filtering configuration.")
-    storage: Optional[ChatStorage] = Field(default=None, description="Thread storage settings.")
+    storage: Optional[Union[ChatStorage, bool]] = Field(default=None, description="Thread storage settings.")
     ranker_options: Optional[ChatRankerOptions] = Field(default=None, description="Tool ranking settings.")
     tool_config: Optional[ChatToolConfig] = Field(default=None, description="Tool calling configuration.")
     tools: Optional[List[ChatTool]] = Field(default=None, description="Available tools.")
@@ -399,7 +396,50 @@ class ChatCompletionRequest(_ChatCompletionsModel):
         if values.get("tools_state_id") is None and values.get("functions_state_id") is not None:
             values["tools_state_id"] = values.pop("functions_state_id")
 
+        model_options = values.get("model_options")
+        if model_options is None:
+            model_options = {}
+        elif isinstance(model_options, BaseModel):
+            model_options = model_options.model_dump(exclude_none=True, by_alias=True)
+        elif not isinstance(model_options, dict):
+            return values
+        else:
+            model_options = dict(model_options)
+
+        for field_name in ("reasoning", "response_format"):
+            if field_name in values:
+                model_options.setdefault(field_name, values.pop(field_name))
+
+        if model_options:
+            values["model_options"] = model_options
+
         return values
+
+    @property
+    def reasoning(self) -> Optional[ChatReasoning]:
+        """Return reasoning settings from model options."""
+        if self.model_options is None:
+            return None
+        return self.model_options.reasoning
+
+    @reasoning.setter
+    def reasoning(self, value: Optional[ChatReasoning]) -> None:
+        if self.model_options is None:
+            self.model_options = ChatModelOptions()
+        self.model_options.reasoning = value
+
+    @property
+    def response_format(self) -> Optional[ChatResponseFormat]:
+        """Return response format settings from model options."""
+        if self.model_options is None:
+            return None
+        return self.model_options.response_format
+
+    @response_format.setter
+    def response_format(self, value: Optional[ChatResponseFormat]) -> None:
+        if self.model_options is None:
+            self.model_options = ChatModelOptions()
+        self.model_options.response_format = value
 
 
 class ChatCompletionResponse(_ChatCompletionsAPIResponse):
@@ -413,7 +453,7 @@ class ChatCompletionResponse(_ChatCompletionsAPIResponse):
     usage: Optional[ChatUsage] = Field(default=None, description="Usage information.")
     tool_execution: Optional[ChatToolExecution] = Field(default=None, description="Top-level tool execution state.")
     logprobs: Optional[List[ChatLogprob]] = Field(default=None, description="Top-level logprob metadata.")
-    additional_data: Optional[ChatAdditionalData] = Field(default=None, description="Additional response metadata.")
+    additional_data: Optional[List[Dict[str, Any]]] = Field(default=None, description="Additional response metadata.")
 
     @model_validator(mode="before")
     @classmethod
@@ -440,7 +480,7 @@ class ChatCompletionChunk(_ChatCompletionsAPIResponse):
     usage: Optional[ChatUsage] = Field(default=None, description="Usage information.")
     tool_execution: Optional[ChatToolExecution] = Field(default=None, description="Top-level tool execution state.")
     logprobs: Optional[List[ChatLogprob]] = Field(default=None, description="Top-level logprob metadata.")
-    additional_data: Optional[ChatAdditionalData] = Field(default=None, description="Additional response metadata.")
+    additional_data: Optional[List[Dict[str, Any]]] = Field(default=None, description="Additional response metadata.")
 
     @model_validator(mode="before")
     @classmethod
@@ -457,15 +497,14 @@ class ChatCompletionChunk(_ChatCompletionsAPIResponse):
 
 
 __all__ = (
-    "ChatAdditionalData",
     "ChatCompletionChunk",
     "ChatCompletionRequest",
     "ChatCompletionResponse",
     "ChatContentFile",
     "ChatContentPart",
-    "ChatExecutionStep",
     "ChatFilterConfig",
     "ChatFilterContentConfig",
+    "ChatFilterResponseContentConfig",
     "ChatFunctionCall",
     "ChatFunctionExample",
     "ChatFunctionResult",
