@@ -1,6 +1,21 @@
+import json
 import logging
 from http import HTTPStatus
-from typing import Any, AsyncIterator, Dict, Iterator, NoReturn, Optional, Type, TypeVar, Union
+from typing import (
+    Any,
+    AsyncIterable,
+    AsyncIterator,
+    Dict,
+    Iterable,
+    Iterator,
+    List,
+    NoReturn,
+    Optional,
+    Tuple,
+    Type,
+    TypeVar,
+    Union,
+)
 from urllib.parse import urlsplit, urlunsplit
 
 import httpx
@@ -96,21 +111,117 @@ def build_headers(access_token: Optional[str] = None) -> Dict[str, str]:
 T = TypeVar("T", bound=BaseModel)
 
 
-def parse_chunk(line: str, model_class: Type[T]) -> Optional[T]:
-    """Parse a single line of SSE event data."""
+def parse_data_chunk(line: str, model_class: Type[T]) -> Optional[T]:
+    """Parse an SSE data line."""
     try:
         name, _, value = line.partition(":")
         if name == "data":
             value = value.lstrip()
             if value == "[DONE]":
                 return None
-            else:
-                return model_class.model_validate_json(value)
+            return model_class.model_validate_json(value)
     except Exception as e:
         logger.error("Error parsing chunk from server: %s, raw value: %s", e, line)
         raise
-    else:
+    return None
+
+
+def parse_chunk(line: str, model_class: Type[T]) -> Optional[T]:
+    """Parse an SSE data line."""
+    return parse_data_chunk(line, model_class)
+
+
+def parse_event_chunk(event: str, data: str, model_class: Type[T]) -> T:
+    """Parse an SSE named event."""
+    try:
+        payload = json.loads(data)
+        if isinstance(payload, dict):
+            payload.setdefault("event", event)
+        return model_class.model_validate(payload)
+    except Exception as e:
+        logger.error("Error parsing event chunk from server: %s, event: %s, raw value: %s", e, event, data)
+        raise
+
+
+def _parse_sse_line(line: str) -> Optional[Tuple[str, str]]:
+    """Parse an SSE field line."""
+    if line.startswith(":"):
         return None
+
+    name, separator, value = line.partition(":")
+    if not separator:
+        return None
+
+    if value.startswith(" "):
+        value = value[1:]
+
+    return name, value
+
+
+def _iter_event_chunks(lines: Iterable[str], model_class: Type[T]) -> Iterator[T]:
+    """Yield parsed SSE named events."""
+    event: Optional[str] = None
+    data_lines: List[str] = []
+
+    def flush() -> Iterator[T]:
+        nonlocal event, data_lines
+
+        if event and data_lines:
+            yield parse_event_chunk(event, "\n".join(data_lines), model_class)
+
+        event = None
+        data_lines = []
+
+    for line in lines:
+        if not line:
+            yield from flush()
+            continue
+
+        parsed = _parse_sse_line(line)
+        if parsed is None:
+            continue
+
+        name, value = parsed
+        if name == "event":
+            event = value
+        elif name == "data":
+            data_lines.append(value)
+
+    yield from flush()
+
+
+async def _aiter_event_chunks(lines: AsyncIterable[str], model_class: Type[T]) -> AsyncIterator[T]:
+    """Yield parsed async SSE named events."""
+    event: Optional[str] = None
+    data_lines: List[str] = []
+
+    async def flush() -> AsyncIterator[T]:
+        nonlocal event, data_lines
+
+        if event and data_lines:
+            yield parse_event_chunk(event, "\n".join(data_lines), model_class)
+
+        event = None
+        data_lines = []
+
+    async for line in lines:
+        if not line:
+            async for chunk in flush():
+                yield chunk
+            continue
+
+        parsed = _parse_sse_line(line)
+        if parsed is None:
+            continue
+
+        name, value = parsed
+        if name == "event":
+            event = value
+        elif name == "data":
+            data_lines.append(value)
+
+    async for chunk in flush():
+        yield chunk
 
 
 def build_x_headers(response: httpx.Response) -> Dict[str, Optional[str]]:
@@ -189,12 +300,13 @@ async def execute_request_async(client: httpx.AsyncClient, kwargs: Dict[str, Any
 
 
 def execute_stream_sync(client: httpx.Client, kwargs: Dict[str, Any], model_class: Type[T]) -> Iterator[T]:
-    """Execute sync streaming request and yield parsed chunks."""
+    """Execute sync data-line streaming request and yield parsed chunks."""
     with client.stream(**kwargs) as response:
         _check_response(response)
         x_headers = build_x_headers(response)
         for line in response.iter_lines():
-            if chunk := parse_chunk(line, model_class):
+            chunk = parse_data_chunk(line, model_class)
+            if chunk:
                 if hasattr(chunk, "x_headers"):
                     chunk.x_headers = x_headers
                 yield chunk
@@ -203,12 +315,37 @@ def execute_stream_sync(client: httpx.Client, kwargs: Dict[str, Any], model_clas
 async def execute_stream_async(
     client: httpx.AsyncClient, kwargs: Dict[str, Any], model_class: Type[T]
 ) -> AsyncIterator[T]:
-    """Execute async streaming request and yield parsed chunks."""
+    """Execute async data-line streaming request and yield parsed chunks."""
     async with client.stream(**kwargs) as response:
         await _acheck_response(response)
         x_headers = build_x_headers(response)
         async for line in response.aiter_lines():
-            if chunk := parse_chunk(line, model_class):
+            chunk = parse_data_chunk(line, model_class)
+            if chunk:
                 if hasattr(chunk, "x_headers"):
                     chunk.x_headers = x_headers
                 yield chunk
+
+
+def execute_event_stream_sync(client: httpx.Client, kwargs: Dict[str, Any], model_class: Type[T]) -> Iterator[T]:
+    """Execute sync named-event streaming request and yield parsed events."""
+    with client.stream(**kwargs) as response:
+        _check_response(response)
+        x_headers = build_x_headers(response)
+        for chunk in _iter_event_chunks(response.iter_lines(), model_class):
+            if hasattr(chunk, "x_headers"):
+                chunk.x_headers = x_headers
+            yield chunk
+
+
+async def execute_event_stream_async(
+    client: httpx.AsyncClient, kwargs: Dict[str, Any], model_class: Type[T]
+) -> AsyncIterator[T]:
+    """Execute async named-event streaming request and yield parsed events."""
+    async with client.stream(**kwargs) as response:
+        await _acheck_response(response)
+        x_headers = build_x_headers(response)
+        async for chunk in _aiter_event_chunks(response.aiter_lines(), model_class):
+            if hasattr(chunk, "x_headers"):
+                chunk.x_headers = x_headers
+            yield chunk

@@ -6,10 +6,10 @@ import httpx
 from gigachat.api.utils import (
     EVENT_STREAM,
     build_headers,
+    execute_event_stream_async,
+    execute_event_stream_sync,
     execute_request_async,
     execute_request_sync,
-    execute_stream_async,
-    execute_stream_sync,
     resolve_primary_chat_url,
 )
 from gigachat.context import chat_completions_url_cvar
@@ -90,7 +90,7 @@ def stream_sync(
 ) -> Iterator[ChatCompletionChunk]:
     """Return a primary chat completion stream based on the provided messages."""
     kwargs = _get_stream_kwargs(client, chat=chat, access_token=access_token)
-    return execute_stream_sync(client, kwargs, ChatCompletionChunk)
+    return execute_event_stream_sync(client, kwargs, ChatCompletionChunk)
 
 
 async def stream_async(
@@ -101,7 +101,7 @@ async def stream_async(
 ) -> AsyncIterator[ChatCompletionChunk]:
     """Return a primary chat completion stream based on the provided messages."""
     kwargs = _get_stream_kwargs(client, chat=chat, access_token=access_token)
-    async for chunk in execute_stream_async(client, kwargs, ChatCompletionChunk):
+    async for chunk in execute_event_stream_async(client, kwargs, ChatCompletionChunk):
         yield chunk
 
 

@@ -51,6 +51,18 @@ def _normalize_tool(value: Any) -> Any:
     return value
 
 
+def _normalize_tools_state_id(values: Dict[str, Any]) -> None:
+    """Normalize known tool-state aliases to the primary wire field."""
+    if values.get("tools_state_id") is None:
+        for field_name in ("tool_state_id", "functions_state_id"):
+            if values.get(field_name) is not None:
+                values["tools_state_id"] = values[field_name]
+                break
+
+    values.pop("tool_state_id", None)
+    values.pop("functions_state_id", None)
+
+
 class _ChatCompletionsModel(BaseModel):
     model_config = ConfigDict(extra="allow", populate_by_name=True)
 
@@ -96,6 +108,7 @@ class ChatContentPart(_ChatCompletionsModel):
     files: Optional[List[ChatContentFile]] = Field(default=None, description="Referenced or generated files.")
     function_call: Optional["ChatFunctionCall"] = Field(default=None, description="Tool call payload.")
     function_result: Optional[ChatFunctionResult] = Field(default=None, description="Tool result payload.")
+    tool_execution: Optional["ChatToolExecution"] = Field(default=None, description="Tool execution state.")
     inline_data: Optional[ChatInlineData] = Field(default=None, description="Inline metadata.")
 
 
@@ -133,6 +146,7 @@ class ChatLogprob(_ChatCompletionsModel):
 class ChatUsageInputTokensDetails(_ChatCompletionsModel):
     """Detailed request token accounting."""
 
+    prompt_tokens: Optional[int] = Field(default=None, description="Prompt token count.")
     cached_tokens: Optional[int] = Field(default=None, description="Tokens served from cache.")
 
 
@@ -346,8 +360,7 @@ class _ChatMessageBase(_ChatCompletionsModel):
 
         values = dict(values)
 
-        if values.get("tools_state_id") is None and values.get("functions_state_id") is not None:
-            values["tools_state_id"] = values.pop("functions_state_id")
+        _normalize_tools_state_id(values)
 
         if "content" in values:
             values["content"] = _normalize_content_parts(values.get("content"))
@@ -393,8 +406,7 @@ class ChatCompletionRequest(_ChatCompletionsModel):
 
         values = dict(values)
 
-        if values.get("tools_state_id") is None and values.get("functions_state_id") is not None:
-            values["tools_state_id"] = values.pop("functions_state_id")
+        _normalize_tools_state_id(values)
 
         model_options = values.get("model_options")
         if model_options is None:
@@ -465,6 +477,7 @@ class ChatCompletionResponse(_ChatCompletionsAPIResponse):
 
         if values.get("created_at") is None and values.get("created") is not None:
             values["created_at"] = values.pop("created")
+        _normalize_tools_state_id(values)
 
         return values
 
@@ -472,11 +485,14 @@ class ChatCompletionResponse(_ChatCompletionsAPIResponse):
 class ChatCompletionChunk(_ChatCompletionsAPIResponse):
     """Primary chat completions stream chunk."""
 
+    event: Optional[str] = Field(default=None, description="SSE event name.")
     model: Optional[str] = Field(default=None, description="Resolved model identifier.")
     created_at: Optional[int] = Field(default=None, description="Chunk creation timestamp.")
     messages: Optional[List[ChatMessageChunk]] = Field(default=None, description="Returned message fragments.")
     message_id: Optional[str] = Field(default=None, description="Message identifier.")
     thread_id: Optional[str] = Field(default=None, description="Thread identifier.")
+    tools_state_id: Optional[str] = Field(default=None, description="Tool execution state identifier.")
+    finish_reason: Optional[str] = Field(default=None, description="Generation finish reason.")
     usage: Optional[ChatUsage] = Field(default=None, description="Usage information.")
     tool_execution: Optional[ChatToolExecution] = Field(default=None, description="Top-level tool execution state.")
     logprobs: Optional[List[ChatLogprob]] = Field(default=None, description="Top-level logprob metadata.")
@@ -492,6 +508,7 @@ class ChatCompletionChunk(_ChatCompletionsAPIResponse):
 
         if values.get("created_at") is None and values.get("created") is not None:
             values["created_at"] = values.pop("created")
+        _normalize_tools_state_id(values)
 
         return values
 
