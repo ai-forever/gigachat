@@ -289,9 +289,39 @@ def test_chat_completion_response_parses_content_function_call() -> None:
     )
 
     assert response.messages[0].content is not None
+    assert response.messages[0].tools_state_id == "tool-state-1"
     assert response.messages[0].content[0].function_call is not None
     assert response.messages[0].content[0].function_call.name == "get_weather"
     assert response.messages[0].content[0].function_call.arguments == {"location": "Moscow"}
+
+
+def test_chat_completion_request_normalizes_singular_tool_state_id() -> None:
+    request = ChatCompletionRequest.model_validate(
+        {
+            "messages": [
+                {
+                    "role": "assistant",
+                    "tool_state_id": "tool-state-1",
+                    "content": [{"function_call": {"name": "get_weather", "arguments": {"location": "Moscow"}}}],
+                },
+                {
+                    "role": "tool",
+                    "tool_state_id": "tool-state-1",
+                    "content": [{"function_result": {"name": "get_weather", "result": {"temperature": 18}}}],
+                },
+            ],
+            "tool_state_id": "root-tool-state-1",
+        }
+    )
+
+    dumped = request.model_dump(exclude_none=True, by_alias=True)
+
+    assert dumped["tools_state_id"] == "root-tool-state-1"
+    assert dumped["messages"][0]["tools_state_id"] == "tool-state-1"
+    assert dumped["messages"][1]["tools_state_id"] == "tool-state-1"
+    assert "tool_state_id" not in dumped
+    assert "tool_state_id" not in dumped["messages"][0]
+    assert "tool_state_id" not in dumped["messages"][1]
 
 
 def test_chat_completion_request_normalizes_string_tools() -> None:
@@ -368,3 +398,74 @@ def test_chat_completion_chunk_accepts_partial_messages() -> None:
     assert chunk.messages[0].content[0].text == "Частичный ответ"
     assert chunk.messages[0].tool_execution is not None
     assert chunk.messages[0].tool_execution.seconds_left == 5
+
+
+def test_chat_completion_chunk_normalizes_singular_tool_state_id() -> None:
+    chunk = ChatCompletionChunk.model_validate(
+        {
+            "event": "response.message.done",
+            "tool_state_id": "tool-state-1",
+        }
+    )
+
+    dumped = chunk.model_dump(exclude_none=True, by_alias=True)
+
+    assert chunk.tools_state_id == "tool-state-1"
+    assert dumped["tools_state_id"] == "tool-state-1"
+    assert "tool_state_id" not in dumped
+
+
+def test_chat_completion_chunk_parses_message_done_event() -> None:
+    chunk = ChatCompletionChunk.model_validate(
+        {
+            "event": "response.message.done",
+            "model": "GigaChat",
+            "created_at": "167890456789",
+            "finish_reason": "error",
+            "tools_state_id": "tools-state-1",
+            "usage": {
+                "input_tokens": 1,
+                "input_tokens_details": {"prompt_tokens": 1, "cached_tokens": 0},
+                "output_tokens": 2,
+                "total_tokens": 3,
+            },
+        }
+    )
+
+    assert chunk.event == "response.message.done"
+    assert chunk.created_at == 167890456789
+    assert chunk.finish_reason == "error"
+    assert chunk.tools_state_id == "tools-state-1"
+    assert chunk.usage is not None
+    assert chunk.usage.input_tokens_details is not None
+    assert chunk.usage.input_tokens_details.prompt_tokens == 1
+    assert chunk.usage.input_tokens_details.cached_tokens == 0
+
+
+def test_chat_completion_chunk_parses_tool_execution_content_part() -> None:
+    chunk = ChatCompletionChunk.model_validate(
+        {
+            "event": "response.tool.completed",
+            "messages": [
+                {
+                    "role": "reasoning",
+                    "content": [
+                        {
+                            "tool_execution": {
+                                "name": "image_generate",
+                                "status": "success",
+                                "censored": True,
+                            }
+                        }
+                    ],
+                }
+            ],
+        }
+    )
+
+    assert chunk.messages is not None
+    assert chunk.messages[0].content is not None
+    assert chunk.messages[0].content[0].tool_execution is not None
+    assert chunk.messages[0].content[0].tool_execution.name == "image_generate"
+    assert chunk.messages[0].content[0].tool_execution.status == "success"
+    assert chunk.messages[0].content[0].tool_execution.censored is True

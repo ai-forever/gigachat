@@ -70,9 +70,11 @@ PRIMARY_CHAT_COMPLETION = {
 }
 
 PRIMARY_CHAT_COMPLETION_STREAM = (
+    b"event: response.message.delta\n"
     b'data: {"model":"GigaChat-2-Max","created_at":1760434637,'
     b'"messages":[{"role":"assistant","content":"primary chunk"}]}\n\n'
-    b"data: [DONE]\n\n"
+    b"event: response.message.done\n"
+    b'data: {"model":"GigaChat-2-Max","created_at":1760434638,"finish_reason":"stop"}\n\n'
 )
 
 
@@ -321,11 +323,14 @@ def test_chat_stream_uses_primary_route(httpx_mock: HTTPXMock) -> None:
         chat_url_cvar.reset(legacy_url_token)
 
     requests = httpx_mock.get_requests()
-    assert len(response) == 1
+    assert len(response) == 2
     assert all(isinstance(chunk, PrimaryChatCompletionChunk) for chunk in response)
+    assert response[0].event == "response.message.delta"
     assert response[0].messages is not None
     assert response[0].messages[0].content is not None
     assert response[0].messages[0].content[0].text == "primary chunk"
+    assert response[1].event == "response.message.done"
+    assert response[1].finish_reason == "stop"
     assert len(requests) == 1
     assert str(requests[0].url) == f"{BASE_URL}/chat/completions/primary"
 
@@ -997,11 +1002,14 @@ async def test_achat_stream_uses_primary_route(httpx_mock: HTTPXMock) -> None:
         chat_url_cvar.reset(legacy_url_token)
 
     requests = httpx_mock.get_requests()
-    assert len(response) == 1
+    assert len(response) == 2
     assert all(isinstance(chunk, PrimaryChatCompletionChunk) for chunk in response)
+    assert response[0].event == "response.message.delta"
     assert response[0].messages is not None
     assert response[0].messages[0].content is not None
     assert response[0].messages[0].content[0].text == "primary chunk"
+    assert response[1].event == "response.message.done"
+    assert response[1].finish_reason == "stop"
     assert len(requests) == 1
     assert str(requests[0].url) == f"{BASE_URL}/chat/completions/primary"
 
