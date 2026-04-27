@@ -19,6 +19,7 @@ def main() -> None:
 
     with GigaChat() as client:
         uploaded = client.files.upload(file=("sdk_notes.txt", FILE_TEXT.encode("utf-8")))
+        retrieved = client.files.retrieve_content(uploaded.id_)
         response = client.chat.create(
             ChatCompletionRequest(
                 messages=[
@@ -35,6 +36,7 @@ def main() -> None:
 
     print(first_message_text(response))
     print(f"Uploaded file: {uploaded.id_}")
+    print(f"Retrieved content length: {len(retrieved.content)}")
 
 
 if __name__ == "__main__":

@@ -20,7 +20,7 @@
 7. [done] Add low-level function validation API and models
 8. [done] Add functions.validate resource path and shims
 9. [done] Add global resource/shim regression coverage
-10. [todo] Update public docs and migration guides
+10. [done] Update public docs and migration guides
 11. [todo] Final audit and cleanup
 
 ## Журнал
@@ -80,3 +80,9 @@
   - Тесты: uv run pytest tests/unit/gigachat/test_client_resource_shims.py -q; uv run pytest tests/unit/gigachat/test_client_lifecycle.py -q; uv run ruff check tests/unit/gigachat/test_client_resource_shims.py tests/unit/gigachat/test_client_lifecycle.py; git diff --check.
   - Commit: test(resources): cover batches files functions shims
   - Замечания: production-код не менялся; незакоммиченные пользовательские файлы в рабочем дереве не трогались.
+- 2026-04-27: завершён срез 10.
+  - Что сделано: обновлены README, migration guides и examples на canonical resource paths для batches, file content и function validation; batch notebook приведён к рабочему `retrieve_content` flow.
+  - Изменённые файлы: README.md, MIGRATION_GUIDE.md, MIGRATION_GUIDE_ru.md, examples/README.md, examples/example_batching.ipynb, examples/files/file_input.py, docs/internal/RESOURCE_API_BATCHES_FILES_PROGRESS.md.
+  - Тесты: git diff --check; uv run pytest tests/unit/examples -q; uv run ruff check examples/files/file_input.py; node -e "JSON.parse(require('fs').readFileSync('examples/example_batching.ipynb','utf8')); console.log('notebook ok')".
+  - Commit: docs(resources): document batches files function validation resources
+  - Замечания: production API не менялся; `tests/unit/examples` существует и прошёл.

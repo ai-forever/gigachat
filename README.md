@@ -219,6 +219,31 @@ with GigaChat() as client:
         print(f"Arguments: {message.function_call.arguments}")
 ```
 
+Validate a function schema before using it in chat requests:
+
+```python
+from gigachat import GigaChat
+
+function = {
+    "name": "get_weather",
+    "description": "Get current weather for a location",
+    "parameters": {
+        "type": "object",
+        "properties": {
+            "location": {
+                "type": "string",
+                "description": "City name, e.g., Tokyo",
+            }
+        },
+        "required": ["location"],
+    },
+}
+
+with GigaChat() as client:
+    validation = client.functions.validate(function)
+    print(validation.message)
+```
+
 ### Structured Output (JSON Schema) — Beta
 
 > **Note:** This feature is in beta. It may not work correctly with all model versions.
@@ -641,6 +666,10 @@ with GigaChat() as client:
     for file in files.data:
         print(f"{file.id_}: {file.filename}")
 
+    # Retrieve file content as base64
+    content = client.files.retrieve_content(uploaded.id_)
+    print(content.content)
+
     # Delete a file
     client.files.delete(uploaded.id_)
 ```
@@ -659,6 +688,10 @@ with GigaChat() as client:
     batch = client.batches.create(data, method="chat_completions")
     result = client.batches.retrieve(batch.id_)
     print(result.batches[0].status)
+
+    if result.batches[0].output_file_id is not None:
+        output = client.files.retrieve_content(result.batches[0].output_file_id)
+        print(output.content)
 ```
 
 

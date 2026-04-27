@@ -64,7 +64,8 @@ compatibility shim-ы и вызывают `DeprecationWarning`; в новом к
 | `client.get_file(file)` | `client.files.retrieve(file)` |
 | `client.get_files()` | `client.files.list()` |
 | `client.delete_file(file)` | `client.files.delete(file)` |
-| `client.get_image(file_id)` | `client.files.retrieve_image(file_id)` |
+| `client.get_file_content(file_id)` | `client.files.retrieve_content(file_id)` |
+| `client.get_image(file_id)` | `client.files.retrieve_content(file_id)` |
 | `client.create_batch(file, method)` | `client.batches.create(file, method)` |
 | `client.get_batches()` | `client.batches.list()` |
 | `client.get_batches(batch_id="...")` | `client.batches.retrieve("...")` |
@@ -72,7 +73,8 @@ compatibility shim-ы и вызывают `DeprecationWarning`; в новом к
 | `await client.aget_file(file)` | `await client.a_files.retrieve(file)` |
 | `await client.aget_files()` | `await client.a_files.list()` |
 | `await client.adelete_file(file)` | `await client.a_files.delete(file)` |
-| `await client.aget_image(file_id)` | `await client.a_files.retrieve_image(file_id)` |
+| `await client.aget_file_content(file_id)` | `await client.a_files.retrieve_content(file_id)` |
+| `await client.aget_image(file_id)` | `await client.a_files.retrieve_content(file_id)` |
 | `await client.acreate_batch(file, method)` | `await client.a_batches.create(file, method)` |
 | `await client.aget_batches()` | `await client.a_batches.list()` |
 | `await client.aget_batches(batch_id="...")` | `await client.a_batches.retrieve("...")` |
@@ -82,8 +84,13 @@ compatibility shim-ы и вызывают `DeprecationWarning`; в новом к
 | `await client.aget_balance()` | `await client.a_balance.get()` |
 | `client.openapi_function_convert(openapi_function)` | `client.functions.convert_openapi(openapi_function)` |
 | `await client.aopenapi_function_convert(openapi_function)` | `await client.a_functions.convert_openapi(openapi_function)` |
+| `client.validate_function(function)` | `client.functions.validate(function)` |
+| `await client.avalidate_function(function)` | `await client.a_functions.validate(function)` |
 | `client.check_ai(text, model)` | `client.ai_check.check(text, model)` |
 | `await client.acheck_ai(text, model)` | `await client.a_ai_check.check(text, model)` |
+
+`client.files.retrieve_image(file_id)` и `await client.a_files.retrieve_image(file_id)` остаются deprecated
+image-only compatibility alias-ами. В новом коде используйте `retrieve_content(...)` для любого содержимого файла.
 
 Primary chat completions используют v2 route. Если клиентский `base_url` все еще заканчивается на `/v1`, вызовы `client.chat.create(...)`, `client.chat.stream(...)`, `client.achat.create(...)` и `client.achat.stream(...)` автоматически уходят на соответствующий `/v2/chat/completions`. Явные override-ы `chat_completions_url` по-прежнему учитываются, включая versioned paths вроде `/v2/chat/completions`.
 
