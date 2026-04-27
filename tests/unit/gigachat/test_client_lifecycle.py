@@ -4,6 +4,7 @@ from unittest.mock import MagicMock, patch
 
 from gigachat import GigaChat
 from gigachat.client import GigaChatAsyncClient, GigaChatSyncClient
+from gigachat.resources.threads import ThreadsAsyncClient, ThreadsSyncClient
 
 
 def test_lazy_init_sync() -> None:
@@ -124,6 +125,7 @@ def test_sync_resources_are_cached_properties() -> None:
     assert legacy_chat is client.chat.legacy
     assert assistants is client.assistants
     assert threads is client.threads
+    assert isinstance(threads, ThreadsSyncClient)
 
 
 async def test_async_resources_are_cached_properties() -> None:
@@ -143,3 +145,4 @@ async def test_async_resources_are_cached_properties() -> None:
     assert legacy_chat is client.achat.legacy
     assert assistants is client.a_assistants
     assert threads is client.a_threads
+    assert isinstance(threads, ThreadsAsyncClient)

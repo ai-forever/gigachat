@@ -11,6 +11,9 @@ from gigachat.models.threads import (
     ThreadRunResult,
     Threads,
 )
+from gigachat.resources.threads import ThreadsAsyncClient, ThreadsSyncClient
+from gigachat.threads import ThreadsAsyncClient as CompatThreadsAsyncClient
+from gigachat.threads import ThreadsSyncClient as CompatThreadsSyncClient
 from tests.constants import (
     BASE_URL,
     GET_THREADS,
@@ -35,6 +38,11 @@ from tests.constants import (
     POST_THREADS_RUN,
     POST_THREADS_RUN_URL,
 )
+
+
+def test_threads_compat_module_reexports_resource_clients() -> None:
+    assert CompatThreadsSyncClient is ThreadsSyncClient
+    assert CompatThreadsAsyncClient is ThreadsAsyncClient
 
 
 def test_get_threads(httpx_mock: HTTPXMock) -> None:

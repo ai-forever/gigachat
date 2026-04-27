@@ -14,7 +14,7 @@
 1. [done] Restore plan/progress docs
 2. [done] Add shared resource deprecation helper
 3. [done] Normalize assistants resource module
-4. [todo] Normalize threads resource module
+4. [done] Normalize threads resource module
 5. [todo] Add models resource
 6. [todo] Add embeddings resource
 7. [todo] Add files resource
@@ -47,3 +47,9 @@
   - Тесты: `uv run pytest tests/unit/gigachat/test_client_assistants.py -q`, `uv run pytest tests/unit/gigachat/test_client_lifecycle.py -q`, `uv run ruff check src/gigachat/assistants.py src/gigachat/resources/assistants.py src/gigachat/resources/__init__.py src/gigachat/client.py tests/unit/gigachat/test_client_assistants.py`, `git diff --check`.
   - Commit: `refactor(resources): move assistants resource into resources package`.
   - Замечания: public paths `client.assistants.*` и `client.a_assistants.*` не менялись; threads не трогались.
+- 2026-04-27: завершён срез 4.
+  - Что сделано: `ThreadsSyncClient` и `ThreadsAsyncClient` перенесены в `gigachat.resources.threads`; старый `gigachat.threads` оставлен как compatibility module.
+  - Изменённые файлы: `src/gigachat/threads.py`, `src/gigachat/resources/threads.py`, `src/gigachat/resources/__init__.py`, `src/gigachat/client.py`, `tests/unit/gigachat/test_client_threads.py`, `tests/unit/gigachat/test_client_lifecycle.py`, `docs/internal/RESOURCE_API_REMAINING_PROGRESS.md`.
+  - Тесты: `uv run pytest tests/unit/gigachat/test_client_threads.py -q`, `uv run pytest tests/unit/gigachat/test_client_lifecycle.py -q`, `uv run ruff check src/gigachat/threads.py src/gigachat/resources/threads.py src/gigachat/resources/__init__.py src/gigachat/client.py tests/unit/gigachat/test_client_threads.py tests/unit/gigachat/test_client_lifecycle.py`, `git diff --check`.
+  - Commit: `refactor(resources): move threads resource into resources package`.
+  - Замечания: public paths `client.threads.*` и `client.a_threads.*` не менялись; assistants и chat не трогались.

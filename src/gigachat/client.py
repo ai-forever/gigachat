@@ -53,10 +53,16 @@ from gigachat.models.files import DeletedFile, Image, UploadedFile, UploadedFile
 from gigachat.models.models import Model, Models
 from gigachat.models.response_format import JsonSchemaResponseFormat
 from gigachat.models.tools import AICheckResult, Balance, OpenApiFunctions, TokensCount
-from gigachat.resources import AssistantsAsyncClient, AssistantsSyncClient, AsyncChatNamespace, ChatNamespace
+from gigachat.resources import (
+    AssistantsAsyncClient,
+    AssistantsSyncClient,
+    AsyncChatNamespace,
+    ChatNamespace,
+    ThreadsAsyncClient,
+    ThreadsSyncClient,
+)
 from gigachat.retry import _awith_retry, _awith_retry_stream, _with_retry, _with_retry_stream
 from gigachat.settings import Settings
-from gigachat.threads import ThreadsAsyncClient, ThreadsSyncClient
 
 ModelT = TypeVar("ModelT", bound=pydantic.BaseModel)
 
