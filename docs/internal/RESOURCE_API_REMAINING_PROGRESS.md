@@ -12,7 +12,7 @@
 ## Срезы
 
 1. [done] Restore plan/progress docs
-2. [todo] Add shared resource deprecation helper
+2. [done] Add shared resource deprecation helper
 3. [todo] Normalize assistants resource module
 4. [todo] Normalize threads resource module
 5. [todo] Add models resource
@@ -35,3 +35,9 @@
   - Тесты: `git diff --check`.
   - Commit: `docs(resources): add remaining resource api plan`.
   - Замечания: Python-код не менялся; следующие срезы не начинались.
+- 2026-04-27: завершён срез 2.
+  - Что сделано: добавлен общий helper `warn_deprecated_resource_api()` для deprecated root shims non-chat Resource API.
+  - Изменённые файлы: `src/gigachat/resources/_utils.py`, `src/gigachat/resources/__init__.py`, `docs/internal/RESOURCE_API_REMAINING_PROGRESS.md`.
+  - Тесты: `uv run pytest tests/unit/gigachat/test_client_chat.py -q`, `git diff --check`.
+  - Commit: `refactor(resources): add deprecated resource shim helper`.
+  - Замечания: новые resources не добавлялись; chat shims не переподключались.
