@@ -18,7 +18,7 @@
 | 03-realtime-settings-config | done | this commit | Added realtime websocket URL setting coverage. |
 | 04-client-param-types | done | this commit | Added JSON client event param types. |
 | 05-server-event-models | done | this commit | Added JSON server event models and parser factory. |
-| 06-client-event-serialization | pending |  | Add JSON client event serialization. |
+| 06-client-event-serialization | done | this commit | Added JSON client event serialization and audio frame validation. |
 | 07-async-websocket-connection | pending |  | Add async JSON websocket connection. |
 | 08-event-handler-registry | pending |  | Add websocket event handlers. |
 | 09-async-helper-resources | pending |  | Add async realtime helper resources. |
@@ -127,6 +127,29 @@ Tests:
 
 Next:
 - 06-client-event-serialization
+
+Risks:
+- Backend JSON endpoint must be confirmed. If the current GigaVoice WebSocket endpoint accepts only protobuf frames, this SDK plan cannot pass integration smoke tests without a backend adapter or gateway.
+
+### 2026-04-27 — slice 06-client-event-serialization
+
+Done:
+- Added `gigachat.realtime` package exports for JSON event serialization helpers.
+- Added base64 helpers for realtime audio payloads.
+- Added PCM_S16LE duration calculation and validation.
+- Added `serialize_client_event` for settings, input audio, synthesis, and function result client events.
+- Added frame-size validation before WebSocket transport exists.
+- Converted dict/list `function_result.content` values into compact JSON strings for the wire payload.
+
+Tests:
+- `uv run pytest tests/unit/gigachat/realtime/test_base64_audio.py tests/unit/gigachat/realtime/test_event_params.py`
+- `uv run ruff check src/gigachat/realtime tests/unit/gigachat/realtime/test_base64_audio.py tests/unit/gigachat/realtime/test_event_params.py`
+- `uv run ruff format --check src/gigachat/realtime tests/unit/gigachat/realtime/test_base64_audio.py tests/unit/gigachat/realtime/test_event_params.py`
+- `uv run mypy src/gigachat/realtime tests/unit/gigachat/realtime/test_base64_audio.py tests/unit/gigachat/realtime/test_event_params.py` (rerun outside sandbox because `uv` cache access was blocked)
+- `uv run python -c "import gigachat; import gigachat.realtime"` (rerun outside sandbox because `uv` cache access was blocked)
+
+Next:
+- 07-async-websocket-connection
 
 Risks:
 - Backend JSON endpoint must be confirmed. If the current GigaVoice WebSocket endpoint accepts only protobuf frames, this SDK plan cannot pass integration smoke tests without a backend adapter or gateway.
