@@ -31,6 +31,12 @@ dependencies = [
     "httpx>=0.24,<1",
 ]
 
+[project.optional-dependencies]
+realtime = [
+    "protobuf>=4,<6",
+    "websockets>=12,<16",
+]
+
 [project.urls]
 Repository = "https://github.com/ai-forever/gigachat"
 

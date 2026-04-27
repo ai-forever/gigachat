@@ -274,6 +274,7 @@ class _BaseClient:
         self,
         *,
         base_url: Optional[str] = None,
+        realtime_url: Optional[str] = None,
         auth_url: Optional[str] = None,
         credentials: Optional[str] = None,
         scope: Optional[str] = None,
@@ -301,6 +302,7 @@ class _BaseClient:
 
         kwargs: Dict[str, Any] = {
             "base_url": base_url,
+            "realtime_url": realtime_url,
             "auth_url": auth_url,
             "credentials": credentials,
             "scope": scope,
@@ -358,6 +360,7 @@ class GigaChatSyncClient(_BaseClient):
 
     Args:
         base_url: Address against which requests are executed.
+        realtime_url: WebSocket URL for GigaVoice realtime API.
         auth_url: Address for requesting OAuth 2.0 access token.
         credentials: Authorization data.
         scope: API version to which access is provided.
@@ -385,6 +388,7 @@ class GigaChatSyncClient(_BaseClient):
         self,
         *,
         base_url: Optional[str] = None,
+        realtime_url: Optional[str] = None,
         auth_url: Optional[str] = None,
         credentials: Optional[str] = None,
         scope: Optional[str] = None,
@@ -409,6 +413,7 @@ class GigaChatSyncClient(_BaseClient):
     ) -> None:
         super().__init__(
             base_url=base_url,
+            realtime_url=realtime_url,
             auth_url=auth_url,
             credentials=credentials,
             scope=scope,
@@ -740,6 +745,7 @@ class GigaChatAsyncClient(_BaseClient):
 
     Args:
         base_url: Address against which requests are executed.
+        realtime_url: WebSocket URL for GigaVoice realtime API.
         auth_url: Address for requesting OAuth 2.0 access token.
         credentials: Authorization data.
         scope: API version to which access is provided.
@@ -767,6 +773,7 @@ class GigaChatAsyncClient(_BaseClient):
         self,
         *,
         base_url: Optional[str] = None,
+        realtime_url: Optional[str] = None,
         auth_url: Optional[str] = None,
         credentials: Optional[str] = None,
         scope: Optional[str] = None,
@@ -791,6 +798,7 @@ class GigaChatAsyncClient(_BaseClient):
     ) -> None:
         super().__init__(
             base_url=base_url,
+            realtime_url=realtime_url,
             auth_url=auth_url,
             credentials=credentials,
             scope=scope,
@@ -1119,6 +1127,7 @@ class GigaChat(GigaChatSyncClient, GigaChatAsyncClient):
 
     Args:
         base_url: Address against which requests are executed.
+        realtime_url: WebSocket URL for GigaVoice realtime API.
         auth_url: Address for requesting OAuth 2.0 access token.
         credentials: Authorization data.
         scope: API version to which access is provided.
@@ -1146,6 +1155,7 @@ class GigaChat(GigaChatSyncClient, GigaChatAsyncClient):
         self,
         *,
         base_url: Optional[str] = None,
+        realtime_url: Optional[str] = None,
         auth_url: Optional[str] = None,
         credentials: Optional[str] = None,
         scope: Optional[str] = None,
@@ -1170,6 +1180,7 @@ class GigaChat(GigaChatSyncClient, GigaChatAsyncClient):
     ) -> None:
         super().__init__(
             base_url=base_url,
+            realtime_url=realtime_url,
             auth_url=auth_url,
             credentials=credentials,
             scope=scope,

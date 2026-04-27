@@ -16,6 +16,10 @@ class Settings(BaseSettings):
         default=BASE_URL,
         description="Address against which requests are executed.",
     )
+    realtime_url: Optional[str] = Field(
+        default=None,
+        description="WebSocket URL for GigaVoice realtime API.",
+    )
     auth_url: str = Field(
         default=AUTH_URL,
         description="Address for requesting OAuth 2.0 access token.",

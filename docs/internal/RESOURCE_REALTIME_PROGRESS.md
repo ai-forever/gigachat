@@ -1,5 +1,9 @@
 # Resource Realtime Progress
 
+## Global notes
+
+- Never add to git or commit local source files `docs/internal/voice.proto` and `docs/internal/gigavoice.docx`; use them only as local read-only references. Slice 03 may commit only the package copy at `src/gigachat/proto/gigavoice/voice.proto`.
+
 ## Proto/doc mismatch table
 
 | Topic | Word doc | `voice.proto` | SDK action |
@@ -43,3 +47,36 @@ Add the canonical Codex implementation plan and initialize progress tracking for
 
 ### Next slice
 Slice 02 — `chore(realtime): add websocket realtime settings and extras`. Do not start it in the current run.
+
+## Slice 02 — chore(realtime): add websocket realtime settings and extras
+
+Status: done
+Date: 2026-04-27
+
+### Goal
+Add optional realtime dependencies and WebSocket URL configuration plumbing without exposing realtime resources yet.
+
+### Done in this slice
+- Added the `realtime` optional extra with `protobuf` and `websockets`.
+- Added `Settings.realtime_url`, including `GIGACHAT_REALTIME_URL` support through the existing settings prefix.
+- Added `realtime_url` constructor plumbing for `_BaseClient`, `GigaChatSyncClient`, `GigaChatAsyncClient`, and `GigaChat`.
+- Updated the lockfile metadata for the new optional extra.
+
+### Files changed
+- `pyproject.toml`
+- `uv.lock`
+- `src/gigachat/settings.py`
+- `src/gigachat/client.py`
+- `docs/internal/RESOURCE_REALTIME_PROGRESS.md`
+
+### Tests run
+- `uv run pytest tests/unit/gigachat/test_client_constructor.py tests/unit/gigachat/test_settings.py` — passed.
+- `uv run ruff check src/gigachat/settings.py src/gigachat/client.py` — passed.
+- `make mypy` — passed after rerun with escalated filesystem access because sandboxed uv could not read `/Users/riyakupov/.cache/uv/sdists-v9/.git`.
+
+### Notes / blockers
+- Current branch is `feature/voice_mode`, not `feature/resource-api-non-chat` from the plan; continuing on the active branch.
+- No blockers.
+
+### Next slice
+Slice 03 — `feat(realtime): add GigaVoice protobuf bindings`. Do not start it in the current run.
