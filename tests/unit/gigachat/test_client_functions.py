@@ -4,9 +4,28 @@ import pytest
 from pytest_httpx import HTTPXMock
 
 from gigachat.client import GigaChatAsyncClient, GigaChatSyncClient
-from gigachat.models import Function, OpenApiFunctions
+from gigachat.models import Function, FunctionValidationResult, OpenApiFunctions
 from gigachat.resources.functions import FunctionsAsyncResource, FunctionsSyncResource
 from tests.constants import BASE_URL, CONVERT_FUNCTIONS, CONVERT_FUNCTIONS_URL
+
+FUNCTION_VALIDATION_URL = f"{BASE_URL}/functions/validate"
+FUNCTION_VALIDATION = {
+    "status": 200,
+    "message": "Function is valid",
+    "json_ai_rules_version": "2024-01-01",
+}
+FUNCTION_DEFINITION = {
+    "name": "weather_forecast",
+    "parameters": {
+        "type": "object",
+        "properties": {
+            "location": {
+                "type": "string",
+                "description": "Location",
+            }
+        },
+    },
+}
 
 
 def test_functions_resource_is_cached_property() -> None:
@@ -81,3 +100,47 @@ async def test_aopenapi_function_convert_deprecated_shim(httpx_mock: HTTPXMock) 
     assert isinstance(response, OpenApiFunctions)
     for row in response.functions:
         assert isinstance(row, Function)
+
+
+def test_functions_validate_without_warning(httpx_mock: HTTPXMock) -> None:
+    httpx_mock.add_response(url=FUNCTION_VALIDATION_URL, json=FUNCTION_VALIDATION)
+
+    with GigaChatSyncClient(base_url=BASE_URL) as client:
+        with warnings.catch_warnings(record=True) as caught:
+            warnings.simplefilter("always", DeprecationWarning)
+            response = client.functions.validate(FUNCTION_DEFINITION)
+
+    assert isinstance(response, FunctionValidationResult)
+    assert not [warning for warning in caught if issubclass(warning.category, DeprecationWarning)]
+
+
+def test_validate_function_deprecated_shim(httpx_mock: HTTPXMock) -> None:
+    httpx_mock.add_response(url=FUNCTION_VALIDATION_URL, json=FUNCTION_VALIDATION)
+
+    with GigaChatSyncClient(base_url=BASE_URL) as client:
+        with pytest.warns(DeprecationWarning, match=r"client\.functions\.validate\(\.\.\.\)"):
+            response = client.validate_function(FUNCTION_DEFINITION)
+
+    assert isinstance(response, FunctionValidationResult)
+
+
+async def test_a_functions_validate_without_warning(httpx_mock: HTTPXMock) -> None:
+    httpx_mock.add_response(url=FUNCTION_VALIDATION_URL, json=FUNCTION_VALIDATION)
+
+    async with GigaChatAsyncClient(base_url=BASE_URL) as client:
+        with warnings.catch_warnings(record=True) as caught:
+            warnings.simplefilter("always", DeprecationWarning)
+            response = await client.a_functions.validate(FUNCTION_DEFINITION)
+
+    assert isinstance(response, FunctionValidationResult)
+    assert not [warning for warning in caught if issubclass(warning.category, DeprecationWarning)]
+
+
+async def test_avalidate_function_deprecated_shim(httpx_mock: HTTPXMock) -> None:
+    httpx_mock.add_response(url=FUNCTION_VALIDATION_URL, json=FUNCTION_VALIDATION)
+
+    async with GigaChatAsyncClient(base_url=BASE_URL) as client:
+        with pytest.warns(DeprecationWarning, match=r"client\.a_functions\.validate\(\.\.\.\)"):
+            response = await client.avalidate_function(FUNCTION_DEFINITION)
+
+    assert isinstance(response, FunctionValidationResult)

@@ -18,7 +18,7 @@
 5. [done] Add low-level file content API and File model
 6. [done] Add files.retrieve_content resource path and shims
 7. [done] Add low-level function validation API and models
-8. [todo] Add functions.validate resource path and shims
+8. [done] Add functions.validate resource path and shims
 9. [todo] Add global resource/shim regression coverage
 10. [todo] Update public docs and migration guides
 11. [todo] Final audit and cleanup
@@ -68,3 +68,9 @@
   - Тесты: uv run pytest tests/unit/gigachat/api/test_tools.py -q; uv run pytest tests/unit/gigachat/models/test_tools.py -q; uv run ruff check src/gigachat/api/tools.py src/gigachat/models/tools.py tests/unit/gigachat/api/test_tools.py tests/unit/gigachat/models/test_tools.py; git diff --check.
   - Commit: feat(functions): add low-level function validation api
   - Замечания: `client.functions.validate` и root shims не добавлялись; это следующий срез.
+- 2026-04-27: завершён срез 8.
+  - Что сделано: добавлены `functions.validate`/`a_functions.validate` и deprecated root shims `validate_function`/`avalidate_function`.
+  - Изменённые файлы: src/gigachat/resources/functions.py, src/gigachat/client.py, tests/unit/gigachat/test_client_functions.py, tests/unit/gigachat/test_client_resource_shims.py, docs/internal/RESOURCE_API_BATCHES_FILES_PROGRESS.md.
+  - Тесты: uv run pytest tests/unit/gigachat/test_client_functions.py -q; uv run pytest tests/unit/gigachat/test_client_resource_shims.py -q; uv run ruff check src/gigachat/resources/functions.py src/gigachat/client.py tests/unit/gigachat/test_client_functions.py tests/unit/gigachat/test_client_resource_shims.py; git diff --check.
+  - Commit: feat(resources): add function validation resource
+  - Замечания: `convert_openapi`, low-level `api/tools.py`, docs/examples и chat tools surface не менялись.

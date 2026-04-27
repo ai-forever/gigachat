@@ -36,6 +36,7 @@ from gigachat.models.chat import (
     Chat,
     ChatCompletion,
     ChatCompletionChunk,
+    Function,
     Messages,
     MessagesRole,
 )
@@ -53,7 +54,7 @@ from gigachat.models.embeddings import Embeddings
 from gigachat.models.files import DeletedFile, File, UploadedFile, UploadedFiles
 from gigachat.models.models import Model, Models
 from gigachat.models.response_format import JsonSchemaResponseFormat
-from gigachat.models.tools import AICheckResult, Balance, OpenApiFunctions, TokensCount
+from gigachat.models.tools import AICheckResult, Balance, FunctionValidationResult, OpenApiFunctions, TokensCount
 from gigachat.resources import (
     AICheckAsyncResource,
     AICheckSyncResource,
@@ -714,6 +715,11 @@ class GigaChatSyncClient(_BaseClient):
         warn_deprecated_resource_api("client.openapi_function_convert(...)", "client.functions.convert_openapi(...)")
         return self.functions.convert_openapi(openapi_function)
 
+    def validate_function(self, function: Union[Function, Dict[str, Any]]) -> FunctionValidationResult:
+        """Validate a function definition via deprecated root shim."""
+        warn_deprecated_resource_api("client.validate_function(...)", "client.functions.validate(...)")
+        return self.functions.validate(function)
+
     def check_ai(self, text: str, model: str) -> AICheckResult:
         """Check text via deprecated root shim."""
         warn_deprecated_resource_api("client.check_ai(...)", "client.ai_check.check(...)")
@@ -1087,6 +1093,11 @@ class GigaChatAsyncClient(_BaseClient):
         """Convert an OpenAPI function description via deprecated root shim."""
         warn_deprecated_resource_api("client.aopenapi_function_convert(...)", "client.a_functions.convert_openapi(...)")
         return await self.a_functions.convert_openapi(openapi_function)
+
+    async def avalidate_function(self, function: Union[Function, Dict[str, Any]]) -> FunctionValidationResult:
+        """Validate a function definition via deprecated root shim."""
+        warn_deprecated_resource_api("client.avalidate_function(...)", "client.a_functions.validate(...)")
+        return await self.a_functions.validate(function)
 
     async def acheck_ai(self, text: str, model: str) -> AICheckResult:
         """Check text via deprecated root shim."""

@@ -8,6 +8,18 @@ from gigachat.client import GigaChatAsyncClient, GigaChatSyncClient
 from tests.constants import BASE_URL, FILE
 
 ResourceCase = Tuple[str, str, str, str, Tuple[Any, ...], Dict[str, Any], str]
+FUNCTION_DEFINITION = {
+    "name": "weather_forecast",
+    "parameters": {
+        "type": "object",
+        "properties": {
+            "location": {
+                "type": "string",
+                "description": "Location",
+            }
+        },
+    },
+}
 
 SYNC_RESOURCE_CASES: Tuple[ResourceCase, ...] = (
     (
@@ -144,6 +156,15 @@ SYNC_RESOURCE_CASES: Tuple[ResourceCase, ...] = (
         ("openapi",),
         {},
         r"client\.functions\.convert_openapi\(\.\.\.\)",
+    ),
+    (
+        "validate_function",
+        "functions",
+        "validate",
+        "gigachat.resources.functions.tools.function_validate_sync",
+        (FUNCTION_DEFINITION,),
+        {},
+        r"client\.functions\.validate\(\.\.\.\)",
     ),
     (
         "check_ai",
@@ -291,6 +312,15 @@ ASYNC_RESOURCE_CASES: Tuple[ResourceCase, ...] = (
         ("openapi",),
         {},
         r"client\.a_functions\.convert_openapi\(\.\.\.\)",
+    ),
+    (
+        "avalidate_function",
+        "a_functions",
+        "validate",
+        "gigachat.resources.functions.tools.function_validate_async",
+        (FUNCTION_DEFINITION,),
+        {},
+        r"client\.a_functions\.validate\(\.\.\.\)",
     ),
     (
         "acheck_ai",
