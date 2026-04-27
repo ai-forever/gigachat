@@ -21,7 +21,7 @@
 8. [done] Add tokens resource
 9. [done] Add balance resource
 10. [done] Add functions resource
-11. [todo] Add ai_check resource
+11. [done] Add ai_check resource
 12. [todo] Update docs/examples for non-chat resources
 13. [todo] Add global resource/shim regression tests
 14. [todo] Final audit and cleanup
@@ -89,3 +89,9 @@
   - Тесты: `uv run pytest tests/unit/gigachat/test_client_functions.py -q`, `uv run pytest tests/unit/gigachat/api/test_tools.py -q`, `uv run ruff check src/gigachat/resources/functions.py src/gigachat/resources/__init__.py src/gigachat/client.py tests/unit/gigachat/test_client_functions.py`, `git diff --check`.
   - Commit: `feat(resources): add functions resource`.
   - Замечания: chat function calling models и `Function`/`FunctionParameters` не менялись.
+- 2026-04-27: завершён срез 11.
+  - Что сделано: добавлен `ai_check` resource namespace с `check()` для sync и async клиентов; root methods `check_ai`/`acheck_ai` переведены в deprecated shims.
+  - Изменённые файлы: `src/gigachat/resources/ai_check.py`, `src/gigachat/resources/__init__.py`, `src/gigachat/client.py`, `tests/unit/gigachat/test_client_ai_check.py`, `docs/internal/RESOURCE_API_REMAINING_PROGRESS.md`.
+  - Тесты: `uv run pytest tests/unit/gigachat/test_client_ai_check.py -q`, `uv run pytest tests/unit/gigachat/api/test_tools.py -q`, `uv run pytest tests/unit/gigachat/test_client_tools.py -q`, `uv run ruff check src/gigachat/resources/ai_check.py src/gigachat/resources/__init__.py src/gigachat/client.py tests/unit/gigachat/test_client_ai_check.py`, `git diff --check`.
+  - Commit: `feat(resources): add ai check resource`.
+  - Замечания: examples/docs и unrelated tools endpoints не менялись; `test_client_tools.py` проходит с ожидаемыми `DeprecationWarning` для deprecated root paths.
