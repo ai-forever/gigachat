@@ -21,7 +21,7 @@
 8. [done] Add functions.validate resource path and shims
 9. [done] Add global resource/shim regression coverage
 10. [done] Update public docs and migration guides
-11. [todo] Final audit and cleanup
+11. [done] Final audit and cleanup
 
 ## Журнал
 
@@ -86,3 +86,9 @@
   - Тесты: git diff --check; uv run pytest tests/unit/examples -q; uv run ruff check examples/files/file_input.py; node -e "JSON.parse(require('fs').readFileSync('examples/example_batching.ipynb','utf8')); console.log('notebook ok')".
   - Commit: docs(resources): document batches files function validation resources
   - Замечания: production API не менялся; `tests/unit/examples` существует и прошёл.
+- 2026-04-27: завершён срез 11.
+  - Что сделано: выполнен финальный аудит root compatibility surface, исправлена сортировка import block в public package exports.
+  - Изменённые файлы: src/gigachat/__init__.py, docs/internal/RESOURCE_API_BATCHES_FILES_PROGRESS.md.
+  - Тесты: rg "client\.create_batch|client\.get_batches|client\.acreate_batch|client\.aget_batches|client\.get_file_content|client\.aget_file_content|client\.get_image|client\.aget_image|client\.validate_function|client\.avalidate_function" .; uv run ruff check .; uv run pytest; make mypy; git diff --check.
+  - Commit: chore(resources): finish batches files resource migration
+  - Замечания: первый `uv run ruff check .` нашёл unsorted imports в `src/gigachat/__init__.py`, исправлено `uv run ruff check --fix src/gigachat/__init__.py`; первый `make mypy` в sandbox упал на доступе к `/Users/riyakupov/.cache/uv/sdists-v9/.git`, повторный запуск с разрешением прошёл. Untracked-файлы `api.yml`, `docs/internal/gigachat_resource_api_batches_files_plan.md`, `examples/batching_ex.ipynb`, `examples/chat_batch_100.jsonl`, `request_v2.pdf`, `response_v2.pdf` не менялись.

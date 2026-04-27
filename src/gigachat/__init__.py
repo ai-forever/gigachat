@@ -16,10 +16,10 @@ from gigachat.exceptions import (
 )
 from gigachat.models import (
     Batch,
+    Batches,
     BatchMethod,
     BatchRequestCounts,
     BatchStatus,
-    Batches,
     Chat,
     ChatCompletion,
     ChatCompletionChunk,
