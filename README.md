@@ -184,6 +184,18 @@ with GigaChat() as client:
         print(f"Arguments: {message.function_call.arguments}")
 ```
 
+> **Note:** By default, `function_ranker` is not sent.
+
+Enable function/tool ranking explicitly and limit the number of ranked functions:
+
+```python
+chat = Chat(
+    messages=[Messages(role=MessagesRole.USER, content="What's the weather in Tokyo?")],
+    functions=[weather_function],
+    function_ranker={"enabled": True, "top_n": 3},
+)
+```
+
 ### Structured Output (JSON Schema) — Beta
 
 > **Note:** This feature is in beta. It may not work correctly with all model versions.
