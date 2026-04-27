@@ -1,172 +1,155 @@
-# План реализации `resource realtime` для `gigachat`: WebSocket + JSON events, без gRPC и protobuf
+# Resource realtime: latest-proto protobuf-over-WebSocket implementation plan for Codex
 
-Документ предназначен для GPT-5.5 Codex, который будет работать в ветке `feature/resource-api-non-chat` из PR #110.
+This document replaces the earlier JSON-only realtime plan. The backend is now confirmed to be **protobuf-over-WebSocket**. The SDK must remain **WebSocket only** and must not implement gRPC, but it **must** use protobuf message serialization for realtime frames.
 
-Этот план **заменяет предыдущий protobuf-план**. Теперь целевой SDK-контракт такой:
+Target branch context: `feature/resource-api-non-chat` / PR #110 style: add realtime as a Resource API namespace:
 
 ```python
 client.realtime      # sync Resource API namespace
 client.a_realtime    # async Resource API namespace
 ```
 
-Транспорт: **только WebSocket**.
-
-Wire-format: **UTF-8 JSON frames**.
-
-Audio payload: **base64 string внутри JSON**, потому что без protobuf нельзя передать `bytes` как бинарное поле в typed event object.
-
-Optional audio helpers: `sounddevice` + `numpy`.
-
-API-стиль: ориентироваться на `openai-python` Realtime API:
-
-- `client.realtime.connect(...)` возвращает context manager;
-- `async with client.a_realtime.connect(...) as connection: ...`;
-- `async for event in connection: ...`;
-- `connection.send(...)`, `connection.recv()`, `connection.send_raw(...)`, `connection.parse_event(...)`;
-- event handlers: `.on(...)`, `.off(...)`, `.once(...)`, `.dispatch_events()`;
-- request params — typed dictionaries;
-- response/server events — Pydantic models.
+The previous slices already implemented a JSON-over-WebSocket prototype. That work is useful for API shape, resource namespace, handlers, sync/async lifecycle, and audio helpers, but the wire layer is incompatible with the actual backend. The next work is a **retrofit**, not a rewrite from zero.
 
 ---
 
-## 0. Самое важное перед кодингом
+## 0. Current state that Codex must understand
 
-### 0.1. Контрактный риск
+The checked-in progress/plan currently say:
 
-Word-документ GigaVoice описывает WebSocket `внутри protobuf`. В этом плане protobuf запрещён. Значит Codex должен реализовывать **JSON-over-WebSocket SDK** и явно зафиксировать в progress-файле:
-
-> Требуется backend JSON WebSocket endpoint или JSON gateway. Если текущий endpoint принимает только protobuf frames, этот SDK-план не сможет пройти integration smoke test без backend-адаптера.
-
-Не пытаться “частично” использовать `voice.proto`. Не генерировать `*_pb2.py`. Не импортировать `google.protobuf`. Не коммитить `voice.proto` в SDK.
-
-### 0.2. Почему JSON events
-
-Мы хотим API ближе к OpenAI Realtime: события имеют строковый `type`, сериализуются в JSON, серверные события парсятся в Pydantic-модели, пользователь может работать через iterator или через callbacks.
-
-Пример желаемого SDK API:
-
-```python
-from uuid import uuid4
-
-from gigachat import GigaChat
-from gigachat.types.realtime import RealtimeSettingsParam
-
-settings: RealtimeSettingsParam = {
-    "voice_call_id": str(uuid4()),
-    "mode": "RECOGNIZE_GIGACHAT_SYNTHESIS",
-    "output_modalities": "AUDIO_TEXT",
-    "enable_transcribe_input": True,
-    "audio": {
-        "input": {"audio_encoding": "PCM_S16LE", "sample_rate": 16000},
-        "output": {"audio_encoding": "PCM_S16LE"},
-    },
-}
-
-async with GigaChat(credentials="...") as client:
-    async with client.a_realtime.connect(settings=settings, url="wss://...") as connection:
-        await connection.input_audio.send(chunk, speech_start=True)
-
-        async for event in connection:
-            if event.type == "input_transcription":
-                print(event.text)
-
-            elif event.type == "output.audio":
-                await speaker.write(event.audio_chunk)
-                if event.is_final:
-                    break
-
-            elif event.type == "output.interrupted":
-                speaker.stop()
-
-            elif event.type == "error":
-                print(event.status, event.message)
-                break
+```text
+Transport: WebSocket only.
+Wire format: JSON events only.
+gRPC: forbidden.
+protobuf: forbidden.
 ```
 
----
+That is now outdated. Keep the “WebSocket only” and “gRPC forbidden” parts. Replace the wire-format rule with protobuf binary frames.
 
-## 1. Жёсткие правила для Codex
+New canonical rules:
 
-1. **Нельзя брать больше одной задачи за один заход.**
-   - Выбери первый незавершённый slice из раздела `12. Commit-срезы`.
-   - Сделай только его.
-   - Сделай один commit.
-   - Остановись и отчитайся.
+```text
+Transport: WebSocket only.
+Wire format: protobuf binary frames only.
+gRPC: forbidden in SDK.
+protobuf: required for realtime.
+Audio helpers: optional sounddevice + numpy.
+One pass = one slice = one commit.
+```
 
-2. **Каждый slice обязан обновлять progress-файл.**
-   - Progress-файл в репозитории: `docs/internal/RESOURCE_REALTIME_PROGRESS.md`.
-   - В каждом commit должен быть diff этого файла.
-   - Формат записи см. раздел `11. Progress protocol`.
-
-3. **gRPC запрещён.**
-   - Не добавлять `grpcio`, `grpcio-tools`.
-   - Не добавлять `transport="grpc"`.
-   - Не создавать gRPC transport, channel, stub, service client.
-
-4. **protobuf запрещён.**
-   - Не добавлять `protobuf` dependency.
-   - Не генерировать `voice_pb2.py`.
-   - Не импортировать `google.protobuf`.
-   - Не использовать `voice.proto` как источник runtime-кода.
-   - Не добавлять length-prefix framing.
-
-5. **Wire-format — только JSON.**
-   - `websockets.send()` отправляет `str`, полученный из `json.dumps(...)`.
-   - `websockets.recv()` ожидает `str` или UTF-8 bytes и парсит через `json.loads(...)`.
-   - Аудио в JSON всегда base64 string.
-   - Бинарные websocket frames для аудио не использовать в MVP.
-
-6. **Не угадывать WebSocket endpoint.**
-   - В SDK добавить настройку `realtime_url`.
-   - Если `url` не передан в `connect()` и `GIGACHAT_REALTIME_URL` не задан, выбрасывать понятный `ValueError`.
-   - Не derive-ить endpoint из `base_url`, пока нет подтверждённого backend path.
-
-7. **Не ломать импорт `gigachat` без realtime extras.**
-   - `websockets`, `sounddevice`, `numpy` должны импортироваться lazy.
-   - `import gigachat` должен работать без `pip install "gigachat[realtime]"`.
-   - Ошибка отсутствующей зависимости должна возникать только при вызове realtime/audio helper API.
-
-8. **Python 3.8+ обязателен.**
-   - Не использовать `X | Y`.
-   - Использовать `Optional`, `Union`, `List`, `Dict`, `Tuple`.
-   - Для `TypedDict`, `Literal`, `NotRequired`, `Required` использовать `typing_extensions`.
-   - Учитывать `mypy strict` и `ruff target-version = py38`.
-
-9. **OpenAI SDK — ориентир по UX, не копипаста.**
-   - Можно повторять паттерны: connection manager, async iterator, `.send`, `.recv`, `.parse_event`, `.send_raw`, event handlers.
-   - Нельзя копировать код wholesale.
-   - Надо адаптировать под GigaVoice sequence: первым событием после открытия соединения идут `settings`, затем `input.audio_content` / `input.synthesis_content` / `function_result`.
+Important: the updated proto contains a `service GigaVoiceService` declaration. This does **not** mean the SDK should implement gRPC. The service declaration may remain in `voice_pb2.py` as a descriptor generated by `protoc --python_out`, but the SDK must not generate or import `voice_pb2_grpc.py` and must not add `grpcio` runtime dependency.
 
 ---
 
-## 2. Non-goals
+## 1. What “works” means now
 
-Не реализовывать в рамках этого плана:
+A successful SDK flow must do this:
 
-- gRPC;
-- protobuf;
-- WebRTC;
-- автоматический reconnect с восстановлением GigaVoice-контекста;
-- автоматическое выполнение functions;
-- real VAD на клиенте;
-- SSML chunker;
-- автоматическое создание `settings.context` при reconnect;
-- hardcoded endpoint;
-- изменение chat/completions REST API;
-- root-level deprecated shim вида `client.voice(...)`.
+1. Open WebSocket with SDK auth headers.
+2. Send the first WebSocket message as a **binary frame** containing:
+
+   ```python
+   voice_pb2.GigaVoiceRequest(settings=...).SerializeToString()
+   ```
+
+3. Send subsequent client frames as binary protobuf:
+
+   ```python
+   GigaVoiceRequest(input=ContentFromClient(audio_content=...))
+   GigaVoiceRequest(input=ContentFromClient(content_for_synthesis=...))
+   GigaVoiceRequest(function_result=FunctionResult(...))
+   ```
+
+4. Receive binary frames and parse them as:
+
+   ```python
+   response = voice_pb2.GigaVoiceResponse.FromString(data)
+   ```
+
+5. Convert each protobuf response into the existing OpenAI-style user-facing event models with `event.type`, for example:
+
+   ```python
+   output.audio
+   output.additional_data
+   output.interrupted
+   function_call
+   input_transcription
+   output_transcription
+   error
+   warning
+   input_files
+   platform_function_processing
+   ```
+
+6. Keep public audio chunks as `bytes` in Python. Do not base64 encode audio for the wire. Protobuf `bytes` fields carry the raw bytes.
+
+Protocol assumption to confirm with backend: **one WebSocket binary frame equals one serialized `GigaVoiceRequest` or `GigaVoiceResponse`, with no length-prefix**. If backend uses length-prefix or batches messages, add a tiny framing codec layer only; do not change public models/resources.
 
 ---
 
-## 3. Dependencies и extras
+## 2. Hard rules for Codex
 
-В `pyproject.toml` добавить optional dependencies.
+1. **Do only one slice per pass.**
+   - Pick the first pending slice from section 14.
+   - Implement only that slice.
+   - Make one commit.
+   - Update `docs/internal/RESOURCE_REALTIME_PROGRESS.md` in the same commit.
+   - Stop.
 
-Рекомендуемая схема:
+2. **Progress file is mandatory.**
+   - Every commit must include a progress-file diff.
+   - If tests are not run, write exactly why.
+   - JSON slices 01–16 should be marked as “superseded by protobuf wire retrofit” rather than erased.
+
+3. **gRPC remains forbidden.**
+   - Do not add `grpcio` runtime dependency.
+   - Do not add `transport="grpc"`.
+   - Do not generate or commit `voice_pb2_grpc.py`.
+   - Do not create channel/stub/service-client code.
+
+4. **protobuf is now required.**
+   - Add `protobuf` to the `realtime` extra.
+   - Commit `voice.proto` and generated `voice_pb2.py`.
+   - Do not require users to run code generation at install time.
+
+5. **No JSON WebSocket frames.**
+   - `websocket.send()` must receive `bytes`, not JSON `str`, for realtime events.
+   - `websocket.recv()` must expect binary frames. If a text frame is received, raise a clear protocol error.
+   - It is still okay to use JSON strings inside specific protobuf fields such as `Function.parameters`, `Function.return_parameters`, `FunctionCall.arguments`, `FunctionResult.content`, and `FunctionRegistry.ab_flags`, because the proto defines those fields as strings containing JSON.
+
+6. **No base64 for wire audio.**
+   - `AudioContent.audio_chunk` is protobuf `bytes`.
+   - `Audio.audio_chunk` is protobuf `bytes`.
+   - Keep base64 helpers only if still useful for legacy tests, but the transport and examples must not use them.
+
+7. **Do not guess the endpoint.**
+   - Keep `realtime_url` / `GIGACHAT_REALTIME_URL`.
+   - If no URL is provided, raise a clear error.
+   - Do not derive realtime endpoint from REST `base_url`.
+
+8. **Keep OpenAI-style SDK UX.**
+   - Keep `client.a_realtime.connect(settings=...)`.
+   - Keep `client.realtime.connect(settings=...)`.
+   - Keep `connection.send(...)`, `connection.recv()`, async/sync iterators, `.on()`, `.off()`, `.once()`, `.dispatch_events()`.
+   - Keep helper resources: `input_audio`, `synthesis`, `function_result`, `session`.
+   - The difference is internal serialization: Python params/events -> protobuf bytes -> WebSocket.
+
+9. **Python 3.8+ compatibility.**
+   - No `X | Y` types.
+   - Use `Optional`, `Union`, `List`, `Dict`, `Mapping`, `Sequence`.
+   - Use `typing_extensions` for `TypedDict`, `Literal`, `NotRequired`, `Required`.
+
+---
+
+## 3. Dependencies and extras
+
+Update optional dependencies:
 
 ```toml
 [project.optional-dependencies]
 realtime = [
     "websockets>=13,<16",
+    "protobuf>=4.25,<6",
 ]
 voice_helpers = [
     "sounddevice>=0.5.1",
@@ -175,73 +158,67 @@ voice_helpers = [
 ]
 realtime_voice = [
     "websockets>=13,<16",
+    "protobuf>=4.25,<6",
     "sounddevice>=0.5.1",
     "numpy>=1.24,<2; python_version == '3.8'",
     "numpy>=2.0.2; python_version >= '3.9'",
 ]
 ```
 
-Почему так:
+Do not add `grpcio` or `grpcio-tools` as runtime dependencies.
 
-- `realtime` нужен для transport-only пользователей;
-- `voice_helpers` нужен для пользователей, которым нужны microphone/speaker helpers;
-- `realtime_voice` удобен для demo/example установки одной extra-группой;
-- `numpy>=2` нельзя навязывать Python 3.8, потому что библиотека поддерживает Python 3.8.
+Code generation recommendation:
 
-Все imports делать lazy:
-
-```python
-def _require_websockets() -> Any:
-    try:
-        from websockets.asyncio.client import connect
-    except ImportError as exc:
-        raise ImportError('Install `gigachat[realtime]` to use realtime WebSocket API') from exc
-    return connect
+```bash
+protoc \
+  -I src/gigachat/proto/gigavoice \
+  --python_out=src/gigachat/proto/gigavoice \
+  src/gigachat/proto/gigavoice/voice.proto
 ```
 
-Для `sounddevice` / `numpy` аналогично:
-
-```python
-def _require_voice_helpers() -> Tuple[Any, Any]:
-    try:
-        import numpy as np
-        import sounddevice as sd
-    except ImportError as exc:
-        raise ImportError('Install `gigachat[voice_helpers]` or `gigachat[realtime_voice]` to use audio helpers') from exc
-    return np, sd
-```
+If local generation needs a tool not in the repo, use an external one-off environment. Do not make SDK installation depend on code generation.
 
 ---
 
-## 4. Предлагаемая структура файлов
+## 4. Files to add or change
 
-Добавлять файлы маленькими slices. Не создавать всё сразу.
+New protobuf files:
 
 ```text
-src/gigachat/types/realtime.py
-src/gigachat/models/realtime.py
-src/gigachat/api/realtime.py
-src/gigachat/resources/realtime.py
-src/gigachat/realtime/__init__.py
-src/gigachat/realtime/_base64.py
-src/gigachat/realtime/_events.py
-src/gigachat/realtime/audio.py
-src/gigachat/settings.py                       # добавить realtime_url
-src/gigachat/client.py                         # добавить realtime/a_realtime resources
-src/gigachat/resources/__init__.py
-src/gigachat/models/__init__.py
-src/gigachat/types/__init__.py                 # если пакета types ещё нет
-examples/example_realtime_text.py
-examples/example_realtime_microphone.py
-docs/internal/RESOURCE_REALTIME_PROGRESS.md
+src/gigachat/proto/__init__.py
+src/gigachat/proto/gigavoice/__init__.py
+src/gigachat/proto/gigavoice/voice.proto
+src/gigachat/proto/gigavoice/voice_pb2.py
 ```
 
-Тесты:
+Do **not** add:
 
 ```text
-tests/unit/gigachat/realtime/test_event_params.py
-tests/unit/gigachat/realtime/test_event_models.py
-tests/unit/gigachat/realtime/test_base64_audio.py
+src/gigachat/proto/gigavoice/voice_pb2_grpc.py
+```
+
+Bridge and transport files:
+
+```text
+src/gigachat/realtime/_protobuf.py        # new bridge: params <-> pb2, pb2 <-> events
+src/gigachat/realtime/_events.py          # may keep handler registry, but remove JSON-wire assumptions
+src/gigachat/realtime/_base64.py          # remove from transport; optional legacy helper only
+src/gigachat/api/realtime.py              # switch send/recv to binary protobuf frames
+src/gigachat/types/realtime.py            # update TypedDicts and enum literals to latest proto
+src/gigachat/models/realtime.py           # update event models to latest proto response fields
+src/gigachat/resources/realtime.py        # mostly unchanged unless type hints need updates
+examples/example_realtime_text.py         # update from JSON endpoint wording to protobuf WS
+examples/example_realtime_functions.py    # update from JSON endpoint wording to protobuf WS
+examples/example_realtime_microphone.py   # update if already added
+README.md / examples/README.md            # update install and protocol notes
+```
+
+Tests:
+
+```text
+tests/unit/gigachat/realtime/test_proto_imports.py
+tests/unit/gigachat/realtime/test_protobuf_client_serialization.py
+tests/unit/gigachat/realtime/test_protobuf_server_parsing.py
 tests/unit/gigachat/realtime/test_async_connection.py
 tests/unit/gigachat/realtime/test_sync_connection.py
 tests/unit/gigachat/realtime/test_resources.py
@@ -250,48 +227,14 @@ tests/unit/gigachat/realtime/test_audio_helpers.py
 
 ---
 
-## 5. API shape: как должно выглядеть у пользователя
+## 5. Public API stays OpenAI-style
 
-### 5.1. Async text-only / no microphone
-
-```python
-import asyncio
-from uuid import uuid4
-
-from gigachat import GigaChat
-
-async def main() -> None:
-    settings = {
-        "voice_call_id": str(uuid4()),
-        "mode": "RECOGNIZE_GIGACHAT_SYNTHESIS",
-        "output_modalities": "TEXT",
-        "enable_transcribe_input": True,
-        "audio": {"input": {"audio_encoding": "PCM_S16LE", "sample_rate": 16000}},
-    }
-
-    async with GigaChat(credentials="...") as client:
-        async with client.a_realtime.connect(settings=settings, url="wss://...") as connection:
-            await connection.input_audio.send(b"...pcm16 bytes...", speech_start=True, speech_end=True)
-
-            async for event in connection:
-                if event.type == "output_transcription":
-                    print(event.text)
-                elif event.type == "output.additional_data":
-                    break
-                elif event.type == "error":
-                    print(event.message)
-                    break
-
-asyncio.run(main())
-```
-
-### 5.2. Async with microphone/speaker helpers
+### Async
 
 ```python
 from uuid import uuid4
 
 from gigachat import GigaChat
-from gigachat.realtime.audio import RealtimeMicrophone, RealtimeSpeaker
 
 settings = {
     "voice_call_id": str(uuid4()),
@@ -306,41 +249,35 @@ settings = {
 
 async with GigaChat(credentials="...") as client:
     async with client.a_realtime.connect(settings=settings, url="wss://...") as connection:
-        async with RealtimeMicrophone(sample_rate=16000, channels=1, chunk_ms=100) as mic:
-            async with RealtimeSpeaker(sample_rate=16000, channels=1) as speaker:
-                async for chunk in mic:
-                    await connection.input_audio.send(chunk)
+        await connection.input_audio.send(b"...pcm16 bytes...", speech_start=True)
 
-                    # In real apps receiving and sending should run in separate tasks.
-                    event = await connection.recv()
-                    if event.type == "output.audio":
-                        await speaker.write(event.audio_chunk)
+        async for event in connection:
+            if event.type == "input_transcription":
+                print(event.text)
+
+            elif event.type == "output.audio":
+                await speaker.write(event.audio_chunk)
+                if event.is_final:
+                    break
+
+            elif event.type == "output.interrupted":
+                speaker.stop()
+
+            elif event.type == "function_call":
+                result = run_function(event.name, event.arguments)
+                await connection.function_result.create(result, function_name=event.name)
+
+            elif event.type == "error":
+                print(event.status, event.message)
+                break
 ```
 
-### 5.3. Callback/event-handler style
-
-```python
-manager = client.a_realtime.connect(settings=settings, url="wss://...")
-
-@manager.on("output_transcription")
-async def on_text(event):
-    print(event.text)
-
-@manager.on("error")
-async def on_error(event):
-    print(event.status, event.message)
-
-async with manager as connection:
-    await connection.input_audio.send(chunk, speech_start=True)
-    await connection.dispatch_events()
-```
-
-### 5.4. Sync style
+### Sync
 
 ```python
 with GigaChat(credentials="...") as client:
     with client.realtime.connect(settings=settings, url="wss://...") as connection:
-        connection.input_audio.send(chunk, speech_start=True, speech_end=True)
+        connection.input_audio.send(b"...pcm16 bytes...", speech_start=True, speech_end=True)
 
         for event in connection:
             if event.type == "output_transcription":
@@ -351,359 +288,360 @@ with GigaChat(credentials="...") as client:
 
 ---
 
-## 6. JSON event protocol для SDK
+## 6. Latest proto cheat-sheet
 
-### 6.1. Общие правила
+Use the latest proto pasted by the user. Copy it exactly into:
 
-Все outbound client events имеют поле `type`.
-
-Все inbound server events должны парситься в модель с полем `type`.
-
-Если backend JSON event не содержит `type`, парсер может попытаться распознать legacy oneof-style object:
-
-```json
-{"output": {"audio": {"audio_chunk": "..."}}}
+```text
+src/gigachat/proto/gigavoice/voice.proto
 ```
 
-и нормализовать в:
-
-```json
-{"type": "output.audio", "audio_chunk": "..."}
-```
-
-Но основной контракт SDK — type-driven JSON:
-
-```json
-{"type": "input.audio_content", "audio_chunk": "base64...", "speech_start": true}
-```
-
-### 6.2. Аудио
-
-В Python public API audio chunk — `bytes`.
-
-В JSON wire payload audio chunk — base64 `str`.
-
-SDK обязан кодировать перед отправкой:
-
-```python
-base64.b64encode(audio_chunk).decode("ascii")
-```
-
-SDK обязан декодировать серверный audio:
-
-```python
-base64.b64decode(audio_chunk)
-```
-
-Server event model `OutputAudioEvent.audio_chunk` должен отдавать пользователю `bytes`, не base64 string.
-
-### 6.3. Размеры и ограничения
-
-Перед отправкой JSON frame проверять размер UTF-8 bytes:
-
-```python
-len(json_payload.encode("utf-8")) <= 4 * 1024 * 1024
-```
-
-Если больше — выбрасывать `ValueError` до отправки.
-
-Для PCM_S16LE можно soft-check длительности чанка:
-
-```python
-seconds = len(audio_chunk) / (sample_rate * channels * 2)
-```
-
-Если `seconds > 2`, выбросить `ValueError` или warning по параметру `validate_audio_chunks=True`. В MVP лучше `ValueError`, чтобы не нарушать backend-limit.
-
----
-
-## 7. Data model cheat-sheet
-
-Codex должен понимать, зачем нужна каждая модель. Не добавляй модель “просто потому что поле есть в документе”. Каждая модель должна решать одну задачу: typed input params, parsed server event, helper serialization или audio helper state.
-
-### 7.1. Request params: `src/gigachat/types/realtime.py`
-
-Request params — это `TypedDict`, а не Pydantic. Причина: как в OpenAI SDK, пользователь часто передаёт обычные dict-ы, а IDE получает autocomplete/type-checking.
-
-Использовать `typing_extensions`:
-
-```python
-from typing_extensions import Literal, NotRequired, Required, TypedDict
-```
-
-#### `RealtimeMode`
-
-Type alias:
-
-```python
-RealtimeMode = Literal[
-    "RECOGNIZE_GIGACHAT_SYNTHESIS",
-    "RECOGNIZE_SYNTHESIS",
-    "GIGACHAT_SYNTHESIS",
-]
-```
-
-Зачем: ограничить backend mode строками из документа.
-
-Не добавлять `RESOURCE_REALTIME`: это namespace SDK, не backend mode.
-
-#### `RealtimeOutputModalities`
-
-```python
-RealtimeOutputModalities = Literal["AUDIO", "AUDIO_TEXT", "TEXT"]
-```
-
-Зачем: управляет тем, ждём ли audio events, text events или оба.
-
-#### `RealtimeAudioEncoding`
-
-```python
-RealtimeAudioEncoding = Literal["PCM_S16LE", "OPUS", "PCM_ALAW"]
-```
-
-Зачем: settings.audio.input/output и validation helpers.
-
-#### `RealtimeFirstSpeakerParam`
-
-Поля:
-
-- `type`: `"model" | "user"`;
-- `lock_first_in`: optional bool.
-
-Зачем: старт разговора от модели. Если `type="model"`, в `settings.context.messages` должен быть валидный стартовый контекст.
-
-SDK не обязан валидировать весь бизнес-контекст, но может проверить очевидное: не пустой context для `model`.
-
-#### `RealtimeDisableInterruptionFunctionParam`
-
-Поля:
-
-- `name`: required str;
-- `on_execution`: optional bool;
-- `after_result`: optional bool.
-
-Зачем: отключение перебиваний вокруг функций.
-
-#### `RealtimeDisableInterruptionParam`
-
-Поля:
-
-- `functions`: optional list of `RealtimeDisableInterruptionFunctionParam`.
-
-Зачем: группирует настройки блокировки перебивания.
-
-#### `RealtimeFunctionRankerParam`
-
-Поля:
-
-- `enable`: optional bool;
-- `top_n`: optional int.
-
-Зачем: настройки ранжирования функций. Использовать поле `enable`, как в Word-документе JSON schema. Не использовать proto-name `enabled`.
-
-#### `RealtimeFunctionRegistryParam`
-
-Поля:
-
-- `profile`: optional str;
-- `labels`: optional list[str];
-- `ab_flags`: optional str, содержащий JSON.
-
-Зачем: запрос функций из function registry.
-
-SDK не парсит `ab_flags`, только передаёт строку.
-
-#### `RealtimeFunctionParam`
-
-Минимально:
-
-- `name`: str;
-- `description`: optional str;
-- `parameters`: optional dict[str, Any].
-
-Зачем: клиентские функции по аналогии с chat/completions.
-
-Разрешить `extra` через `Mapping[str, Any]` невозможно в TypedDict, поэтому для полной гибкости можно типизировать как `Dict[str, Any]` в местах, где текущие chat models уже используют произвольное описание функции. Не блокировать unknown function fields.
-
-#### `RealtimeGigaChatSettingsParam`
-
-Поля:
-
-- `model`: optional str;
-- `preset`: optional str;
-- `temperature`: optional float;
-- `top_p`: optional float;
-- `repetition_penalty`: optional float;
-- `profanity_check`: optional bool;
-- `filters_settings`: optional dict[str, Any];
-- `function_ranker`: optional `RealtimeFunctionRankerParam`;
-- `functions`: optional list of function descriptions;
-- `current_time`: optional int;
-- `function_registry`: optional `RealtimeFunctionRegistryParam`;
-- `filter_stub_phrases`: optional list[str].
-
-Зачем: настройки генерации GigaChat внутри GigaVoice.
-
-Не валидировать модельные hyperparams сверх типа. Backend отдаст ошибку, если значение недопустимо.
-
-#### `RealtimeAudioChunkMetaParam`
-
-Поля:
-
-- `force_co_speech`: optional bool.
-
-Зачем: документ описывает признак для гарантированного игнорирования чанка. Использовать doc-name `force_co_speech`, не proto-name.
-
-#### `RealtimeInputAudioSettingsParam`
-
-Поля:
-
-- `model`: optional str;
-- `audio_encoding`: optional `RealtimeAudioEncoding`;
-- `sample_rate`: optional int;
-- `silence_phrases`: optional list[str];
-- `silence_phrases_timeout`: optional duration;
-- `silence_timeout`: optional duration;
-- `stop_phrases`: optional list[str];
-- `ignore_phrases`: optional list[str].
-
-Duration representation for JSON: use string or float? В плане зафиксировать как:
-
-- public SDK принимает `float` seconds или ISO-ish string? Для MVP не усложнять: `Union[float, str]`.
-- JSON отправляет как передано.
-
-Почему: backend JSON schema ещё не подтверждена, нельзя навязать формат duration.
-
-#### `RealtimeTriggerFunctionParam`
-
-Поля:
-
-- `enable`: required bool if object is present;
-- `mode`: optional `"WHITELIST" | "BLACKLIST"`;
-- `function_names`: optional list[str].
-
-Зачем: звуки ожидания при долгих функциях.
-
-#### `RealtimeTriggerGenerationParam`
-
-Поля:
-
-- `enable`: required bool if object is present;
-- `timeout`: required `Union[float, str]`.
-
-Зачем: звуки ожидания при долгой генерации.
-
-#### `RealtimeStubSoundsParam`
-
-Поля:
-
-- `trigger_function`: optional `RealtimeTriggerFunctionParam`;
-- `trigger_generation`: optional `RealtimeTriggerGenerationParam`;
-- `sounds`: required/optional list[str].
-
-Зачем: настройки предзаписанных TTS.DL звуков.
-
-Не использовать proto-name `trigger_delay`; protobuf запрещён.
-
-#### `RealtimeOutputAudioSettingsParam`
-
-Поля:
-
-- `voice`: optional str;
-- `audio_encoding`: optional `RealtimeAudioEncoding`;
-- `stub_sounds`: optional `RealtimeStubSoundsParam`.
-
-Зачем: настройки синтеза.
-
-#### `RealtimeAudioSettingsParam`
-
-Поля:
-
-- `input`: optional `RealtimeInputAudioSettingsParam`;
-- `output`: optional `RealtimeOutputAudioSettingsParam`.
-
-Зачем: единый блок audio settings.
-
-#### `RealtimeContextFunctionCallParam`
-
-Поля:
-
-- `name`: str;
-- `arguments`: str or dict?
-
-Для MVP использовать `Dict[str, Any]` or `str`? Документ говорит JSON string для function call arguments. Чтобы не ломать текущие function structures, разрешить `Union[str, Dict[str, Any]]`.
-
-#### `RealtimeContextMessageParam`
-
-Поля:
-
-- `role`: required str;
-- `content`: required str;
-- `inline_data`: optional dict[str, str];
-- `attachments`: optional list[str];
-- `function_call`: optional `RealtimeContextFunctionCallParam`;
-- `function_name`: optional str;
-- `functions_state_id`: optional str;
-- `functions`: optional list[dict[str, Any]].
-
-Зачем: стартовый контекст и reconnect continuation.
-
-SDK не должен сам чистить context в MVP, но docs должны объяснить правила.
-
-#### `RealtimeContextParam`
-
-Поля:
-
-- `messages`: required list[`RealtimeContextMessageParam`].
-
-Зачем: wrapper для `settings.context`.
-
-#### `RealtimeSettingsParam`
-
-Поля:
-
-- `voice_call_id`: required str;
-- `mode`: optional `RealtimeMode`;
-- `output_modalities`: optional `RealtimeOutputModalities`;
-- `first_speaker`: optional `RealtimeFirstSpeakerParam`;
-- `disable_interruption`: optional `RealtimeDisableInterruptionParam`;
-- `gigachat`: optional `RealtimeGigaChatSettingsParam`;
-- `audio`: optional `RealtimeAudioSettingsParam`;
-- `context`: optional `RealtimeContextParam`;
-- `disable_vad`: optional bool;
-- `enable_transcribe_input`: optional bool;
-- `enable_denoiser`: optional bool;
-- `enable_prefetch`: optional bool;
-- `enable_person_identity`: optional bool;
-- `enable_whisper`: optional bool;
-- `enable_emotion`: optional bool;
-- `enable_transcribe_silence_phrases`: optional bool;
-- `flags`: optional list[str].
-
-Зачем: первое событие на WebSocket connection. `voice_call_id` обязателен.
-
-SDK validation:
-
-- `voice_call_id` required;
-- если `enable_prefetch/person_identity/whisper/emotion=True`, желательно warning/ValueError если `enable_transcribe_input` не true;
-- если `mode="GIGACHAT_SYNTHESIS"` и `enable_whisper=True`, backend может вернуть error; SDK может не валидировать бизнес-правило.
-
-### 7.2. Client event params
-
-#### `RealtimeSettingsEventParam`
-
-```python
-{
-    "type": "settings",
-    "settings": RealtimeSettingsParam,
+Key request oneof:
+
+```proto
+message GigaVoiceRequest {
+  oneof request {
+    Settings settings = 1;
+    ContentFromClient input = 2;
+    FunctionResult function_result = 3;
+  }
 }
 ```
 
-Зачем: первое событие connection.
+Key response oneof:
 
-#### `RealtimeInputAudioContentEventParam`
+```proto
+message GigaVoiceResponse {
+  oneof response {
+    ContentFromModel output = 1;
+    FunctionCalling function_call = 2;
+    InputTranscription input_transcription = 3;
+    OutputTranscription output_transcription = 4;
+    Error error = 5;
+    Warning warning = 6;
+    InputFiles input_files = 7;
+    PlatformFunctionProcessing platform_function_processing = 8;
+  }
+}
+```
 
-Public Python input:
+The new proto resolves the earlier doc/proto gaps. These fields are now supported and must be implemented:
+
+```text
+Settings.enable_transcribe_silence_phrases
+Settings.disable_interruption
+GigaChatSettings.preset
+Message.functions
+OutputTranscription.silence_phrase
+GigaVoiceResponse.platform_function_processing
+StubSounds.trigger_generation
+```
+
+Do not keep the previous “unsupported field” errors for those fields.
+
+---
+
+## 7. TypedDict request model cheat-sheet
+
+Request params remain `TypedDict` because the SDK should accept ordinary dicts like OpenAI SDK. The bridge converts dicts into protobuf messages.
+
+### 7.1 Enum literal aliases
+
+```python
+RealtimeMode = Literal[
+    "MODE_UNSPECIFIED",
+    "RECOGNIZE_GIGACHAT_SYNTHESIS",
+    "GIGACHAT_SYNTHESIS",
+    "GIGACHAT",
+    "RECOGNIZE_SYNTHESIS",
+]
+
+RealtimeOutputModalities = Literal[
+    "MODALITIES_UNSPECIFIED",
+    "AUDIO",
+    "AUDIO_TEXT",
+    "TEXT",
+]
+
+RealtimeAudioEncoding = Literal[
+    "AUDIO_ENCODING_UNSPECIFIED",
+    "PCM_S16LE",
+    "OPUS",
+    "PCM_ALAW",
+]
+
+RealtimeContentForSynthesisType = Literal["TEXT", "SSML", "text", "ssml"]
+
+RealtimeTriggerFunctionMode = Literal[
+    "MODE_UNSPECIFIED",
+    "WHITELIST",
+    "BLACKLIST",
+]
+```
+
+Why include unspecified values: the proto has them and backend may use defaults. Public helpers should still recommend not setting them unless needed.
+
+### 7.2 Duration params
+
+Proto uses `google.protobuf.Duration` for:
+
+```text
+Input.silence_phrases_timeout
+Input.silence_timeout
+TriggerGeneration.timeout
+Audio.audio_duration  # server response
+```
+
+Public request params should accept:
+
+```python
+Union[int, float, datetime.timedelta]
+```
+
+Bridge rules:
+
+```python
+1.5                  -> Duration(seconds=1, nanos=500_000_000)
+datetime.timedelta   -> exact seconds/nanos
+None or missing       -> leave protobuf field unset
+```
+
+Server event models should expose response durations as `float` seconds for convenience:
+
+```python
+OutputAudioEvent.audio_duration: Optional[float]
+```
+
+### 7.3 `RealtimeSettingsParam`
+
+Fields:
+
+```text
+voice_call_id: required str
+mode: optional RealtimeMode
+output_modalities: optional RealtimeOutputModalities
+gigachat: optional RealtimeGigaChatSettingsParam
+audio: optional RealtimeAudioSettingsParam
+context: optional RealtimeInitialContextParam
+disable_vad: optional bool
+enable_transcribe_input: optional bool
+flags: optional list[str]
+first_speaker: optional RealtimeFirstSpeakerParam
+enable_denoiser: optional bool
+enable_prefetch: optional bool
+enable_person_identity: optional bool
+enable_whisper: optional bool
+enable_emotion: optional bool
+enable_transcribe_silence_phrases: optional bool
+disable_interruption: optional RealtimeDisableInterruptionParam
+```
+
+Why: this is the first protobuf request after the socket opens. `voice_call_id` is required by the protocol.
+
+Validation:
+
+- SDK must require `voice_call_id` before building protobuf.
+- SDK may warn or raise if `enable_prefetch`, `enable_person_identity`, `enable_whisper`, or `enable_emotion` is true while `enable_transcribe_input` is not true. Backend also validates this, but early SDK errors are clearer.
+- Do not over-validate model names, voices, filter settings, or business-mode restrictions. Backend owns those rules.
+
+### 7.4 `RealtimeAudioSettingsParam`
+
+Input fields:
+
+```text
+model: optional str
+audio_encoding: optional RealtimeAudioEncoding
+sample_rate: optional int
+silence_phrases: optional list[str]
+silence_phrases_timeout: optional duration param
+silence_timeout: optional duration param
+stop_phrases: optional list[str]
+ignore_phrases: optional list[str]
+```
+
+Output fields:
+
+```text
+voice: optional str
+audio_encoding: optional RealtimeAudioEncoding
+stub_sounds: optional RealtimeStubSoundsParam
+```
+
+Why: controls ASR input and TTS output.
+
+### 7.5 `RealtimeGigaChatSettingsParam`
+
+Fields:
+
+```text
+model: optional str
+temperature: optional float
+top_p: optional float
+repetition_penalty: optional float
+update_interval: optional float
+profanity_check: optional bool
+filters_settings: optional mapping[str, RealtimeFilterSettingsParam]
+functions: optional list[RealtimeFunctionParam]
+function_registry: optional RealtimeFunctionRegistryParam
+filter_stub_phrases: optional list[str]
+current_time: optional int
+function_ranker: optional RealtimeFunctionRankerParam
+preset: optional str
+```
+
+Function ranker naming:
+
+- Proto field is `enabled`.
+- Existing JSON plan used `enable`.
+- New canonical public field should be `enabled` because it matches latest proto.
+- For compatibility, accept alias `enable` and map it to `enabled`.
+- If both are provided and values differ, raise `ValueError`.
+
+### 7.6 `RealtimeFunctionParam`
+
+Proto:
+
+```proto
+message Function {
+  string name = 1;
+  optional string description = 2;
+  optional string parameters = 3;
+  repeated AnyExample few_shot_examples = 4;
+  optional string return_parameters = 5;
+}
+```
+
+Public behavior:
+
+- `name` required.
+- `description` optional string.
+- `parameters` may be `str` or `Mapping[str, Any]`; if mapping, compact JSON-dump to string.
+- `return_parameters` may be `str` or `Mapping[str, Any]`; if mapping, compact JSON-dump to string.
+- `few_shot_examples` maps to `AnyExample`.
+
+Why: current GigaChat/chat-style functions commonly use JSON Schema as dicts, while proto requires strings.
+
+### 7.7 Few-shot examples
+
+Proto shape:
+
+```proto
+message AnyExample {
+  string request = 1;
+  Params params = 2;
+}
+message Params {
+  repeated Pair pairs = 1;
+}
+message Pair {
+  string key = 1;
+  string value = 2;
+}
+```
+
+Public can accept either:
+
+```python
+{"request": "...", "params": {"city": "Moscow"}}
+```
+
+or explicit pairs:
+
+```python
+{"request": "...", "params": {"pairs": [{"key": "city", "value": "Moscow"}]}}
+```
+
+Bridge converts both into `Params.pairs`.
+
+### 7.8 `RealtimeInitialContextParam` and messages
+
+Fields:
+
+```text
+messages: list[RealtimeContextMessageParam]
+```
+
+Message fields:
+
+```text
+role: str
+content: str
+function_call: optional RealtimeFunctionCallParam
+function_name: optional str
+functions_state_id: optional str
+attachments: optional list[str]
+inline_data: optional mapping[str, str]
+functions: optional list[RealtimeFunctionParam]
+```
+
+Why: needed for first speaker from model and reconnect/context continuation.
+
+### 7.9 First speaker
+
+Proto:
+
+```proto
+message FirstSpeaker {
+  optional string type = 1;
+  optional bool lock_first_in = 2;
+}
+```
+
+Public fields:
+
+```text
+type: optional Literal["model", "user"] or str for forward compatibility
+lock_first_in: optional bool
+```
+
+SDK should not fully validate conversation context, but examples/docs should explain that `first_speaker.type="model"` requires a non-empty initiating context.
+
+### 7.10 Disable interruption
+
+Proto:
+
+```proto
+message DisableInterruption {
+  repeated LockFunctionExecution functions = 1;
+}
+message LockFunctionExecution {
+  string name = 1;
+  bool on_execution = 2;
+  bool after_result = 3;
+}
+```
+
+Public fields mirror proto.
+
+Why: controls whether user speech can interrupt function execution or function-result playback.
+
+### 7.11 Stub sounds
+
+Proto:
+
+```proto
+message StubSounds {
+  TriggerGeneration trigger_generation = 1;
+  TriggerFunction trigger_function = 2;
+  repeated string sounds = 3;
+}
+```
+
+Public fields mirror proto.
+
+Important: old mismatch `trigger_delay` is gone. Use `trigger_generation`.
+
+### 7.12 Client event params
+
+Keep OpenAI-style `type` in Python, but the bridge serializes to protobuf oneofs.
+
+Settings event:
+
+```python
+{"type": "settings", "settings": {...}}
+```
+
+Audio input event:
 
 ```python
 {
@@ -711,1214 +649,970 @@ Public Python input:
     "audio_chunk": bytes,
     "speech_start": bool,
     "speech_end": bool,
-    "meta": {"force_co_speech": bool},
+    "meta": {"force_no_speech": bool},
 }
 ```
 
-Wire JSON:
+Meta naming:
 
-```json
-{
-  "type": "input.audio_content",
-  "audio_chunk": "base64...",
-  "speech_start": true,
-  "speech_end": false,
-  "meta": {"force_co_speech": false}
-}
-```
+- New canonical public field: `force_no_speech`, matching latest proto.
+- If current code already exposed `force_co_speech`, keep it as a deprecated alias for one release and map it to `force_no_speech`.
+- If both are provided and values differ, raise `ValueError`.
 
-Зачем: отправить audio chunk на ASR/VAD.
-
-#### `RealtimeInputSynthesisContentEventParam`
+Synthesis event:
 
 ```python
 {
     "type": "input.synthesis_content",
     "text": str,
-    "content_type": "text" | "ssml",
+    "content_type": "TEXT" | "SSML" | "text" | "ssml",
     "is_final": bool,
 }
 ```
 
-Зачем: режим `RECOGNIZE_SYNTHESIS`, когда бизнес-логика/GigaChat на стороне пользователя, а GigaVoice только распознаёт и синтезирует.
+Bridge maps lower-case values to proto enum names.
 
-#### `RealtimeFunctionResultEventParam`
+Function result event:
 
 ```python
 {
     "type": "function_result",
-    "content": str | dict[str, Any],
-    "function_name": str,
+    "content": str | Mapping[str, Any] | Sequence[Any],
+    "function_name": optional str,
 }
 ```
 
-Зачем: ответ на server event `function_call`.
-
-Serialization rule:
-
-- если `content` dict/list — `json.dumps(..., ensure_ascii=False)`;
-- если `content` str — передать как есть, но не валидировать JSON в SDK;
-- backend ожидает valid JSON string, поэтому helper docs должны рекомендовать dict.
-
-#### `RealtimeClientEventParam`
-
-Union of all client events.
-
-Зачем: `connection.send(event)` принимает один тип.
-
-### 7.3. Server event models: `src/gigachat/models/realtime.py`
-
-Server events — Pydantic BaseModel. Причина: SDK парсит JSON, пользователь получает typed objects с helpers `.model_dump()` / `.model_dump_json()`.
-
-Общее правило:
-
-```python
-from pydantic import BaseModel, ConfigDict
-
-class RealtimeServerEvent(BaseModel):
-    model_config = ConfigDict(extra="allow")
-    type: str
-```
-
-`extra="allow"` важно: backend может прислать новые поля, и SDK не должен их терять.
-
-#### `OutputAudioEvent`
-
-Fields:
-
-- `type: Literal["output.audio"]`;
-- `audio_chunk: bytes`;
-- `audio_duration: Optional[Union[float, str]]`;
-- `is_final: Optional[bool]`.
-
-Зачем: audio response. SDK декодирует base64 в bytes.
-
-#### `OutputAdditionalDataEvent`
-
-Fields:
-
-- `type: Literal["output.additional_data"]`;
-- `prompt_tokens`: optional int;
-- `completion_tokens`: optional int;
-- `total_tokens`: optional int;
-- `precached_prompt_tokens`: optional int;
-- `gigachat_model_info`: optional `GigaChatModelInfo`;
-- `finish_reason`: optional str.
-
-Зачем: финальная metadata / usage / finish reason.
-
-#### `GigaChatModelInfo`
-
-Fields:
-
-- `name`: optional str;
-- `version`: optional str.
-
-Зачем: nested object in additional data.
-
-#### `OutputInterruptedEvent`
-
-Fields:
-
-- `type: Literal["output.interrupted"]`;
-- `interrupted: bool = True`.
-
-Зачем: пользователь должен остановить проигрывание audio/text для текущей генерации.
-
-#### `FunctionCallEvent`
-
-Fields:
-
-- `type: Literal["function_call"]`;
-- `name`: str;
-- `arguments`: str;
-- `timestamp`: optional int.
-
-Зачем: backend просит клиента выполнить функцию.
-
-SDK не выполняет функцию сам.
-
-#### `InputTranscriptionEvent`
-
-Fields:
-
-- `type: Literal["input_transcription"]`;
-- `text`: str;
-- `unnormalized_text`: optional str;
-- `prefetch`: optional bool;
-- `person_identity`: optional `PersonIdentity`;
-- `whisper`: optional bool;
-- `emotion`: optional `Emotion`;
-- `timestamp`: optional int.
-
-Зачем: транскрипция пользовательской речи.
-
-#### `PersonIdentity`
-
-Fields:
-
-- `age`: optional str;
-- `gender`: optional str;
-- `age_score`: optional float;
-- `gender_score`: optional float.
-
-Зачем: ASR detection fields.
-
-#### `Emotion`
-
-Fields:
-
-- `positive`: optional float;
-- `neutral`: optional float;
-- `negative`: optional float.
-
-Зачем: ASR emotion detection.
-
-#### `OutputTranscriptionEvent`
-
-Fields:
-
-- `type: Literal["output_transcription"]`;
-- `text`: optional str;
-- `stub_text`: optional str;
-- `silence_phrase`: optional bool;
-- `inline_data`: optional dict[str, str];
-- `functions_state_id`: optional str;
-- `finish_reason`: optional str;
-- `timestamp`: optional int.
-
-Зачем: текст реплики модели, включая фильтр-заглушки и silence phrases.
-
-#### `InputFilesEvent`
-
-Fields:
-
-- `type: Literal["input_files"]`;
-- `files`: list[`InputFileInfo`].
-
-Зачем: режим `GIGACHAT_SYNTHESIS`, где GigaVoice возвращает IDs загруженных audio files для продолжения контекста.
-
-#### `InputFileInfo`
-
-Fields:
-
-- `id`: str;
-- `type`: str.
-
-Зачем: file metadata.
-
-#### `PlatformFunctionProcessingEvent`
-
-Fields:
-
-- `type: Literal["platform_function_processing"]`;
-- `name`: str;
-- `timestamp`: optional int.
-
-Зачем: визуальная индикация выполнения платформенной функции.
-
-#### `RealtimeErrorEvent`
-
-Fields:
-
-- `type: Literal["error"]`;
-- `status`: optional int;
-- `status_code`: optional int;
-- `message`: str.
-
-Зачем: blocking error. По документу GigaVoice после `error` закрывает взаимодействие. SDK должен вернуть событие пользователю; connection close произойдёт потом.
-
-Compatibility:
-
-- добавить property `.code`? Не обязательно.
-- добавить property `.status_value`, который возвращает `status` или `status_code`, можно в отдельном slice.
-
-#### `RealtimeWarningEvent`
-
-Fields:
-
-- `type: Literal["warning"]`;
-- `message`: str.
-
-Зачем: non-blocking warning.
-
-#### `RealtimeUnknownEvent`
-
-Fields:
-
-- `type`: str;
-- любые extra fields.
-
-Зачем: forward compatibility.
-
-#### `RealtimeServerEvent` union
-
-Type alias for all server events.
-
-Implementation detail:
-
-- Pydantic discriminated union может быть сложным для Python 3.8/mypy.
-- MVP можно сделать factory `parse_realtime_event(data: Mapping[str, Any]) -> RealtimeServerEvent` and return concrete classes.
-
-### 7.4. Connection helper resources
-
-По OpenAI-style connection должен иметь вложенные helper resources.
-
-#### `RealtimeInputAudioResource`
-
-Methods:
-
-```python
-async def send(self, audio_chunk: bytes, *, speech_start: Optional[bool] = None, speech_end: Optional[bool] = None, meta: Optional[RealtimeAudioChunkMetaParam] = None) -> None
-```
-
-Sync equivalent.
-
-Зачем: удобнее, чем руками собирать event dict.
-
-#### `RealtimeSynthesisResource`
-
-Methods:
-
-```python
-async def send(self, text: str, *, content_type: Literal["text", "ssml"] = "text", is_final: bool = False) -> None
-```
-
-Зачем: `RECOGNIZE_SYNTHESIS` mode.
-
-#### `RealtimeFunctionResultResource`
-
-Methods:
-
-```python
-async def create(self, content: Union[str, Mapping[str, Any]], *, function_name: Optional[str] = None) -> None
-```
-
-Зачем: ответ на function_call.
-
-#### `RealtimeSessionResource`
-
-Не делать full dynamic `session.update` как у OpenAI, потому что GigaVoice sequence требует settings первым сообщением. Но можно добавить:
-
-```python
-async def send_settings(self, settings: RealtimeSettingsParam) -> None
-```
-
-и использовать это внутри connection manager.
-
-В MVP публичный путь: `connect(settings=...)` сам отправляет settings.
-
-### 7.5. Audio helper models: `src/gigachat/realtime/audio.py`
-
-Эти helpers требуют `sounddevice` + `numpy`.
-
-#### `RealtimeMicrophone`
-
-Purpose: async iterator over PCM_S16LE audio chunks from input device.
-
-Constructor:
-
-```python
-RealtimeMicrophone(
-    sample_rate: int = 16000,
-    channels: int = 1,
-    chunk_ms: int = 100,
-    dtype: str = "int16",
-    device: Optional[Union[int, str]] = None,
-)
-```
-
-Methods:
-
-- async context manager;
-- `__aiter__` yields `bytes`;
-- `.close()`.
-
-Implementation:
-
-- use `sounddevice.InputStream`;
-- callback receives numpy array;
-- ensure mono default;
-- convert to little-endian int16 contiguous bytes;
-- push chunks into `asyncio.Queue` via `loop.call_soon_threadsafe`.
-
-Why: examples can capture microphone without user writing PortAudio boilerplate.
-
-#### `RealtimeSpeaker`
-
-Purpose: play PCM_S16LE output chunks.
-
-Constructor:
-
-```python
-RealtimeSpeaker(
-    sample_rate: int = 16000,
-    channels: int = 1,
-    dtype: str = "int16",
-    device: Optional[Union[int, str]] = None,
-)
-```
-
-Methods:
-
-- async context manager;
-- `async write(audio_chunk: bytes) -> None`;
-- `stop() -> None`;
-- `.close()`.
-
-Implementation:
-
-- use `sounddevice.OutputStream`;
-- keep internal queue or call `sd.play`? Prefer OutputStream with queue for streaming;
-- convert bytes to numpy `int16` frames;
-- interruption calls `.stop()` and drains queue.
-
-Why: `output.interrupted` requires user to stop playback fast.
-
-#### Base64/conversion helpers
-
-In `src/gigachat/realtime/_base64.py`:
-
-```python
-def encode_audio(audio_chunk: bytes) -> str: ...
-def decode_audio(audio_chunk: str) -> bytes: ...
-def pcm16_duration_seconds(audio_chunk: bytes, sample_rate: int, channels: int = 1) -> float: ...
-def validate_pcm16_chunk_duration(audio_chunk: bytes, sample_rate: int, channels: int = 1, max_seconds: float = 2.0) -> None: ...
-```
-
-In `audio.py`:
-
-```python
-def numpy_to_pcm16_bytes(array: Any) -> bytes: ...
-def pcm16_bytes_to_numpy(audio_chunk: bytes) -> Any: ...
-```
-
-Why: tests can cover audio encoding without loading sounddevice.
+Bridge rule:
+
+- If `content` is str, pass through.
+- If `content` is mapping/list, compact JSON-dump to string.
+- Do not parse or validate function result JSON unless a helper explicitly opts in.
 
 ---
 
-## 8. Transport design
+## 8. Server event model cheat-sheet
 
-### 8.1. Async connection manager
+Server event models are still Pydantic models with `event.type`. They are now built from protobuf responses, not JSON payloads.
 
-`client.a_realtime.connect(...)` should return `AsyncRealtimeConnectionManager`, not immediately open socket.
+### 8.1 Response oneof mapping
 
-Signature:
-
-```python
-def connect(
-    self,
-    *,
-    settings: RealtimeSettingsParam,
-    url: Optional[str] = None,
-    extra_headers: Optional[Mapping[str, str]] = None,
-    websocket_connection_options: Optional[Mapping[str, Any]] = None,
-    max_frame_size: int = 4 * 1024 * 1024,
-    validate_audio_chunks: bool = True,
-) -> AsyncRealtimeConnectionManager: ...
+```text
+GigaVoiceResponse.output.audio                  -> OutputAudioEvent(type="output.audio")
+GigaVoiceResponse.output.additional_data        -> OutputAdditionalDataEvent(type="output.additional_data")
+GigaVoiceResponse.output.interrupted            -> OutputInterruptedEvent(type="output.interrupted")
+GigaVoiceResponse.function_call                 -> FunctionCallEvent(type="function_call")
+GigaVoiceResponse.input_transcription           -> InputTranscriptionEvent(type="input_transcription")
+GigaVoiceResponse.output_transcription          -> OutputTranscriptionEvent(type="output_transcription")
+GigaVoiceResponse.error                         -> RealtimeErrorEvent(type="error")
+GigaVoiceResponse.warning                       -> RealtimeWarningEvent(type="warning")
+GigaVoiceResponse.input_files                   -> InputFilesEvent(type="input_files")
+GigaVoiceResponse.platform_function_processing  -> PlatformFunctionProcessingEvent(type="platform_function_processing")
 ```
 
-Why:
+### 8.2 Output audio
 
-- mirrors OpenAI SDK;
-- lets user register handlers before opening connection;
-- manager can queue initial settings event and send it after connect.
+Fields:
 
-### 8.2. Opening WebSocket
-
-Steps:
-
-1. Resolve URL:
-   - `url` argument;
-   - `client.settings.realtime_url` / env `GIGACHAT_REALTIME_URL`;
-   - otherwise raise `ValueError`.
-
-2. Refresh/access token through existing auth path before WS handshake.
-
-3. Build headers:
-   - `Authorization: Bearer ...`;
-   - `User-Agent`;
-   - existing context headers if SDK already has helper for REST;
-   - `extra_headers` override/merge.
-
-4. Open websocket with `websockets.asyncio.client.connect`.
-
-5. Create `AsyncRealtimeConnection`.
-
-6. Immediately send settings event:
-
-```json
-{"type":"settings","settings":{...}}
+```text
+type = "output.audio"
+audio_chunk: bytes
+audio_duration: optional float seconds
+is_final: optional bool
 ```
 
-7. Flush any queued messages registered before entering context.
+Why: audio response chunk from TTS/model.
 
-### 8.3. AsyncRealtimeConnection methods
+`audio_duration` comes from protobuf `Duration`. Convert to seconds float.
 
-Required:
+### 8.3 Additional data
 
-```python
-async def recv(self) -> RealtimeServerEvent: ...
-async def recv_bytes(self) -> bytes: ...
-async def send(self, event: RealtimeClientEventParam) -> None: ...
-async def send_raw(self, data: Union[str, bytes]) -> None: ...
-def parse_event(self, data: Union[str, bytes]) -> RealtimeServerEvent: ...
-async def close(self, *, code: int = 1000, reason: str = "") -> None: ...
-def __aiter__(self) -> AsyncIterator[RealtimeServerEvent]: ...
+Fields:
+
+```text
+type = "output.additional_data"
+usage: Usage
+prompt_tokens / completion_tokens / total_tokens / precached_prompt_tokens convenience fields optional
+gigachat_model_info: GigaChatModelInfo
+finish_reason: str
 ```
 
-Also attach helper resources:
+Why: final metadata and usage.
 
-```python
-self.session = AsyncRealtimeSessionResource(self)
-self.input_audio = AsyncRealtimeInputAudioResource(self)
-self.synthesis = AsyncRealtimeSynthesisResource(self)
-self.function_result = AsyncRealtimeFunctionResultResource(self)
+Keep either nested `usage` plus convenience properties, or flatten fields as current JSON model does. Prefer not to break current user-facing model if it already exists.
+
+### 8.4 Output interrupted
+
+Fields:
+
+```text
+type = "output.interrupted"
+interrupted: bool = True
 ```
 
-### 8.4. Event handlers
+Why: tells user to stop audio playback/rendering; not an error.
 
-Mirror OpenAI-style:
+### 8.5 Function call
+
+Proto:
+
+```proto
+message FunctionCalling {
+  FunctionCall function_call = 1;
+  int64 timestamp = 2;
+}
+message FunctionCall {
+  string name = 1;
+  string arguments = 2;
+}
+```
+
+Event fields:
+
+```text
+type = "function_call"
+name: str
+arguments: str
+timestamp: optional int
+```
+
+Optional helper property:
 
 ```python
-def on(self, event_type: str, handler: Optional[Callable[..., Any]] = None): ...
-def off(self, event_type: str, handler: Callable[..., Any]): ...
-def once(self, event_type: str, handler: Optional[Callable[..., Any]] = None): ...
-async def dispatch_events(self) -> None: ...
+def arguments_json(self) -> Any:
+    return json.loads(self.arguments)
+```
+
+Do not auto-execute functions.
+
+### 8.6 Input transcription
+
+Fields:
+
+```text
+type = "input_transcription"
+text: str
+timestamp: int
+unnormalized_text: optional str
+person_identity: optional PersonIdentity
+prefetch: optional bool
+whisper: optional bool
+emotion: optional Emotion
+```
+
+Enums:
+
+```text
+AgeType: AGE_NONE, CHILD, ADULT
+GenderType: GENDER_NONE, MALE, FEMALE
+```
+
+Expose enum names as strings in user-facing model.
+
+### 8.7 Output transcription
+
+Fields:
+
+```text
+type = "output_transcription"
+text: str
+functions_state_id: str
+finish_reason: str
+timestamp: int
+stub_text: optional str
+inline_data: mapping[str, str]
+silence_phrase: optional bool
+```
+
+Why: text representation of model response; `silence_phrase` is now present in latest proto and must be mapped.
+
+### 8.8 Input files
+
+Fields:
+
+```text
+type = "input_files"
+files: list[{id: str, type: str}]
+```
+
+Why: `GIGACHAT_SYNTHESIS` can return audio file IDs for context/reconnect.
+
+### 8.9 Platform function processing
+
+Fields:
+
+```text
+type = "platform_function_processing"
+name: str
+timestamp: int
+```
+
+Why: visual indicator that a platform function is being processed. This is now in latest proto and must be mapped.
+
+### 8.10 Error and warning
+
+Error:
+
+```text
+type = "error"
+status: int
+message: str
+```
+
+Warning:
+
+```text
+type = "warning"
+message: str
 ```
 
 Behavior:
 
-- specific handlers receive event with exact `event.type`;
-- generic handlers registered under `"event"` receive all events;
-- if `event.type == "error"` and no `error` or `event` handler is registered, `dispatch_events()` may raise `GigaChatException` after parsing the event;
-- `recv()` and `async for` should not raise just because event type is `error`.
-
-Why: matches OpenAI SDK ergonomics while preserving GigaVoice blocking-error semantics.
-
-### 8.5. Sync implementation
-
-Use `websockets.sync.client.connect` lazily.
-
-Implement sync classes after async is stable:
-
-- `RealtimeConnectionManager`;
-- `RealtimeConnection`;
-- sync helper resources.
-
-No thread/event-loop hack in sync transport.
+- `recv()` returns `RealtimeErrorEvent`; it should not raise merely because event type is error.
+- `dispatch_events()` may raise `GigaChatException` only if an error event is unhandled.
+- `warning` is never raised automatically.
 
 ---
 
-## 9. Serialization and parsing
+## 9. Protobuf bridge design
 
-### 9.1. `serialize_client_event(event)`
+Create `src/gigachat/realtime/_protobuf.py`.
 
-Input:
-
-- TypedDict-like mapping;
-- optional Pydantic BaseModel if future code adds models.
-
-Output:
-
-- JSON string.
-
-Rules:
-
-- do not include unset `None` values unless field explicitly needs null;
-- encode audio bytes to base64 string;
-- convert dict `function_result.content` to JSON string;
-- validate final UTF-8 frame size;
-- validate audio chunk duration if possible.
-
-### 9.2. `parse_realtime_event(data)`
-
-Input:
-
-- `str` or `bytes` from WS;
-- if bytes, decode UTF-8.
-
-Steps:
-
-1. `json.loads`.
-2. Normalize legacy oneof-style to type-style if needed.
-3. Dispatch by `type`.
-4. For `output.audio`, decode base64 into bytes.
-5. Return concrete Pydantic model.
-6. Unknown type returns `RealtimeUnknownEvent`.
-
-### 9.3. Legacy oneof-style normalization
-
-Implement only if simple:
+Required functions:
 
 ```python
-{"output": {"audio": {...}}}               -> type "output.audio"
-{"output": {"additional_data": {...}}}     -> type "output.additional_data"
-{"output": {"interrupted": true}}          -> type "output.interrupted"
-{"function_call": {...}}                    -> type "function_call"
-{"input_transcription": {...}}              -> type "input_transcription"
-{"output_transcription": {...}}             -> type "output_transcription"
-{"input_files": {...}}                      -> type "input_files"
-{"platform_function_processing": {...}}     -> type "platform_function_processing"
-{"error": {...}}                            -> type "error"
-{"warning": {...}}                          -> type "warning"
+def settings_to_pb(settings: RealtimeSettingsParam) -> voice_pb2.Settings: ...
+
+def client_event_to_request(event: RealtimeClientEventParam) -> voice_pb2.GigaVoiceRequest: ...
+
+def serialize_client_event(event: RealtimeClientEventParam, *, max_frame_size: int = 4 * 1024 * 1024) -> bytes: ...
+
+def parse_server_event(data: bytes) -> RealtimeServerEvent: ...
+
+def response_to_event(response: voice_pb2.GigaVoiceResponse) -> RealtimeServerEvent: ...
 ```
 
-Why: backend JSON gateway might mirror old oneof/protobuf names instead of OpenAI-like event names.
+Optional lower-level helpers:
+
+```python
+def duration_to_pb(value: Union[int, float, datetime.timedelta]) -> duration_pb2.Duration: ...
+
+def duration_from_pb(value: duration_pb2.Duration) -> float: ...
+
+def enum_value(enum_cls: Any, value: str, *, field_name: str) -> int: ...
+
+def json_string(value: Union[str, Mapping[str, Any], Sequence[Any]], *, field_name: str) -> str: ...
+```
+
+### 9.1 Serialization rules
+
+- Use protobuf field presence correctly.
+- For optional scalar fields, set only if key exists and value is not `None`.
+- For repeated fields, extend only if key exists and value is not `None`.
+- For nested message fields, copy only if object exists.
+- For enum fields, map string names to enum integer values.
+- For maps, set key/value entries.
+- Validate frame size after `SerializeToString()`.
+
+### 9.2 `WhichOneof` usage
+
+Request:
+
+```python
+request.WhichOneof("request")
+```
+
+Response:
+
+```python
+response.WhichOneof("response")
+```
+
+Content from client:
+
+```python
+input.WhichOneof("Content")
+```
+
+Content from model:
+
+```python
+output.WhichOneof("response")
+```
+
+If `WhichOneof(...)` returns `None`, return a clear protocol error or an `Unknown/Empty` event only if an existing model supports it. Prefer a clear `ValueError("Empty GigaVoiceResponse")` in unit-level parse code.
+
+### 9.3 Frame size
+
+Before sending:
+
+```python
+payload = request.SerializeToString()
+if len(payload) > max_frame_size:
+    raise ValueError("Realtime protobuf frame exceeds 4 MiB limit")
+```
+
+For incoming frames, configure `websockets` `max_size` if possible and still check if needed.
+
+### 9.4 Audio chunk duration validation
+
+The backend limit remains one chunk <= 2 seconds. SDK can validate only when format is known.
+
+For PCM_S16LE:
+
+```python
+seconds = len(audio_chunk) / (sample_rate * channels * 2)
+```
+
+Where to get sample rate:
+
+- from current connection settings `settings.audio.input.sample_rate`, if present;
+- default/channels can be connection options, e.g. `input_sample_rate=16000`, `input_channels=1`;
+- if unknown or encoding is OPUS, skip hard duration validation.
+
+Important: the existing JSON serializer might validate using settings. Keep that behavior, but move it into protobuf serializer/connection.
 
 ---
 
-## 10. Settings changes
+## 10. WebSocket transport changes
 
-Add to settings:
+### 10.1 Async manager
+
+Current JSON manager likely does this:
 
 ```python
-realtime_url: Optional[str] = None
+payload = serialize_client_event(...)
+await websocket.send(payload)  # str JSON
 ```
 
-Env var:
+Change it to:
+
+```python
+payload = serialize_client_event(...)
+await websocket.send(payload)  # bytes protobuf
+```
+
+Opening flow remains:
+
+1. Resolve URL.
+2. Refresh/access token through existing auth path.
+3. Build auth/user-agent/context headers.
+4. Open websocket.
+5. Send initial settings as first binary protobuf frame.
+6. Flush queued messages, serialized as protobuf.
+
+### 10.2 Async connection methods
+
+Required behavior:
+
+```python
+async def send(self, event: RealtimeClientEventParam) -> None:
+    await self._websocket.send(serialize_client_event(event, ...))
+
+async def send_raw(self, data: bytes) -> None:
+    if not isinstance(data, bytes):
+        raise TypeError("Realtime WebSocket uses protobuf binary frames; raw data must be bytes")
+    await self._websocket.send(data)
+
+async def recv_bytes(self) -> bytes:
+    data = await self._websocket.recv()
+    if isinstance(data, str):
+        raise ValueError("Expected protobuf binary WebSocket frame, got text frame")
+    return data
+
+async def recv(self) -> RealtimeServerEvent:
+    return parse_server_event(await self.recv_bytes())
+```
+
+`parse_event` should become:
+
+```python
+def parse_event(self, data: bytes) -> RealtimeServerEvent:
+    return parse_server_event(data)
+```
+
+If current public `parse_event` accepts JSON strings, update docs/tests. Realtime backend is binary protobuf now.
+
+### 10.3 Sync connection
+
+Mirror async behavior using `websockets.sync.client.connect`.
+
+Do not use event-loop threads for sync. The current sync JSON implementation can be reused structurally; change serialization and receive parsing only.
+
+### 10.4 Handlers and resources
+
+Handler registry does not need wire changes. It consumes parsed `RealtimeServerEvent` objects.
+
+Helper resources mostly stay unchanged:
+
+```python
+connection.input_audio.send(...)
+connection.synthesis.send(...)
+connection.function_result.create(...)
+connection.session.send_settings(...)
+```
+
+They still call `connection.send(...)`, but now `connection.send(...)` serializes to protobuf bytes.
+
+---
+
+## 11. What to remove or supersede from JSON plan
+
+Remove from transport path:
 
 ```text
-GIGACHAT_REALTIME_URL
+json.dumps client frames
+json.loads server frames
+base64 audio for websocket wire
+legacy JSON oneof normalization
+JSON endpoint/gateway requirement in examples/docs
 ```
 
-Do not add `realtime_grpc_url`.
+Keep or adapt:
 
-Do not derive from REST `base_url`.
+```text
+Pydantic user-facing server events
+TypedDict request params
+OpenAI-style connection manager
+sync/async connection lifecycle
+event handlers
+helper resources
+sounddevice/numpy helpers
+realtime_url setting
+```
+
+Allowed remaining JSON usage:
+
+```text
+Function.parameters as JSON Schema string
+Function.return_parameters as JSON Schema string
+FunctionCall.arguments string
+FunctionResult.content string
+FunctionRegistry.ab_flags string
+inline_data values are JSON strings by protocol
+```
 
 ---
 
-## 11. Progress protocol
+## 12. Tests required for protobuf retrofit
 
-Create/update `docs/internal/RESOURCE_REALTIME_PROGRESS.md`.
+### 12.1 Proto import tests
 
-Required format:
+```python
+def test_voice_pb2_imports_without_grpcio(): ...
+def test_no_voice_pb2_grpc_file_exists(): ...
+def test_request_oneof_names(): ...
+def test_response_oneof_names_include_platform_function_processing(): ...
+```
+
+### 12.2 Client serialization tests
+
+Must cover:
+
+- settings with `voice_call_id` only;
+- full settings with mode/output/audio/gigachat/context/first_speaker/disable_interruption;
+- `enable_transcribe_silence_phrases` is set;
+- `gigachat.preset` is set;
+- `message.functions` is set;
+- duration conversion to seconds/nanos;
+- enum conversion;
+- `function_ranker.enabled` and alias `enable`;
+- `audio_content.audio_chunk` raw bytes, not base64;
+- `audio_content.meta.force_no_speech` and alias `force_co_speech`;
+- `content_for_synthesis` maps `text`/`ssml` aliases to proto enum;
+- function result dict becomes compact JSON string;
+- serialized frame >4 MiB raises before send;
+- missing `voice_call_id` raises.
+
+### 12.3 Server parsing tests
+
+Build `voice_pb2.GigaVoiceResponse(...)`, serialize, parse, and assert event objects for:
+
+- `output.audio` with bytes and duration;
+- `output.additional_data` with usage/model info/finish reason;
+- `output.interrupted`;
+- `function_call`;
+- `input_transcription` with person identity and emotion;
+- `output_transcription` with `stub_text`, `inline_data`, `silence_phrase`;
+- `error`;
+- `warning`;
+- `input_files`;
+- `platform_function_processing`.
+
+### 12.4 WebSocket tests
+
+Fake websocket should assert:
+
+- first frame is `bytes`;
+- first frame parses as `GigaVoiceRequest` with `WhichOneof("request") == "settings"`;
+- audio send frame is `bytes` and parses as `input.audio_content`;
+- `recv()` rejects text frame;
+- `recv()` parses binary response;
+- `send_raw(str)` rejects;
+- close still works;
+- auth headers still present.
+
+### 12.5 Regression tests
+
+- `import gigachat` works without `websockets`, `protobuf`, `sounddevice`, `numpy` installed.
+- Calling realtime without extra should raise clear install hint.
+- If `websockets` exists but `protobuf` does not, realtime should raise clear install hint.
+- `sounddevice`/`numpy` remain lazy and only needed for audio helpers.
+
+---
+
+## 13. Progress file patch template
+
+At the start of the retrofit, update `docs/internal/RESOURCE_REALTIME_PROGRESS.md` current rules to:
 
 ```md
-# Resource realtime progress
-
 ## Current rules
 
 - Transport: WebSocket only.
-- Wire format: JSON events only.
-- gRPC: forbidden.
-- protobuf: forbidden.
+- Wire format: protobuf binary frames only.
+- gRPC: forbidden in SDK.
+- protobuf: required for realtime WebSocket frames.
 - Audio helpers: optional `sounddevice` + `numpy`.
 - One pass = one slice = one commit.
 
-## Slice status
+## Protocol pivot note
 
-| Slice | Status | Commit | Notes |
-|---|---|---|---|
-| 01-docs-progress-reset | done | <hash> | Reset plan from protobuf to JSON. |
-| 02-dependency-extras | pending |  |  |
-
-## Log
-
-### 2026-04-27 — slice 01-docs-progress-reset
-
-Done:
-- ...
-
-Tests:
-- not run, docs-only
-
-Next:
-- 02-dependency-extras
-
-Risks:
-- backend JSON endpoint must be confirmed
+Slices 01–16 implemented the OpenAI-style API shape using JSON WebSocket frames. That wire format is superseded because the actual backend is protobuf-over-WebSocket. Keep the API/resource/helper work where useful, but retrofit serialization, parsing, tests, examples, and docs to binary protobuf frames.
 ```
 
-Every slice must append a new log entry.
-
-Every slice must update the status table.
-
-If tests are not run, write exactly why.
+Add new slice rows starting after the existing JSON rows. Do not pretend slices 01–16 were wrong commits; mark them as useful API scaffolding but wire-incompatible.
 
 ---
 
-## 12. Commit-срезы
+## 14. Commit slices for Codex
 
 Codex must do exactly one slice per pass.
 
-### 01-docs-progress-reset
+### 17-protobuf-pivot-docs-progress
 
-Goal: replace old protobuf plan with this JSON plan and create/reset progress file.
+Goal: update internal plan/progress from JSON-only to protobuf-over-WebSocket.
 
 Files:
 
-- `docs/internal/RESOURCE_REALTIME_PLAN.md`
-- `docs/internal/RESOURCE_REALTIME_PROGRESS.md`
+```text
+docs/internal/RESOURCE_REALTIME_PLAN.md
+docs/internal/RESOURCE_REALTIME_PROGRESS.md
+```
+
+Required changes:
+
+- Current rules say protobuf binary frames only.
+- gRPC remains forbidden.
+- protobuf is required.
+- JSON slices 01–16 are marked as superseded wire implementation but reusable API scaffolding.
+- Add new pending slices 18–31.
 
 Commit:
 
 ```text
-docs(realtime): reset plan to json websocket implementation
+docs(realtime): pivot plan to protobuf websocket backend
 ```
 
-Progress notes:
-
-- State that protobuf/gRPC are now forbidden.
-- State that JSON endpoint/gateway must exist.
-
-Tests:
-
-- Not required, docs-only.
+Tests: not required, docs-only.
 
 Stop after commit.
 
 ---
 
-### 02-dependency-extras
+### 18-protobuf-runtime-extra
 
-Goal: add optional dependencies only.
+Goal: add protobuf runtime dependency to realtime extras.
 
 Files:
 
-- `pyproject.toml`
+```text
+pyproject.toml
+```
 
-Add:
+Required changes:
 
-- `realtime = ["websockets>=13,<16"]`
-- `voice_helpers = ["sounddevice>=0.5.1", numpy markers]`
-- `realtime_voice = [...]`
-
-Do not import these deps anywhere yet.
+- Add `protobuf>=4.25,<6` to `realtime`.
+- Add `protobuf>=4.25,<6` to `realtime_voice`.
+- Keep `websockets`, `sounddevice`, `numpy` as currently planned.
+- Do not add `grpcio` or `grpcio-tools`.
 
 Commit:
 
 ```text
-chore(realtime): add optional websocket and voice helper extras
+chore(realtime): add protobuf runtime extra
 ```
 
 Tests:
 
-- `python -c "import gigachat"`
-- existing unit import smoke if available.
+```bash
+python -c "import gigachat"
+```
 
 Stop after commit.
 
 ---
 
-### 03-realtime-settings-config
+### 19-latest-proto-schema
 
-Goal: add `realtime_url` config and env support.
+Goal: commit the latest proto schema exactly as provided.
 
 Files:
 
-- `src/gigachat/settings.py`
-- tests for env/config if settings tests exist
+```text
+src/gigachat/proto/__init__.py
+src/gigachat/proto/gigavoice/__init__.py
+src/gigachat/proto/gigavoice/voice.proto
+```
 
-Rules:
+Required changes:
 
-- Add only `realtime_url`.
-- Do not add gRPC URL.
-- Do not open websockets.
+- Copy latest proto text exactly.
+- Do not generate `voice_pb2.py` yet if this slice is kept schema-only.
+- Do not add `voice_pb2_grpc.py`.
 
 Commit:
 
 ```text
-feat(realtime): add realtime websocket url setting
+feat(realtime): add latest gigavoice proto schema
 ```
 
 Tests:
 
-- settings unit tests.
+- Not required beyond maybe `python -c "import gigachat"`.
 
 Stop after commit.
 
 ---
 
-### 04-client-param-types
+### 20-proto-message-bindings
 
-Goal: add TypedDict request params and literal aliases.
+Goal: generate and commit protobuf message bindings.
 
 Files:
 
-- `src/gigachat/types/__init__.py` if needed
-- `src/gigachat/types/realtime.py`
-- `tests/unit/gigachat/realtime/test_event_params.py`
+```text
+src/gigachat/proto/gigavoice/voice_pb2.py
+tests/unit/gigachat/realtime/test_proto_imports.py
+```
 
-Implement only types, no runtime transport.
+Required changes:
+
+- Generate only Python message bindings.
+- Do not generate `voice_pb2_grpc.py`.
+- Add tests that import `voice_pb2` and assert key messages/enums/oneofs exist.
+- Add test that `voice_pb2_grpc.py` is absent.
 
 Commit:
 
 ```text
-feat(realtime): add json client event param types
+feat(realtime): add generated gigavoice protobuf bindings
 ```
 
 Tests:
 
-- import/type smoke tests.
+```bash
+pytest tests/unit/gigachat/realtime/test_proto_imports.py
+python -c "import gigachat; from gigachat.proto.gigavoice import voice_pb2"
+```
 
 Stop after commit.
 
 ---
 
-### 05-server-event-models
+### 21-protobuf-request-bridge-settings
 
-Goal: add Pydantic server event models and parser factory.
+Goal: build protobuf `Settings` from public `RealtimeSettingsParam`.
 
 Files:
 
-- `src/gigachat/models/realtime.py`
-- `src/gigachat/models/__init__.py`
-- `tests/unit/gigachat/realtime/test_event_models.py`
+```text
+src/gigachat/types/realtime.py
+src/gigachat/realtime/_protobuf.py
+tests/unit/gigachat/realtime/test_protobuf_client_serialization.py
+```
+
+Scope:
+
+- Update enum literals to latest proto.
+- Add/adjust TypedDict fields for latest proto.
+- Implement `settings_to_pb(...)` only.
+- Implement duration helper.
+- Implement enum helper.
+- Implement JSON-string helper for function schemas.
+
+Do not change WebSocket transport yet.
+
+Commit:
+
+```text
+feat(realtime): map settings params to protobuf
+```
+
+Tests:
+
+- settings minimal;
+- settings full;
+- duration conversion;
+- aliases `function_ranker.enable -> enabled`;
+- aliases `force_co_speech` not needed here unless meta types are touched;
+- missing `voice_call_id` raises.
+
+Stop after commit.
+
+---
+
+### 22-protobuf-client-event-serialization
+
+Goal: serialize all client event params into `GigaVoiceRequest` binary frames.
+
+Files:
+
+```text
+src/gigachat/realtime/_protobuf.py
+src/gigachat/realtime/__init__.py
+tests/unit/gigachat/realtime/test_protobuf_client_serialization.py
+```
 
 Implement:
 
-- concrete event classes;
-- `parse_realtime_event`;
-- unknown event fallback;
-- `output.audio` base64 decode into bytes;
-- legacy oneof normalization if small.
-
-Do not add WebSocket transport.
-
-Commit:
-
-```text
-feat(realtime): add json server event models
+```python
+client_event_to_request(...)
+serialize_client_event(...) -> bytes
 ```
 
-Tests:
+Cover:
 
-- parser tests for each server event type.
-
-Stop after commit.
-
----
-
-### 06-client-event-serialization
-
-Goal: serialize client events to JSON frames.
-
-Files:
-
-- `src/gigachat/realtime/__init__.py`
-- `src/gigachat/realtime/_base64.py`
-- `src/gigachat/realtime/_events.py`
-- `tests/unit/gigachat/realtime/test_base64_audio.py`
-- `tests/unit/gigachat/realtime/test_event_params.py`
-
-Implement:
-
-- `encode_audio` / `decode_audio`;
+- settings event;
+- audio content event;
+- synthesis content event;
+- function result event;
+- raw audio bytes preserved;
+- no base64;
 - frame size validation;
-- PCM duration validation;
-- `serialize_client_event`;
-- dict `function_result.content` -> JSON string.
-
-Do not add WebSocket transport.
+- meta `force_no_speech` and alias `force_co_speech`;
+- content type lower/upper alias mapping;
+- function result dict/list -> JSON string.
 
 Commit:
 
 ```text
-feat(realtime): add json client event serialization
+feat(realtime): serialize client events as protobuf frames
 ```
 
-Tests:
-
-- serialize settings;
-- serialize audio and base64;
-- oversize frame error;
-- PCM chunk >2 sec error;
-- function result content conversion.
+Tests: targeted serialization tests.
 
 Stop after commit.
 
 ---
 
-### 07-async-websocket-connection
+### 23-protobuf-server-event-parsing
 
-Goal: add async low-level WebSocket connection and manager.
+Goal: parse `GigaVoiceResponse` binary frames into user-facing event models.
 
 Files:
 
-- `src/gigachat/api/realtime.py`
-- `tests/unit/gigachat/realtime/test_async_connection.py`
+```text
+src/gigachat/models/realtime.py
+src/gigachat/realtime/_protobuf.py
+tests/unit/gigachat/realtime/test_protobuf_server_parsing.py
+```
 
 Implement:
 
-- lazy `websockets` import;
-- `AsyncRealtimeConnectionManager`;
-- `AsyncRealtimeConnection`;
-- `recv`, `recv_bytes`, `send`, `send_raw`, `parse_event`, `close`, `__aiter__`;
-- initial settings sent immediately after connect;
-- auth headers using existing SDK auth/header helpers.
+```python
+parse_server_event(data: bytes) -> RealtimeServerEvent
+response_to_event(response: voice_pb2.GigaVoiceResponse) -> RealtimeServerEvent
+```
 
-Do not add client resource property yet.
+Cover all response oneofs, including the newly-present:
+
+```text
+platform_function_processing
+output_transcription.silence_phrase
+input_transcription.person_identity
+input_transcription.emotion
+input_files
+```
 
 Commit:
 
 ```text
-feat(realtime): add async json websocket connection
+feat(realtime): parse protobuf server events
+```
+
+Tests: all server oneof parse tests.
+
+Stop after commit.
+
+---
+
+### 24-async-binary-websocket-connection
+
+Goal: switch async realtime connection from JSON strings to protobuf binary frames.
+
+Files:
+
+```text
+src/gigachat/api/realtime.py
+tests/unit/gigachat/realtime/test_async_connection.py
+```
+
+Required changes:
+
+- Import protobuf bridge lazily enough that `import gigachat` still works.
+- Send initial settings as bytes.
+- `send()` sends bytes.
+- `send_raw()` accepts bytes only.
+- `recv_bytes()` rejects text frames.
+- `recv()` parses protobuf response bytes.
+- Keep handlers and helper resources working.
+
+Commit:
+
+```text
+feat(realtime): use protobuf binary frames in async websocket
+```
+
+Tests: async fake websocket tests updated to assert bytes and parse pb requests.
+
+Stop after commit.
+
+---
+
+### 25-sync-binary-websocket-connection
+
+Goal: switch sync realtime connection from JSON strings to protobuf binary frames.
+
+Files:
+
+```text
+src/gigachat/api/realtime.py
+tests/unit/gigachat/realtime/test_sync_connection.py
+```
+
+Mirror async behavior.
+
+Commit:
+
+```text
+feat(realtime): use protobuf binary frames in sync websocket
+```
+
+Tests: sync fake websocket tests updated to assert bytes and parse pb requests.
+
+Stop after commit.
+
+---
+
+### 26-helper-resources-protobuf-regression
+
+Goal: ensure helper resources still work after protobuf retrofit.
+
+Files:
+
+```text
+src/gigachat/api/realtime.py
+tests/unit/gigachat/realtime/test_async_connection.py
+tests/unit/gigachat/realtime/test_sync_connection.py
+tests/unit/gigachat/realtime/test_resources.py
+```
+
+Required checks:
+
+- `connection.input_audio.send(...)` emits protobuf `input.audio_content`.
+- `connection.synthesis.send(...)` emits protobuf `input.content_for_synthesis`.
+- `connection.function_result.create(...)` emits protobuf `function_result`.
+- `connection.session.send_settings(...)` emits protobuf `settings`.
+- Handler registry still receives parsed Pydantic events.
+
+Commit:
+
+```text
+test(realtime): cover helpers on protobuf websocket
+```
+
+Stop after commit.
+
+---
+
+### 27-remove-json-wire-assumptions
+
+Goal: remove stale JSON-wire code, docs, examples, and tests.
+
+Files:
+
+```text
+src/gigachat/realtime/_events.py
+src/gigachat/realtime/_base64.py
+examples/README.md
+examples/example_realtime_text.py
+examples/example_realtime_functions.py
+README.md or docs if already touched
+tests/unit/gigachat/realtime/*
+```
+
+Required changes:
+
+- No examples mention backend JSON endpoint/gateway.
+- No transport test expects JSON strings.
+- No examples base64-encode audio.
+- If `_base64.py` stays, it must not be part of realtime transport and should not be exported as core event serialization.
+
+Commit:
+
+```text
+chore(realtime): remove json websocket wire assumptions
 ```
 
 Tests:
 
-- fake/mock websocket connect;
-- initial settings first frame;
-- send audio frame;
-- recv parses event;
-- close closes websocket;
-- missing `websockets` raises install-extra hint.
+```bash
+pytest tests/unit/gigachat/realtime
+```
 
 Stop after commit.
 
 ---
 
-### 08-event-handler-registry
+### 28-examples-protobuf-websocket
 
-Goal: add `.on`, `.off`, `.once`, `.dispatch_events()` to async connection and manager.
+Goal: update/add examples for protobuf-over-WebSocket.
 
 Files:
 
-- `src/gigachat/realtime/_events.py` or `src/gigachat/api/realtime.py`
-- `tests/unit/gigachat/realtime/test_async_connection.py`
+```text
+examples/example_realtime_text.py
+examples/example_realtime_functions.py
+examples/example_realtime_microphone.py
+examples/README.md
+```
 
-Can implement small internal registry.
+Required changes:
 
-Rules:
-
-- specific event handlers by exact `event.type`;
-- generic `event` handler;
-- once handler removed after first call;
-- manager-level handlers transfer into connection on enter.
+- Install instruction: `pip install "gigachat[realtime]"` or `gigachat[realtime_voice]`.
+- Set `GIGACHAT_REALTIME_URL`.
+- Say transport is protobuf-over-WebSocket.
+- Do not show JSON frames or base64 audio.
+- Keep OpenAI-style public API examples.
 
 Commit:
 
 ```text
-feat(realtime): add websocket event handlers
+docs(realtime): add protobuf websocket examples
 ```
-
-Tests:
-
-- handler called;
-- once called once;
-- off removes;
-- manager handlers transfer.
 
 Stop after commit.
 
 ---
 
-### 09-async-helper-resources
+### 29-integration-smoke-protobuf-ws
 
-Goal: add OpenAI-style nested helper resources on async connection.
+Goal: add optional integration smoke tests for actual backend.
 
 Files:
-
-- `src/gigachat/api/realtime.py`
-- tests
-
-Implement:
-
-- `connection.session.send_settings(...)`;
-- `connection.input_audio.send(...)`;
-- `connection.synthesis.send(...)`;
-- `connection.function_result.create(...)`.
-
-Rules:
-
-- helpers call `connection.send(...)`;
-- no business state machine;
-- no automatic function execution.
-
-Commit:
 
 ```text
-feat(realtime): add async realtime helper resources
+tests/integration/test_realtime_protobuf_ws.py
 ```
-
-Tests:
-
-- each helper emits expected JSON event.
-
-Stop after commit.
-
----
-
-### 10-async-resource-namespace
-
-Goal: add `client.a_realtime.connect(...)` resource namespace.
-
-Files:
-
-- `src/gigachat/resources/realtime.py`
-- `src/gigachat/resources/__init__.py`
-- `src/gigachat/client.py`
-- tests
-
-Implement:
-
-- `AsyncRealtimeResource.connect(...)` returns `AsyncRealtimeConnectionManager`;
-- cached property `a_realtime` on client;
-- no sync property yet.
-
-Commit:
-
-```text
-feat(resources): add async realtime resource namespace
-```
-
-Tests:
-
-- `client.a_realtime` exists;
-- `connect` passes settings/url to manager;
-- no deprecated warning.
-
-Stop after commit.
-
----
-
-### 11-sync-websocket-connection
-
-Goal: add sync low-level connection and manager.
-
-Files:
-
-- `src/gigachat/api/realtime.py`
-- `tests/unit/gigachat/realtime/test_sync_connection.py`
-
-Implement sync equivalents:
-
-- `RealtimeConnectionManager`;
-- `RealtimeConnection`;
-- `recv`, `recv_bytes`, `send`, `send_raw`, `parse_event`, `close`, `__iter__`;
-- lazy `websockets.sync.client.connect`;
-- initial settings first frame;
-- handler methods sync-compatible.
-
-Commit:
-
-```text
-feat(realtime): add sync json websocket connection
-```
-
-Tests:
-
-- fake sync websocket;
-- first settings frame;
-- event parsing;
-- close.
-
-Stop after commit.
-
----
-
-### 12-sync-helper-resources
-
-Goal: add sync nested helper resources.
-
-Files:
-
-- `src/gigachat/api/realtime.py`
-- tests
-
-Implement sync:
-
-- `connection.session.send_settings(...)`;
-- `connection.input_audio.send(...)`;
-- `connection.synthesis.send(...)`;
-- `connection.function_result.create(...)`.
-
-Commit:
-
-```text
-feat(realtime): add sync realtime helper resources
-```
-
-Tests:
-
-- each helper emits expected JSON event.
-
-Stop after commit.
-
----
-
-### 13-sync-resource-namespace
-
-Goal: add `client.realtime.connect(...)` resource namespace.
-
-Files:
-
-- `src/gigachat/resources/realtime.py`
-- `src/gigachat/client.py`
-- tests
-
-Implement:
-
-- `RealtimeResource.connect(...)` returns sync manager;
-- cached property `realtime` on client.
-
-Commit:
-
-```text
-feat(resources): add sync realtime resource namespace
-```
-
-Tests:
-
-- `client.realtime` exists;
-- `connect` passes settings/url.
-
-Stop after commit.
-
----
-
-### 14-voice-helper-conversions
-
-Goal: add numpy conversion helpers without opening devices.
-
-Files:
-
-- `src/gigachat/realtime/audio.py`
-- `tests/unit/gigachat/realtime/test_audio_helpers.py`
-
-Implement:
-
-- lazy numpy import;
-- `numpy_to_pcm16_bytes`;
-- `pcm16_bytes_to_numpy`;
-- maybe `chunk_pcm16_bytes`.
-
-Do not import/use sounddevice yet.
-
-Commit:
-
-```text
-feat(realtime): add numpy pcm16 audio helpers
-```
-
-Tests:
-
-- mock or real numpy if installed in dev;
-- conversion roundtrip.
-
-Stop after commit.
-
----
-
-### 15-sounddevice-helpers
-
-Goal: add microphone and speaker helpers.
-
-Files:
-
-- `src/gigachat/realtime/audio.py`
-- tests
-
-Implement:
-
-- `RealtimeMicrophone` async iterator;
-- `RealtimeSpeaker` async writer;
-- lazy sounddevice import;
-- no actual device usage in unit tests; mock sounddevice streams.
-
-Commit:
-
-```text
-feat(realtime): add sounddevice microphone and speaker helpers
-```
-
-Tests:
-
-- mocked stream start/stop;
-- microphone callback pushes bytes;
-- speaker write converts bytes and enqueues/writes;
-- `stop()` drains pending playback.
-
-Stop after commit.
-
----
-
-### 16-examples-text-and-functions
-
-Goal: add examples without audio device dependency.
-
-Files:
-
-- `examples/example_realtime_text.py`
-- `examples/example_realtime_functions.py` optional
-- `examples/README.md`
-
-Commit:
-
-```text
-docs(realtime): add json websocket text examples
-```
-
-Examples must mention:
-
-- requires backend JSON websocket endpoint;
-- install `gigachat[realtime]`;
-- set `GIGACHAT_REALTIME_URL`.
-
-Stop after commit.
-
----
-
-### 17-example-microphone
-
-Goal: add push-to-talk / microphone example.
-
-Files:
-
-- `examples/example_realtime_microphone.py`
-- `examples/README.md`
-
-Commit:
-
-```text
-docs(realtime): add microphone realtime example
-```
-
-Example must mention:
-
-- install `gigachat[realtime_voice]`;
-- PortAudio/system dependency may be needed;
-- audio defaults: PCM_S16LE, 16kHz, mono.
-
-Stop after commit.
-
----
-
-### 18-readme-docs
-
-Goal: document public API in README or docs.
-
-Files:
-
-- `README.md`
-- maybe `MIGRATION_GUIDE.md` only if branch already uses one
-
-Commit:
-
-```text
-docs(realtime): document resource realtime api
-```
-
-Include:
-
-- install extras;
-- JSON endpoint requirement;
-- API snippets;
-- known limitations;
-- error handling semantics.
-
-Stop after commit.
-
----
-
-### 19-integration-smoke-tests
-
-Goal: add optional integration tests.
-
-Files:
-
-- `tests/integration/test_realtime_json_ws.py`
 
 Env:
 
@@ -1927,167 +1621,197 @@ GIGACHAT_REALTIME_URL
 GIGACHAT_CREDENTIALS or existing auth env
 ```
 
-Marker: existing `integration` marker.
+Test ideas:
+
+- connect;
+- assert first settings frame is accepted;
+- optionally send tiny PCM silence chunk if backend/test env supports it;
+- read until first event or timeout;
+- skip if env missing.
 
 Commit:
 
 ```text
-test(realtime): add json websocket integration smoke tests
+test(realtime): add protobuf websocket integration smoke
 ```
-
-Tests:
-
-- connect and send settings;
-- optionally send tiny silence/audio chunk if endpoint supports;
-- skip if env missing.
 
 Stop after commit.
 
 ---
 
-### 20-final-audit
+### 30-docs-readme-protobuf-realtime
 
-Goal: final no-protobuf/no-gRPC audit.
+Goal: document public realtime API and protocol details.
+
+Files:
+
+```text
+README.md
+MIGRATION_GUIDE.md / MIGRATION_GUIDE_ru.md if branch uses them
+```
+
+Include:
+
+- `client.a_realtime.connect(...)` and `client.realtime.connect(...)`;
+- WebSocket only;
+- protobuf binary frames internally;
+- no gRPC SDK support;
+- `voice_call_id` required;
+- 4 MiB frame limit;
+- audio chunk <= 2 seconds;
+- error/warning/interrupted semantics;
+- optional audio helpers.
+
+Commit:
+
+```text
+docs(realtime): document protobuf websocket realtime api
+```
+
+Stop after commit.
+
+---
+
+### 31-final-protobuf-audit
+
+Goal: final audit that SDK matches backend protocol and user constraints.
 
 Commands:
 
 ```bash
-grep -R "grpc\|protobuf\|voice_pb2\|google.protobuf" -n src tests examples docs || true
+grep -R "JSON WebSocket\|JSON endpoint\|base64.*wire\|protobuf: forbidden\|voice_pb2_grpc\|grpcio\|transport=\"grpc\"" -n src tests examples docs || true
+pytest tests/unit/gigachat/realtime
+python -c "import gigachat; from gigachat.proto.gigavoice import voice_pb2"
 ```
 
 Allowed matches:
 
-- docs saying gRPC/protobuf are forbidden;
-- this plan/progress.
+- docs explicitly saying old JSON plan was superseded;
+- docs explicitly saying gRPC is not implemented;
+- proto service descriptor in `voice_pb2.py`.
 
 Commit:
 
 ```text
-chore(realtime): audit json websocket implementation
+chore(realtime): audit protobuf websocket implementation
 ```
-
-Progress notes:
-
-- list tests run;
-- list known remaining risk: backend JSON endpoint requirement.
 
 Stop after commit.
 
 ---
 
-## 13. Test strategy
+## 15. Important implementation details by field
 
-### Unit tests
+### 15.1 Optional scalar fields
 
-Must cover:
+Because proto uses `optional` on many scalars, do not set default values unless the user provided them.
 
-- import without extras;
-- missing `websockets` message;
-- missing `sounddevice`/`numpy` message;
-- settings URL env support;
-- JSON serialization of each client event;
-- parser for each server event;
-- unknown event fallback;
-- legacy oneof normalization;
-- audio base64 encode/decode;
-- PCM duration validation;
-- async connection manager sends settings first;
-- sync connection manager sends settings first;
-- event handlers;
-- helper resources;
-- audio helpers with mocked sounddevice.
+Correct:
 
-### Integration tests
-
-Integration tests must be skipped unless env is present.
-
-Do not require microphone in integration tests.
-
-### Type/lint
-
-Run what repo already expects, likely:
-
-```bash
-pytest tests/unit/gigachat/realtime
-mypy src/gigachat
-ruff check src tests
+```python
+if "enable_denoiser" in settings and settings["enable_denoiser"] is not None:
+    pb.enable_denoiser = settings["enable_denoiser"]
 ```
 
-If full mypy/ruff is too slow in Codex environment, run targeted tests and write exact limitation in progress.
+Incorrect:
+
+```python
+pb.enable_denoiser = bool(settings.get("enable_denoiser"))
+```
+
+Why: false because absent and false because explicitly set may have different backend semantics.
+
+### 15.2 Enums
+
+Map string enum names to proto integer values using generated enum wrappers/descriptors. Unknown enum names should raise `ValueError` with field name.
+
+Examples:
+
+```text
+"RECOGNIZE_SYNTHESIS" -> voice_pb2.Settings.RECOGNIZE_SYNTHESIS
+"PCM_S16LE" -> voice_pb2.Input.PCM_S16LE or voice_pb2.Output.PCM_S16LE depending on field
+"SSML" -> voice_pb2.ContentForSynthesis.SSML
+```
+
+### 15.3 Function schemas
+
+Proto requires strings:
+
+```proto
+optional string parameters = 3;
+optional string return_parameters = 5;
+```
+
+Public SDK can accept dicts. Bridge should compact JSON-dump:
+
+```python
+json.dumps(value, ensure_ascii=False, separators=(",", ":"))
+```
+
+### 15.4 `FunctionResult.content`
+
+Proto requires string content. Backend expects valid JSON string. Public SDK can accept dict/list and convert; if string is passed, do not validate.
+
+### 15.5 `inline_data`
+
+Proto map value is string and may contain JSON. Do not parse it. Preserve as string.
+
+### 15.6 `FunctionCall.arguments`
+
+Proto says arguments are JSON format string. Expose as string. Optional helper can parse but should not replace the raw field.
+
+### 15.7 `OutputTranscription.stub_text` and filter stubs
+
+Map `stub_text` when present. User needs both real `text` and replacement `stub_text` for UI/context decisions.
+
+### 15.8 `silence_phrase`
+
+Latest proto now has `optional bool silence_phrase`. Map it. This is important for reconnect/context reconstruction if `enable_transcribe_silence_phrases` was enabled.
+
+### 15.9 `platform_function_processing`
+
+Latest proto now has `PlatformFunctionProcessing` in response oneof. Map it to a normal event, not unknown.
+
+### 15.10 `GIGACHAT` mode
+
+Latest proto adds `GIGACHAT = 3` “for future”. Include it in type literals and enum mapping, but do not add special SDK behavior until backend/docs define its user flow.
 
 ---
 
-## 14. Error handling semantics
+## 16. Suggested internal module API after retrofit
 
-- `recv()` returns `RealtimeErrorEvent` for `type="error"`.
-- `async for event in connection` yields error event, then may end when server closes.
-- `dispatch_events()` may raise only if error event has no handler.
-- Connection-level network failures should raise existing SDK connection exceptions where possible.
-- Server `warning` is never raised automatically.
-- Server `output.interrupted` is not an error; it is a control event instructing playback stop.
+`gigachat.realtime` exports:
 
----
+```python
+serialize_client_event          # now returns bytes protobuf frame
+parse_server_event              # now accepts bytes protobuf frame
+client_event_to_request         # optional public/internal helper
+response_to_event               # optional public/internal helper
+RealtimeMicrophone
+RealtimeSpeaker
+numpy_to_pcm16_bytes
+pcm16_bytes_to_numpy
+```
 
-## 15. Auth and headers
-
-Reuse existing SDK behavior as much as possible.
-
-Required headers:
-
-- auth bearer token;
-- user agent;
-- context headers already supported by SDK, such as `X-Session-ID`, `X-Request-ID`, `X-Client-ID`, custom headers.
-
-Do not set `X-Session-ID` from `voice_call_id` automatically unless existing SDK already does so. GigaVoice backend uses `voice_call_id` for tracing; user may also set session header explicitly.
-
-If WS handshake gets auth failure and existing REST client supports token refresh, one retry is acceptable, but do not implement complex retry/reconnect in MVP.
+If `serialize_client_event` was previously documented as JSON, update docs. If it was internal, change freely.
 
 ---
 
-## 16. Known protocol gaps to track
+## 17. Final expected state
 
-Because protobuf is removed and backend JSON schema is not confirmed, track these in progress:
-
-1. Exact JSON endpoint path.
-2. Whether backend expects event `type` envelope or oneof-style JSON.
-3. Duration format: seconds number vs string vs structured object.
-4. Error status field name: `status` vs `status_code`.
-5. Whether input audio base64 field should be named `audio_chunk` or nested under `audio_content`.
-6. Whether output audio base64 field should be `audio_chunk` or nested under `audio`.
-7. Whether `platform_function_processing` is present in JSON events.
-8. Whether `silence_phrase` is present in output transcription.
-
-Do not block unit implementation on these; design parser/serializer to be easy to adapt.
-
----
-
-## 17. Implementation style notes
-
-- Keep modules small.
-- Avoid circular imports between `client.py`, `resources/realtime.py`, and `api/realtime.py`.
-- Put heavy optional imports inside functions/classes that actually need them.
-- Prefer explicit functions over magic.
-- Do not hide backend events; preserve unknown fields.
-- Keep user API stable and simple.
-- Add docstrings only where they clarify protocol semantics.
-
----
-
-## 18. Final expected state
-
-After all slices, a user can do:
+After all retrofit slices:
 
 ```bash
 pip install "gigachat[realtime]"
 ```
 
-for JSON WebSocket text/audio transport, or:
+installs WebSocket + protobuf support.
 
 ```bash
 pip install "gigachat[realtime_voice]"
 ```
 
-for WebSocket plus microphone/speaker helpers.
+installs WebSocket + protobuf + microphone/speaker helpers.
 
 The SDK exposes:
 
@@ -2096,7 +1820,7 @@ client.a_realtime.connect(settings=..., url=...)
 client.realtime.connect(settings=..., url=...)
 ```
 
-The connection exposes:
+Connections expose:
 
 ```python
 connection.send(...)
@@ -2109,4 +1833,12 @@ connection.on(...)
 connection.dispatch_events()
 ```
 
-There is no gRPC code, no protobuf code, no generated files, and no dependency on `voice.proto`.
+Internally:
+
+```text
+outbound frames = GigaVoiceRequest.SerializeToString()
+inbound frames  = GigaVoiceResponse.FromString(...)
+audio on wire   = protobuf bytes
+gRPC            = not implemented
+voice_pb2_grpc  = absent
+```
