@@ -13,7 +13,7 @@
 - SDK намеренно парсит его не слишком строго: в моделях включен `extra="allow"`.
 - `messages[].content` в PDF описан как массив частей, но в примерах и живом трафике может приходить строкой. SDK нормализует строку, объект и массив к списку частей.
 - Request-модель SDK шире PDF: некоторые поля response-message принимаются в `ChatMessage` для round-trip/толерантного парсинга, но wire-format request ниже описан по `request_v2.pdf`.
-- Для совместимости SDK также принимает `functions_state_id` как alias для `tools_state_id`.
+- Для совместимости SDK также принимает `tool_state_id` и `functions_state_id` как alias для `tools_state_id`.
 - В response SDK принимает `created` как alias для `created_at`.
 
 ## Request
