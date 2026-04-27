@@ -75,6 +75,7 @@ from gigachat.resources import (
     FunctionsSyncResource,
     ModelsAsyncResource,
     ModelsSyncResource,
+    RealtimeResource,
     ThreadsAsyncClient,
     ThreadsSyncClient,
     TokensAsyncResource,
@@ -495,6 +496,11 @@ class GigaChatSyncClient(_BaseClient):
     def threads(self) -> ThreadsSyncClient:
         """Return the threads resource."""
         return ThreadsSyncClient(self)
+
+    @cached_property
+    def realtime(self) -> RealtimeResource:
+        """Return the realtime resource."""
+        return RealtimeResource(self)
 
     @property
     def _client(self) -> httpx.Client:

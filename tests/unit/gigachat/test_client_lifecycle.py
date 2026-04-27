@@ -11,7 +11,7 @@ from gigachat.resources.embeddings import EmbeddingsAsyncResource, EmbeddingsSyn
 from gigachat.resources.files import FilesAsyncResource, FilesSyncResource
 from gigachat.resources.functions import FunctionsAsyncResource, FunctionsSyncResource
 from gigachat.resources.models import ModelsAsyncResource, ModelsSyncResource
-from gigachat.resources.realtime import AsyncRealtimeResource
+from gigachat.resources.realtime import AsyncRealtimeResource, RealtimeResource
 from gigachat.resources.threads import ThreadsAsyncClient, ThreadsSyncClient
 from gigachat.resources.tokens import TokensAsyncResource, TokensSyncResource
 
@@ -131,6 +131,7 @@ def test_sync_resources_are_cached_properties() -> None:
     assert "functions" not in client.__dict__
     assert "ai_check" not in client.__dict__
     assert "threads" not in client.__dict__
+    assert "realtime" not in client.__dict__
 
     chat = client.chat
     legacy_chat = chat.legacy
@@ -144,6 +145,7 @@ def test_sync_resources_are_cached_properties() -> None:
     functions = client.functions
     ai_check = client.ai_check
     threads = client.threads
+    realtime = client.realtime
 
     assert chat is client.chat
     assert legacy_chat is chat.legacy
@@ -158,6 +160,7 @@ def test_sync_resources_are_cached_properties() -> None:
     assert functions is client.functions
     assert ai_check is client.ai_check
     assert threads is client.threads
+    assert realtime is client.realtime
     assert isinstance(models, ModelsSyncResource)
     assert isinstance(embeddings, EmbeddingsSyncResource)
     assert isinstance(batches, BatchesSyncResource)
@@ -167,6 +170,7 @@ def test_sync_resources_are_cached_properties() -> None:
     assert isinstance(functions, FunctionsSyncResource)
     assert isinstance(ai_check, AICheckSyncResource)
     assert isinstance(threads, ThreadsSyncClient)
+    assert isinstance(realtime, RealtimeResource)
 
 
 async def test_async_resources_are_cached_properties() -> None:
