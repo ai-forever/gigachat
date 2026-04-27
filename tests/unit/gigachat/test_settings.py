@@ -10,6 +10,7 @@ from gigachat.settings import AUTH_URL, BASE_URL, SCOPE, Settings
 def test_defaults() -> None:
     settings = Settings()
     assert settings.base_url == BASE_URL
+    assert settings.realtime_url is None
     assert settings.auth_url == AUTH_URL
     assert settings.scope == SCOPE
     assert settings.credentials is None
@@ -35,6 +36,7 @@ def test_defaults() -> None:
 def test_env_override(monkeypatch: pytest.MonkeyPatch) -> None:
     envs = {
         "GIGACHAT_BASE_URL": "http://custom-base",
+        "GIGACHAT_REALTIME_URL": "wss://custom-realtime",
         "GIGACHAT_AUTH_URL": "http://custom-auth",
         "GIGACHAT_CREDENTIALS": "custom-creds",
         "GIGACHAT_SCOPE": "custom-scope",
@@ -58,6 +60,7 @@ def test_env_override(monkeypatch: pytest.MonkeyPatch) -> None:
     settings = Settings()
 
     assert settings.base_url == "http://custom-base"
+    assert settings.realtime_url == "wss://custom-realtime"
     assert settings.auth_url == "http://custom-auth"
     assert settings.credentials == "custom-creds"
     assert settings.scope == "custom-scope"
@@ -80,10 +83,12 @@ def test_env_override(monkeypatch: pytest.MonkeyPatch) -> None:
 def test_init_override() -> None:
     settings = Settings(
         base_url="http://init-base",
+        realtime_url="wss://init-realtime",
         max_retries=10,
         verify_ssl_certs=False,
     )
     assert settings.base_url == "http://init-base"
+    assert settings.realtime_url == "wss://init-realtime"
     assert settings.max_retries == 10
     assert settings.verify_ssl_certs is False
 

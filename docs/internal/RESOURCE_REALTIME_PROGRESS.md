@@ -15,7 +15,7 @@
 |---|---|---|---|
 | 01-docs-progress-reset | done | this commit | Reset plan from protobuf to JSON. |
 | 02-dependency-extras | done | this commit | Added JSON WebSocket and optional voice helper extras; removed protobuf from realtime extras. |
-| 03-realtime-settings-config | pending |  | Add realtime websocket URL setting. |
+| 03-realtime-settings-config | done | this commit | Added realtime websocket URL setting coverage. |
 | 04-client-param-types | pending |  | Add JSON client event param types. |
 | 05-server-event-models | pending |  | Add JSON server event models. |
 | 06-client-event-serialization | pending |  | Add JSON client event serialization. |
@@ -71,3 +71,19 @@ Next:
 
 Risks:
 - `uv.lock` was not updated in this slice because the plan scopes slice 02 to `pyproject.toml` only.
+
+### 2026-04-27 — slice 03-realtime-settings-config
+
+Done:
+- Verified `Settings.realtime_url` is available for the JSON WebSocket endpoint.
+- Added settings tests for default `None`, constructor override, and `GIGACHAT_REALTIME_URL` env override.
+- Kept the SDK from deriving a realtime endpoint from `base_url`.
+
+Tests:
+- `uv run pytest tests/unit/gigachat/test_settings.py`
+
+Next:
+- 04-client-param-types
+
+Risks:
+- Backend JSON endpoint must be confirmed. If the current GigaVoice WebSocket endpoint accepts only protobuf frames, this SDK plan cannot pass integration smoke tests without a backend adapter or gateway.
