@@ -39,7 +39,7 @@ uv run python -m examples.chat_completions.sync_chat
 
 ## Files and assistants
 
-* [File input](./files/file_input.py) - upload a file and reference it from message content
+* [File input](./files/file_input.py) - `client.files.upload(...)` and file references in message content
 * [Assistant lifecycle](./assistants/basic.py) - create, use, and delete an assistant
 
 Notebook examples:

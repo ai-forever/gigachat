@@ -22,7 +22,7 @@
 9. [done] Add balance resource
 10. [done] Add functions resource
 11. [done] Add ai_check resource
-12. [todo] Update docs/examples for non-chat resources
+12. [done] Update docs/examples for non-chat resources
 13. [todo] Add global resource/shim regression tests
 14. [todo] Final audit and cleanup
 
@@ -95,3 +95,9 @@
   - Тесты: `uv run pytest tests/unit/gigachat/test_client_ai_check.py -q`, `uv run pytest tests/unit/gigachat/api/test_tools.py -q`, `uv run pytest tests/unit/gigachat/test_client_tools.py -q`, `uv run ruff check src/gigachat/resources/ai_check.py src/gigachat/resources/__init__.py src/gigachat/client.py tests/unit/gigachat/test_client_ai_check.py`, `git diff --check`.
   - Commit: `feat(resources): add ai check resource`.
   - Замечания: examples/docs и unrelated tools endpoints не менялись; `test_client_tools.py` проходит с ожидаемыми `DeprecationWarning` для deprecated root paths.
+- 2026-04-27: завершён срез 12.
+  - Что сделано: публичные README, migration guides и examples обновлены на non-chat resource paths; deprecated root calls описаны как compatibility shims.
+  - Изменённые файлы: `README.md`, `MIGRATION_GUIDE.md`, `MIGRATION_GUIDE_ru.md`, `examples/README.md`, `examples/files/file_input.py`, `examples/example_ai_check.ipynb`, `examples/vision/example_vision.ipynb`, `docs/internal/RESOURCE_API_REMAINING_PROGRESS.md`.
+  - Тесты: `uv run pytest tests/unit/examples -q`, `git diff --check`.
+  - Commit: `docs(resources): document non-chat resource api`.
+  - Замечания: API-код не менялся; старые root calls остались только в migration replacement tables.

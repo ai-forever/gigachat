@@ -158,7 +158,7 @@ Generate vector representations of text:
 from gigachat import GigaChat
 
 with GigaChat() as client:
-    result = client.embeddings(
+    result = client.embeddings.create(
         ["Hello, world!", "Machine learning is fascinating"],
         model="Embeddings",
     )
@@ -167,7 +167,7 @@ with GigaChat() as client:
         print(f"Text {i + 1}: {len(item.embedding)} dimensions")
 ```
 
-> **Note:** The `model` parameter must be passed directly to the `embeddings()` method (default: `"Embeddings"`).
+> **Note:** The `model` parameter must be passed directly to the `embeddings.create()` method (default: `"Embeddings"`).
 > The `model` set in the `GigaChat()` constructor does not affect embeddings.
 
 ### Function Calling
@@ -604,7 +604,7 @@ Estimate token usage before sending requests:
 from gigachat import GigaChat
 
 with GigaChat() as client:
-    counts = client.tokens_count(["Hello, world!", "How are you today?"])
+    counts = client.tokens.count(["Hello, world!", "How are you today?"])
     for count in counts:
         print(f"Tokens: {count.tokens}, Characters: {count.characters}")
 ```
@@ -617,7 +617,7 @@ List available models and their capabilities:
 from gigachat import GigaChat
 
 with GigaChat() as client:
-    models = client.get_models()
+    models = client.models.list()
     for model in models.data:
         print(f"{model.id_} (owned_by={model.owned_by})")
 ```
@@ -632,16 +632,16 @@ from gigachat import GigaChat
 with GigaChat() as client:
     # Upload a file
     with open("document.pdf", "rb") as f:
-        uploaded = client.upload_file(f, purpose="general")
-    print(f"Uploaded: {uploaded.id}")
+        uploaded = client.files.upload(f, purpose="general")
+    print(f"Uploaded: {uploaded.id_}")
 
     # List files
-    files = client.get_files()
+    files = client.files.list()
     for file in files.data:
-        print(f"{file.id}: {file.filename}")
+        print(f"{file.id_}: {file.filename}")
 
     # Delete a file
-    client.delete_file(uploaded.id)
+    client.files.delete(uploaded.id_)
 ```
 
 
@@ -653,7 +653,7 @@ Check your remaining token balance (prepaid accounts only):
 from gigachat import GigaChat
 
 with GigaChat(scope="GIGACHAT_API_B2B") as client:
-    balance = client.get_balance()
+    balance = client.balance.get()
     for entry in balance.balance:
         print(f"{entry.usage}: {entry.value}")
 ```

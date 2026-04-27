@@ -49,6 +49,36 @@ v2 это не просто переименование старого endpoint
 
 `client.chat(...)`, `client.stream(...)`, `client.chat_parse(...)`, `client.achat(...)`, `client.astream(...)` и `client.achat_parse(...)` пока работают, но это deprecated shim-ы. Они вызывают `DeprecationWarning`.
 
+Non-chat endpoint-ы тоже используют явные resource namespaces. Старые root-методы пока работают как deprecated
+compatibility shim-ы и вызывают `DeprecationWarning`; в новом коде используйте resource paths ниже.
+
+| Deprecated root-вызов | Resource-вызов |
+| --- | --- |
+| `client.get_models()` | `client.models.list()` |
+| `client.get_model(model)` | `client.models.retrieve(model)` |
+| `await client.aget_models()` | `await client.a_models.list()` |
+| `await client.aget_model(model)` | `await client.a_models.retrieve(model)` |
+| `client.embeddings(texts, model=...)` | `client.embeddings.create(texts, model=...)` |
+| `await client.aembeddings(texts, model=...)` | `await client.a_embeddings.create(texts, model=...)` |
+| `client.upload_file(file, purpose=...)` | `client.files.upload(file, purpose=...)` |
+| `client.get_file(file)` | `client.files.retrieve(file)` |
+| `client.get_files()` | `client.files.list()` |
+| `client.delete_file(file)` | `client.files.delete(file)` |
+| `client.get_image(file_id)` | `client.files.retrieve_image(file_id)` |
+| `await client.aupload_file(file, purpose=...)` | `await client.a_files.upload(file, purpose=...)` |
+| `await client.aget_file(file)` | `await client.a_files.retrieve(file)` |
+| `await client.aget_files()` | `await client.a_files.list()` |
+| `await client.adelete_file(file)` | `await client.a_files.delete(file)` |
+| `await client.aget_image(file_id)` | `await client.a_files.retrieve_image(file_id)` |
+| `client.tokens_count(input_, model=...)` | `client.tokens.count(input_, model=...)` |
+| `await client.atokens_count(input_, model=...)` | `await client.a_tokens.count(input_, model=...)` |
+| `client.get_balance()` | `client.balance.get()` |
+| `await client.aget_balance()` | `await client.a_balance.get()` |
+| `client.openapi_function_convert(openapi_function)` | `client.functions.convert_openapi(openapi_function)` |
+| `await client.aopenapi_function_convert(openapi_function)` | `await client.a_functions.convert_openapi(openapi_function)` |
+| `client.check_ai(text, model)` | `client.ai_check.check(text, model)` |
+| `await client.acheck_ai(text, model)` | `await client.a_ai_check.check(text, model)` |
+
 Primary chat completions используют v2 route. Если клиентский `base_url` все еще заканчивается на `/v1`, вызовы `client.chat.create(...)`, `client.chat.stream(...)`, `client.achat.create(...)` и `client.achat.stream(...)` автоматически уходят на соответствующий `/v2/chat/completions`. Явные override-ы `chat_completions_url` по-прежнему учитываются, включая versioned paths вроде `/v2/chat/completions`.
 
 Почему это поменялось:

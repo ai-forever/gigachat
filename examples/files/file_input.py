@@ -18,7 +18,7 @@ def main() -> None:
     load_dotenv()
 
     with GigaChat() as client:
-        uploaded = client.upload_file(file=("sdk_notes.txt", FILE_TEXT.encode("utf-8")))
+        uploaded = client.files.upload(file=("sdk_notes.txt", FILE_TEXT.encode("utf-8")))
         response = client.chat.create(
             ChatCompletionRequest(
                 messages=[
