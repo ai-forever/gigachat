@@ -1,6 +1,8 @@
 from gigachat.models.tools import (
     AICheckResult,
     Balance,
+    FunctionValidationIssue,
+    FunctionValidationResult,
     OpenApiFunctions,
     TokensCount,
 )
@@ -44,3 +46,22 @@ def test_openapi_functions_creation() -> None:
     funcs = OpenApiFunctions.model_validate(data)
     assert len(funcs.functions) == 1
     assert funcs.functions[0].name == "func1"
+
+
+def test_function_validation_result_creation() -> None:
+    data = {
+        "status": 200,
+        "message": "Function is valid",
+        "json_ai_rules_version": "2024-01-01",
+        "warnings": [
+            {
+                "description": "Optional warning",
+                "schema_location": "$.parameters",
+            }
+        ],
+    }
+    result = FunctionValidationResult.model_validate(data)
+    assert result.status == 200
+    assert result.message == "Function is valid"
+    assert result.warnings is not None
+    assert isinstance(result.warnings[0], FunctionValidationIssue)
