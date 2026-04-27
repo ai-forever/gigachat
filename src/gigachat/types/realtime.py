@@ -165,7 +165,7 @@ class RealtimeInputSynthesisContentEventParam(TypedDict, total=False):
 class RealtimeFunctionResultEventParam(TypedDict, total=False):
     type: Required[Literal["function_result"]]
     content: Required[Union[str, Dict[str, Any], List[Any]]]
-    function_name: Required[str]
+    function_name: NotRequired[str]
 
 
 RealtimeClientEventParam = Union[

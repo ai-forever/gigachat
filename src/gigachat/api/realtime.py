@@ -18,12 +18,22 @@ from typing import (
     overload,
 )
 
+from typing_extensions import Literal
+
 from gigachat.api.utils import build_headers
 from gigachat.exceptions import GigaChatException
 from gigachat.models.realtime import RealtimeServerEvent, parse_realtime_event
 from gigachat.realtime._events import MAX_CLIENT_EVENT_FRAME_SIZE, serialize_client_event
 from gigachat.settings import Settings
-from gigachat.types.realtime import RealtimeClientEventParam, RealtimeSettingsParam
+from gigachat.types.realtime import (
+    RealtimeAudioChunkMetaParam,
+    RealtimeClientEventParam,
+    RealtimeFunctionResultEventParam,
+    RealtimeInputAudioContentEventParam,
+    RealtimeInputSynthesisContentEventParam,
+    RealtimeSettingsEventParam,
+    RealtimeSettingsParam,
+)
 
 
 class AsyncRealtimeClientProtocol(Protocol):
@@ -306,6 +316,10 @@ class AsyncRealtimeConnection:
         self._max_frame_size = max_frame_size
         self._validate_audio_chunks = validate_audio_chunks
         self._event_handlers = event_handlers or _RealtimeEventHandlerRegistry()
+        self.session = AsyncRealtimeSessionResource(self)
+        self.input_audio = AsyncRealtimeInputAudioResource(self)
+        self.synthesis = AsyncRealtimeSynthesisResource(self)
+        self.function_result = AsyncRealtimeFunctionResultResource(self)
 
     async def recv(self) -> RealtimeServerEvent:
         data = await self._websocket.recv()
@@ -393,9 +407,87 @@ class AsyncRealtimeConnection:
             yield await self.recv()
 
 
+class AsyncRealtimeSessionResource:
+    def __init__(self, connection: AsyncRealtimeConnection) -> None:
+        self._connection = connection
+
+    async def send_settings(self, settings: RealtimeSettingsParam) -> None:
+        event: RealtimeSettingsEventParam = {"type": "settings", "settings": settings}
+        await self._connection.send(event)
+
+
+class AsyncRealtimeInputAudioResource:
+    def __init__(self, connection: AsyncRealtimeConnection) -> None:
+        self._connection = connection
+
+    async def send(
+        self,
+        audio_chunk: bytes,
+        *,
+        speech_start: Optional[bool] = None,
+        speech_end: Optional[bool] = None,
+        meta: Optional[RealtimeAudioChunkMetaParam] = None,
+    ) -> None:
+        event: RealtimeInputAudioContentEventParam = {
+            "type": "input.audio_content",
+            "audio_chunk": audio_chunk,
+        }
+        if speech_start is not None:
+            event["speech_start"] = speech_start
+        if speech_end is not None:
+            event["speech_end"] = speech_end
+        if meta is not None:
+            event["meta"] = meta
+        await self._connection.send(event)
+
+
+class AsyncRealtimeSynthesisResource:
+    def __init__(self, connection: AsyncRealtimeConnection) -> None:
+        self._connection = connection
+
+    async def send(
+        self,
+        text: str,
+        *,
+        content_type: Literal["text", "ssml"] = "text",
+        is_final: bool = False,
+    ) -> None:
+        event: RealtimeInputSynthesisContentEventParam = {
+            "type": "input.synthesis_content",
+            "text": text,
+            "content_type": content_type,
+            "is_final": is_final,
+        }
+        await self._connection.send(event)
+
+
+class AsyncRealtimeFunctionResultResource:
+    def __init__(self, connection: AsyncRealtimeConnection) -> None:
+        self._connection = connection
+
+    async def create(self, content: Union[str, Mapping[str, Any]], *, function_name: Optional[str] = None) -> None:
+        event_content: Union[str, Dict[str, Any]]
+        if isinstance(content, str):
+            event_content = content
+        else:
+            event_content = dict(content)
+
+        event: RealtimeFunctionResultEventParam = {
+            "type": "function_result",
+            "content": event_content,
+        }
+        if function_name is not None:
+            event["function_name"] = function_name
+        await self._connection.send(event)
+
+
 __all__ = (
     "AsyncRealtimeConnection",
     "AsyncRealtimeConnectionManager",
+    "AsyncRealtimeFunctionResultResource",
+    "AsyncRealtimeInputAudioResource",
+    "AsyncRealtimeSessionResource",
+    "AsyncRealtimeSynthesisResource",
     "AsyncWebSocketConnect",
     "AsyncWebSocketProtocol",
     "RealtimeEventDecorator",

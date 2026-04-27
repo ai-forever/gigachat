@@ -35,7 +35,8 @@ def test_realtime_input_audio_content_required_keys() -> None:
 
 
 def test_realtime_function_result_required_keys() -> None:
-    assert RealtimeFunctionResultEventParam.__required_keys__ == frozenset({"type", "content", "function_name"})
+    assert RealtimeFunctionResultEventParam.__required_keys__ == frozenset({"type", "content"})
+    assert "function_name" in RealtimeFunctionResultEventParam.__optional_keys__
 
 
 def test_realtime_client_event_union() -> None:
