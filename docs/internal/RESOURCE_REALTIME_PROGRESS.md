@@ -24,7 +24,7 @@
 | 09-async-helper-resources | done | this commit | Added async realtime helper resources. |
 | 10-async-resource-namespace | done | this commit | Added async realtime resource namespace. |
 | 11-sync-websocket-connection | done | this commit | Added sync JSON websocket connection and manager. |
-| 12-sync-helper-resources | pending |  | Add sync realtime helper resources. |
+| 12-sync-helper-resources | done | this commit | Added sync realtime helper resources. |
 | 13-sync-resource-namespace | pending |  | Add sync realtime resource namespace. |
 | 14-voice-helper-conversions | pending |  | Add numpy PCM16 audio helpers. |
 | 15-sounddevice-helpers | pending |  | Add sounddevice microphone and speaker helpers. |
@@ -252,6 +252,26 @@ Tests:
 
 Next:
 - 12-sync-helper-resources
+
+Risks:
+- Backend JSON endpoint must be confirmed. If the current GigaVoice WebSocket endpoint accepts only protobuf frames, this SDK plan cannot pass integration smoke test without a backend adapter or gateway.
+
+### 2026-04-27 — slice 12-sync-helper-resources
+
+Done:
+- Added sync realtime helper resources attached to `RealtimeConnection`: `session`, `input_audio`, `synthesis`, and `function_result`.
+- Added `session.send_settings(...)`, `input_audio.send(...)`, `synthesis.send(...)`, and `function_result.create(...)` helpers that delegate to `connection.send(...)`.
+- Kept sync helpers stateless and aligned with async helper serialization behavior.
+- Made `function_result.function_name` optional to match the helper contract.
+
+Tests:
+- `uv run pytest tests/unit/gigachat/realtime/test_sync_connection.py`
+- `uv run ruff check src/gigachat/api/realtime.py tests/unit/gigachat/realtime/test_sync_connection.py`
+- `uv run ruff format --check src/gigachat/api/realtime.py tests/unit/gigachat/realtime/test_sync_connection.py`
+- `uv run mypy src/gigachat/api/realtime.py tests/unit/gigachat/realtime/test_sync_connection.py` (rerun outside sandbox because `uv` cache access was blocked)
+
+Next:
+- 13-sync-resource-namespace
 
 Risks:
 - Backend JSON endpoint must be confirmed. If the current GigaVoice WebSocket endpoint accepts only protobuf frames, this SDK plan cannot pass integration smoke test without a backend adapter or gateway.

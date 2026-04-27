@@ -152,6 +152,84 @@ def test_sync_connection_sends_audio_frame() -> None:
     }
 
 
+def test_sync_connection_session_helper_sends_settings() -> None:
+    websocket = FakeWebSocket()
+    connect = FakeConnect(websocket)
+
+    with RealtimeConnectionManager(FakeClient(), settings=_settings(), connect_factory=connect) as connection:
+        connection.session.send_settings({"voice_call_id": "updated-call-id"})
+
+    assert json.loads(str(websocket.sent[1])) == {
+        "type": "settings",
+        "settings": {"voice_call_id": "updated-call-id"},
+    }
+
+
+def test_sync_connection_input_audio_helper_sends_audio_content() -> None:
+    websocket = FakeWebSocket()
+    connect = FakeConnect(websocket)
+
+    with RealtimeConnectionManager(FakeClient(), settings=_settings(), connect_factory=connect) as connection:
+        connection.input_audio.send(
+            b"pcm",
+            speech_start=True,
+            speech_end=False,
+            meta={"force_co_speech": True},
+        )
+
+    assert json.loads(str(websocket.sent[1])) == {
+        "type": "input.audio_content",
+        "audio_chunk": base64.b64encode(b"pcm").decode("ascii"),
+        "speech_start": True,
+        "speech_end": False,
+        "meta": {"force_co_speech": True},
+    }
+
+
+def test_sync_connection_synthesis_helper_sends_synthesis_content() -> None:
+    websocket = FakeWebSocket()
+    connect = FakeConnect(websocket)
+
+    with RealtimeConnectionManager(FakeClient(), settings=_settings(), connect_factory=connect) as connection:
+        connection.synthesis.send("<speak>Hello</speak>", content_type="ssml", is_final=True)
+
+    assert json.loads(str(websocket.sent[1])) == {
+        "type": "input.synthesis_content",
+        "text": "<speak>Hello</speak>",
+        "content_type": "ssml",
+        "is_final": True,
+    }
+
+
+def test_sync_connection_function_result_helper_sends_function_result() -> None:
+    websocket = FakeWebSocket()
+    connect = FakeConnect(websocket)
+
+    with RealtimeConnectionManager(FakeClient(), settings=_settings(), connect_factory=connect) as connection:
+        connection.function_result.create({"items": [{"title": "ГигаЧат"}]}, function_name="search")
+
+    data = json.loads(str(websocket.sent[1]))
+    assert data == {
+        "type": "function_result",
+        "content": '{"items":[{"title":"ГигаЧат"}]}',
+        "function_name": "search",
+    }
+    assert json.loads(data["content"]) == {"items": [{"title": "ГигаЧат"}]}
+
+
+def test_sync_connection_function_result_helper_can_omit_function_name() -> None:
+    websocket = FakeWebSocket()
+    connect = FakeConnect(websocket)
+
+    with RealtimeConnectionManager(FakeClient(), settings=_settings(), connect_factory=connect) as connection:
+        connection.function_result.create("done")
+
+    assert json.loads(str(websocket.sent[1])) == {
+        "type": "function_result",
+        "content": "done",
+    }
+
+
 def test_sync_connection_recv_parses_event() -> None:
     websocket = FakeWebSocket(['{"type":"input_transcription","text":"hello"}'])
     connect = FakeConnect(websocket)

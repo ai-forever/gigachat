@@ -607,6 +607,10 @@ class RealtimeConnection:
         self._max_frame_size = max_frame_size
         self._validate_audio_chunks = validate_audio_chunks
         self._event_handlers = event_handlers or _RealtimeEventHandlerRegistry()
+        self.session = RealtimeSessionResource(self)
+        self.input_audio = RealtimeInputAudioResource(self)
+        self.synthesis = RealtimeSynthesisResource(self)
+        self.function_result = RealtimeFunctionResultResource(self)
 
     def recv(self) -> RealtimeServerEvent:
         data = self._websocket.recv()
@@ -689,6 +693,80 @@ class RealtimeConnection:
     def __iter__(self) -> Iterator[RealtimeServerEvent]:
         while True:
             yield self.recv()
+
+
+class RealtimeSessionResource:
+    def __init__(self, connection: RealtimeConnection) -> None:
+        self._connection = connection
+
+    def send_settings(self, settings: RealtimeSettingsParam) -> None:
+        event: RealtimeSettingsEventParam = {"type": "settings", "settings": settings}
+        self._connection.send(event)
+
+
+class RealtimeInputAudioResource:
+    def __init__(self, connection: RealtimeConnection) -> None:
+        self._connection = connection
+
+    def send(
+        self,
+        audio_chunk: bytes,
+        *,
+        speech_start: Optional[bool] = None,
+        speech_end: Optional[bool] = None,
+        meta: Optional[RealtimeAudioChunkMetaParam] = None,
+    ) -> None:
+        event: RealtimeInputAudioContentEventParam = {
+            "type": "input.audio_content",
+            "audio_chunk": audio_chunk,
+        }
+        if speech_start is not None:
+            event["speech_start"] = speech_start
+        if speech_end is not None:
+            event["speech_end"] = speech_end
+        if meta is not None:
+            event["meta"] = meta
+        self._connection.send(event)
+
+
+class RealtimeSynthesisResource:
+    def __init__(self, connection: RealtimeConnection) -> None:
+        self._connection = connection
+
+    def send(
+        self,
+        text: str,
+        *,
+        content_type: Literal["text", "ssml"] = "text",
+        is_final: bool = False,
+    ) -> None:
+        event: RealtimeInputSynthesisContentEventParam = {
+            "type": "input.synthesis_content",
+            "text": text,
+            "content_type": content_type,
+            "is_final": is_final,
+        }
+        self._connection.send(event)
+
+
+class RealtimeFunctionResultResource:
+    def __init__(self, connection: RealtimeConnection) -> None:
+        self._connection = connection
+
+    def create(self, content: Union[str, Mapping[str, Any]], *, function_name: Optional[str] = None) -> None:
+        event_content: Union[str, Dict[str, Any]]
+        if isinstance(content, str):
+            event_content = content
+        else:
+            event_content = dict(content)
+
+        event: RealtimeFunctionResultEventParam = {
+            "type": "function_result",
+            "content": event_content,
+        }
+        if function_name is not None:
+            event["function_name"] = function_name
+        self._connection.send(event)
 
 
 class AsyncRealtimeSessionResource:
@@ -779,6 +857,10 @@ __all__ = (
     "RealtimeConnectionManager",
     "RealtimeEventDecorator",
     "RealtimeEventHandler",
+    "RealtimeFunctionResultResource",
+    "RealtimeInputAudioResource",
+    "RealtimeSessionResource",
+    "RealtimeSynthesisResource",
     "WebSocketConnect",
     "WebSocketProtocol",
 )
