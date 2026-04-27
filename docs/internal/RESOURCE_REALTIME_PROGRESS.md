@@ -59,7 +59,7 @@ Do not implement gRPC. Do not generate or commit `voice_pb2_grpc.py`.
 | 17-protobuf-pivot-docs-progress | done | this commit | Pivoted docs/progress from JSON-only to protobuf-over-WebSocket. |
 | 18-protobuf-runtime-extra | done | this commit | Added `protobuf` to realtime extras; no grpcio. |
 | 19-latest-proto-schema | done | this commit | Added latest `voice.proto` schema and proto package markers; generated bindings are intentionally deferred. |
-| 20-proto-message-bindings | pending |  | Add generated `voice_pb2.py`; no `voice_pb2_grpc.py`. |
+| 20-proto-message-bindings | done | this commit | Added generated `voice_pb2.py`; no `voice_pb2_grpc.py`. |
 | 21-protobuf-request-bridge-settings | pending |  | Map settings params to protobuf Settings. |
 | 22-protobuf-client-event-serialization | pending |  | Serialize all client events to protobuf bytes. |
 | 23-protobuf-server-event-parsing | pending |  | Parse protobuf responses into Pydantic events. |
@@ -126,3 +126,28 @@ Next:
 
 Risks:
 - The proto text includes `service GigaVoiceService`; the next slice must generate only Python message bindings and must not commit gRPC stubs.
+
+### 2026-04-28 — slice 20-proto-message-bindings
+
+Done:
+- Generated `src/gigachat/proto/gigavoice/voice_pb2.py` from `voice.proto`.
+- Used a one-off `grpc_tools.protoc` invocation pinned to protobuf 5.x-compatible gencode because system `protoc` 34.0 generated bindings requiring protobuf 7.34.0.
+- Did not generate or add `voice_pb2_grpc.py`.
+- Added import and round-trip coverage for `GigaVoiceRequest`, `GigaVoiceResponse`, and raw audio bytes.
+- Excluded generated `*_pb2.py` files from Ruff and mypy source scanning, and marked the generated file itself to skip direct Ruff/mypy checks; tests access generated message classes dynamically because mypy cannot infer protobuf builder-created attributes.
+
+Tests:
+- `uv run python -c "from gigachat.proto.gigavoice import voice_pb2; req = voice_pb2.GigaVoiceRequest(settings=voice_pb2.Settings(voice_call_id='x')); data = req.SerializeToString(); parsed = voice_pb2.GigaVoiceRequest.FromString(data); print(type(data).__name__, len(data), parsed.WhichOneof('request'), parsed.settings.voice_call_id)"`
+- `uv run pytest tests/unit/gigachat/realtime/test_proto_imports.py`
+- `uv run ruff check src/gigachat/proto/gigavoice/voice_pb2.py tests/unit/gigachat/realtime/test_proto_imports.py`
+- `uv run mypy src/gigachat/proto/gigavoice/voice_pb2.py tests/unit/gigachat/realtime/test_proto_imports.py`
+- `uv run ruff check src tests`
+- `uv run mypy src tests`
+- `find src/gigachat/proto/gigavoice -name '*grpc*' -print` (no output)
+- `rg -n "grpcio|^name = \"grpc" pyproject.toml uv.lock` (no matches)
+
+Next:
+- 21-protobuf-request-bridge-settings
+
+Risks:
+- The generated descriptor still contains the `GigaVoiceService` service descriptor from `voice.proto`; this is expected for message bindings and must not be confused with a gRPC transport implementation.
