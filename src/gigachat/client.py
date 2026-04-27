@@ -26,7 +26,7 @@ import pydantic
 from typing_extensions import Self
 
 from gigachat._types import FileTypes
-from gigachat.api import auth, chat_completions, embeddings, files, legacy_chat, models, tools
+from gigachat.api import auth, chat_completions, embeddings, files, legacy_chat, tools
 from gigachat.authentication import _awith_auth, _awith_auth_stream, _with_auth, _with_auth_stream
 from gigachat.context import authorization_cvar
 from gigachat.exceptions import LengthFinishReasonError
@@ -58,8 +58,11 @@ from gigachat.resources import (
     AssistantsSyncClient,
     AsyncChatNamespace,
     ChatNamespace,
+    ModelsAsyncResource,
+    ModelsSyncResource,
     ThreadsAsyncClient,
     ThreadsSyncClient,
+    warn_deprecated_resource_api,
 )
 from gigachat.retry import _awith_retry, _awith_retry_stream, _with_retry, _with_retry_stream
 from gigachat.settings import Settings
@@ -427,6 +430,11 @@ class GigaChatSyncClient(_BaseClient):
         return AssistantsSyncClient(self)
 
     @cached_property
+    def models(self) -> ModelsSyncResource:
+        """Return the models resource."""
+        return ModelsSyncResource(self)
+
+    @cached_property
     def threads(self) -> ThreadsSyncClient:
         """Return the threads resource."""
         return ThreadsSyncClient(self)
@@ -512,17 +520,15 @@ class GigaChatSyncClient(_BaseClient):
         """Return embeddings."""
         return embeddings.embeddings_sync(self._client, access_token=self.token, input_=texts, model=model)
 
-    @_with_retry
-    @_with_auth
     def get_models(self) -> Models:
-        """Return a list of available models."""
-        return models.get_models_sync(self._client, access_token=self.token)
+        """Return a list of available models via deprecated root shim."""
+        warn_deprecated_resource_api("client.get_models()", "client.models.list()")
+        return self.models.list()
 
-    @_with_retry
-    @_with_auth
     def get_model(self, model: str) -> Model:
-        """Return a description of a specific model."""
-        return models.get_model_sync(self._client, model=model, access_token=self.token)
+        """Return a model description via deprecated root shim."""
+        warn_deprecated_resource_api("client.get_model(...)", "client.models.retrieve(...)")
+        return self.models.retrieve(model)
 
     @_with_retry
     @_with_auth
@@ -768,6 +774,11 @@ class GigaChatAsyncClient(_BaseClient):
         return AssistantsAsyncClient(self)
 
     @cached_property
+    def a_models(self) -> ModelsAsyncResource:
+        """Return the async models resource."""
+        return ModelsAsyncResource(self)
+
+    @cached_property
     def a_threads(self) -> ThreadsAsyncClient:
         """Return the async threads resource."""
         return ThreadsAsyncClient(self)
@@ -849,12 +860,10 @@ class GigaChatAsyncClient(_BaseClient):
 
         return await embeddings.embeddings_async(self._aclient, access_token=self.token, input_=texts, model=model)
 
-    @_awith_retry
-    @_awith_auth
     async def aget_models(self) -> Models:
-        """Return a list of available models."""
-
-        return await models.get_models_async(self._aclient, access_token=self.token)
+        """Return a list of available models via deprecated root shim."""
+        warn_deprecated_resource_api("client.aget_models()", "client.a_models.list()")
+        return await self.a_models.list()
 
     @_awith_retry
     @_awith_auth
@@ -863,12 +872,10 @@ class GigaChatAsyncClient(_BaseClient):
 
         return await files.get_image_async(self._aclient, file_id=file_id, access_token=self.token)
 
-    @_awith_retry
-    @_awith_auth
     async def aget_model(self, model: str) -> Model:
-        """Return a description of a specific model."""
-
-        return await models.get_model_async(self._aclient, model=model, access_token=self.token)
+        """Return a model description via deprecated root shim."""
+        warn_deprecated_resource_api("client.aget_model(...)", "client.a_models.retrieve(...)")
+        return await self.a_models.retrieve(model)
 
     @_awith_retry
     @_awith_auth

@@ -15,7 +15,7 @@
 2. [done] Add shared resource deprecation helper
 3. [done] Normalize assistants resource module
 4. [done] Normalize threads resource module
-5. [todo] Add models resource
+5. [done] Add models resource
 6. [todo] Add embeddings resource
 7. [todo] Add files resource
 8. [todo] Add tokens resource
@@ -53,3 +53,9 @@
   - Тесты: `uv run pytest tests/unit/gigachat/test_client_threads.py -q`, `uv run pytest tests/unit/gigachat/test_client_lifecycle.py -q`, `uv run ruff check src/gigachat/threads.py src/gigachat/resources/threads.py src/gigachat/resources/__init__.py src/gigachat/client.py tests/unit/gigachat/test_client_threads.py tests/unit/gigachat/test_client_lifecycle.py`, `git diff --check`.
   - Commit: `refactor(resources): move threads resource into resources package`.
   - Замечания: public paths `client.threads.*` и `client.a_threads.*` не менялись; assistants и chat не трогались.
+- 2026-04-27: завершён срез 5.
+  - Что сделано: добавлен `models` resource namespace с `list()`/`retrieve()` для sync и async клиентов; root methods `get_models`/`get_model` и `aget_models`/`aget_model` переведены в deprecated shims.
+  - Изменённые файлы: `src/gigachat/resources/models.py`, `src/gigachat/resources/__init__.py`, `src/gigachat/client.py`, `tests/unit/gigachat/test_client_models.py`, `docs/internal/RESOURCE_API_REMAINING_PROGRESS.md`.
+  - Тесты: `uv run pytest tests/unit/gigachat/test_client_models.py -q`, `uv run pytest tests/unit/gigachat/api/test_models.py -q`, `uv run ruff check src/gigachat/resources/models.py src/gigachat/resources/__init__.py src/gigachat/client.py tests/unit/gigachat/test_client_models.py`, `git diff --check`.
+  - Commit: `feat(resources): add models resource`.
+  - Замечания: transport/API layer не менялся; новые resource methods не предупреждают, deprecated shims предупреждают через общий helper.

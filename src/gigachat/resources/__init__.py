@@ -6,6 +6,7 @@ from gigachat.resources.chat import (
     LegacyChatAsyncResource,
     LegacyChatSyncResource,
 )
+from gigachat.resources.models import ModelsAsyncResource, ModelsSyncResource
 from gigachat.resources.threads import ThreadsAsyncClient, ThreadsSyncClient
 
 __all__ = (
@@ -15,6 +16,8 @@ __all__ = (
     "ChatNamespace",
     "LegacyChatAsyncResource",
     "LegacyChatSyncResource",
+    "ModelsAsyncResource",
+    "ModelsSyncResource",
     "ThreadsAsyncClient",
     "ThreadsSyncClient",
     "warn_deprecated_resource_api",
