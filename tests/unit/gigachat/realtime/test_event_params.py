@@ -17,11 +17,13 @@ from gigachat.types.realtime import (
 
 def test_realtime_literal_aliases() -> None:
     assert get_args(RealtimeMode) == (
+        "MODE_UNSPECIFIED",
         "RECOGNIZE_GIGACHAT_SYNTHESIS",
-        "RECOGNIZE_SYNTHESIS",
         "GIGACHAT_SYNTHESIS",
+        "GIGACHAT",
+        "RECOGNIZE_SYNTHESIS",
     )
-    assert get_args(RealtimeAudioEncoding) == ("PCM_S16LE", "OPUS", "PCM_ALAW")
+    assert get_args(RealtimeAudioEncoding) == ("AUDIO_ENCODING_UNSPECIFIED", "PCM_S16LE", "OPUS", "PCM_ALAW")
 
 
 def test_realtime_settings_required_keys() -> None:

@@ -1,19 +1,24 @@
+from datetime import timedelta
 from typing import Any, Dict, List, Union
 
 from typing_extensions import Literal, NotRequired, Required, TypedDict
 
 RealtimeMode = Literal[
+    "MODE_UNSPECIFIED",
     "RECOGNIZE_GIGACHAT_SYNTHESIS",
-    "RECOGNIZE_SYNTHESIS",
     "GIGACHAT_SYNTHESIS",
+    "GIGACHAT",
+    "RECOGNIZE_SYNTHESIS",
 ]
-RealtimeOutputModalities = Literal["AUDIO", "AUDIO_TEXT", "TEXT"]
-RealtimeAudioEncoding = Literal["PCM_S16LE", "OPUS", "PCM_ALAW"]
-RealtimeDurationParam = Union[float, str]
+RealtimeOutputModalities = Literal["MODALITIES_UNSPECIFIED", "AUDIO", "AUDIO_TEXT", "TEXT"]
+RealtimeAudioEncoding = Literal["AUDIO_ENCODING_UNSPECIFIED", "PCM_S16LE", "OPUS", "PCM_ALAW"]
+RealtimeContentForSynthesisType = Literal["TEXT", "SSML", "text", "ssml"]
+RealtimeTriggerFunctionMode = Literal["MODE_UNSPECIFIED", "WHITELIST", "BLACKLIST"]
+RealtimeDurationParam = Union[int, float, timedelta]
 
 
 class RealtimeFirstSpeakerParam(TypedDict, total=False):
-    type: Required[Literal["model", "user"]]
+    type: NotRequired[str]
     lock_first_in: NotRequired[bool]
 
 
@@ -29,6 +34,7 @@ class RealtimeDisableInterruptionParam(TypedDict, total=False):
 
 class RealtimeFunctionRankerParam(TypedDict, total=False):
     enable: NotRequired[bool]
+    enabled: NotRequired[bool]
     top_n: NotRequired[int]
 
 
@@ -41,7 +47,24 @@ class RealtimeFunctionRegistryParam(TypedDict, total=False):
 class RealtimeFunctionParam(TypedDict, total=False):
     name: Required[str]
     description: NotRequired[str]
-    parameters: NotRequired[Dict[str, Any]]
+    parameters: NotRequired[Union[str, Dict[str, Any]]]
+    few_shot_examples: NotRequired[List[Dict[str, Any]]]
+    return_parameters: NotRequired[Union[str, Dict[str, Any]]]
+
+
+class RealtimeRequestContentSettingsParam(TypedDict, total=False):
+    neuro: NotRequired[bool]
+    blacklist: NotRequired[bool]
+    whitelist: NotRequired[bool]
+
+
+class RealtimeResponseContentSettingsParam(TypedDict, total=False):
+    blacklist: NotRequired[bool]
+
+
+class RealtimeFilterSettingsParam(TypedDict, total=False):
+    request_content: NotRequired[RealtimeRequestContentSettingsParam]
+    response_content: NotRequired[RealtimeResponseContentSettingsParam]
 
 
 class RealtimeGigaChatSettingsParam(TypedDict, total=False):
@@ -50,8 +73,9 @@ class RealtimeGigaChatSettingsParam(TypedDict, total=False):
     temperature: NotRequired[float]
     top_p: NotRequired[float]
     repetition_penalty: NotRequired[float]
+    update_interval: NotRequired[float]
     profanity_check: NotRequired[bool]
-    filters_settings: NotRequired[Dict[str, Any]]
+    filters_settings: NotRequired[Dict[str, RealtimeFilterSettingsParam]]
     function_ranker: NotRequired[RealtimeFunctionRankerParam]
     functions: NotRequired[List[RealtimeFunctionParam]]
     current_time: NotRequired[int]
@@ -76,7 +100,7 @@ class RealtimeInputAudioSettingsParam(TypedDict, total=False):
 
 class RealtimeTriggerFunctionParam(TypedDict, total=False):
     enable: Required[bool]
-    mode: NotRequired[Literal["WHITELIST", "BLACKLIST"]]
+    mode: NotRequired[RealtimeTriggerFunctionMode]
     function_names: NotRequired[List[str]]
 
 
@@ -115,7 +139,7 @@ class RealtimeContextMessageParam(TypedDict, total=False):
     function_call: NotRequired[RealtimeContextFunctionCallParam]
     function_name: NotRequired[str]
     functions_state_id: NotRequired[str]
-    functions: NotRequired[List[Dict[str, Any]]]
+    functions: NotRequired[List[RealtimeFunctionParam]]
 
 
 class RealtimeContextParam(TypedDict):
@@ -158,7 +182,7 @@ class RealtimeInputAudioContentEventParam(TypedDict, total=False):
 class RealtimeInputSynthesisContentEventParam(TypedDict, total=False):
     type: Required[Literal["input.synthesis_content"]]
     text: Required[str]
-    content_type: NotRequired[Literal["text", "ssml"]]
+    content_type: NotRequired[RealtimeContentForSynthesisType]
     is_final: NotRequired[bool]
 
 
@@ -180,12 +204,14 @@ __all__ = (
     "RealtimeAudioEncoding",
     "RealtimeAudioSettingsParam",
     "RealtimeClientEventParam",
+    "RealtimeContentForSynthesisType",
     "RealtimeContextFunctionCallParam",
     "RealtimeContextMessageParam",
     "RealtimeContextParam",
     "RealtimeDisableInterruptionFunctionParam",
     "RealtimeDisableInterruptionParam",
     "RealtimeDurationParam",
+    "RealtimeFilterSettingsParam",
     "RealtimeFirstSpeakerParam",
     "RealtimeFunctionParam",
     "RealtimeFunctionRankerParam",
@@ -198,9 +224,12 @@ __all__ = (
     "RealtimeMode",
     "RealtimeOutputAudioSettingsParam",
     "RealtimeOutputModalities",
+    "RealtimeRequestContentSettingsParam",
+    "RealtimeResponseContentSettingsParam",
     "RealtimeSettingsEventParam",
     "RealtimeSettingsParam",
     "RealtimeStubSoundsParam",
     "RealtimeTriggerFunctionParam",
+    "RealtimeTriggerFunctionMode",
     "RealtimeTriggerGenerationParam",
 )

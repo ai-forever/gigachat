@@ -60,7 +60,7 @@ Do not implement gRPC. Do not generate or commit `voice_pb2_grpc.py`.
 | 18-protobuf-runtime-extra | done | this commit | Added `protobuf` to realtime extras; no grpcio. |
 | 19-latest-proto-schema | done | this commit | Added latest `voice.proto` schema and proto package markers; generated bindings are intentionally deferred. |
 | 20-proto-message-bindings | done | this commit | Added generated `voice_pb2.py`; no `voice_pb2_grpc.py`. |
-| 21-protobuf-request-bridge-settings | pending |  | Map settings params to protobuf Settings. |
+| 21-protobuf-request-bridge-settings | done | this commit | Map settings params to protobuf Settings. |
 | 22-protobuf-client-event-serialization | pending |  | Serialize all client events to protobuf bytes. |
 | 23-protobuf-server-event-parsing | pending |  | Parse protobuf responses into Pydantic events. |
 | 24-async-binary-websocket-connection | pending |  | Async WS sends/receives binary protobuf frames. |
@@ -151,3 +151,26 @@ Next:
 
 Risks:
 - The generated descriptor still contains the `GigaVoiceService` service descriptor from `voice.proto`; this is expected for message bindings and must not be confused with a gRPC transport implementation.
+
+### 2026-04-28 — slice 21-protobuf-request-bridge-settings
+
+Done:
+- Added latest proto enum literals and settings TypedDict fields for mode/output/audio/content/stub sounds/function ranker/filter settings/function schemas.
+- Added `src/gigachat/realtime/_protobuf.py` with `settings_to_pb(...)`, duration conversion, enum lookup, compact JSON-string conversion, and nested settings mapping.
+- Mapped `function_ranker.enable` as a compatibility alias for `enabled`, with conflict validation.
+- Added protobuf settings serialization coverage for minimal and full settings, durations, enum errors, JSON-string helpers, and missing `voice_call_id`.
+
+Tests:
+- `uv run pytest tests/unit/gigachat/realtime/test_protobuf_client_serialization.py tests/unit/gigachat/realtime/test_event_params.py`
+- `uv run ruff check src/gigachat/realtime/_protobuf.py src/gigachat/types/realtime.py tests/unit/gigachat/realtime/test_protobuf_client_serialization.py tests/unit/gigachat/realtime/test_event_params.py`
+- `uv run mypy src/gigachat/realtime/_protobuf.py src/gigachat/types/realtime.py tests/unit/gigachat/realtime/test_protobuf_client_serialization.py tests/unit/gigachat/realtime/test_event_params.py`
+- `uv run pytest tests/unit/gigachat/realtime`
+- `uv run ruff check src tests`
+- `uv run mypy src tests`
+- `uv run pytest`
+
+Next:
+- 22-protobuf-client-event-serialization
+
+Risks:
+- WebSocket transport still sends JSON frames until slice 24/25; this slice only builds protobuf `Settings`.
