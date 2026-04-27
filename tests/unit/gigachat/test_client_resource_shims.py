@@ -7,7 +7,9 @@ import pytest
 from gigachat.client import GigaChatAsyncClient, GigaChatSyncClient
 from tests.constants import BASE_URL, FILE
 
-SYNC_RESOURCE_CASES = (
+ResourceCase = Tuple[str, str, str, str, Tuple[Any, ...], Dict[str, Any], str]
+
+SYNC_RESOURCE_CASES: Tuple[ResourceCase, ...] = (
     (
         "get_models",
         "models",
@@ -118,7 +120,7 @@ SYNC_RESOURCE_CASES = (
     ),
 )
 
-ASYNC_RESOURCE_CASES = (
+ASYNC_RESOURCE_CASES: Tuple[ResourceCase, ...] = (
     (
         "aget_models",
         "a_models",

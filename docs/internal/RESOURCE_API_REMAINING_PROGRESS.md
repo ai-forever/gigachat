@@ -24,7 +24,7 @@
 11. [done] Add ai_check resource
 12. [done] Update docs/examples for non-chat resources
 13. [done] Add global resource/shim regression tests
-14. [todo] Final audit and cleanup
+14. [done] Final audit and cleanup
 
 ## Журнал
 
@@ -107,3 +107,9 @@
   - Тесты: `uv run pytest tests/unit/gigachat/test_client_resource_shims.py -q`, `uv run pytest tests/unit/gigachat/test_client_lifecycle.py -q`, `uv run ruff check tests/unit/gigachat/test_client_resource_shims.py tests/unit/gigachat/test_client_lifecycle.py`, `git diff --check`.
   - Commit: `test(resources): cover non-chat resource shims`.
   - Замечания: production-код не менялся; untracked локальные файлы `api.yml`, `request_v2.pdf`, `response_v2.pdf` не трогались.
+- 2026-04-27: завершён срез 14.
+  - Что сделано: проведён финальный аудит deprecated non-chat root paths; integration VCR тесты для models/embeddings/tokens переведены на canonical resource paths; исправлена типизация тестов, чтобы полный `make mypy` проходил.
+  - Изменённые файлы: `tests/integration/test_embeddings_vcr.py`, `tests/integration/test_models_vcr.py`, `tests/integration/test_tokens_vcr.py`, `tests/unit/gigachat/models/test_chat.py`, `tests/unit/gigachat/test_client_chat.py`, `tests/unit/gigachat/test_client_resource_shims.py`, `tests/unit/gigachat/test_exceptions.py`, `docs/internal/RESOURCE_API_REMAINING_PROGRESS.md`.
+  - Тесты: `rg "client\\.get_models|client\\.get_model|client\\.embeddings\\(|client\\.aembeddings\\(|client\\.upload_file|client\\.get_file|client\\.get_files|client\\.delete_file|client\\.get_image|client\\.tokens_count|client\\.get_balance|client\\.openapi_function_convert|client\\.check_ai|client\\.aget_models|client\\.aget_model|client\\.aupload_file|client\\.aget_file|client\\.aget_files|client\\.adelete_file|client\\.aget_image|client\\.atokens_count|client\\.aget_balance|client\\.aopenapi_function_convert|client\\.acheck_ai" .`, `uv run ruff check .`, `uv run pytest`, `make mypy`, `git diff --check`.
+  - Commit: `chore(resources): finish non-chat resource api migration`.
+  - Замечания: `make mypy` потребовал запуск вне sandbox из-за доступа `uv` к `~/.cache/uv`; финальный запуск прошёл. Оставшиеся audit matches находятся в migration/internal docs, warning strings и deprecated shim tests; локальный untracked `api.yml` также содержит старые примеры, но не входит в git changes и не трогался.
