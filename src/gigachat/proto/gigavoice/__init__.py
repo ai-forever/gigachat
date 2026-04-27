@@ -1,0 +1,1 @@
+"""GigaVoice protobuf schema package."""

@@ -58,7 +58,7 @@ Do not implement gRPC. Do not generate or commit `voice_pb2_grpc.py`.
 |---|---|---|---|
 | 17-protobuf-pivot-docs-progress | done | this commit | Pivoted docs/progress from JSON-only to protobuf-over-WebSocket. |
 | 18-protobuf-runtime-extra | done | this commit | Added `protobuf` to realtime extras; no grpcio. |
-| 19-latest-proto-schema | pending |  | Add latest `voice.proto` exactly as provided. |
+| 19-latest-proto-schema | done | this commit | Added latest `voice.proto` schema and proto package markers; generated bindings are intentionally deferred. |
 | 20-proto-message-bindings | pending |  | Add generated `voice_pb2.py`; no `voice_pb2_grpc.py`. |
 | 21-protobuf-request-bridge-settings | pending |  | Map settings params to protobuf Settings. |
 | 22-protobuf-client-event-serialization | pending |  | Serialize all client events to protobuf bytes. |
@@ -110,3 +110,19 @@ Next:
 
 Risks:
 - Next slice must add the exact latest `voice.proto`; this slice only adds the protobuf runtime dependency.
+
+### 2026-04-28 — slice 19-latest-proto-schema
+
+Done:
+- Added the latest `src/gigachat/proto/gigavoice/voice.proto` schema as the source for realtime protobuf messages.
+- Added package marker files for `gigachat.proto` and `gigachat.proto.gigavoice`.
+- Kept this slice schema-only: no generated `voice_pb2.py`, no `voice_pb2_grpc.py`, and no gRPC runtime dependency.
+
+Tests:
+- `uv run python -c "import gigachat"`
+
+Next:
+- 20-proto-message-bindings
+
+Risks:
+- The proto text includes `service GigaVoiceService`; the next slice must generate only Python message bindings and must not commit gRPC stubs.

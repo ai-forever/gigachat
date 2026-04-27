@@ -1,0 +1,358 @@
+syntax = "proto3";
+
+package GigaVoiceProtocol;
+
+import "google/protobuf/duration.proto";
+
+option go_package = "./;protocol";
+
+service GigaVoiceService {
+  rpc GigaVoice (stream GigaVoiceRequest) returns (stream GigaVoiceResponse);
+}
+
+message GigaVoiceRequest {
+  oneof request {
+    Settings settings = 1; //всегда первое
+    ContentFromClient input = 2;
+    FunctionResult function_result = 3;
+  }
+}
+
+message GigaVoiceResponse {
+  oneof response {
+    ContentFromModel output = 1;
+    FunctionCalling function_call = 2;
+    InputTranscription input_transcription = 3;
+    OutputTranscription output_transcription = 4;
+    Error error = 5;
+    Warning warning = 6;
+    InputFiles input_files = 7;
+    PlatformFunctionProcessing platform_function_processing = 8;
+  }
+}
+
+message Settings {
+  enum Mode {
+    MODE_UNSPECIFIED = 0; //самый новый техстек
+    RECOGNIZE_GIGACHAT_SYNTHESIS = 1; // asr + wmcore + tts
+    GIGACHAT_SYNTHESIS = 2; // wmcore + tts
+    GIGACHAT = 3; // wmcore for future
+    RECOGNIZE_SYNTHESIS = 4; //asr + tts
+  }
+  enum OutputModalities {
+    MODALITIES_UNSPECIFIED = 0; // по умолчанию только AUDIO
+    AUDIO = 1;
+    AUDIO_TEXT = 2;
+    TEXT = 3;
+  }
+  GigaChatSettings gigachat = 1;
+  AudioSettings audio = 2;
+  InitialContext context = 3;
+  optional bool disable_vad = 4;
+  optional bool enable_transcribe_input = 5;
+  repeated string flags = 6; // на всякий случай
+  optional OutputModalities output_modalities = 7;
+  optional Mode mode = 8;
+  string voice_call_id = 9;
+  FirstSpeaker first_speaker = 10;
+  optional bool enable_denoiser = 11; //включение денойзера. по умолчанию false
+  optional bool enable_prefetch = 12;
+  optional bool enable_person_identity = 13;
+  optional bool enable_whisper = 14;
+  optional bool enable_emotion = 15;
+  optional bool enable_transcribe_silence_phrases = 16; //Отсылаем дополнительно транскрипцию для is_silent фраз. По умолчанию false
+  DisableInterruption disable_interruption = 17; //Отключение перебивания глобально или для отдельных функций
+}
+
+message AudioSettings {
+  Input input = 1; //настройки asr например для ivr другая модель
+  Output output = 2;  // настройки tts
+}
+
+message Input {
+  enum AudioEncoding {
+    AUDIO_ENCODING_UNSPECIFIED = 0;
+    PCM_S16LE = 1; // 16-bit signed little-endian (Linear PCM)
+    OPUS = 2; // mime audio/ogg; codecs=opus
+    PCM_ALAW = 3; // audio/alaw logarithmic  encoding to 8 bits per sample
+  }
+  optional string model = 1;
+  AudioEncoding audio_encoding = 2;
+  optional int32 sample_rate = 3;  // For PCM_16LE, ALAW audio encodings
+  repeated string silence_phrases = 4;
+  google.protobuf.Duration silence_phrases_timeout = 5;
+  google.protobuf.Duration silence_timeout = 6;
+  repeated string stop_phrases = 7;
+  repeated string ignore_phrases = 8;
+}
+
+message Output {
+  enum AudioEncoding {
+    AUDIO_ENCODING_UNSPECIFIED = 0;
+    PCM_S16LE = 1; // 16-bit signed little-endian (Linear PCM)
+    OPUS = 2; // mime audio/ogg; codecs=opus
+    PCM_ALAW = 3; // audio/alaw logarithmic  encoding to 8 bits per sample
+  }
+  optional string voice = 1;
+  AudioEncoding audio_encoding = 2;
+  StubSounds stub_sounds = 3;
+}
+
+message GigaChatSettings {
+  optional string model = 1; //алиас гигачата дефолты в конфиге
+  optional float temperature = 2;
+  optional float top_p = 3;
+  optional float repetition_penalty = 4;
+  optional float update_interval = 5;
+  optional bool profanity_check = 6;
+  map<string, FilterSettings> filters_settings = 7;
+  repeated Function functions = 8; //только клиентские
+  FunctionRegistry function_registry = 9;
+  repeated string filter_stub_phrases = 10;
+  optional int32 current_time = 11;
+  FunctionRanker function_ranker = 12;
+  optional string preset = 13;
+}
+
+message FilterSettings{
+  RequestContentSettings request_content = 1;
+  ResponseContentSettings response_content = 2;
+}
+
+message RequestContentSettings{
+  optional bool neuro = 1;
+  optional bool blacklist = 2;
+  optional bool whitelist = 3;
+}
+
+message ResponseContentSettings{
+  optional bool blacklist = 1;
+}
+message Function {
+  string name = 1;
+  optional string description = 2;
+  optional string parameters = 3; //Параметры в виде Json Shema
+  repeated AnyExample few_shot_examples = 4;
+  optional string return_parameters = 5; //Json Schema для возвращаемых функцией параметров
+}
+
+message AnyExample {
+  string request = 1;
+  Params params = 2;
+}
+
+message Params {
+  repeated Pair pairs = 1;
+}
+
+message Pair {
+  string key = 1;
+  string value = 2;
+}
+
+message InitialContext {
+  repeated Message messages = 1;
+}
+
+message Message {
+  string role = 1;
+  string content = 2;
+  FunctionCall function_call = 3;
+  optional string function_name = 4;
+  optional string functions_state_id = 5;
+  repeated string attachments = 6;
+  map <string, string> inline_data = 7; // для функций поиска, в значении будет валидный json
+  repeated Function functions = 8; // Описание для функций которые якобы выполнялись в этом сообщении (не путать с GigaChatSettings.functions)
+}
+
+message FirstSpeaker {
+  optional string type = 1;
+  optional bool lock_first_in = 2;
+}
+
+message DisableInterruption {
+  repeated LockFunctionExecution functions = 1; //Точечные правила для функций
+}
+
+message LockFunctionExecution {
+  string name = 1;
+  bool on_execution = 2; //Нельзя перебивать функцию во время выполнения
+  bool after_result = 3; //Нельзя перебивать, пока озвучивается результат функции
+}
+
+message ContentFromClient {
+  oneof Content {
+    AudioContent audio_content = 1;
+    ContentForSynthesis content_for_synthesis = 2;
+  }
+}
+
+message AudioContent {
+  optional bytes audio_chunk = 1;
+  optional bool speech_start = 2;
+  optional bool speech_end = 3;
+  AudioChunkMeta meta = 10;
+}
+
+message AudioChunkMeta {
+  optional bool force_no_speech = 1; //на стороне колонок не всегда работает aec и поэтому что отправляется часть звука от нас, коллеги хотят прислать флаг, чтобы мы его с гарантией проигнорировали
+};
+
+message ContentForSynthesis {
+  enum ContentType {
+    TEXT = 0;
+    SSML = 1;
+  }
+  string text = 1;
+  ContentType content_type = 2;
+  optional bool is_final = 3;
+}
+
+message FunctionResult {
+  string content = 1;
+  optional string function_name = 2;
+}
+
+message ContentFromModel {
+  oneof response {
+    Audio audio = 1;
+    AdditionalData  additional_data = 2;
+    bool interrupted = 3; //признак что произошло перебивание
+  }
+}
+
+message Audio {
+  bytes audio_chunk = 1;
+  google.protobuf.Duration audio_duration = 2; // time from start of audio so far
+  optional bool is_final = 3; //признак завершения генерации
+}
+
+message AdditionalData {
+  Usage usage = 1;
+  GigaChatModelInfo gigachat_model_info = 2;
+  string finish_reason = 3;
+}
+
+message Usage {
+  int32 prompt_tokens = 1;
+  int32 completion_tokens = 2;
+  int32 total_tokens = 3;
+  int32 precached_prompt_tokens = 4;
+}
+
+message FunctionCalling {
+  FunctionCall function_call = 1;
+  int64 timestamp = 2;
+}
+
+message FunctionCall {
+  string name = 1;
+  string arguments = 2; //Аргументы функции. Содержат в себе описание в JSON формате
+}
+
+
+message OutputTranscription {
+  string text = 1;
+  string functions_state_id = 2;
+  string finish_reason = 3;
+  int64 timestamp = 4;
+  optional string stub_text = 5;
+  map <string, string> inline_data = 6; // для функций поиска, в значении будет валидный json
+  optional bool silence_phrase = 7; // признак транскрипции фразы тишины
+}
+
+message InputTranscription {
+  string text = 1;
+  int64 timestamp = 2; //время завершения распознавания
+  optional string unnormalized_text = 3;
+  optional PersonIdentity person_identity = 4;
+  optional bool prefetch = 5;
+  optional bool whisper = 6;
+  optional Emotion emotion = 7;
+}
+
+message PersonIdentity {
+  AgeType age = 1;                               // age status based on model`s age_threshold
+  GenderType gender = 2;                         // gender status based on model`s gender_threshold
+  float age_score = 3;                           // age score from 0.0 to 1.0
+  float gender_score = 4;                        // gender score from 0.0 to 1.0
+}
+
+enum AgeType {// age type
+  AGE_NONE = 0;                               // age not requested / not possible to determine
+  CHILD = 1;                                  // child
+  ADULT = 2;                                  // adult
+}
+
+enum GenderType {// gender type
+  GENDER_NONE = 0;                            // gender not requested / not possible to determine
+  MALE = 1;                                   // male
+  FEMALE = 2;                                 // female
+}
+
+message Emotion {
+  float positive = 1; // confidence [0.0 - 1.0]
+  float neutral = 2;
+  float negative = 3;
+}
+
+message GigaChatModelInfo {
+  string name = 1;
+  string version = 2;
+}
+
+message Error {
+  int32 status = 1;
+  string message = 2;
+}
+
+message Warning {
+  string message = 1;
+}
+
+message FunctionRegistry {
+  optional string profile = 1;
+  repeated string labels = 2;
+  optional string ab_flags = 3; //валидный json упакованный в строку
+}
+
+message InputFiles {
+  repeated File files = 1;
+}
+
+message File {
+  string id = 1;
+  string type = 2;
+}
+
+message FunctionRanker {
+  optional bool enabled = 1;
+  optional uint32 top_n = 2;
+}
+
+message PlatformFunctionProcessing {
+  string name = 1;
+  int64 timestamp = 2;
+}
+
+message StubSounds {
+  TriggerGeneration trigger_generation = 1;
+  TriggerFunction trigger_function = 2;
+  repeated string sounds = 3;
+}
+
+message TriggerGeneration {
+  google.protobuf.Duration timeout = 1;
+  bool enable = 2;
+}
+
+message TriggerFunction {
+  enum Mode {
+    MODE_UNSPECIFIED = 0;
+    WHITELIST = 1;
+    BLACKLIST = 2;
+  }
+  bool enable = 1;
+  Mode mode = 2;
+  repeated string function_names = 3;
+}
