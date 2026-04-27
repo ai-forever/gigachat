@@ -19,7 +19,7 @@
 6. [done] Add embeddings resource
 7. [done] Add files resource
 8. [done] Add tokens resource
-9. [todo] Add balance resource
+9. [done] Add balance resource
 10. [todo] Add functions resource
 11. [todo] Add ai_check resource
 12. [todo] Update docs/examples for non-chat resources
@@ -77,3 +77,9 @@
   - Тесты: `uv run pytest tests/unit/gigachat/test_client_tokens.py -q`, `uv run pytest tests/unit/gigachat/api/test_tools.py -q`, `uv run ruff check src/gigachat/resources/tokens.py src/gigachat/resources/__init__.py src/gigachat/client.py tests/unit/gigachat/test_client_tokens.py`, `git diff --check`.
   - Commit: `feat(resources): add tokens resource`.
   - Замечания: fallback модели сохранён как `self._settings.model or GIGACHAT_MODEL`; balance/functions/ai_check не трогались.
+- 2026-04-27: завершён срез 9.
+  - Что сделано: добавлен `balance` resource namespace с `get()` для sync и async клиентов; root methods `get_balance`/`aget_balance` переведены в deprecated shims.
+  - Изменённые файлы: `src/gigachat/resources/balance.py`, `src/gigachat/resources/__init__.py`, `src/gigachat/client.py`, `tests/unit/gigachat/test_client_balance.py`, `docs/internal/RESOURCE_API_REMAINING_PROGRESS.md`.
+  - Тесты: `uv run pytest tests/unit/gigachat/test_client_balance.py -q`, `uv run pytest tests/unit/gigachat/api/test_tools.py -q`, `uv run ruff check src/gigachat/resources/balance.py src/gigachat/resources/__init__.py src/gigachat/client.py tests/unit/gigachat/test_client_balance.py`, `git diff --check`.
+  - Commit: `feat(resources): add balance resource`.
+  - Замечания: 403/ошибки остаются на transport/API layer; token counting и function convert не трогались.

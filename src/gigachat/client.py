@@ -57,6 +57,8 @@ from gigachat.resources import (
     AssistantsAsyncClient,
     AssistantsSyncClient,
     AsyncChatNamespace,
+    BalanceAsyncResource,
+    BalanceSyncResource,
     ChatNamespace,
     EmbeddingsAsyncResource,
     EmbeddingsSyncResource,
@@ -456,6 +458,11 @@ class GigaChatSyncClient(_BaseClient):
         return TokensSyncResource(self)
 
     @cached_property
+    def balance(self) -> BalanceSyncResource:
+        """Return the balance resource."""
+        return BalanceSyncResource(self)
+
+    @cached_property
     def threads(self) -> ThreadsSyncClient:
         """Return the threads resource."""
         return ThreadsSyncClient(self)
@@ -656,15 +663,10 @@ class GigaChatSyncClient(_BaseClient):
         )
         return self._legacy_chat_parse(payload, response_format=response_format, strict=strict)
 
-    @_with_retry
-    @_with_auth
     def get_balance(self) -> Balance:
-        """
-        Return the balance of available tokens.
-
-        Only for prepaid clients, otherwise HTTP 403.
-        """
-        return tools.get_balance_sync(self._client, access_token=self.token)
+        """Return balance via deprecated root shim."""
+        warn_deprecated_resource_api("client.get_balance()", "client.balance.get()")
+        return self.balance.get()
 
     @_with_retry
     @_with_auth
@@ -799,6 +801,11 @@ class GigaChatAsyncClient(_BaseClient):
     def a_tokens(self) -> TokensAsyncResource:
         """Return the async tokens resource."""
         return TokensAsyncResource(self)
+
+    @cached_property
+    def a_balance(self) -> BalanceAsyncResource:
+        """Return the async balance resource."""
+        return BalanceAsyncResource(self)
 
     @cached_property
     def a_threads(self) -> ThreadsAsyncClient:
@@ -998,16 +1005,10 @@ class GigaChatAsyncClient(_BaseClient):
         warn_deprecated_resource_api("client.adelete_file(...)", "client.a_files.delete(...)")
         return await self.a_files.delete(file)
 
-    @_awith_retry
-    @_awith_auth
     async def aget_balance(self) -> Balance:
-        """
-        Return the balance of available tokens.
-
-        Only for prepaid clients, otherwise HTTP 403.
-        """
-
-        return await tools.get_balance_async(self._aclient, access_token=self.token)
+        """Return balance via deprecated root shim."""
+        warn_deprecated_resource_api("client.aget_balance()", "client.a_balance.get()")
+        return await self.a_balance.get()
 
     @_awith_retry
     @_awith_auth

@@ -1,5 +1,6 @@
 from gigachat.resources._utils import warn_deprecated_resource_api
 from gigachat.resources.assistants import AssistantsAsyncClient, AssistantsSyncClient
+from gigachat.resources.balance import BalanceAsyncResource, BalanceSyncResource
 from gigachat.resources.chat import (
     AsyncChatNamespace,
     ChatNamespace,
@@ -16,6 +17,8 @@ __all__ = (
     "AsyncChatNamespace",
     "AssistantsAsyncClient",
     "AssistantsSyncClient",
+    "BalanceAsyncResource",
+    "BalanceSyncResource",
     "ChatNamespace",
     "EmbeddingsAsyncResource",
     "EmbeddingsSyncResource",
