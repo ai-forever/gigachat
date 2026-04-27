@@ -17,7 +17,7 @@
 4. [done] Normalize threads resource module
 5. [done] Add models resource
 6. [done] Add embeddings resource
-7. [todo] Add files resource
+7. [done] Add files resource
 8. [todo] Add tokens resource
 9. [todo] Add balance resource
 10. [todo] Add functions resource
@@ -65,3 +65,9 @@
   - Тесты: `uv run pytest tests/unit/gigachat/test_client_embeddings.py -q`, `uv run pytest tests/unit/gigachat/api/test_embeddings.py -q`, `uv run ruff check src/gigachat/resources/embeddings.py src/gigachat/resources/__init__.py src/gigachat/client.py tests/unit/gigachat/test_client_embeddings.py`, `git diff --check`.
   - Commit: `feat(resources): add embeddings resource`.
   - Замечания: default model сохранён как `"Embeddings"`; transport/API layer не менялся.
+- 2026-04-27: завершён срез 7.
+  - Что сделано: добавлен `files` resource namespace с upload/retrieve/list/delete/retrieve_image для sync и async клиентов; root methods переведены в deprecated shims.
+  - Изменённые файлы: `src/gigachat/resources/files.py`, `src/gigachat/resources/__init__.py`, `src/gigachat/client.py`, `tests/unit/gigachat/test_client_files.py`, `docs/internal/RESOURCE_API_REMAINING_PROGRESS.md`.
+  - Тесты: `uv run pytest tests/unit/gigachat/test_client_files.py -q`, `uv run pytest tests/unit/gigachat/api/test_files.py -q`, `uv run ruff check src/gigachat/resources/files.py src/gigachat/resources/__init__.py src/gigachat/client.py tests/unit/gigachat/test_client_files.py`, `git diff --check`.
+  - Commit: `feat(resources): add files resource`.
+  - Замечания: `purpose: Literal["general", "assistant"] = "general"` сохранён; assistants file APIs и upload transport не менялись.

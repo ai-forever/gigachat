@@ -26,7 +26,7 @@ import pydantic
 from typing_extensions import Self
 
 from gigachat._types import FileTypes
-from gigachat.api import auth, chat_completions, files, legacy_chat, tools
+from gigachat.api import auth, chat_completions, legacy_chat, tools
 from gigachat.authentication import _awith_auth, _awith_auth_stream, _with_auth, _with_auth_stream
 from gigachat.context import authorization_cvar
 from gigachat.exceptions import LengthFinishReasonError
@@ -60,6 +60,8 @@ from gigachat.resources import (
     ChatNamespace,
     EmbeddingsAsyncResource,
     EmbeddingsSyncResource,
+    FilesAsyncResource,
+    FilesSyncResource,
     ModelsAsyncResource,
     ModelsSyncResource,
     ThreadsAsyncClient,
@@ -442,6 +444,11 @@ class GigaChatSyncClient(_BaseClient):
         return EmbeddingsSyncResource(self)
 
     @cached_property
+    def files(self) -> FilesSyncResource:
+        """Return the files resource."""
+        return FilesSyncResource(self)
+
+    @cached_property
     def threads(self) -> ThreadsSyncClient:
         """Return the threads resource."""
         return ThreadsSyncClient(self)
@@ -531,42 +538,37 @@ class GigaChatSyncClient(_BaseClient):
         warn_deprecated_resource_api("client.get_model(...)", "client.models.retrieve(...)")
         return self.models.retrieve(model)
 
-    @_with_retry
-    @_with_auth
     def get_image(self, file_id: str) -> Image:
-        """Return an image in base64 encoding."""
-        return files.get_image_sync(self._client, file_id=file_id, access_token=self.token)
+        """Return an image via deprecated root shim."""
+        warn_deprecated_resource_api("client.get_image(...)", "client.files.retrieve_image(...)")
+        return self.files.retrieve_image(file_id)
 
-    @_with_retry
-    @_with_auth
     def upload_file(
         self,
         file: FileTypes,
         purpose: Literal["general", "assistant"] = "general",
     ) -> UploadedFile:
-        """Upload a file."""
-        return files.upload_file_sync(self._client, file=file, purpose=purpose, access_token=self.token)
+        """Upload a file via deprecated root shim."""
+        warn_deprecated_resource_api("client.upload_file(...)", "client.files.upload(...)")
+        return self.files.upload(file, purpose=purpose)
 
-    @_with_retry
-    @_with_auth
     def get_file(self, file: str) -> UploadedFile:
-        """Return information about a file."""
-        return files.get_file_sync(self._client, file=file, access_token=self.token)
+        """Return information about a file via deprecated root shim."""
+        warn_deprecated_resource_api("client.get_file(...)", "client.files.retrieve(...)")
+        return self.files.retrieve(file)
 
-    @_with_retry
-    @_with_auth
     def get_files(self) -> UploadedFiles:
-        """Return a list of uploaded files."""
-        return files.get_files_sync(self._client, access_token=self.token)
+        """Return a list of uploaded files via deprecated root shim."""
+        warn_deprecated_resource_api("client.get_files()", "client.files.list()")
+        return self.files.list()
 
-    @_with_retry
-    @_with_auth
     def delete_file(
         self,
         file: str,
     ) -> DeletedFile:
-        """Delete a file."""
-        return files.delete_file_sync(self._client, file=file, access_token=self.token)
+        """Delete a file via deprecated root shim."""
+        warn_deprecated_resource_api("client.delete_file(...)", "client.files.delete(...)")
+        return self.files.delete(file)
 
     @_with_retry
     @_with_auth
@@ -785,6 +787,11 @@ class GigaChatAsyncClient(_BaseClient):
         return EmbeddingsAsyncResource(self)
 
     @cached_property
+    def a_files(self) -> FilesAsyncResource:
+        """Return the async files resource."""
+        return FilesAsyncResource(self)
+
+    @cached_property
     def a_threads(self) -> ThreadsAsyncClient:
         """Return the async threads resource."""
         return ThreadsAsyncClient(self)
@@ -869,12 +876,10 @@ class GigaChatAsyncClient(_BaseClient):
         warn_deprecated_resource_api("client.aget_models()", "client.a_models.list()")
         return await self.a_models.list()
 
-    @_awith_retry
-    @_awith_auth
     async def aget_image(self, file_id: str) -> Image:
-        """Return an image in base64 encoding."""
-
-        return await files.get_image_async(self._aclient, file_id=file_id, access_token=self.token)
+        """Return an image via deprecated root shim."""
+        warn_deprecated_resource_api("client.aget_image(...)", "client.a_files.retrieve_image(...)")
+        return await self.a_files.retrieve_image(file_id)
 
     async def aget_model(self, model: str) -> Model:
         """Return a model description via deprecated root shim."""
@@ -961,40 +966,32 @@ class GigaChatAsyncClient(_BaseClient):
         )
         return await self._legacy_achat_parse(payload, response_format=response_format, strict=strict)
 
-    @_awith_retry
-    @_awith_auth
     async def aupload_file(
         self,
         file: FileTypes,
         purpose: Literal["general", "assistant"] = "general",
     ) -> UploadedFile:
-        """Upload a file."""
+        """Upload a file via deprecated root shim."""
+        warn_deprecated_resource_api("client.aupload_file(...)", "client.a_files.upload(...)")
+        return await self.a_files.upload(file, purpose=purpose)
 
-        return await files.upload_file_async(self._aclient, file=file, purpose=purpose, access_token=self.token)
-
-    @_awith_retry
-    @_awith_auth
     async def aget_file(self, file: str) -> UploadedFile:
-        """Return information about a file."""
+        """Return information about a file via deprecated root shim."""
+        warn_deprecated_resource_api("client.aget_file(...)", "client.a_files.retrieve(...)")
+        return await self.a_files.retrieve(file)
 
-        return await files.get_file_async(self._aclient, file=file, access_token=self.token)
-
-    @_awith_retry
-    @_awith_auth
     async def aget_files(self) -> UploadedFiles:
-        """Return a list of uploaded files."""
+        """Return a list of uploaded files via deprecated root shim."""
+        warn_deprecated_resource_api("client.aget_files()", "client.a_files.list()")
+        return await self.a_files.list()
 
-        return await files.get_files_async(self._aclient, access_token=self.token)
-
-    @_awith_retry
-    @_awith_auth
     async def adelete_file(
         self,
         file: str,
     ) -> DeletedFile:
-        """Delete a file."""
-
-        return await files.delete_file_async(self._aclient, file=file, access_token=self.token)
+        """Delete a file via deprecated root shim."""
+        warn_deprecated_resource_api("client.adelete_file(...)", "client.a_files.delete(...)")
+        return await self.a_files.delete(file)
 
     @_awith_retry
     @_awith_auth
