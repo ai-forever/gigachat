@@ -25,17 +25,18 @@ import httpx
 import pydantic
 from typing_extensions import Self
 
-from gigachat._types import FileTypes
-from gigachat.api import auth, chat_completions, embeddings, files, legacy_chat, models, tools
-from gigachat.assistants import AssistantsAsyncClient, AssistantsSyncClient
+from gigachat._types import FileContent, FileTypes
+from gigachat.api import auth, chat_completions, legacy_chat
 from gigachat.authentication import _awith_auth, _awith_auth_stream, _with_auth, _with_auth_stream
 from gigachat.context import authorization_cvar
 from gigachat.exceptions import LengthFinishReasonError
 from gigachat.models.auth import AccessToken, Token
+from gigachat.models.batches import Batch, Batches
 from gigachat.models.chat import (
     Chat,
     ChatCompletion,
     ChatCompletionChunk,
+    Function,
     Messages,
     MessagesRole,
 )
@@ -50,14 +51,37 @@ from gigachat.models.chat_completions import (
     ChatStorage,
 )
 from gigachat.models.embeddings import Embeddings
-from gigachat.models.files import DeletedFile, Image, UploadedFile, UploadedFiles
+from gigachat.models.files import DeletedFile, File, UploadedFile, UploadedFiles
 from gigachat.models.models import Model, Models
 from gigachat.models.response_format import JsonSchemaResponseFormat
-from gigachat.models.tools import AICheckResult, Balance, OpenApiFunctions, TokensCount
-from gigachat.resources import AsyncChatNamespace, ChatNamespace
+from gigachat.models.tools import AICheckResult, Balance, FunctionValidationResult, OpenApiFunctions, TokensCount
+from gigachat.resources import (
+    AICheckAsyncResource,
+    AICheckSyncResource,
+    AssistantsAsyncClient,
+    AssistantsSyncClient,
+    AsyncChatNamespace,
+    BalanceAsyncResource,
+    BalanceSyncResource,
+    BatchesAsyncResource,
+    BatchesSyncResource,
+    ChatNamespace,
+    EmbeddingsAsyncResource,
+    EmbeddingsSyncResource,
+    FilesAsyncResource,
+    FilesSyncResource,
+    FunctionsAsyncResource,
+    FunctionsSyncResource,
+    ModelsAsyncResource,
+    ModelsSyncResource,
+    ThreadsAsyncClient,
+    ThreadsSyncClient,
+    TokensAsyncResource,
+    TokensSyncResource,
+    warn_deprecated_resource_api,
+)
 from gigachat.retry import _awith_retry, _awith_retry_stream, _with_retry, _with_retry_stream
 from gigachat.settings import Settings
-from gigachat.threads import ThreadsAsyncClient, ThreadsSyncClient
 
 ModelT = TypeVar("ModelT", bound=pydantic.BaseModel)
 
@@ -422,6 +446,46 @@ class GigaChatSyncClient(_BaseClient):
         return AssistantsSyncClient(self)
 
     @cached_property
+    def models(self) -> ModelsSyncResource:
+        """Return the models resource."""
+        return ModelsSyncResource(self)
+
+    @cached_property
+    def embeddings(self) -> EmbeddingsSyncResource:
+        """Return the embeddings resource."""
+        return EmbeddingsSyncResource(self)
+
+    @cached_property
+    def batches(self) -> BatchesSyncResource:
+        """Return the batches resource."""
+        return BatchesSyncResource(self)
+
+    @cached_property
+    def files(self) -> FilesSyncResource:
+        """Return the files resource."""
+        return FilesSyncResource(self)
+
+    @cached_property
+    def tokens(self) -> TokensSyncResource:
+        """Return the tokens resource."""
+        return TokensSyncResource(self)
+
+    @cached_property
+    def balance(self) -> BalanceSyncResource:
+        """Return the balance resource."""
+        return BalanceSyncResource(self)
+
+    @cached_property
+    def functions(self) -> FunctionsSyncResource:
+        """Return the functions resource."""
+        return FunctionsSyncResource(self)
+
+    @cached_property
+    def ai_check(self) -> AICheckSyncResource:
+        """Return the AI check resource."""
+        return AICheckSyncResource(self)
+
+    @cached_property
     def threads(self) -> ThreadsSyncClient:
         """Return the threads resource."""
         return ThreadsSyncClient(self)
@@ -493,68 +557,71 @@ class GigaChatSyncClient(_BaseClient):
         self._update_token()
         return self._access_token
 
-    @_with_retry
-    @_with_auth
     def tokens_count(self, input_: List[str], model: Optional[str] = None) -> List[TokensCount]:
-        """Return the number of tokens in a string."""
-        if not model:
-            model = self._settings.model or GIGACHAT_MODEL
-        return tools.tokens_count_sync(self._client, input_=input_, model=model, access_token=self.token)
+        """Return token counts via deprecated root shim."""
+        warn_deprecated_resource_api("client.tokens_count(...)", "client.tokens.count(...)")
+        return self.tokens.count(input_, model=model)
 
-    @_with_retry
-    @_with_auth
-    def embeddings(self, texts: List[str], model: str = "Embeddings") -> Embeddings:
-        """Return embeddings."""
-        return embeddings.embeddings_sync(self._client, access_token=self.token, input_=texts, model=model)
-
-    @_with_retry
-    @_with_auth
     def get_models(self) -> Models:
-        """Return a list of available models."""
-        return models.get_models_sync(self._client, access_token=self.token)
+        """Return a list of available models via deprecated root shim."""
+        warn_deprecated_resource_api("client.get_models()", "client.models.list()")
+        return self.models.list()
 
-    @_with_retry
-    @_with_auth
     def get_model(self, model: str) -> Model:
-        """Return a description of a specific model."""
-        return models.get_model_sync(self._client, model=model, access_token=self.token)
+        """Return a model description via deprecated root shim."""
+        warn_deprecated_resource_api("client.get_model(...)", "client.models.retrieve(...)")
+        return self.models.retrieve(model)
 
-    @_with_retry
-    @_with_auth
-    def get_image(self, file_id: str) -> Image:
-        """Return an image in base64 encoding."""
-        return files.get_image_sync(self._client, file_id=file_id, access_token=self.token)
+    def get_file_content(self, file_id: str) -> File:
+        """Return file content via deprecated root shim."""
+        warn_deprecated_resource_api("client.get_file_content(...)", "client.files.retrieve_content(...)")
+        return self.files.retrieve_content(file_id)
 
-    @_with_retry
-    @_with_auth
+    def get_image(self, file_id: str) -> File:
+        """Return file content via deprecated root shim."""
+        warn_deprecated_resource_api("client.get_image(...)", "client.files.retrieve_content(...)")
+        return self.files.retrieve_content(file_id)
+
     def upload_file(
         self,
         file: FileTypes,
         purpose: Literal["general", "assistant"] = "general",
     ) -> UploadedFile:
-        """Upload a file."""
-        return files.upload_file_sync(self._client, file=file, purpose=purpose, access_token=self.token)
+        """Upload a file via deprecated root shim."""
+        warn_deprecated_resource_api("client.upload_file(...)", "client.files.upload(...)")
+        return self.files.upload(file, purpose=purpose)
 
-    @_with_retry
-    @_with_auth
     def get_file(self, file: str) -> UploadedFile:
-        """Return information about a file."""
-        return files.get_file_sync(self._client, file=file, access_token=self.token)
+        """Return information about a file via deprecated root shim."""
+        warn_deprecated_resource_api("client.get_file(...)", "client.files.retrieve(...)")
+        return self.files.retrieve(file)
 
-    @_with_retry
-    @_with_auth
     def get_files(self) -> UploadedFiles:
-        """Return a list of uploaded files."""
-        return files.get_files_sync(self._client, access_token=self.token)
+        """Return a list of uploaded files via deprecated root shim."""
+        warn_deprecated_resource_api("client.get_files()", "client.files.list()")
+        return self.files.list()
 
-    @_with_retry
-    @_with_auth
     def delete_file(
         self,
         file: str,
     ) -> DeletedFile:
-        """Delete a file."""
-        return files.delete_file_sync(self._client, file=file, access_token=self.token)
+        """Delete a file via deprecated root shim."""
+        warn_deprecated_resource_api("client.delete_file(...)", "client.files.delete(...)")
+        return self.files.delete(file)
+
+    def create_batch(self, file: FileContent, method: Literal["chat_completions", "embedder"]) -> Batch:
+        """Create a batch task via deprecated root shim."""
+        warn_deprecated_resource_api("client.create_batch(...)", "client.batches.create(...)")
+        return self.batches.create(file, method)
+
+    def get_batches(self, batch_id: Optional[str] = None) -> Batches:
+        """Return batch tasks via deprecated root shim."""
+        if batch_id is None:
+            warn_deprecated_resource_api("client.get_batches()", "client.batches.list()")
+            return self.batches.list()
+
+        warn_deprecated_resource_api("client.get_batches(...)", "client.batches.retrieve(...)")
+        return self.batches.retrieve(batch_id)
 
     @_with_retry
     @_with_auth
@@ -638,27 +705,25 @@ class GigaChatSyncClient(_BaseClient):
         )
         return self._legacy_chat_parse(payload, response_format=response_format, strict=strict)
 
-    @_with_retry
-    @_with_auth
     def get_balance(self) -> Balance:
-        """
-        Return the balance of available tokens.
+        """Return balance via deprecated root shim."""
+        warn_deprecated_resource_api("client.get_balance()", "client.balance.get()")
+        return self.balance.get()
 
-        Only for prepaid clients, otherwise HTTP 403.
-        """
-        return tools.get_balance_sync(self._client, access_token=self.token)
-
-    @_with_retry
-    @_with_auth
     def openapi_function_convert(self, openapi_function: str) -> OpenApiFunctions:
-        """Convert an OpenAPI function description to a GigaChat function."""
-        return tools.functions_convert_sync(self._client, openapi_function=openapi_function, access_token=self.token)
+        """Convert an OpenAPI function description via deprecated root shim."""
+        warn_deprecated_resource_api("client.openapi_function_convert(...)", "client.functions.convert_openapi(...)")
+        return self.functions.convert_openapi(openapi_function)
 
-    @_with_retry
-    @_with_auth
+    def validate_function(self, function: Union[Function, Dict[str, Any]]) -> FunctionValidationResult:
+        """Validate a function definition via deprecated root shim."""
+        warn_deprecated_resource_api("client.validate_function(...)", "client.functions.validate(...)")
+        return self.functions.validate(function)
+
     def check_ai(self, text: str, model: str) -> AICheckResult:
-        """Check the provided text for content generated by AI models."""
-        return tools.ai_check_sync(self._client, input_=text, model=model, access_token=self.token)
+        """Check text via deprecated root shim."""
+        warn_deprecated_resource_api("client.check_ai(...)", "client.ai_check.check(...)")
+        return self.ai_check.check(text, model)
 
     def stream(self, payload: Union[Chat, Dict[str, Any], str]) -> Iterator[ChatCompletionChunk]:
         """Stream via deprecated ``client.chat.legacy.stream(...)`` shim."""
@@ -763,6 +828,46 @@ class GigaChatAsyncClient(_BaseClient):
         return AssistantsAsyncClient(self)
 
     @cached_property
+    def a_models(self) -> ModelsAsyncResource:
+        """Return the async models resource."""
+        return ModelsAsyncResource(self)
+
+    @cached_property
+    def a_embeddings(self) -> EmbeddingsAsyncResource:
+        """Return the async embeddings resource."""
+        return EmbeddingsAsyncResource(self)
+
+    @cached_property
+    def a_batches(self) -> BatchesAsyncResource:
+        """Return the async batches resource."""
+        return BatchesAsyncResource(self)
+
+    @cached_property
+    def a_files(self) -> FilesAsyncResource:
+        """Return the async files resource."""
+        return FilesAsyncResource(self)
+
+    @cached_property
+    def a_tokens(self) -> TokensAsyncResource:
+        """Return the async tokens resource."""
+        return TokensAsyncResource(self)
+
+    @cached_property
+    def a_balance(self) -> BalanceAsyncResource:
+        """Return the async balance resource."""
+        return BalanceAsyncResource(self)
+
+    @cached_property
+    def a_functions(self) -> FunctionsAsyncResource:
+        """Return the async functions resource."""
+        return FunctionsAsyncResource(self)
+
+    @cached_property
+    def a_ai_check(self) -> AICheckAsyncResource:
+        """Return the async AI check resource."""
+        return AICheckAsyncResource(self)
+
+    @cached_property
     def a_threads(self) -> ThreadsAsyncClient:
         """Return the async threads resource."""
         return ThreadsAsyncClient(self)
@@ -828,42 +933,35 @@ class GigaChatAsyncClient(_BaseClient):
         await self._aupdate_token()
         return self._access_token
 
-    @_awith_retry
-    @_awith_auth
     async def atokens_count(self, input_: List[str], model: Optional[str] = None) -> List[TokensCount]:
-        """Return the number of tokens in a string."""
-        if not model:
-            model = self._settings.model or GIGACHAT_MODEL
+        """Return token counts via deprecated root shim."""
+        warn_deprecated_resource_api("client.atokens_count(...)", "client.a_tokens.count(...)")
+        return await self.a_tokens.count(input_, model=model)
 
-        return await tools.tokens_count_async(self._aclient, input_=input_, model=model, access_token=self.token)
-
-    @_awith_retry
-    @_awith_auth
     async def aembeddings(self, texts: List[str], model: str = "Embeddings") -> Embeddings:
-        """Return embeddings."""
+        """Return embeddings via deprecated root shim."""
+        warn_deprecated_resource_api("client.aembeddings(...)", "client.a_embeddings.create(...)")
+        return await self.a_embeddings.create(texts, model=model)
 
-        return await embeddings.embeddings_async(self._aclient, access_token=self.token, input_=texts, model=model)
-
-    @_awith_retry
-    @_awith_auth
     async def aget_models(self) -> Models:
-        """Return a list of available models."""
+        """Return a list of available models via deprecated root shim."""
+        warn_deprecated_resource_api("client.aget_models()", "client.a_models.list()")
+        return await self.a_models.list()
 
-        return await models.get_models_async(self._aclient, access_token=self.token)
+    async def aget_file_content(self, file_id: str) -> File:
+        """Return file content via deprecated root shim."""
+        warn_deprecated_resource_api("client.aget_file_content(...)", "client.a_files.retrieve_content(...)")
+        return await self.a_files.retrieve_content(file_id)
 
-    @_awith_retry
-    @_awith_auth
-    async def aget_image(self, file_id: str) -> Image:
-        """Return an image in base64 encoding."""
+    async def aget_image(self, file_id: str) -> File:
+        """Return file content via deprecated root shim."""
+        warn_deprecated_resource_api("client.aget_image(...)", "client.a_files.retrieve_content(...)")
+        return await self.a_files.retrieve_content(file_id)
 
-        return await files.get_image_async(self._aclient, file_id=file_id, access_token=self.token)
-
-    @_awith_retry
-    @_awith_auth
     async def aget_model(self, model: str) -> Model:
-        """Return a description of a specific model."""
-
-        return await models.get_model_async(self._aclient, model=model, access_token=self.token)
+        """Return a model description via deprecated root shim."""
+        warn_deprecated_resource_api("client.aget_model(...)", "client.a_models.retrieve(...)")
+        return await self.a_models.retrieve(model)
 
     @_awith_retry
     @_awith_auth
@@ -945,67 +1043,66 @@ class GigaChatAsyncClient(_BaseClient):
         )
         return await self._legacy_achat_parse(payload, response_format=response_format, strict=strict)
 
-    @_awith_retry
-    @_awith_auth
     async def aupload_file(
         self,
         file: FileTypes,
         purpose: Literal["general", "assistant"] = "general",
     ) -> UploadedFile:
-        """Upload a file."""
+        """Upload a file via deprecated root shim."""
+        warn_deprecated_resource_api("client.aupload_file(...)", "client.a_files.upload(...)")
+        return await self.a_files.upload(file, purpose=purpose)
 
-        return await files.upload_file_async(self._aclient, file=file, purpose=purpose, access_token=self.token)
-
-    @_awith_retry
-    @_awith_auth
     async def aget_file(self, file: str) -> UploadedFile:
-        """Return information about a file."""
+        """Return information about a file via deprecated root shim."""
+        warn_deprecated_resource_api("client.aget_file(...)", "client.a_files.retrieve(...)")
+        return await self.a_files.retrieve(file)
 
-        return await files.get_file_async(self._aclient, file=file, access_token=self.token)
-
-    @_awith_retry
-    @_awith_auth
     async def aget_files(self) -> UploadedFiles:
-        """Return a list of uploaded files."""
+        """Return a list of uploaded files via deprecated root shim."""
+        warn_deprecated_resource_api("client.aget_files()", "client.a_files.list()")
+        return await self.a_files.list()
 
-        return await files.get_files_async(self._aclient, access_token=self.token)
-
-    @_awith_retry
-    @_awith_auth
     async def adelete_file(
         self,
         file: str,
     ) -> DeletedFile:
-        """Delete a file."""
+        """Delete a file via deprecated root shim."""
+        warn_deprecated_resource_api("client.adelete_file(...)", "client.a_files.delete(...)")
+        return await self.a_files.delete(file)
 
-        return await files.delete_file_async(self._aclient, file=file, access_token=self.token)
+    async def acreate_batch(self, file: FileContent, method: Literal["chat_completions", "embedder"]) -> Batch:
+        """Create a batch task via deprecated root shim."""
+        warn_deprecated_resource_api("client.acreate_batch(...)", "client.a_batches.create(...)")
+        return await self.a_batches.create(file, method)
 
-    @_awith_retry
-    @_awith_auth
+    async def aget_batches(self, batch_id: Optional[str] = None) -> Batches:
+        """Return batch tasks via deprecated root shim."""
+        if batch_id is None:
+            warn_deprecated_resource_api("client.aget_batches()", "client.a_batches.list()")
+            return await self.a_batches.list()
+
+        warn_deprecated_resource_api("client.aget_batches(...)", "client.a_batches.retrieve(...)")
+        return await self.a_batches.retrieve(batch_id)
+
     async def aget_balance(self) -> Balance:
-        """
-        Return the balance of available tokens.
+        """Return balance via deprecated root shim."""
+        warn_deprecated_resource_api("client.aget_balance()", "client.a_balance.get()")
+        return await self.a_balance.get()
 
-        Only for prepaid clients, otherwise HTTP 403.
-        """
-
-        return await tools.get_balance_async(self._aclient, access_token=self.token)
-
-    @_awith_retry
-    @_awith_auth
     async def aopenapi_function_convert(self, openapi_function: str) -> OpenApiFunctions:
-        """Convert an OpenAPI function description to a GigaChat function."""
+        """Convert an OpenAPI function description via deprecated root shim."""
+        warn_deprecated_resource_api("client.aopenapi_function_convert(...)", "client.a_functions.convert_openapi(...)")
+        return await self.a_functions.convert_openapi(openapi_function)
 
-        return await tools.functions_convert_async(
-            self._aclient, openapi_function=openapi_function, access_token=self.token
-        )
+    async def avalidate_function(self, function: Union[Function, Dict[str, Any]]) -> FunctionValidationResult:
+        """Validate a function definition via deprecated root shim."""
+        warn_deprecated_resource_api("client.avalidate_function(...)", "client.a_functions.validate(...)")
+        return await self.a_functions.validate(function)
 
-    @_awith_retry
-    @_awith_auth
     async def acheck_ai(self, text: str, model: str) -> AICheckResult:
-        """Check the provided text for content generated by AI models."""
-
-        return await tools.ai_check_async(self._aclient, input_=text, model=model, access_token=self.token)
+        """Check text via deprecated root shim."""
+        warn_deprecated_resource_api("client.acheck_ai(...)", "client.a_ai_check.check(...)")
+        return await self.a_ai_check.check(text, model)
 
     def astream(self, payload: Union[Chat, Dict[str, Any], str]) -> AsyncIterator[ChatCompletionChunk]:
         """Stream via deprecated ``client.achat.legacy.stream(...)`` shim."""

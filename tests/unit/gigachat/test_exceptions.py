@@ -63,7 +63,7 @@ def test_rate_limit_retry_after_none_headers() -> None:
 
 def test_length_finish_reason_error_message() -> None:
     completion = object()
-    exc = LengthFinishReasonError(completion=completion)  # type: ignore[arg-type]
+    exc = LengthFinishReasonError(completion=completion)
     assert exc.completion is completion
     assert str(exc) == "Could not parse response content as the length limit was reached"
 

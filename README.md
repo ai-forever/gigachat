@@ -42,6 +42,7 @@ This library is part of [GigaChain](https://github.com/ai-forever/gigachain) and
 - ✅ **Function calling** — tool use for building agents
 - ✅ **Vision** — image understanding (multimodal)
 - ✅ **File operations** — upload, retrieve, and delete files
+- ✅ **Batch operations** — create and inspect asynchronous batch jobs
 - ✅ **Token counting** — estimate token usage before requests
 - ✅ **Multiple auth methods** — OAuth credentials, password, TLS certificates, access tokens
 - ✅ **Automatic retry** — configurable exponential backoff for transient errors
@@ -158,7 +159,7 @@ Generate vector representations of text:
 from gigachat import GigaChat
 
 with GigaChat() as client:
-    result = client.embeddings(
+    result = client.embeddings.create(
         ["Hello, world!", "Machine learning is fascinating"],
         model="Embeddings",
     )
@@ -167,7 +168,7 @@ with GigaChat() as client:
         print(f"Text {i + 1}: {len(item.embedding)} dimensions")
 ```
 
-> **Note:** The `model` parameter must be passed directly to the `embeddings()` method (default: `"Embeddings"`).
+> **Note:** The `model` parameter must be passed directly to the `embeddings.create()` method (default: `"Embeddings"`).
 > The `model` set in the `GigaChat()` constructor does not affect embeddings.
 
 ### Function Calling
@@ -216,6 +217,31 @@ with GigaChat() as client:
     if message.function_call is not None:
         print(f"Function: {message.function_call.name}")
         print(f"Arguments: {message.function_call.arguments}")
+```
+
+Validate a function schema before using it in chat requests:
+
+```python
+from gigachat import GigaChat
+
+function = {
+    "name": "get_weather",
+    "description": "Get current weather for a location",
+    "parameters": {
+        "type": "object",
+        "properties": {
+            "location": {
+                "type": "string",
+                "description": "City name, e.g., Tokyo",
+            }
+        },
+        "required": ["location"],
+    },
+}
+
+with GigaChat() as client:
+    validation = client.functions.validate(function)
+    print(validation.message)
 ```
 
 ### Structured Output (JSON Schema) — Beta
@@ -604,7 +630,7 @@ Estimate token usage before sending requests:
 from gigachat import GigaChat
 
 with GigaChat() as client:
-    counts = client.tokens_count(["Hello, world!", "How are you today?"])
+    counts = client.tokens.count(["Hello, world!", "How are you today?"])
     for count in counts:
         print(f"Tokens: {count.tokens}, Characters: {count.characters}")
 ```
@@ -617,7 +643,7 @@ List available models and their capabilities:
 from gigachat import GigaChat
 
 with GigaChat() as client:
-    models = client.get_models()
+    models = client.models.list()
     for model in models.data:
         print(f"{model.id_} (owned_by={model.owned_by})")
 ```
@@ -632,16 +658,40 @@ from gigachat import GigaChat
 with GigaChat() as client:
     # Upload a file
     with open("document.pdf", "rb") as f:
-        uploaded = client.upload_file(f, purpose="general")
-    print(f"Uploaded: {uploaded.id}")
+        uploaded = client.files.upload(f, purpose="general")
+    print(f"Uploaded: {uploaded.id_}")
 
     # List files
-    files = client.get_files()
+    files = client.files.list()
     for file in files.data:
-        print(f"{file.id}: {file.filename}")
+        print(f"{file.id_}: {file.filename}")
+
+    # Retrieve file content as base64
+    content = client.files.retrieve_content(uploaded.id_)
+    print(content.content)
 
     # Delete a file
-    client.delete_file(uploaded.id)
+    client.files.delete(uploaded.id_)
+```
+
+### Batch Operations
+
+Create and inspect asynchronous batch jobs:
+
+```python
+from gigachat import GigaChat
+
+with open("batch_file_500.jsonl", "rb") as f:
+    data = f.read()
+
+with GigaChat() as client:
+    batch = client.batches.create(data, method="chat_completions")
+    result = client.batches.retrieve(batch.id_)
+    print(result.batches[0].status)
+
+    if result.batches[0].output_file_id is not None:
+        output = client.files.retrieve_content(result.batches[0].output_file_id)
+        print(output.content)
 ```
 
 
@@ -653,7 +703,7 @@ Check your remaining token balance (prepaid accounts only):
 from gigachat import GigaChat
 
 with GigaChat(scope="GIGACHAT_API_B2B") as client:
-    balance = client.get_balance()
+    balance = client.balance.get()
     for entry in balance.balance:
         print(f"{entry.usage}: {entry.value}")
 ```

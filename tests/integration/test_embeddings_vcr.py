@@ -10,7 +10,7 @@ from gigachat.models import Embedding, Embeddings
 @pytest.mark.vcr
 def test_embeddings_single(gigachat_client: GigaChat) -> None:
     """Test generating embeddings for a single text."""
-    result = gigachat_client.embeddings(texts=["Hello, world!"])
+    result = gigachat_client.embeddings.create(texts=["Hello, world!"])
 
     assert isinstance(result, Embeddings)
     assert result.object_ == "list"
@@ -28,7 +28,7 @@ def test_embeddings_single(gigachat_client: GigaChat) -> None:
 @pytest.mark.vcr
 def test_embeddings_multiple(gigachat_client: GigaChat) -> None:
     """Test generating embeddings for multiple texts."""
-    result = gigachat_client.embeddings(texts=["First text", "Second text"])
+    result = gigachat_client.embeddings.create(texts=["First text", "Second text"])
 
     assert isinstance(result, Embeddings)
     assert result.object_ == "list"
@@ -44,9 +44,9 @@ def test_embeddings_multiple(gigachat_client: GigaChat) -> None:
 
 @pytest.mark.integration
 @pytest.mark.vcr
-async def test_aembeddings_single(gigachat_async_client: GigaChat) -> None:
+async def test_a_embeddings_single(gigachat_async_client: GigaChat) -> None:
     """Test generating embeddings for a single text asynchronously."""
-    result = await gigachat_async_client.aembeddings(texts=["Hello, world!"])
+    result = await gigachat_async_client.a_embeddings.create(texts=["Hello, world!"])
 
     assert isinstance(result, Embeddings)
     assert result.object_ == "list"
@@ -62,9 +62,9 @@ async def test_aembeddings_single(gigachat_async_client: GigaChat) -> None:
 
 @pytest.mark.integration
 @pytest.mark.vcr
-async def test_aembeddings_multiple(gigachat_async_client: GigaChat) -> None:
+async def test_a_embeddings_multiple(gigachat_async_client: GigaChat) -> None:
     """Test generating embeddings for multiple texts asynchronously."""
-    result = await gigachat_async_client.aembeddings(texts=["First text", "Second text"])
+    result = await gigachat_async_client.a_embeddings.create(texts=["First text", "Second text"])
 
     assert isinstance(result, Embeddings)
     assert result.object_ == "list"

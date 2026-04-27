@@ -9,6 +9,7 @@ from gigachat.models.assistants import (
 )
 from gigachat.models.auth import AccessToken, Token
 from gigachat.models.base import APIResponse
+from gigachat.models.batches import Batch, Batches, BatchMethod, BatchRequestCounts, BatchStatus
 from gigachat.models.chat import (
     Chat,
     ChatCompletion,
@@ -72,7 +73,7 @@ from gigachat.models.chat_completions import (
     ChatWebSearchTool,
 )
 from gigachat.models.embeddings import Embedding, Embeddings, EmbeddingsUsage
-from gigachat.models.files import DeletedFile, Image, UploadedFile, UploadedFiles
+from gigachat.models.files import DeletedFile, File, Image, UploadedFile, UploadedFiles
 from gigachat.models.models import Model, Models
 from gigachat.models.response_format import JsonSchemaResponseFormat, ResponseFormat
 from gigachat.models.threads import (
@@ -90,7 +91,14 @@ from gigachat.models.threads import (
     Threads,
     ThreadStatus,
 )
-from gigachat.models.tools import AICheckResult, Balance, OpenApiFunctions, TokensCount
+from gigachat.models.tools import (
+    AICheckResult,
+    Balance,
+    FunctionValidationIssue,
+    FunctionValidationResult,
+    OpenApiFunctions,
+    TokensCount,
+)
 
 __all__ = (
     "AccessToken",
@@ -101,6 +109,11 @@ __all__ = (
     "AssistantFileDelete",
     "Assistants",
     "Balance",
+    "Batch",
+    "BatchMethod",
+    "BatchRequestCounts",
+    "BatchStatus",
+    "Batches",
     "Chat",
     "ChatCompletion",
     "ChatCompletionChunk",
@@ -139,10 +152,13 @@ __all__ = (
     "Embeddings",
     "EmbeddingsUsage",
     "FewShotExample",
+    "File",
     "Function",
     "FunctionCall",
     "FunctionParameters",
     "FunctionParametersProperty",
+    "FunctionValidationIssue",
+    "FunctionValidationResult",
     "Image",
     "JsonSchemaResponseFormat",
     "LegacyChat",

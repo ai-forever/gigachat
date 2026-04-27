@@ -1,7 +1,7 @@
 import copy
 import json
 import warnings
-from typing import Any, List, Optional, cast
+from typing import Any, Dict, List, Optional, cast
 
 import pytest
 from pydantic import BaseModel, ValidationError
@@ -50,7 +50,7 @@ from tests.constants import (
     USER,
 )
 
-PRIMARY_CHAT_COMPLETION = {
+PRIMARY_CHAT_COMPLETION: Dict[str, Any] = {
     "model": "GigaChat-2-Max",
     "created_at": 1760434636,
     "thread_id": "thread-1",

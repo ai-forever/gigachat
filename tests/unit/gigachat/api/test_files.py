@@ -1,10 +1,13 @@
 import httpx
+import pytest
 from pytest_httpx import HTTPXMock
 
 from gigachat.api.files import (
     delete_file_async,
     delete_file_sync,
     get_file_async,
+    get_file_content_async,
+    get_file_content_sync,
     get_file_sync,
     get_files_async,
     get_files_sync,
@@ -13,7 +16,7 @@ from gigachat.api.files import (
     upload_file_async,
     upload_file_sync,
 )
-from gigachat.models.files import DeletedFile, Image, UploadedFile, UploadedFiles
+from gigachat.models.files import DeletedFile, File, Image, UploadedFile, UploadedFiles
 from tests.constants import (
     BASE_URL,
     FILE,
@@ -102,21 +105,43 @@ async def test_delete_file_async(httpx_mock: HTTPXMock) -> None:
     assert isinstance(response, DeletedFile)
 
 
-def test_get_image_sync(httpx_mock: HTTPXMock) -> None:
+def test_get_file_content_sync(httpx_mock: HTTPXMock) -> None:
     httpx_mock.add_response(url=IMAGE_URL, content=IMAGE)
 
     with httpx.Client(base_url=BASE_URL) as client:
-        response = get_image_sync(client, file_id="img_file")
+        response = get_file_content_sync(client, file_id="img_file")
+
+    assert isinstance(response, File)
+    assert response.content
+
+
+async def test_get_file_content_async(httpx_mock: HTTPXMock) -> None:
+    httpx_mock.add_response(url=IMAGE_URL, content=IMAGE)
+
+    async with httpx.AsyncClient(base_url=BASE_URL) as client:
+        response = await get_file_content_async(client, file_id="img_file")
+
+    assert isinstance(response, File)
+    assert response.content
+
+
+def test_get_image_sync_deprecated(httpx_mock: HTTPXMock) -> None:
+    httpx_mock.add_response(url=IMAGE_URL, content=IMAGE)
+
+    with httpx.Client(base_url=BASE_URL) as client:
+        with pytest.warns(DeprecationWarning, match="get_file_content_sync"):
+            response = get_image_sync(client, file_id="img_file")
 
     assert isinstance(response, Image)
     assert response.content
 
 
-async def test_get_image_async(httpx_mock: HTTPXMock) -> None:
+async def test_get_image_async_deprecated(httpx_mock: HTTPXMock) -> None:
     httpx_mock.add_response(url=IMAGE_URL, content=IMAGE)
 
     async with httpx.AsyncClient(base_url=BASE_URL) as client:
-        response = await get_image_async(client, file_id="img_file")
+        with pytest.warns(DeprecationWarning, match="get_file_content_async"):
+            response = await get_image_async(client, file_id="img_file")
 
     assert isinstance(response, Image)
     assert response.content

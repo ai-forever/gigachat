@@ -93,9 +93,9 @@ def test_chat_module_exports_legacy_aliases() -> None:
 
 def test_gigachat_models_exports_keep_legacy_aliases_and_primary_contracts_separate() -> None:
     assert issubclass(CompatChatCompletionChunk, LegacyChatCompletionChunk)
-    assert ChatCompletionRequest is not Chat
-    assert ChatCompletionResponse is not ChatCompletion
-    assert PrimaryChatCompletionChunk is not CompatChatCompletionChunk
+    assert id(ChatCompletionRequest) != id(Chat)
+    assert id(ChatCompletionResponse) != id(ChatCompletion)
+    assert id(PrimaryChatCompletionChunk) != id(CompatChatCompletionChunk)
 
 
 def test_legacy_chat_request_round_trip_unchanged() -> None:

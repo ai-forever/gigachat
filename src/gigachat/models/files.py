@@ -30,7 +30,13 @@ class DeletedFile(APIResponse):
     deleted: bool = Field(description="Deletion status. True if deleted.")
 
 
+class File(APIResponse):
+    """Base64-encoded file content."""
+
+    content: str = Field(description="Base64 encoded file data.")
+
+
 class Image(APIResponse):
-    """Image content."""
+    """Deprecated image content compatibility model."""
 
     content: str = Field(description="Base64 encoded image data.")

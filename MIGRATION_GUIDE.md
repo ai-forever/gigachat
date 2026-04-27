@@ -49,6 +49,49 @@ If your code only sends a string prompt and prints one text response, migration 
 
 `client.chat(...)`, `client.stream(...)`, `client.chat_parse(...)`, `client.achat(...)`, `client.astream(...)`, and `client.achat_parse(...)` still work, but they are deprecated compatibility shims and emit `DeprecationWarning`.
 
+Non-chat endpoints also use explicit resource namespaces. The old root methods still work as deprecated compatibility
+shims and emit `DeprecationWarning`; new code should use the resource paths below.
+
+| Deprecated root call | Resource call |
+| --- | --- |
+| `client.get_models()` | `client.models.list()` |
+| `client.get_model(model)` | `client.models.retrieve(model)` |
+| `await client.aget_models()` | `await client.a_models.list()` |
+| `await client.aget_model(model)` | `await client.a_models.retrieve(model)` |
+| `client.embeddings(texts, model=...)` | `client.embeddings.create(texts, model=...)` |
+| `await client.aembeddings(texts, model=...)` | `await client.a_embeddings.create(texts, model=...)` |
+| `client.upload_file(file, purpose=...)` | `client.files.upload(file, purpose=...)` |
+| `client.get_file(file)` | `client.files.retrieve(file)` |
+| `client.get_files()` | `client.files.list()` |
+| `client.delete_file(file)` | `client.files.delete(file)` |
+| `client.get_file_content(file_id)` | `client.files.retrieve_content(file_id)` |
+| `client.get_image(file_id)` | `client.files.retrieve_content(file_id)` |
+| `client.create_batch(file, method)` | `client.batches.create(file, method)` |
+| `client.get_batches()` | `client.batches.list()` |
+| `client.get_batches(batch_id="...")` | `client.batches.retrieve("...")` |
+| `await client.aupload_file(file, purpose=...)` | `await client.a_files.upload(file, purpose=...)` |
+| `await client.aget_file(file)` | `await client.a_files.retrieve(file)` |
+| `await client.aget_files()` | `await client.a_files.list()` |
+| `await client.adelete_file(file)` | `await client.a_files.delete(file)` |
+| `await client.aget_file_content(file_id)` | `await client.a_files.retrieve_content(file_id)` |
+| `await client.aget_image(file_id)` | `await client.a_files.retrieve_content(file_id)` |
+| `await client.acreate_batch(file, method)` | `await client.a_batches.create(file, method)` |
+| `await client.aget_batches()` | `await client.a_batches.list()` |
+| `await client.aget_batches(batch_id="...")` | `await client.a_batches.retrieve("...")` |
+| `client.tokens_count(input_, model=...)` | `client.tokens.count(input_, model=...)` |
+| `await client.atokens_count(input_, model=...)` | `await client.a_tokens.count(input_, model=...)` |
+| `client.get_balance()` | `client.balance.get()` |
+| `await client.aget_balance()` | `await client.a_balance.get()` |
+| `client.openapi_function_convert(openapi_function)` | `client.functions.convert_openapi(openapi_function)` |
+| `await client.aopenapi_function_convert(openapi_function)` | `await client.a_functions.convert_openapi(openapi_function)` |
+| `client.validate_function(function)` | `client.functions.validate(function)` |
+| `await client.avalidate_function(function)` | `await client.a_functions.validate(function)` |
+| `client.check_ai(text, model)` | `client.ai_check.check(text, model)` |
+| `await client.acheck_ai(text, model)` | `await client.a_ai_check.check(text, model)` |
+
+`client.files.retrieve_image(file_id)` and `await client.a_files.retrieve_image(file_id)` remain available as deprecated
+image-only compatibility aliases. New code should use `retrieve_content(...)` for all file content.
+
 Primary chat completions use the v2 route. If the client `base_url` still ends with `/v1`, `client.chat.create(...)`, `client.chat.stream(...)`, `client.achat.create(...)`, and `client.achat.stream(...)` automatically send requests to the matching `/v2/chat/completions` URL. Explicit `chat_completions_url` overrides are still honored, including versioned paths such as `/v2/chat/completions`.
 
 Why this changed:

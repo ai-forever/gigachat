@@ -36,10 +36,11 @@ uv run python -m examples.chat_completions.sync_chat
 * [Code interpreter](./tools/code_interpreter.py) - built-in `code_interpreter` tool
 * [URL content extraction](./tools/url_content_extraction.py) - built-in `url_content_extraction` tool
 * [Image generation](./tools/image_generation.py) - built-in `image_generate` tool and generated file IDs
+* Function validation - `client.functions.validate(...)`
 
 ## Files and assistants
 
-* [File input](./files/file_input.py) - upload a file and reference it from message content
+* [File input](./files/file_input.py) - `client.files.upload(...)`, `client.files.retrieve_content(...)`, and file references in message content
 * [Assistant lifecycle](./assistants/basic.py) - create, use, and delete an assistant
 
 Notebook examples:
@@ -49,4 +50,5 @@ Notebook examples:
 * [Context Variables](./example_contextvars.ipynb) - optional headers with context variables
 * [AI Check](./example_ai_check.ipynb) - detecting AI-generated text with GigaCheckDetection
 * [Structured Output](./example_structured_output.ipynb) - structured JSON responses with JSON Schema
+* [Batching](./example_batching.ipynb) - create and inspect batch jobs with `client.batches`
 * [Vision](./vision/example_vision.ipynb) - image analysis with GigaChat Vision
