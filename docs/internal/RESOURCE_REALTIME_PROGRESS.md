@@ -57,7 +57,7 @@ Do not implement gRPC. Do not generate or commit `voice_pb2_grpc.py`.
 | Slice | Status | Commit | Notes |
 |---|---|---|---|
 | 17-protobuf-pivot-docs-progress | done | this commit | Pivoted docs/progress from JSON-only to protobuf-over-WebSocket. |
-| 18-protobuf-runtime-extra | pending |  | Add `protobuf` to realtime extras; no grpcio. |
+| 18-protobuf-runtime-extra | done | this commit | Added `protobuf` to realtime extras; no grpcio. |
 | 19-latest-proto-schema | pending |  | Add latest `voice.proto` exactly as provided. |
 | 20-proto-message-bindings | pending |  | Add generated `voice_pb2.py`; no `voice_pb2_grpc.py`. |
 | 21-protobuf-request-bridge-settings | pending |  | Map settings params to protobuf Settings. |
@@ -92,3 +92,21 @@ Next:
 Risks:
 - Assumes one WebSocket binary frame equals one serialized `GigaVoiceRequest` / `GigaVoiceResponse` without length-prefix.
 - Requires generated `voice_pb2.py` to be committed because users should not run proto generation at install time.
+
+### 2026-04-28 — slice 18-protobuf-runtime-extra
+
+Done:
+- Added `protobuf>=4.25,<6` to the `realtime` optional dependency extra.
+- Added `protobuf>=4.25,<6` to `realtime_voice` so the combined realtime voice extra includes both protobuf WebSocket transport and audio helpers.
+- Kept protobuf out of core runtime dependencies.
+- Confirmed no `grpcio` dependency was added.
+
+Tests:
+- `uv lock --check`
+- `rg -n "grpcio|^name = \"grpc" pyproject.toml uv.lock` (no matches)
+
+Next:
+- 19-latest-proto-schema
+
+Risks:
+- Next slice must add the exact latest `voice.proto`; this slice only adds the protobuf runtime dependency.
