@@ -64,6 +64,8 @@ from gigachat.resources import (
     EmbeddingsSyncResource,
     FilesAsyncResource,
     FilesSyncResource,
+    FunctionsAsyncResource,
+    FunctionsSyncResource,
     ModelsAsyncResource,
     ModelsSyncResource,
     ThreadsAsyncClient,
@@ -463,6 +465,11 @@ class GigaChatSyncClient(_BaseClient):
         return BalanceSyncResource(self)
 
     @cached_property
+    def functions(self) -> FunctionsSyncResource:
+        """Return the functions resource."""
+        return FunctionsSyncResource(self)
+
+    @cached_property
     def threads(self) -> ThreadsSyncClient:
         """Return the threads resource."""
         return ThreadsSyncClient(self)
@@ -668,11 +675,10 @@ class GigaChatSyncClient(_BaseClient):
         warn_deprecated_resource_api("client.get_balance()", "client.balance.get()")
         return self.balance.get()
 
-    @_with_retry
-    @_with_auth
     def openapi_function_convert(self, openapi_function: str) -> OpenApiFunctions:
-        """Convert an OpenAPI function description to a GigaChat function."""
-        return tools.functions_convert_sync(self._client, openapi_function=openapi_function, access_token=self.token)
+        """Convert an OpenAPI function description via deprecated root shim."""
+        warn_deprecated_resource_api("client.openapi_function_convert(...)", "client.functions.convert_openapi(...)")
+        return self.functions.convert_openapi(openapi_function)
 
     @_with_retry
     @_with_auth
@@ -806,6 +812,11 @@ class GigaChatAsyncClient(_BaseClient):
     def a_balance(self) -> BalanceAsyncResource:
         """Return the async balance resource."""
         return BalanceAsyncResource(self)
+
+    @cached_property
+    def a_functions(self) -> FunctionsAsyncResource:
+        """Return the async functions resource."""
+        return FunctionsAsyncResource(self)
 
     @cached_property
     def a_threads(self) -> ThreadsAsyncClient:
@@ -1010,14 +1021,10 @@ class GigaChatAsyncClient(_BaseClient):
         warn_deprecated_resource_api("client.aget_balance()", "client.a_balance.get()")
         return await self.a_balance.get()
 
-    @_awith_retry
-    @_awith_auth
     async def aopenapi_function_convert(self, openapi_function: str) -> OpenApiFunctions:
-        """Convert an OpenAPI function description to a GigaChat function."""
-
-        return await tools.functions_convert_async(
-            self._aclient, openapi_function=openapi_function, access_token=self.token
-        )
+        """Convert an OpenAPI function description via deprecated root shim."""
+        warn_deprecated_resource_api("client.aopenapi_function_convert(...)", "client.a_functions.convert_openapi(...)")
+        return await self.a_functions.convert_openapi(openapi_function)
 
     @_awith_retry
     @_awith_auth

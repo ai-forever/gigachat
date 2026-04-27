@@ -20,7 +20,7 @@
 7. [done] Add files resource
 8. [done] Add tokens resource
 9. [done] Add balance resource
-10. [todo] Add functions resource
+10. [done] Add functions resource
 11. [todo] Add ai_check resource
 12. [todo] Update docs/examples for non-chat resources
 13. [todo] Add global resource/shim regression tests
@@ -83,3 +83,9 @@
   - Тесты: `uv run pytest tests/unit/gigachat/test_client_balance.py -q`, `uv run pytest tests/unit/gigachat/api/test_tools.py -q`, `uv run ruff check src/gigachat/resources/balance.py src/gigachat/resources/__init__.py src/gigachat/client.py tests/unit/gigachat/test_client_balance.py`, `git diff --check`.
   - Commit: `feat(resources): add balance resource`.
   - Замечания: 403/ошибки остаются на transport/API layer; token counting и function convert не трогались.
+- 2026-04-27: завершён срез 10.
+  - Что сделано: добавлен `functions` resource namespace с `convert_openapi()` для sync и async клиентов; root methods `openapi_function_convert`/`aopenapi_function_convert` переведены в deprecated shims.
+  - Изменённые файлы: `src/gigachat/resources/functions.py`, `src/gigachat/resources/__init__.py`, `src/gigachat/client.py`, `tests/unit/gigachat/test_client_functions.py`, `docs/internal/RESOURCE_API_REMAINING_PROGRESS.md`.
+  - Тесты: `uv run pytest tests/unit/gigachat/test_client_functions.py -q`, `uv run pytest tests/unit/gigachat/api/test_tools.py -q`, `uv run ruff check src/gigachat/resources/functions.py src/gigachat/resources/__init__.py src/gigachat/client.py tests/unit/gigachat/test_client_functions.py`, `git diff --check`.
+  - Commit: `feat(resources): add functions resource`.
+  - Замечания: chat function calling models и `Function`/`FunctionParameters` не менялись.
