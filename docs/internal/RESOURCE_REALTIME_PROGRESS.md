@@ -16,7 +16,7 @@
 | 01-docs-progress-reset | done | this commit | Reset plan from protobuf to JSON. |
 | 02-dependency-extras | done | this commit | Added JSON WebSocket and optional voice helper extras; removed protobuf from realtime extras. |
 | 03-realtime-settings-config | done | this commit | Added realtime websocket URL setting coverage. |
-| 04-client-param-types | pending |  | Add JSON client event param types. |
+| 04-client-param-types | done | this commit | Added JSON client event param types. |
 | 05-server-event-models | pending |  | Add JSON server event models. |
 | 06-client-event-serialization | pending |  | Add JSON client event serialization. |
 | 07-async-websocket-connection | pending |  | Add async JSON websocket connection. |
@@ -84,6 +84,27 @@ Tests:
 
 Next:
 - 04-client-param-types
+
+Risks:
+- Backend JSON endpoint must be confirmed. If the current GigaVoice WebSocket endpoint accepts only protobuf frames, this SDK plan cannot pass integration smoke tests without a backend adapter or gateway.
+
+### 2026-04-27 — slice 04-client-param-types
+
+Done:
+- Added `gigachat.types` package exports for realtime request params.
+- Added JSON realtime settings `TypedDict` params and literal aliases.
+- Added JSON realtime client event params for `settings`, `input.audio_content`, `input.synthesis_content`, and `function_result`.
+- Kept the slice type-only: no WebSocket transport, serialization, protobuf, or gRPC code.
+
+Tests:
+- `uv run pytest tests/unit/gigachat/realtime/test_event_params.py`
+- `uv run ruff check src/gigachat/types tests/unit/gigachat/realtime/test_event_params.py`
+- `uv run ruff format --check src/gigachat/types tests/unit/gigachat/realtime/test_event_params.py`
+- `uv run python -c "import gigachat; import gigachat.types.realtime"` (rerun outside sandbox because `uv` cache access was blocked)
+- `uv run mypy src/gigachat/types tests/unit/gigachat/realtime/test_event_params.py` (rerun outside sandbox because `uv` cache access was blocked)
+
+Next:
+- 05-server-event-models
 
 Risks:
 - Backend JSON endpoint must be confirmed. If the current GigaVoice WebSocket endpoint accepts only protobuf frames, this SDK plan cannot pass integration smoke tests without a backend adapter or gateway.
