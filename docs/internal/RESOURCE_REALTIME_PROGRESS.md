@@ -26,7 +26,7 @@
 | 11-sync-websocket-connection | done | this commit | Added sync JSON websocket connection and manager. |
 | 12-sync-helper-resources | done | this commit | Added sync realtime helper resources. |
 | 13-sync-resource-namespace | done | this commit | Added sync realtime resource namespace. |
-| 14-voice-helper-conversions | pending |  | Add numpy PCM16 audio helpers. |
+| 14-voice-helper-conversions | done | this commit | Added lazy numpy PCM16 conversion helpers. |
 | 15-sounddevice-helpers | pending |  | Add sounddevice microphone and speaker helpers. |
 | 16-examples-text-and-functions | pending |  | Add JSON websocket text examples. |
 | 17-example-microphone | pending |  | Add microphone realtime example. |
@@ -292,6 +292,28 @@ Tests:
 
 Next:
 - 14-voice-helper-conversions
+
+Risks:
+- Backend JSON endpoint must be confirmed. If the current GigaVoice WebSocket endpoint accepts only protobuf frames, this SDK plan cannot pass integration smoke test without a backend adapter or gateway.
+
+### 2026-04-27 — slice 14-voice-helper-conversions
+
+Done:
+- Added `gigachat.realtime.audio` with lazy `numpy` loading for optional voice helper conversions.
+- Added `numpy_to_pcm16_bytes(...)` for int16 PCM byte serialization, including float array clipping/scaling to PCM16.
+- Added `pcm16_bytes_to_numpy(...)` for little-endian PCM16 bytes to numpy arrays.
+- Exported the conversion helpers from `gigachat.realtime`.
+- Added unit coverage using a fake numpy module so base installs do not require `numpy`.
+
+Tests:
+- `uv run pytest tests/unit/gigachat/realtime/test_audio_helpers.py tests/unit/gigachat/realtime/test_base64_audio.py`
+- `uv run ruff check src/gigachat/realtime/audio.py src/gigachat/realtime/__init__.py tests/unit/gigachat/realtime/test_audio_helpers.py`
+- `uv run ruff format --check src/gigachat/realtime/audio.py src/gigachat/realtime/__init__.py tests/unit/gigachat/realtime/test_audio_helpers.py`
+- `uv run mypy src/gigachat/realtime/audio.py tests/unit/gigachat/realtime/test_audio_helpers.py` (rerun outside sandbox because `uv` cache access was blocked)
+- `uv run python -c "import gigachat; import gigachat.realtime"` (rerun outside sandbox because `uv` cache access was blocked)
+
+Next:
+- 15-sounddevice-helpers
 
 Risks:
 - Backend JSON endpoint must be confirmed. If the current GigaVoice WebSocket endpoint accepts only protobuf frames, this SDK plan cannot pass integration smoke test without a backend adapter or gateway.
