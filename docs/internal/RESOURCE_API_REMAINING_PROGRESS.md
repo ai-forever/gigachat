@@ -13,7 +13,7 @@
 
 1. [done] Restore plan/progress docs
 2. [done] Add shared resource deprecation helper
-3. [todo] Normalize assistants resource module
+3. [done] Normalize assistants resource module
 4. [todo] Normalize threads resource module
 5. [todo] Add models resource
 6. [todo] Add embeddings resource
@@ -41,3 +41,9 @@
   - Тесты: `uv run pytest tests/unit/gigachat/test_client_chat.py -q`, `git diff --check`.
   - Commit: `refactor(resources): add deprecated resource shim helper`.
   - Замечания: новые resources не добавлялись; chat shims не переподключались.
+- 2026-04-27: завершён срез 3.
+  - Что сделано: `AssistantsSyncClient` и `AssistantsAsyncClient` перенесены в `gigachat.resources.assistants`; старый `gigachat.assistants` оставлен как compatibility module.
+  - Изменённые файлы: `src/gigachat/assistants.py`, `src/gigachat/resources/assistants.py`, `src/gigachat/resources/__init__.py`, `src/gigachat/client.py`, `tests/unit/gigachat/test_client_assistants.py`, `docs/internal/RESOURCE_API_REMAINING_PROGRESS.md`.
+  - Тесты: `uv run pytest tests/unit/gigachat/test_client_assistants.py -q`, `uv run pytest tests/unit/gigachat/test_client_lifecycle.py -q`, `uv run ruff check src/gigachat/assistants.py src/gigachat/resources/assistants.py src/gigachat/resources/__init__.py src/gigachat/client.py tests/unit/gigachat/test_client_assistants.py`, `git diff --check`.
+  - Commit: `refactor(resources): move assistants resource into resources package`.
+  - Замечания: public paths `client.assistants.*` и `client.a_assistants.*` не менялись; threads не трогались.

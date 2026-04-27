@@ -27,7 +27,6 @@ from typing_extensions import Self
 
 from gigachat._types import FileTypes
 from gigachat.api import auth, chat_completions, embeddings, files, legacy_chat, models, tools
-from gigachat.assistants import AssistantsAsyncClient, AssistantsSyncClient
 from gigachat.authentication import _awith_auth, _awith_auth_stream, _with_auth, _with_auth_stream
 from gigachat.context import authorization_cvar
 from gigachat.exceptions import LengthFinishReasonError
@@ -54,7 +53,7 @@ from gigachat.models.files import DeletedFile, Image, UploadedFile, UploadedFile
 from gigachat.models.models import Model, Models
 from gigachat.models.response_format import JsonSchemaResponseFormat
 from gigachat.models.tools import AICheckResult, Balance, OpenApiFunctions, TokensCount
-from gigachat.resources import AsyncChatNamespace, ChatNamespace
+from gigachat.resources import AssistantsAsyncClient, AssistantsSyncClient, AsyncChatNamespace, ChatNamespace
 from gigachat.retry import _awith_retry, _awith_retry_stream, _with_retry, _with_retry_stream
 from gigachat.settings import Settings
 from gigachat.threads import ThreadsAsyncClient, ThreadsSyncClient
