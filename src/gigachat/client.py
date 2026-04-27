@@ -25,12 +25,13 @@ import httpx
 import pydantic
 from typing_extensions import Self
 
-from gigachat._types import FileTypes
+from gigachat._types import FileContent, FileTypes
 from gigachat.api import auth, chat_completions, legacy_chat
 from gigachat.authentication import _awith_auth, _awith_auth_stream, _with_auth, _with_auth_stream
 from gigachat.context import authorization_cvar
 from gigachat.exceptions import LengthFinishReasonError
 from gigachat.models.auth import AccessToken, Token
+from gigachat.models.batches import Batch, Batches
 from gigachat.models.chat import (
     Chat,
     ChatCompletion,
@@ -61,6 +62,8 @@ from gigachat.resources import (
     AsyncChatNamespace,
     BalanceAsyncResource,
     BalanceSyncResource,
+    BatchesAsyncResource,
+    BatchesSyncResource,
     ChatNamespace,
     EmbeddingsAsyncResource,
     EmbeddingsSyncResource,
@@ -452,6 +455,11 @@ class GigaChatSyncClient(_BaseClient):
         return EmbeddingsSyncResource(self)
 
     @cached_property
+    def batches(self) -> BatchesSyncResource:
+        """Return the batches resource."""
+        return BatchesSyncResource(self)
+
+    @cached_property
     def files(self) -> FilesSyncResource:
         """Return the files resource."""
         return FilesSyncResource(self)
@@ -594,6 +602,20 @@ class GigaChatSyncClient(_BaseClient):
         """Delete a file via deprecated root shim."""
         warn_deprecated_resource_api("client.delete_file(...)", "client.files.delete(...)")
         return self.files.delete(file)
+
+    def create_batch(self, file: FileContent, method: Literal["chat_completions", "embedder"]) -> Batch:
+        """Create a batch task via deprecated root shim."""
+        warn_deprecated_resource_api("client.create_batch(...)", "client.batches.create(...)")
+        return self.batches.create(file, method)
+
+    def get_batches(self, batch_id: Optional[str] = None) -> Batches:
+        """Return batch tasks via deprecated root shim."""
+        if batch_id is None:
+            warn_deprecated_resource_api("client.get_batches()", "client.batches.list()")
+            return self.batches.list()
+
+        warn_deprecated_resource_api("client.get_batches(...)", "client.batches.retrieve(...)")
+        return self.batches.retrieve(batch_id)
 
     @_with_retry
     @_with_auth
@@ -803,6 +825,11 @@ class GigaChatAsyncClient(_BaseClient):
     def a_embeddings(self) -> EmbeddingsAsyncResource:
         """Return the async embeddings resource."""
         return EmbeddingsAsyncResource(self)
+
+    @cached_property
+    def a_batches(self) -> BatchesAsyncResource:
+        """Return the async batches resource."""
+        return BatchesAsyncResource(self)
 
     @cached_property
     def a_files(self) -> FilesAsyncResource:
@@ -1026,6 +1053,20 @@ class GigaChatAsyncClient(_BaseClient):
         """Delete a file via deprecated root shim."""
         warn_deprecated_resource_api("client.adelete_file(...)", "client.a_files.delete(...)")
         return await self.a_files.delete(file)
+
+    async def acreate_batch(self, file: FileContent, method: Literal["chat_completions", "embedder"]) -> Batch:
+        """Create a batch task via deprecated root shim."""
+        warn_deprecated_resource_api("client.acreate_batch(...)", "client.a_batches.create(...)")
+        return await self.a_batches.create(file, method)
+
+    async def aget_batches(self, batch_id: Optional[str] = None) -> Batches:
+        """Return batch tasks via deprecated root shim."""
+        if batch_id is None:
+            warn_deprecated_resource_api("client.aget_batches()", "client.a_batches.list()")
+            return await self.a_batches.list()
+
+        warn_deprecated_resource_api("client.aget_batches(...)", "client.a_batches.retrieve(...)")
+        return await self.a_batches.retrieve(batch_id)
 
     async def aget_balance(self) -> Balance:
         """Return balance via deprecated root shim."""

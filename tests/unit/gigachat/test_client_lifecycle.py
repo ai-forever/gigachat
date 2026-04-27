@@ -6,6 +6,7 @@ from gigachat import GigaChat
 from gigachat.client import GigaChatAsyncClient, GigaChatSyncClient
 from gigachat.resources.ai_check import AICheckAsyncResource, AICheckSyncResource
 from gigachat.resources.balance import BalanceAsyncResource, BalanceSyncResource
+from gigachat.resources.batches import BatchesAsyncResource, BatchesSyncResource
 from gigachat.resources.embeddings import EmbeddingsAsyncResource, EmbeddingsSyncResource
 from gigachat.resources.files import FilesAsyncResource, FilesSyncResource
 from gigachat.resources.functions import FunctionsAsyncResource, FunctionsSyncResource
@@ -122,6 +123,7 @@ def test_sync_resources_are_cached_properties() -> None:
     assert "assistants" not in client.__dict__
     assert "models" not in client.__dict__
     assert "embeddings" not in client.__dict__
+    assert "batches" not in client.__dict__
     assert "files" not in client.__dict__
     assert "tokens" not in client.__dict__
     assert "balance" not in client.__dict__
@@ -134,6 +136,7 @@ def test_sync_resources_are_cached_properties() -> None:
     assistants = client.assistants
     models = client.models
     embeddings = client.embeddings
+    batches = client.batches
     files = client.files
     tokens = client.tokens
     balance = client.balance
@@ -147,6 +150,7 @@ def test_sync_resources_are_cached_properties() -> None:
     assert assistants is client.assistants
     assert models is client.models
     assert embeddings is client.embeddings
+    assert batches is client.batches
     assert files is client.files
     assert tokens is client.tokens
     assert balance is client.balance
@@ -155,6 +159,7 @@ def test_sync_resources_are_cached_properties() -> None:
     assert threads is client.threads
     assert isinstance(models, ModelsSyncResource)
     assert isinstance(embeddings, EmbeddingsSyncResource)
+    assert isinstance(batches, BatchesSyncResource)
     assert isinstance(files, FilesSyncResource)
     assert isinstance(tokens, TokensSyncResource)
     assert isinstance(balance, BalanceSyncResource)
@@ -170,6 +175,7 @@ async def test_async_resources_are_cached_properties() -> None:
     assert "a_assistants" not in client.__dict__
     assert "a_models" not in client.__dict__
     assert "a_embeddings" not in client.__dict__
+    assert "a_batches" not in client.__dict__
     assert "a_files" not in client.__dict__
     assert "a_tokens" not in client.__dict__
     assert "a_balance" not in client.__dict__
@@ -182,6 +188,7 @@ async def test_async_resources_are_cached_properties() -> None:
     assistants = client.a_assistants
     models = client.a_models
     embeddings = client.a_embeddings
+    batches = client.a_batches
     files = client.a_files
     tokens = client.a_tokens
     balance = client.a_balance
@@ -195,6 +202,7 @@ async def test_async_resources_are_cached_properties() -> None:
     assert assistants is client.a_assistants
     assert models is client.a_models
     assert embeddings is client.a_embeddings
+    assert batches is client.a_batches
     assert files is client.a_files
     assert tokens is client.a_tokens
     assert balance is client.a_balance
@@ -203,6 +211,7 @@ async def test_async_resources_are_cached_properties() -> None:
     assert threads is client.a_threads
     assert isinstance(models, ModelsAsyncResource)
     assert isinstance(embeddings, EmbeddingsAsyncResource)
+    assert isinstance(batches, BatchesAsyncResource)
     assert isinstance(files, FilesAsyncResource)
     assert isinstance(tokens, TokensAsyncResource)
     assert isinstance(balance, BalanceAsyncResource)

@@ -13,7 +13,7 @@
 
 1. [done] Add follow-up plan/progress docs
 2. [done] Add low-level batches API and models
-3. [todo] Add batches resource namespace and deprecated root shims
+3. [done] Add batches resource namespace and deprecated root shims
 4. [todo] Add batch example/docs on resource paths
 5. [todo] Add low-level file content API and File model
 6. [todo] Add files.retrieve_content resource path and shims
@@ -38,3 +38,9 @@
   - Тесты: uv run pytest tests/unit/gigachat/api/test_batches.py -q; uv run ruff check src/gigachat/api/batches.py src/gigachat/models/batches.py tests/unit/gigachat/api/test_batches.py; git diff --check.
   - Commit: feat(batches): add low-level batch api
   - Замечания: resource namespace и root shims не добавлялись.
+- 2026-04-27: завершён срез 3.
+  - Что сделано: добавлены sync/async batches resource namespace, cached properties и deprecated root shims.
+  - Изменённые файлы: src/gigachat/resources/__init__.py, src/gigachat/resources/batches.py, src/gigachat/client.py, tests/unit/gigachat/test_client_batches.py, tests/unit/gigachat/test_client_lifecycle.py, tests/unit/gigachat/test_client_resource_shims.py, docs/internal/RESOURCE_API_BATCHES_FILES_PROGRESS.md.
+  - Тесты: uv run pytest tests/unit/gigachat/test_client_batches.py -q; uv run pytest tests/unit/gigachat/test_client_lifecycle.py -q; uv run pytest tests/unit/gigachat/test_client_resource_shims.py -q; uv run ruff check src/gigachat/resources/batches.py src/gigachat/resources/__init__.py src/gigachat/client.py tests/unit/gigachat/test_client_batches.py; git diff --check.
+  - Commit: feat(resources): add batches resource
+  - Замечания: low-level batches API, docs/notebooks и следующие срезы не менялись.
