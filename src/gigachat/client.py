@@ -5,6 +5,7 @@ import logging
 import ssl
 import threading
 import time
+import warnings
 from typing import (
     Any,
     AsyncIterator,
@@ -23,13 +24,14 @@ import httpx
 import pydantic
 from typing_extensions import Self
 
-from gigachat._types import FileTypes
-from gigachat.api import auth, chat, embeddings, files, models, tools
+from gigachat._types import FileContent, FileTypes
+from gigachat.api import auth, batches, chat, embeddings, files, models, tools
 from gigachat.assistants import AssistantsAsyncClient, AssistantsSyncClient
 from gigachat.authentication import _awith_auth, _awith_auth_stream, _with_auth, _with_auth_stream
 from gigachat.context import authorization_cvar
 from gigachat.exceptions import LengthFinishReasonError
 from gigachat.models.auth import AccessToken, Token
+from gigachat.models.batches import Batch, Batches
 from gigachat.models.chat import (
     Chat,
     ChatCompletion,
@@ -38,7 +40,7 @@ from gigachat.models.chat import (
     MessagesRole,
 )
 from gigachat.models.embeddings import Embeddings
-from gigachat.models.files import DeletedFile, Image, UploadedFile, UploadedFiles
+from gigachat.models.files import DeletedFile, File, UploadedFile, UploadedFiles
 from gigachat.models.models import Model, Models
 from gigachat.models.response_format import JsonSchemaResponseFormat
 from gigachat.models.tools import AICheckResult, Balance, OpenApiFunctions, TokensCount
@@ -408,6 +410,18 @@ class GigaChatSyncClient(_BaseClient):
 
     @_with_retry
     @_with_auth
+    def create_batch(self, file: FileContent, method: Literal["chat_completions", "embedder"]) -> Batch:
+        """Create a batch task for asynchronous processing."""
+        return batches.create_batch_sync(self._client, file=file, method=method, access_token=self.token)
+
+    @_with_retry
+    @_with_auth
+    def get_batches(self, batch_id: Optional[str] = None) -> Batches:
+        """Return batch tasks or a specific batch task."""
+        return batches.get_batches_sync(self._client, batch_id=batch_id, access_token=self.token)
+
+    @_with_retry
+    @_with_auth
     def get_models(self) -> Models:
         """Return a list of available models."""
         return models.get_models_sync(self._client, access_token=self.token)
@@ -420,9 +434,20 @@ class GigaChatSyncClient(_BaseClient):
 
     @_with_retry
     @_with_auth
-    def get_image(self, file_id: str) -> Image:
-        """Return an image in base64 encoding."""
-        return files.get_image_sync(self._client, file_id=file_id, access_token=self.token)
+    def get_file_content(self, file_id: str) -> File:
+        """Return file content in base64 encoding."""
+        return files.get_file_content_sync(self._client, file_id=file_id, access_token=self.token)
+
+    @_with_retry
+    @_with_auth
+    def get_image(self, file_id: str) -> File:
+        """Use `get_file_content`; this alias is deprecated."""
+        warnings.warn(
+            "Method 'get_image' is deprecated, use 'get_file_content'",
+            DeprecationWarning,
+            stacklevel=2,
+        )
+        return self.get_file_content(file_id=file_id)
 
     @_with_retry
     @_with_auth
@@ -681,6 +706,18 @@ class GigaChatAsyncClient(_BaseClient):
 
     @_awith_retry
     @_awith_auth
+    async def acreate_batch(self, file: FileContent, method: Literal["chat_completions", "embedder"]) -> Batch:
+        """Create a batch task for asynchronous processing."""
+        return await batches.create_batch_async(self._aclient, file=file, method=method, access_token=self.token)
+
+    @_awith_retry
+    @_awith_auth
+    async def aget_batches(self, batch_id: Optional[str] = None) -> Batches:
+        """Return batch tasks or a specific batch task."""
+        return await batches.get_batches_async(self._aclient, batch_id=batch_id, access_token=self.token)
+
+    @_awith_retry
+    @_awith_auth
     async def aget_models(self) -> Models:
         """Return a list of available models."""
 
@@ -688,10 +725,20 @@ class GigaChatAsyncClient(_BaseClient):
 
     @_awith_retry
     @_awith_auth
-    async def aget_image(self, file_id: str) -> Image:
-        """Return an image in base64 encoding."""
+    async def aget_file_content(self, file_id: str) -> File:
+        """Return file content in base64 encoding."""
+        return await files.get_file_content_async(self._aclient, file_id=file_id, access_token=self.token)
 
-        return await files.get_image_async(self._aclient, file_id=file_id, access_token=self.token)
+    @_awith_retry
+    @_awith_auth
+    async def aget_image(self, file_id: str) -> File:
+        """Use `aget_file_content`; this alias is deprecated."""
+        warnings.warn(
+            "Method 'aget_image' is deprecated, use 'aget_file_content'",
+            DeprecationWarning,
+            stacklevel=2,
+        )
+        return await self.aget_file_content(file_id=file_id)
 
     @_awith_retry
     @_awith_auth

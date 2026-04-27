@@ -1,0 +1,17 @@
+{
+  "batches": [
+    {
+      "id": "batch_1",
+      "method": "chat_completions",
+      "request_counts": {
+        "total": 3,
+        "completed": 2,
+        "failed": 1
+      },
+      "status": "completed",
+      "output_file_id": "file_123",
+      "created_at": 1726478395,
+      "updated_at": 1726478474
+    }
+  ]
+}

@@ -1,6 +1,7 @@
 from gigachat.api import (
     assistants,
     auth,
+    batches,
     chat,
     embeddings,
     files,
@@ -13,6 +14,7 @@ from gigachat.api import (
 __all__ = [
     "assistants",
     "auth",
+    "batches",
     "chat",
     "embeddings",
     "files",
