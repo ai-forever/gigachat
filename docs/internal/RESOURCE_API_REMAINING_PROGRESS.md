@@ -18,7 +18,7 @@
 5. [done] Add models resource
 6. [done] Add embeddings resource
 7. [done] Add files resource
-8. [todo] Add tokens resource
+8. [done] Add tokens resource
 9. [todo] Add balance resource
 10. [todo] Add functions resource
 11. [todo] Add ai_check resource
@@ -71,3 +71,9 @@
   - Тесты: `uv run pytest tests/unit/gigachat/test_client_files.py -q`, `uv run pytest tests/unit/gigachat/api/test_files.py -q`, `uv run ruff check src/gigachat/resources/files.py src/gigachat/resources/__init__.py src/gigachat/client.py tests/unit/gigachat/test_client_files.py`, `git diff --check`.
   - Commit: `feat(resources): add files resource`.
   - Замечания: `purpose: Literal["general", "assistant"] = "general"` сохранён; assistants file APIs и upload transport не менялись.
+- 2026-04-27: завершён срез 8.
+  - Что сделано: добавлен `tokens` resource namespace с `count()` для sync и async клиентов; root methods `tokens_count`/`atokens_count` переведены в deprecated shims.
+  - Изменённые файлы: `src/gigachat/resources/tokens.py`, `src/gigachat/resources/__init__.py`, `src/gigachat/client.py`, `tests/unit/gigachat/test_client_tokens.py`, `docs/internal/RESOURCE_API_REMAINING_PROGRESS.md`.
+  - Тесты: `uv run pytest tests/unit/gigachat/test_client_tokens.py -q`, `uv run pytest tests/unit/gigachat/api/test_tools.py -q`, `uv run ruff check src/gigachat/resources/tokens.py src/gigachat/resources/__init__.py src/gigachat/client.py tests/unit/gigachat/test_client_tokens.py`, `git diff --check`.
+  - Commit: `feat(resources): add tokens resource`.
+  - Замечания: fallback модели сохранён как `self._settings.model or GIGACHAT_MODEL`; balance/functions/ai_check не трогались.

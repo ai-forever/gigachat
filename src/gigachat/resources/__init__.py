@@ -10,6 +10,7 @@ from gigachat.resources.embeddings import EmbeddingsAsyncResource, EmbeddingsSyn
 from gigachat.resources.files import FilesAsyncResource, FilesSyncResource
 from gigachat.resources.models import ModelsAsyncResource, ModelsSyncResource
 from gigachat.resources.threads import ThreadsAsyncClient, ThreadsSyncClient
+from gigachat.resources.tokens import TokensAsyncResource, TokensSyncResource
 
 __all__ = (
     "AsyncChatNamespace",
@@ -26,5 +27,7 @@ __all__ = (
     "ModelsSyncResource",
     "ThreadsAsyncClient",
     "ThreadsSyncClient",
+    "TokensAsyncResource",
+    "TokensSyncResource",
     "warn_deprecated_resource_api",
 )

@@ -66,6 +66,8 @@ from gigachat.resources import (
     ModelsSyncResource,
     ThreadsAsyncClient,
     ThreadsSyncClient,
+    TokensAsyncResource,
+    TokensSyncResource,
     warn_deprecated_resource_api,
 )
 from gigachat.retry import _awith_retry, _awith_retry_stream, _with_retry, _with_retry_stream
@@ -449,6 +451,11 @@ class GigaChatSyncClient(_BaseClient):
         return FilesSyncResource(self)
 
     @cached_property
+    def tokens(self) -> TokensSyncResource:
+        """Return the tokens resource."""
+        return TokensSyncResource(self)
+
+    @cached_property
     def threads(self) -> ThreadsSyncClient:
         """Return the threads resource."""
         return ThreadsSyncClient(self)
@@ -520,13 +527,10 @@ class GigaChatSyncClient(_BaseClient):
         self._update_token()
         return self._access_token
 
-    @_with_retry
-    @_with_auth
     def tokens_count(self, input_: List[str], model: Optional[str] = None) -> List[TokensCount]:
-        """Return the number of tokens in a string."""
-        if not model:
-            model = self._settings.model or GIGACHAT_MODEL
-        return tools.tokens_count_sync(self._client, input_=input_, model=model, access_token=self.token)
+        """Return token counts via deprecated root shim."""
+        warn_deprecated_resource_api("client.tokens_count(...)", "client.tokens.count(...)")
+        return self.tokens.count(input_, model=model)
 
     def get_models(self) -> Models:
         """Return a list of available models via deprecated root shim."""
@@ -792,6 +796,11 @@ class GigaChatAsyncClient(_BaseClient):
         return FilesAsyncResource(self)
 
     @cached_property
+    def a_tokens(self) -> TokensAsyncResource:
+        """Return the async tokens resource."""
+        return TokensAsyncResource(self)
+
+    @cached_property
     def a_threads(self) -> ThreadsAsyncClient:
         """Return the async threads resource."""
         return ThreadsAsyncClient(self)
@@ -857,14 +866,10 @@ class GigaChatAsyncClient(_BaseClient):
         await self._aupdate_token()
         return self._access_token
 
-    @_awith_retry
-    @_awith_auth
     async def atokens_count(self, input_: List[str], model: Optional[str] = None) -> List[TokensCount]:
-        """Return the number of tokens in a string."""
-        if not model:
-            model = self._settings.model or GIGACHAT_MODEL
-
-        return await tools.tokens_count_async(self._aclient, input_=input_, model=model, access_token=self.token)
+        """Return token counts via deprecated root shim."""
+        warn_deprecated_resource_api("client.atokens_count(...)", "client.a_tokens.count(...)")
+        return await self.a_tokens.count(input_, model=model)
 
     async def aembeddings(self, texts: List[str], model: str = "Embeddings") -> Embeddings:
         """Return embeddings via deprecated root shim."""
