@@ -23,7 +23,7 @@
 | 08-event-handler-registry | done | this commit | Added async websocket event handlers. |
 | 09-async-helper-resources | done | this commit | Added async realtime helper resources. |
 | 10-async-resource-namespace | done | this commit | Added async realtime resource namespace. |
-| 11-sync-websocket-connection | pending |  | Add sync JSON websocket connection. |
+| 11-sync-websocket-connection | done | this commit | Added sync JSON websocket connection and manager. |
 | 12-sync-helper-resources | pending |  | Add sync realtime helper resources. |
 | 13-sync-resource-namespace | pending |  | Add sync realtime resource namespace. |
 | 14-voice-helper-conversions | pending |  | Add numpy PCM16 audio helpers. |
@@ -231,6 +231,27 @@ Tests:
 
 Next:
 - 11-sync-websocket-connection
+
+Risks:
+- Backend JSON endpoint must be confirmed. If the current GigaVoice WebSocket endpoint accepts only protobuf frames, this SDK plan cannot pass integration smoke test without a backend adapter or gateway.
+
+### 2026-04-27 — slice 11-sync-websocket-connection
+
+Done:
+- Added lazy `websockets.sync.client` import with `gigachat[realtime]` install hint.
+- Added `RealtimeConnectionManager` for resolving the realtime URL, refreshing sync auth, building SDK headers, opening the WebSocket, sending initial settings, and flushing queued messages.
+- Added `RealtimeConnection` with `send`, `send_raw`, `recv`, `recv_bytes`, `parse_event`, `close`, sync iteration, and sync event dispatch.
+- Added unit coverage with a fake sync WebSocket for initial settings, auth headers, queued frames, audio JSON serialization, event parsing, iteration, close, missing URL, missing dependency behavior, and unhandled error events.
+
+Tests:
+- `uv run pytest tests/unit/gigachat/realtime/test_sync_connection.py`
+- `uv run pytest tests/unit/gigachat/realtime/test_async_connection.py tests/unit/gigachat/realtime/test_sync_connection.py tests/unit/gigachat/realtime/test_base64_audio.py tests/unit/gigachat/realtime/test_event_models.py tests/unit/gigachat/realtime/test_event_params.py`
+- `uv run ruff check src/gigachat/api/realtime.py tests/unit/gigachat/realtime/test_sync_connection.py`
+- `uv run ruff format --check src/gigachat/api/realtime.py tests/unit/gigachat/realtime/test_sync_connection.py`
+- `uv run mypy src/gigachat/api/realtime.py tests/unit/gigachat/realtime/test_sync_connection.py` (rerun outside sandbox because `uv` cache access was blocked)
+
+Next:
+- 12-sync-helper-resources
 
 Risks:
 - Backend JSON endpoint must be confirmed. If the current GigaVoice WebSocket endpoint accepts only protobuf frames, this SDK plan cannot pass integration smoke test without a backend adapter or gateway.

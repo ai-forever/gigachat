@@ -8,6 +8,7 @@ from typing import (
     Awaitable,
     Callable,
     Dict,
+    Iterator,
     List,
     Mapping,
     Optional,
@@ -50,6 +51,20 @@ class AsyncRealtimeClientProtocol(Protocol):
     async def _aupdate_token(self) -> None: ...
 
 
+class RealtimeClientProtocol(Protocol):
+    _settings: Settings
+
+    @property
+    def token(self) -> Optional[str]: ...
+
+    @property
+    def _use_auth(self) -> bool: ...
+
+    def _is_token_usable(self) -> bool: ...
+
+    def _update_token(self) -> None: ...
+
+
 class AsyncWebSocketProtocol(Protocol):
     async def send(self, data: Union[str, bytes]) -> None: ...
 
@@ -58,7 +73,16 @@ class AsyncWebSocketProtocol(Protocol):
     async def close(self, code: int = 1000, reason: str = "") -> None: ...
 
 
+class WebSocketProtocol(Protocol):
+    def send(self, data: Union[str, bytes]) -> None: ...
+
+    def recv(self) -> Union[str, bytes]: ...
+
+    def close(self, code: int = 1000, reason: str = "") -> None: ...
+
+
 AsyncWebSocketConnect = Callable[..., Awaitable[AsyncWebSocketProtocol]]
+WebSocketConnect = Callable[..., WebSocketProtocol]
 QueuedMessage = Union[RealtimeClientEventParam, str, bytes]
 RealtimeEventHandler = Callable[[RealtimeServerEvent], object]
 RealtimeEventDecorator = Callable[[RealtimeEventHandler], RealtimeEventHandler]
@@ -139,6 +163,21 @@ class _RealtimeEventHandlerRegistry:
                     self.off("event", registered.handler)
         return bool(handlers)
 
+    def dispatch_sync(self, event: RealtimeServerEvent) -> bool:
+        handlers = self._handlers_for_event(event)
+        for registered in handlers:
+            result = registered.handler(event)
+            if isawaitable(result):
+                close = getattr(result, "close", None)
+                if callable(close):
+                    close()
+                raise TypeError("Async event handlers are not supported by sync realtime connections")
+            if registered.once:
+                self.off(event.type, registered.handler)
+                if event.type != "event":
+                    self.off("event", registered.handler)
+        return bool(handlers)
+
     def _handler_decorator(self, event_type: str, *, once: bool) -> RealtimeEventDecorator:
         def decorator(handler: RealtimeEventHandler) -> RealtimeEventHandler:
             self._add(event_type, handler, once=once)
@@ -161,6 +200,14 @@ def _require_websockets() -> AsyncWebSocketConnect:
     except ImportError as exc:
         raise ImportError("Install `gigachat[realtime]` to use realtime WebSocket API") from exc
     return cast(AsyncWebSocketConnect, cast(Any, module).connect)
+
+
+def _require_sync_websockets() -> WebSocketConnect:
+    try:
+        module = import_module("websockets.sync.client")
+    except ImportError as exc:
+        raise ImportError("Install `gigachat[realtime]` to use realtime WebSocket API") from exc
+    return cast(WebSocketConnect, cast(Any, module).connect)
 
 
 class AsyncRealtimeConnectionManager:
@@ -407,6 +454,243 @@ class AsyncRealtimeConnection:
             yield await self.recv()
 
 
+class RealtimeConnectionManager:
+    def __init__(
+        self,
+        client: RealtimeClientProtocol,
+        *,
+        settings: RealtimeSettingsParam,
+        url: Optional[str] = None,
+        extra_headers: Optional[Mapping[str, str]] = None,
+        websocket_connection_options: Optional[Mapping[str, Any]] = None,
+        max_frame_size: int = MAX_CLIENT_EVENT_FRAME_SIZE,
+        validate_audio_chunks: bool = True,
+        connect_factory: Optional[WebSocketConnect] = None,
+    ) -> None:
+        self._client = client
+        self._settings = settings
+        self._url = url
+        self._extra_headers = extra_headers
+        self._websocket_connection_options = websocket_connection_options
+        self._max_frame_size = max_frame_size
+        self._validate_audio_chunks = validate_audio_chunks
+        self._connect_factory = connect_factory
+        self._queued_messages: List[QueuedMessage] = []
+        self._connection: Optional[RealtimeConnection] = None
+        self._event_handlers = _RealtimeEventHandlerRegistry()
+
+    def __enter__(self) -> "RealtimeConnection":
+        url = self._resolve_url()
+        headers = self._build_headers()
+        websocket = self._connect(url, headers)
+        connection = RealtimeConnection(
+            websocket,
+            max_frame_size=self._max_frame_size,
+            validate_audio_chunks=self._validate_audio_chunks,
+            event_handlers=self._event_handlers.copy(),
+        )
+        self._connection = connection
+
+        try:
+            connection.send({"type": "settings", "settings": self._settings})
+            self._flush_queued_messages(connection)
+        except Exception:
+            self._connection = None
+            connection.close()
+            raise
+
+        return connection
+
+    def __exit__(
+        self,
+        exc_type: Optional[Type[BaseException]],
+        exc: Optional[BaseException],
+        traceback: Optional[TracebackType],
+    ) -> None:
+        if self._connection is not None:
+            self._connection.close()
+            self._connection = None
+
+    def send(self, event: RealtimeClientEventParam) -> None:
+        if self._connection is None:
+            self._queued_messages.append(event)
+            return
+        self._connection.send(event)
+
+    def send_raw(self, data: Union[str, bytes]) -> None:
+        if self._connection is None:
+            self._queued_messages.append(data)
+            return
+        self._connection.send_raw(data)
+
+    @overload
+    def on(self, event_type: str) -> RealtimeEventDecorator: ...
+
+    @overload
+    def on(self, event_type: str, handler: RealtimeEventHandler) -> RealtimeEventHandler: ...
+
+    def on(
+        self,
+        event_type: str,
+        handler: Optional[RealtimeEventHandler] = None,
+    ) -> Union[RealtimeEventHandler, RealtimeEventDecorator]:
+        if handler is None:
+            return self._event_handlers.on(event_type)
+        return self._event_handlers.on(event_type, handler)
+
+    def off(self, event_type: str, handler: RealtimeEventHandler) -> None:
+        self._event_handlers.off(event_type, handler)
+        if self._connection is not None:
+            self._connection.off(event_type, handler)
+
+    @overload
+    def once(self, event_type: str) -> RealtimeEventDecorator: ...
+
+    @overload
+    def once(self, event_type: str, handler: RealtimeEventHandler) -> RealtimeEventHandler: ...
+
+    def once(
+        self,
+        event_type: str,
+        handler: Optional[RealtimeEventHandler] = None,
+    ) -> Union[RealtimeEventHandler, RealtimeEventDecorator]:
+        if handler is None:
+            return self._event_handlers.once(event_type)
+        return self._event_handlers.once(event_type, handler)
+
+    def _resolve_url(self) -> str:
+        url = self._url or self._client._settings.realtime_url
+        if not url:
+            raise ValueError("Realtime WebSocket URL is required. Pass `url` or set `GIGACHAT_REALTIME_URL`.")
+        return url
+
+    def _build_headers(self) -> Dict[str, str]:
+        if self._client._use_auth and not self._client._is_token_usable():
+            self._client._update_token()
+
+        headers = build_headers(self._client.token)
+        if self._extra_headers:
+            headers.update(self._extra_headers)
+        return headers
+
+    def _connect(self, url: str, headers: Mapping[str, str]) -> WebSocketProtocol:
+        connect = self._connect_factory or _require_sync_websockets()
+        options = dict(self._websocket_connection_options or {})
+        configured_headers = options.pop("additional_headers", None)
+        if isinstance(configured_headers, Mapping):
+            merged_headers = dict(configured_headers)
+            merged_headers.update(headers)
+            headers = merged_headers
+
+        return connect(url, additional_headers=dict(headers), **options)
+
+    def _flush_queued_messages(self, connection: "RealtimeConnection") -> None:
+        queued_messages = self._queued_messages
+        self._queued_messages = []
+        for message in queued_messages:
+            if isinstance(message, (str, bytes)):
+                connection.send_raw(message)
+            else:
+                connection.send(message)
+
+
+class RealtimeConnection:
+    def __init__(
+        self,
+        websocket: WebSocketProtocol,
+        *,
+        max_frame_size: int = MAX_CLIENT_EVENT_FRAME_SIZE,
+        validate_audio_chunks: bool = True,
+        event_handlers: Optional[_RealtimeEventHandlerRegistry] = None,
+    ) -> None:
+        self._websocket = websocket
+        self._max_frame_size = max_frame_size
+        self._validate_audio_chunks = validate_audio_chunks
+        self._event_handlers = event_handlers or _RealtimeEventHandlerRegistry()
+
+    def recv(self) -> RealtimeServerEvent:
+        data = self._websocket.recv()
+        return self.parse_event(data)
+
+    def recv_bytes(self) -> bytes:
+        data = self._websocket.recv()
+        if isinstance(data, bytes):
+            return data
+        return data.encode("utf-8")
+
+    def send(self, event: RealtimeClientEventParam) -> None:
+        payload = serialize_client_event(
+            event,
+            max_frame_size=self._max_frame_size,
+            validate_audio_chunks=self._validate_audio_chunks,
+        )
+        self.send_raw(payload)
+
+    def send_raw(self, data: Union[str, bytes]) -> None:
+        if not isinstance(data, (str, bytes)):
+            raise TypeError("data must be str or bytes")
+        self._websocket.send(data)
+
+    def parse_event(self, data: Union[str, bytes]) -> RealtimeServerEvent:
+        if isinstance(data, bytes):
+            data = data.decode("utf-8")
+        if not isinstance(data, str):
+            raise TypeError("data must be str or bytes")
+
+        json_data = json.loads(data)
+        if not isinstance(json_data, Mapping):
+            raise ValueError("Realtime server event must be a JSON object")
+        return parse_realtime_event(json_data)
+
+    def close(self, *, code: int = 1000, reason: str = "") -> None:
+        self._websocket.close(code=code, reason=reason)
+
+    @overload
+    def on(self, event_type: str) -> RealtimeEventDecorator: ...
+
+    @overload
+    def on(self, event_type: str, handler: RealtimeEventHandler) -> RealtimeEventHandler: ...
+
+    def on(
+        self,
+        event_type: str,
+        handler: Optional[RealtimeEventHandler] = None,
+    ) -> Union[RealtimeEventHandler, RealtimeEventDecorator]:
+        if handler is None:
+            return self._event_handlers.on(event_type)
+        return self._event_handlers.on(event_type, handler)
+
+    def off(self, event_type: str, handler: RealtimeEventHandler) -> None:
+        self._event_handlers.off(event_type, handler)
+
+    @overload
+    def once(self, event_type: str) -> RealtimeEventDecorator: ...
+
+    @overload
+    def once(self, event_type: str, handler: RealtimeEventHandler) -> RealtimeEventHandler: ...
+
+    def once(
+        self,
+        event_type: str,
+        handler: Optional[RealtimeEventHandler] = None,
+    ) -> Union[RealtimeEventHandler, RealtimeEventDecorator]:
+        if handler is None:
+            return self._event_handlers.once(event_type)
+        return self._event_handlers.once(event_type, handler)
+
+    def dispatch_events(self) -> None:
+        while True:
+            event = self.recv()
+            handled = self._event_handlers.dispatch_sync(event)
+            if event.type == "error" and not handled:
+                message = getattr(event, "message", "Realtime error event received")
+                raise GigaChatException(message)
+
+    def __iter__(self) -> Iterator[RealtimeServerEvent]:
+        while True:
+            yield self.recv()
+
+
 class AsyncRealtimeSessionResource:
     def __init__(self, connection: AsyncRealtimeConnection) -> None:
         self._connection = connection
@@ -490,6 +774,11 @@ __all__ = (
     "AsyncRealtimeSynthesisResource",
     "AsyncWebSocketConnect",
     "AsyncWebSocketProtocol",
+    "RealtimeClientProtocol",
+    "RealtimeConnection",
+    "RealtimeConnectionManager",
     "RealtimeEventDecorator",
     "RealtimeEventHandler",
+    "WebSocketConnect",
+    "WebSocketProtocol",
 )
