@@ -1,9 +1,25 @@
 import json
 from importlib import import_module
+from inspect import isawaitable
 from types import TracebackType
-from typing import Any, AsyncIterator, Awaitable, Callable, Dict, List, Mapping, Optional, Protocol, Type, Union, cast
+from typing import (
+    Any,
+    AsyncIterator,
+    Awaitable,
+    Callable,
+    Dict,
+    List,
+    Mapping,
+    Optional,
+    Protocol,
+    Type,
+    Union,
+    cast,
+    overload,
+)
 
 from gigachat.api.utils import build_headers
+from gigachat.exceptions import GigaChatException
 from gigachat.models.realtime import RealtimeServerEvent, parse_realtime_event
 from gigachat.realtime._events import MAX_CLIENT_EVENT_FRAME_SIZE, serialize_client_event
 from gigachat.settings import Settings
@@ -34,6 +50,99 @@ class AsyncWebSocketProtocol(Protocol):
 
 AsyncWebSocketConnect = Callable[..., Awaitable[AsyncWebSocketProtocol]]
 QueuedMessage = Union[RealtimeClientEventParam, str, bytes]
+RealtimeEventHandler = Callable[[RealtimeServerEvent], object]
+RealtimeEventDecorator = Callable[[RealtimeEventHandler], RealtimeEventHandler]
+
+
+class _RealtimeEventHandler:
+    def __init__(self, handler: RealtimeEventHandler, *, once: bool = False) -> None:
+        self.handler = handler
+        self.once = once
+
+
+class _RealtimeEventHandlerRegistry:
+    def __init__(self) -> None:
+        self._handlers: Dict[str, List[_RealtimeEventHandler]] = {}
+
+    def copy(self) -> "_RealtimeEventHandlerRegistry":
+        registry = _RealtimeEventHandlerRegistry()
+        registry._handlers = {event_type: handlers[:] for event_type, handlers in self._handlers.items()}
+        return registry
+
+    @overload
+    def on(self, event_type: str) -> RealtimeEventDecorator: ...
+
+    @overload
+    def on(self, event_type: str, handler: RealtimeEventHandler) -> RealtimeEventHandler: ...
+
+    def on(
+        self, event_type: str, handler: Optional[RealtimeEventHandler] = None
+    ) -> Union[
+        RealtimeEventHandler,
+        RealtimeEventDecorator,
+    ]:
+        if handler is None:
+            return self._handler_decorator(event_type, once=False)
+        self._add(event_type, handler, once=False)
+        return handler
+
+    @overload
+    def once(self, event_type: str) -> RealtimeEventDecorator: ...
+
+    @overload
+    def once(self, event_type: str, handler: RealtimeEventHandler) -> RealtimeEventHandler: ...
+
+    def once(
+        self, event_type: str, handler: Optional[RealtimeEventHandler] = None
+    ) -> Union[
+        RealtimeEventHandler,
+        RealtimeEventDecorator,
+    ]:
+        if handler is None:
+            return self._handler_decorator(event_type, once=True)
+        self._add(event_type, handler, once=True)
+        return handler
+
+    def off(self, event_type: str, handler: RealtimeEventHandler) -> None:
+        handlers = self._handlers.get(event_type)
+        if not handlers:
+            return
+
+        remaining = [registered for registered in handlers if registered.handler is not handler]
+        if remaining:
+            self._handlers[event_type] = remaining
+        else:
+            self._handlers.pop(event_type, None)
+
+    def has_handlers(self, event_type: str) -> bool:
+        return bool(self._handlers.get(event_type))
+
+    async def dispatch(self, event: RealtimeServerEvent) -> bool:
+        handlers = self._handlers_for_event(event)
+        for registered in handlers:
+            result = registered.handler(event)
+            if isawaitable(result):
+                await result
+            if registered.once:
+                self.off(event.type, registered.handler)
+                if event.type != "event":
+                    self.off("event", registered.handler)
+        return bool(handlers)
+
+    def _handler_decorator(self, event_type: str, *, once: bool) -> RealtimeEventDecorator:
+        def decorator(handler: RealtimeEventHandler) -> RealtimeEventHandler:
+            self._add(event_type, handler, once=once)
+            return handler
+
+        return decorator
+
+    def _add(self, event_type: str, handler: RealtimeEventHandler, *, once: bool) -> None:
+        self._handlers.setdefault(event_type, []).append(_RealtimeEventHandler(handler, once=once))
+
+    def _handlers_for_event(self, event: RealtimeServerEvent) -> List[_RealtimeEventHandler]:
+        handlers = list(self._handlers.get(event.type, ()))
+        handlers.extend(self._handlers.get("event", ()))
+        return handlers
 
 
 def _require_websockets() -> AsyncWebSocketConnect:
@@ -67,6 +176,7 @@ class AsyncRealtimeConnectionManager:
         self._connect_factory = connect_factory
         self._queued_messages: List[QueuedMessage] = []
         self._connection: Optional[AsyncRealtimeConnection] = None
+        self._event_handlers = _RealtimeEventHandlerRegistry()
 
     async def __aenter__(self) -> "AsyncRealtimeConnection":
         url = self._resolve_url()
@@ -76,6 +186,7 @@ class AsyncRealtimeConnectionManager:
             websocket,
             max_frame_size=self._max_frame_size,
             validate_audio_chunks=self._validate_audio_chunks,
+            event_handlers=self._event_handlers.copy(),
         )
         self._connection = connection
 
@@ -110,6 +221,41 @@ class AsyncRealtimeConnectionManager:
             self._queued_messages.append(data)
             return
         await self._connection.send_raw(data)
+
+    @overload
+    def on(self, event_type: str) -> RealtimeEventDecorator: ...
+
+    @overload
+    def on(self, event_type: str, handler: RealtimeEventHandler) -> RealtimeEventHandler: ...
+
+    def on(
+        self,
+        event_type: str,
+        handler: Optional[RealtimeEventHandler] = None,
+    ) -> Union[RealtimeEventHandler, RealtimeEventDecorator]:
+        if handler is None:
+            return self._event_handlers.on(event_type)
+        return self._event_handlers.on(event_type, handler)
+
+    def off(self, event_type: str, handler: RealtimeEventHandler) -> None:
+        self._event_handlers.off(event_type, handler)
+        if self._connection is not None:
+            self._connection.off(event_type, handler)
+
+    @overload
+    def once(self, event_type: str) -> RealtimeEventDecorator: ...
+
+    @overload
+    def once(self, event_type: str, handler: RealtimeEventHandler) -> RealtimeEventHandler: ...
+
+    def once(
+        self,
+        event_type: str,
+        handler: Optional[RealtimeEventHandler] = None,
+    ) -> Union[RealtimeEventHandler, RealtimeEventDecorator]:
+        if handler is None:
+            return self._event_handlers.once(event_type)
+        return self._event_handlers.once(event_type, handler)
 
     def _resolve_url(self) -> str:
         url = self._url or self._client._settings.realtime_url
@@ -154,10 +300,12 @@ class AsyncRealtimeConnection:
         *,
         max_frame_size: int = MAX_CLIENT_EVENT_FRAME_SIZE,
         validate_audio_chunks: bool = True,
+        event_handlers: Optional[_RealtimeEventHandlerRegistry] = None,
     ) -> None:
         self._websocket = websocket
         self._max_frame_size = max_frame_size
         self._validate_audio_chunks = validate_audio_chunks
+        self._event_handlers = event_handlers or _RealtimeEventHandlerRegistry()
 
     async def recv(self) -> RealtimeServerEvent:
         data = await self._websocket.recv()
@@ -196,6 +344,47 @@ class AsyncRealtimeConnection:
     async def close(self, *, code: int = 1000, reason: str = "") -> None:
         await self._websocket.close(code=code, reason=reason)
 
+    @overload
+    def on(self, event_type: str) -> RealtimeEventDecorator: ...
+
+    @overload
+    def on(self, event_type: str, handler: RealtimeEventHandler) -> RealtimeEventHandler: ...
+
+    def on(
+        self,
+        event_type: str,
+        handler: Optional[RealtimeEventHandler] = None,
+    ) -> Union[RealtimeEventHandler, RealtimeEventDecorator]:
+        if handler is None:
+            return self._event_handlers.on(event_type)
+        return self._event_handlers.on(event_type, handler)
+
+    def off(self, event_type: str, handler: RealtimeEventHandler) -> None:
+        self._event_handlers.off(event_type, handler)
+
+    @overload
+    def once(self, event_type: str) -> RealtimeEventDecorator: ...
+
+    @overload
+    def once(self, event_type: str, handler: RealtimeEventHandler) -> RealtimeEventHandler: ...
+
+    def once(
+        self,
+        event_type: str,
+        handler: Optional[RealtimeEventHandler] = None,
+    ) -> Union[RealtimeEventHandler, RealtimeEventDecorator]:
+        if handler is None:
+            return self._event_handlers.once(event_type)
+        return self._event_handlers.once(event_type, handler)
+
+    async def dispatch_events(self) -> None:
+        while True:
+            event = await self.recv()
+            handled = await self._event_handlers.dispatch(event)
+            if event.type == "error" and not handled:
+                message = getattr(event, "message", "Realtime error event received")
+                raise GigaChatException(message)
+
     def __aiter__(self) -> AsyncIterator[RealtimeServerEvent]:
         return self._iter_events()
 
@@ -209,4 +398,6 @@ __all__ = (
     "AsyncRealtimeConnectionManager",
     "AsyncWebSocketConnect",
     "AsyncWebSocketProtocol",
+    "RealtimeEventDecorator",
+    "RealtimeEventHandler",
 )

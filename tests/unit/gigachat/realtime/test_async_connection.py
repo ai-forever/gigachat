@@ -6,7 +6,8 @@ import pytest
 
 from gigachat.api import realtime
 from gigachat.api.realtime import AsyncRealtimeConnectionManager
-from gigachat.models.realtime import InputTranscriptionEvent
+from gigachat.exceptions import GigaChatException
+from gigachat.models.realtime import InputTranscriptionEvent, RealtimeServerEvent
 from gigachat.settings import Settings
 from gigachat.types.realtime import RealtimeSettingsParam
 
@@ -75,6 +76,10 @@ class FakeClient:
 
 def _settings() -> RealtimeSettingsParam:
     return {"voice_call_id": "call-id"}
+
+
+class StopDispatch(Exception):
+    pass
 
 
 @pytest.mark.parametrize("url_source", ["argument", "settings"])
@@ -162,6 +167,157 @@ async def test_async_connection_recv_parses_event() -> None:
     assert event.text == "hello"
 
 
+async def test_async_connection_dispatches_specific_handler() -> None:
+    websocket = FakeWebSocket(
+        [
+            '{"type":"input_transcription","text":"hello"}',
+            '{"type":"error","message":"stop"}',
+        ]
+    )
+    connect = FakeConnect(websocket)
+    texts: List[str] = []
+
+    async with AsyncRealtimeConnectionManager(
+        FakeClient(), settings=_settings(), connect_factory=connect
+    ) as connection:
+
+        @connection.on("input_transcription")
+        async def on_transcription(event: RealtimeServerEvent) -> None:
+            texts.append(cast_input_transcription_event(event).text)
+
+        @connection.on("error")
+        def on_error(event: RealtimeServerEvent) -> None:
+            raise StopDispatch
+
+        with pytest.raises(StopDispatch):
+            await connection.dispatch_events()
+
+    assert texts == ["hello"]
+
+
+async def test_async_connection_dispatches_generic_event_handler() -> None:
+    websocket = FakeWebSocket(
+        [
+            '{"type":"input_transcription","text":"hello"}',
+            '{"type":"warning","message":"slow"}',
+            '{"type":"error","message":"stop"}',
+        ]
+    )
+    connect = FakeConnect(websocket)
+    event_types: List[str] = []
+
+    async with AsyncRealtimeConnectionManager(
+        FakeClient(), settings=_settings(), connect_factory=connect
+    ) as connection:
+
+        @connection.on("event")
+        def on_event(event: RealtimeServerEvent) -> None:
+            event_types.append(event.type)
+            if event.type == "error":
+                raise StopDispatch
+
+        with pytest.raises(StopDispatch):
+            await connection.dispatch_events()
+
+    assert event_types == ["input_transcription", "warning", "error"]
+
+
+async def test_async_connection_once_handler_is_removed_after_first_call() -> None:
+    websocket = FakeWebSocket(
+        [
+            '{"type":"input_transcription","text":"first"}',
+            '{"type":"input_transcription","text":"second"}',
+            '{"type":"error","message":"stop"}',
+        ]
+    )
+    connect = FakeConnect(websocket)
+    texts: List[str] = []
+
+    async with AsyncRealtimeConnectionManager(
+        FakeClient(), settings=_settings(), connect_factory=connect
+    ) as connection:
+
+        @connection.once("input_transcription")
+        def on_transcription(event: RealtimeServerEvent) -> None:
+            texts.append(cast_input_transcription_event(event).text)
+
+        @connection.on("error")
+        def on_error(event: RealtimeServerEvent) -> None:
+            raise StopDispatch
+
+        with pytest.raises(StopDispatch):
+            await connection.dispatch_events()
+
+    assert texts == ["first"]
+
+
+async def test_async_connection_off_removes_handler() -> None:
+    websocket = FakeWebSocket(
+        [
+            '{"type":"input_transcription","text":"hello"}',
+            '{"type":"error","message":"stop"}',
+        ]
+    )
+    connect = FakeConnect(websocket)
+    texts: List[str] = []
+
+    async with AsyncRealtimeConnectionManager(
+        FakeClient(), settings=_settings(), connect_factory=connect
+    ) as connection:
+
+        def on_transcription(event: RealtimeServerEvent) -> None:
+            texts.append(cast_input_transcription_event(event).text)
+
+        connection.on("input_transcription", on_transcription)
+        connection.off("input_transcription", on_transcription)
+
+        @connection.on("error")
+        def on_error(event: RealtimeServerEvent) -> None:
+            raise StopDispatch
+
+        with pytest.raises(StopDispatch):
+            await connection.dispatch_events()
+
+    assert texts == []
+
+
+async def test_async_manager_transfers_handlers_to_connection() -> None:
+    websocket = FakeWebSocket(
+        [
+            '{"type":"input_transcription","text":"hello"}',
+            '{"type":"error","message":"stop"}',
+        ]
+    )
+    connect = FakeConnect(websocket)
+    manager = AsyncRealtimeConnectionManager(FakeClient(), settings=_settings(), connect_factory=connect)
+    texts: List[str] = []
+
+    @manager.on("input_transcription")
+    def on_transcription(event: RealtimeServerEvent) -> None:
+        texts.append(cast_input_transcription_event(event).text)
+
+    @manager.on("error")
+    def on_error(event: RealtimeServerEvent) -> None:
+        raise StopDispatch
+
+    async with manager as connection:
+        with pytest.raises(StopDispatch):
+            await connection.dispatch_events()
+
+    assert texts == ["hello"]
+
+
+async def test_async_connection_unhandled_error_event_raises_gigachat_exception() -> None:
+    websocket = FakeWebSocket(['{"type":"error","message":"backend failed"}'])
+    connect = FakeConnect(websocket)
+
+    async with AsyncRealtimeConnectionManager(
+        FakeClient(), settings=_settings(), connect_factory=connect
+    ) as connection:
+        with pytest.raises(GigaChatException, match="backend failed"):
+            await connection.dispatch_events()
+
+
 async def test_async_connection_parse_event_accepts_utf8_bytes() -> None:
     websocket = FakeWebSocket()
     connect = FakeConnect(websocket)
@@ -217,3 +373,8 @@ async def test_async_manager_requires_realtime_url() -> None:
     with pytest.raises(ValueError, match="Realtime WebSocket URL is required"):
         async with manager:
             pass
+
+
+def cast_input_transcription_event(event: RealtimeServerEvent) -> InputTranscriptionEvent:
+    assert isinstance(event, InputTranscriptionEvent)
+    return event

@@ -20,7 +20,7 @@
 | 05-server-event-models | done | this commit | Added JSON server event models and parser factory. |
 | 06-client-event-serialization | done | this commit | Added JSON client event serialization and audio frame validation. |
 | 07-async-websocket-connection | done | this commit | Added async JSON websocket connection and manager. |
-| 08-event-handler-registry | pending |  | Add websocket event handlers. |
+| 08-event-handler-registry | done | this commit | Added async websocket event handlers. |
 | 09-async-helper-resources | pending |  | Add async realtime helper resources. |
 | 10-async-resource-namespace | pending |  | Add async realtime resource namespace. |
 | 11-sync-websocket-connection | pending |  | Add sync JSON websocket connection. |
@@ -174,3 +174,23 @@ Next:
 
 Risks:
 - Backend JSON endpoint must be confirmed. If the current GigaVoice WebSocket endpoint accepts only protobuf frames, this SDK plan cannot pass integration smoke tests without a backend adapter or gateway.
+
+### 2026-04-27 — slice 08-event-handler-registry
+
+Done:
+- Added OpenAI-style `.on()`, `.off()`, `.once()`, and `.dispatch_events()` methods to async realtime connections.
+- Added manager-level handler registration and transfer into the opened connection.
+- Added specific event handlers, generic `"event"` handlers, one-shot handlers, and unhandled error event raising via `GigaChatException`.
+- Kept `recv()` and async iteration parse-only: they do not raise only because an event has type `"error"`.
+
+Tests:
+- `uv run pytest tests/unit/gigachat/realtime/test_async_connection.py`
+- `uv run ruff check src/gigachat/api/realtime.py tests/unit/gigachat/realtime/test_async_connection.py`
+- `uv run ruff format --check src/gigachat/api/realtime.py tests/unit/gigachat/realtime/test_async_connection.py`
+- `uv run mypy src/gigachat/api/realtime.py tests/unit/gigachat/realtime/test_async_connection.py` (rerun outside sandbox because `uv` cache access was blocked)
+
+Next:
+- 09-async-helper-resources
+
+Risks:
+- Backend JSON endpoint must be confirmed. If the current GigaVoice WebSocket endpoint accepts only protobuf frames, this SDK plan cannot pass integration smoke test without a backend adapter or gateway.
