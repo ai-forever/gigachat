@@ -1,11 +1,12 @@
-import warnings
 from typing import TYPE_CHECKING, Literal
 
 from gigachat._types import FileTypes
 from gigachat.api import files
 from gigachat.authentication import _awith_auth, _with_auth
-from gigachat.models.files import DeletedFile, Image, UploadedFile, UploadedFiles
+from gigachat.models.files import DeletedFile, File, UploadedFile, UploadedFiles
 from gigachat.retry import _awith_retry, _with_retry
+
+from ._utils import warn_deprecated_resource_api
 
 if TYPE_CHECKING:
     from gigachat.client import GigaChatAsyncClient, GigaChatSyncClient
@@ -50,15 +51,18 @@ class FilesSyncResource:
 
     @_with_retry
     @_with_auth
-    def retrieve_image(self, file_id: str) -> Image:
-        """Return an image in base64 encoding."""
-        with warnings.catch_warnings():
-            warnings.filterwarnings("ignore", category=DeprecationWarning)
-            return files.get_image_sync(
-                self._base_client._client,
-                file_id=file_id,
-                access_token=self._base_client.token,
-            )
+    def retrieve_content(self, file_id: str) -> File:
+        """Return file content in base64 encoding."""
+        return files.get_file_content_sync(
+            self._base_client._client,
+            file_id=file_id,
+            access_token=self._base_client.token,
+        )
+
+    def retrieve_image(self, file_id: str) -> File:
+        """Return file content via deprecated image compatibility alias."""
+        warn_deprecated_resource_api("client.files.retrieve_image(...)", "client.files.retrieve_content(...)")
+        return self.retrieve_content(file_id)
 
 
 class FilesAsyncResource:
@@ -104,12 +108,15 @@ class FilesAsyncResource:
 
     @_awith_retry
     @_awith_auth
-    async def retrieve_image(self, file_id: str) -> Image:
-        """Return an image in base64 encoding."""
-        with warnings.catch_warnings():
-            warnings.filterwarnings("ignore", category=DeprecationWarning)
-            return await files.get_image_async(
-                self._base_client._aclient,
-                file_id=file_id,
-                access_token=self._base_client.token,
-            )
+    async def retrieve_content(self, file_id: str) -> File:
+        """Return file content in base64 encoding."""
+        return await files.get_file_content_async(
+            self._base_client._aclient,
+            file_id=file_id,
+            access_token=self._base_client.token,
+        )
+
+    async def retrieve_image(self, file_id: str) -> File:
+        """Return file content via deprecated image compatibility alias."""
+        warn_deprecated_resource_api("client.a_files.retrieve_image(...)", "client.a_files.retrieve_content(...)")
+        return await self.retrieve_content(file_id)

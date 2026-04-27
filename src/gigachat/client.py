@@ -50,7 +50,7 @@ from gigachat.models.chat_completions import (
     ChatStorage,
 )
 from gigachat.models.embeddings import Embeddings
-from gigachat.models.files import DeletedFile, Image, UploadedFile, UploadedFiles
+from gigachat.models.files import DeletedFile, File, UploadedFile, UploadedFiles
 from gigachat.models.models import Model, Models
 from gigachat.models.response_format import JsonSchemaResponseFormat
 from gigachat.models.tools import AICheckResult, Balance, OpenApiFunctions, TokensCount
@@ -571,10 +571,15 @@ class GigaChatSyncClient(_BaseClient):
         warn_deprecated_resource_api("client.get_model(...)", "client.models.retrieve(...)")
         return self.models.retrieve(model)
 
-    def get_image(self, file_id: str) -> Image:
-        """Return an image via deprecated root shim."""
-        warn_deprecated_resource_api("client.get_image(...)", "client.files.retrieve_image(...)")
-        return self.files.retrieve_image(file_id)
+    def get_file_content(self, file_id: str) -> File:
+        """Return file content via deprecated root shim."""
+        warn_deprecated_resource_api("client.get_file_content(...)", "client.files.retrieve_content(...)")
+        return self.files.retrieve_content(file_id)
+
+    def get_image(self, file_id: str) -> File:
+        """Return file content via deprecated root shim."""
+        warn_deprecated_resource_api("client.get_image(...)", "client.files.retrieve_content(...)")
+        return self.files.retrieve_content(file_id)
 
     def upload_file(
         self,
@@ -937,10 +942,15 @@ class GigaChatAsyncClient(_BaseClient):
         warn_deprecated_resource_api("client.aget_models()", "client.a_models.list()")
         return await self.a_models.list()
 
-    async def aget_image(self, file_id: str) -> Image:
-        """Return an image via deprecated root shim."""
-        warn_deprecated_resource_api("client.aget_image(...)", "client.a_files.retrieve_image(...)")
-        return await self.a_files.retrieve_image(file_id)
+    async def aget_file_content(self, file_id: str) -> File:
+        """Return file content via deprecated root shim."""
+        warn_deprecated_resource_api("client.aget_file_content(...)", "client.a_files.retrieve_content(...)")
+        return await self.a_files.retrieve_content(file_id)
+
+    async def aget_image(self, file_id: str) -> File:
+        """Return file content via deprecated root shim."""
+        warn_deprecated_resource_api("client.aget_image(...)", "client.a_files.retrieve_content(...)")
+        return await self.a_files.retrieve_content(file_id)
 
     async def aget_model(self, model: str) -> Model:
         """Return a model description via deprecated root shim."""

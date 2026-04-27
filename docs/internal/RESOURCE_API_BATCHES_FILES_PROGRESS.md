@@ -16,7 +16,7 @@
 3. [done] Add batches resource namespace and deprecated root shims
 4. [done] Add batch example/docs on resource paths
 5. [done] Add low-level file content API and File model
-6. [todo] Add files.retrieve_content resource path and shims
+6. [done] Add files.retrieve_content resource path and shims
 7. [todo] Add low-level function validation API and models
 8. [todo] Add functions.validate resource path and shims
 9. [todo] Add global resource/shim regression coverage
@@ -56,3 +56,9 @@
   - Тесты: uv run pytest tests/unit/gigachat/api/test_files.py -q; uv run pytest tests/unit/gigachat/models/test_files.py -q; uv run pytest tests/unit/gigachat/test_client_files.py -q; uv run pytest tests/unit/gigachat/test_client_resource_shims.py -q; uv run ruff check src/gigachat/api/files.py src/gigachat/models/files.py src/gigachat/resources/files.py tests/unit/gigachat/api/test_files.py tests/unit/gigachat/models/test_files.py; git diff --check.
   - Commit: feat(files): add low-level file content api
   - Замечания: `client.files.retrieve_content` и root `get_file_content` не добавлялись; `resources/files.py` изменён только для подавления fallout от deprecated low-level alias и сохранения текущего `retrieve_image` поведения до среза 6.
+- 2026-04-27: завершён срез 6.
+  - Что сделано: добавлены `files.retrieve_content`/`a_files.retrieve_content`, root shims `get_file_content`/`aget_file_content`, а `get_image`/`aget_image` и resource aliases `retrieve_image` переведены на generic content path.
+  - Изменённые файлы: src/gigachat/resources/files.py, src/gigachat/client.py, tests/unit/gigachat/test_client_files.py, tests/unit/gigachat/test_client_resource_shims.py, docs/internal/RESOURCE_API_BATCHES_FILES_PROGRESS.md.
+  - Тесты: uv run pytest tests/unit/gigachat/test_client_files.py -q; uv run pytest tests/unit/gigachat/test_client_resource_shims.py -q; uv run pytest tests/unit/gigachat/test_client_lifecycle.py -q; uv run ruff check src/gigachat/resources/files.py src/gigachat/client.py tests/unit/gigachat/test_client_files.py tests/unit/gigachat/test_client_resource_shims.py; git diff --check.
+  - Commit: feat(resources): add file content resource
+  - Замечания: `retrieve_image` теперь warning-ит как deprecated image-only alias, поэтому тесты обновлены на expected warning и canonical `retrieve_content` без warning.

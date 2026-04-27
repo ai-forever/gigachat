@@ -4,7 +4,7 @@ import pytest
 from pytest_httpx import HTTPXMock
 
 from gigachat.client import GigaChatAsyncClient, GigaChatSyncClient
-from gigachat.models import DeletedFile, Image, UploadedFile, UploadedFiles
+from gigachat.models import DeletedFile, File, UploadedFile, UploadedFiles
 from gigachat.resources.files import FilesAsyncResource, FilesSyncResource
 from tests.constants import (
     BASE_URL,
@@ -93,15 +93,24 @@ def test_files_delete(httpx_mock: HTTPXMock) -> None:
     assert not [warning for warning in caught if issubclass(warning.category, DeprecationWarning)]
 
 
-def test_files_retrieve_image(httpx_mock: HTTPXMock) -> None:
+def test_files_retrieve_content(httpx_mock: HTTPXMock) -> None:
     httpx_mock.add_response(url=IMAGE_URL, content=IMAGE)
     with GigaChatSyncClient(base_url=BASE_URL, model="model") as client:
         with warnings.catch_warnings(record=True) as caught:
             warnings.simplefilter("always", DeprecationWarning)
+            response = client.files.retrieve_content(file_id="img_file")
+
+    assert isinstance(response, File)
+    assert not [warning for warning in caught if issubclass(warning.category, DeprecationWarning)]
+
+
+def test_files_retrieve_image_deprecated_alias(httpx_mock: HTTPXMock) -> None:
+    httpx_mock.add_response(url=IMAGE_URL, content=IMAGE)
+    with GigaChatSyncClient(base_url=BASE_URL, model="model") as client:
+        with pytest.warns(DeprecationWarning, match=r"client\.files\.retrieve_content\(\.\.\.\)"):
             response = client.files.retrieve_image(file_id="img_file")
 
-    assert isinstance(response, Image)
-    assert not [warning for warning in caught if issubclass(warning.category, DeprecationWarning)]
+    assert isinstance(response, File)
 
 
 def test_upload_file_deprecated_shim(httpx_mock: HTTPXMock) -> None:
@@ -145,13 +154,22 @@ def test_delete_file_deprecated_shim(httpx_mock: HTTPXMock) -> None:
     assert isinstance(response, DeletedFile)
 
 
+def test_get_file_content_deprecated_shim(httpx_mock: HTTPXMock) -> None:
+    httpx_mock.add_response(url=IMAGE_URL, content=IMAGE)
+    with GigaChatSyncClient(base_url=BASE_URL, model="model") as client:
+        with pytest.warns(DeprecationWarning, match=r"client\.files\.retrieve_content\(\.\.\.\)"):
+            response = client.get_file_content(file_id="img_file")
+
+    assert isinstance(response, File)
+
+
 def test_get_image_deprecated_shim(httpx_mock: HTTPXMock) -> None:
     httpx_mock.add_response(url=IMAGE_URL, content=IMAGE)
     with GigaChatSyncClient(base_url=BASE_URL, model="model") as client:
-        with pytest.warns(DeprecationWarning, match=r"client\.files\.retrieve_image\(\.\.\.\)"):
+        with pytest.warns(DeprecationWarning, match=r"client\.files\.retrieve_content\(\.\.\.\)"):
             response = client.get_image(file_id="img_file")
 
-    assert isinstance(response, Image)
+    assert isinstance(response, File)
 
 
 async def test_a_files_upload(httpx_mock: HTTPXMock) -> None:
@@ -203,15 +221,24 @@ async def test_a_files_delete(httpx_mock: HTTPXMock) -> None:
     assert not [warning for warning in caught if issubclass(warning.category, DeprecationWarning)]
 
 
-async def test_a_files_retrieve_image(httpx_mock: HTTPXMock) -> None:
+async def test_a_files_retrieve_content(httpx_mock: HTTPXMock) -> None:
     httpx_mock.add_response(url=IMAGE_URL, content=IMAGE)
     async with GigaChatAsyncClient(base_url=BASE_URL, model="model") as client:
         with warnings.catch_warnings(record=True) as caught:
             warnings.simplefilter("always", DeprecationWarning)
+            response = await client.a_files.retrieve_content(file_id="img_file")
+
+    assert isinstance(response, File)
+    assert not [warning for warning in caught if issubclass(warning.category, DeprecationWarning)]
+
+
+async def test_a_files_retrieve_image_deprecated_alias(httpx_mock: HTTPXMock) -> None:
+    httpx_mock.add_response(url=IMAGE_URL, content=IMAGE)
+    async with GigaChatAsyncClient(base_url=BASE_URL, model="model") as client:
+        with pytest.warns(DeprecationWarning, match=r"client\.a_files\.retrieve_content\(\.\.\.\)"):
             response = await client.a_files.retrieve_image(file_id="img_file")
 
-    assert isinstance(response, Image)
-    assert not [warning for warning in caught if issubclass(warning.category, DeprecationWarning)]
+    assert isinstance(response, File)
 
 
 async def test_aupload_file_deprecated_shim(httpx_mock: HTTPXMock) -> None:
@@ -255,10 +282,19 @@ async def test_adelete_file_deprecated_shim(httpx_mock: HTTPXMock) -> None:
     assert isinstance(response, DeletedFile)
 
 
+async def test_aget_file_content_deprecated_shim(httpx_mock: HTTPXMock) -> None:
+    httpx_mock.add_response(url=IMAGE_URL, content=IMAGE)
+    async with GigaChatAsyncClient(base_url=BASE_URL, model="model") as client:
+        with pytest.warns(DeprecationWarning, match=r"client\.a_files\.retrieve_content\(\.\.\.\)"):
+            response = await client.aget_file_content(file_id="img_file")
+
+    assert isinstance(response, File)
+
+
 async def test_aget_image_deprecated_shim(httpx_mock: HTTPXMock) -> None:
     httpx_mock.add_response(url=IMAGE_URL, content=IMAGE)
     async with GigaChatAsyncClient(base_url=BASE_URL, model="model") as client:
-        with pytest.warns(DeprecationWarning, match=r"client\.a_files\.retrieve_image\(\.\.\.\)"):
+        with pytest.warns(DeprecationWarning, match=r"client\.a_files\.retrieve_content\(\.\.\.\)"):
             response = await client.aget_image(file_id="img_file")
 
-    assert isinstance(response, Image)
+    assert isinstance(response, File)
