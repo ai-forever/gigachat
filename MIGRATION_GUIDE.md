@@ -65,11 +65,17 @@ shims and emit `DeprecationWarning`; new code should use the resource paths belo
 | `client.get_files()` | `client.files.list()` |
 | `client.delete_file(file)` | `client.files.delete(file)` |
 | `client.get_image(file_id)` | `client.files.retrieve_image(file_id)` |
+| `client.create_batch(file, method)` | `client.batches.create(file, method)` |
+| `client.get_batches()` | `client.batches.list()` |
+| `client.get_batches(batch_id="...")` | `client.batches.retrieve("...")` |
 | `await client.aupload_file(file, purpose=...)` | `await client.a_files.upload(file, purpose=...)` |
 | `await client.aget_file(file)` | `await client.a_files.retrieve(file)` |
 | `await client.aget_files()` | `await client.a_files.list()` |
 | `await client.adelete_file(file)` | `await client.a_files.delete(file)` |
 | `await client.aget_image(file_id)` | `await client.a_files.retrieve_image(file_id)` |
+| `await client.acreate_batch(file, method)` | `await client.a_batches.create(file, method)` |
+| `await client.aget_batches()` | `await client.a_batches.list()` |
+| `await client.aget_batches(batch_id="...")` | `await client.a_batches.retrieve("...")` |
 | `client.tokens_count(input_, model=...)` | `client.tokens.count(input_, model=...)` |
 | `await client.atokens_count(input_, model=...)` | `await client.a_tokens.count(input_, model=...)` |
 | `client.get_balance()` | `client.balance.get()` |

@@ -42,6 +42,7 @@ This library is part of [GigaChain](https://github.com/ai-forever/gigachain) and
 - ✅ **Function calling** — tool use for building agents
 - ✅ **Vision** — image understanding (multimodal)
 - ✅ **File operations** — upload, retrieve, and delete files
+- ✅ **Batch operations** — create and inspect asynchronous batch jobs
 - ✅ **Token counting** — estimate token usage before requests
 - ✅ **Multiple auth methods** — OAuth credentials, password, TLS certificates, access tokens
 - ✅ **Automatic retry** — configurable exponential backoff for transient errors
@@ -642,6 +643,22 @@ with GigaChat() as client:
 
     # Delete a file
     client.files.delete(uploaded.id_)
+```
+
+### Batch Operations
+
+Create and inspect asynchronous batch jobs:
+
+```python
+from gigachat import GigaChat
+
+with open("batch_file_500.jsonl", "rb") as f:
+    data = f.read()
+
+with GigaChat() as client:
+    batch = client.batches.create(data, method="chat_completions")
+    result = client.batches.retrieve(batch.id_)
+    print(result.batches[0].status)
 ```
 
 

@@ -49,4 +49,5 @@ Notebook examples:
 * [Context Variables](./example_contextvars.ipynb) - optional headers with context variables
 * [AI Check](./example_ai_check.ipynb) - detecting AI-generated text with GigaCheckDetection
 * [Structured Output](./example_structured_output.ipynb) - structured JSON responses with JSON Schema
+* [Batching](./example_batching.ipynb) - create and inspect batch jobs with `client.batches`
 * [Vision](./vision/example_vision.ipynb) - image analysis with GigaChat Vision

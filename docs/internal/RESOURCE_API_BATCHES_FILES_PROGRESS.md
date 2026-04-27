@@ -14,7 +14,7 @@
 1. [done] Add follow-up plan/progress docs
 2. [done] Add low-level batches API and models
 3. [done] Add batches resource namespace and deprecated root shims
-4. [todo] Add batch example/docs on resource paths
+4. [done] Add batch example/docs on resource paths
 5. [todo] Add low-level file content API and File model
 6. [todo] Add files.retrieve_content resource path and shims
 7. [todo] Add low-level function validation API and models
@@ -44,3 +44,9 @@
   - Тесты: uv run pytest tests/unit/gigachat/test_client_batches.py -q; uv run pytest tests/unit/gigachat/test_client_lifecycle.py -q; uv run pytest tests/unit/gigachat/test_client_resource_shims.py -q; uv run ruff check src/gigachat/resources/batches.py src/gigachat/resources/__init__.py src/gigachat/client.py tests/unit/gigachat/test_client_batches.py; git diff --check.
   - Commit: feat(resources): add batches resource
   - Замечания: low-level batches API, docs/notebooks и следующие срезы не менялись.
+- 2026-04-27: завершён срез 4.
+  - Что сделано: добавлен notebook с batch flow через `client.batches`, README-пример и mapping для batch root shims.
+  - Изменённые файлы: examples/example_batching.ipynb, examples/README.md, README.md, MIGRATION_GUIDE.md, MIGRATION_GUIDE_ru.md, docs/internal/RESOURCE_API_BATCHES_FILES_PROGRESS.md.
+  - Тесты: node -e "JSON.parse(require('fs').readFileSync('examples/example_batching.ipynb','utf8')); console.log('ok')"; git diff --check; uv run ruff check README.md MIGRATION_GUIDE.md MIGRATION_GUIDE_ru.md examples/README.md.
+  - Commit: docs(batches): add resource batch example
+  - Замечания: `ruff check` неприменим к Markdown-файлам и падает на markdown syntax; file content API не добавлялся, `files.retrieve_content` указан только как future path в notebook markdown.
