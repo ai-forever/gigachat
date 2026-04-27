@@ -1,9 +1,23 @@
+import json
+from pathlib import Path
 from typing import Any, Dict
 
 import pytest
 from pydantic import ValidationError
 
+from gigachat.models import (
+    ChatCompletionChunk as CompatChatCompletionChunk,
+)
+from gigachat.models import (
+    ChatCompletionRequest,
+    ChatCompletionResponse,
+    LegacyChat,
+    LegacyChatCompletion,
+    LegacyChatCompletionChunk,
+)
 from gigachat.models.chat import (
+    Chat,
+    ChatCompletion,
     Function,
     FunctionCall,
     FunctionParameters,
@@ -11,6 +25,9 @@ from gigachat.models.chat import (
     MessagesRole,
     Usage,
 )
+from gigachat.models.chat_completions import ChatCompletionChunk as PrimaryChatCompletionChunk
+
+TEST_DATA_DIR = Path(__file__).resolve().parents[3] / "data"
 
 
 def test_messages_role_enum() -> None:
@@ -67,3 +84,50 @@ def test_usage_validation() -> None:
 def test_function_parameters_default() -> None:
     params = FunctionParameters()
     assert params.type_ == "object"
+
+
+def test_chat_module_exports_legacy_aliases() -> None:
+    assert issubclass(Chat, LegacyChat)
+    assert issubclass(ChatCompletion, LegacyChatCompletion)
+
+
+def test_gigachat_models_exports_keep_legacy_aliases_and_primary_contracts_separate() -> None:
+    assert issubclass(CompatChatCompletionChunk, LegacyChatCompletionChunk)
+    assert ChatCompletionRequest is not Chat
+    assert ChatCompletionResponse is not ChatCompletion
+    assert PrimaryChatCompletionChunk is not CompatChatCompletionChunk
+
+
+def test_legacy_chat_request_round_trip_unchanged() -> None:
+    payload = json.loads((TEST_DATA_DIR / "chat.json").read_text(encoding="utf-8"))
+
+    compat_model = Chat.model_validate(payload)
+    legacy_model = LegacyChat.model_validate(payload)
+
+    assert compat_model.model_dump(exclude_none=True, by_alias=True) == legacy_model.model_dump(
+        exclude_none=True, by_alias=True
+    )
+
+
+def test_legacy_chat_completion_response_round_trip_unchanged() -> None:
+    payload = json.loads((TEST_DATA_DIR / "chat_completion.json").read_text(encoding="utf-8"))
+
+    compat_model = ChatCompletion.model_validate(payload)
+    legacy_model = LegacyChatCompletion.model_validate(payload)
+
+    assert compat_model.model_dump(exclude_none=True, by_alias=True) == payload
+    assert legacy_model.model_dump(exclude_none=True, by_alias=True) == payload
+
+
+def test_primary_response_contract_does_not_validate_as_legacy_chat_completion() -> None:
+    payload = {
+        "model": "GigaChat-2-Max",
+        "created_at": 1760434636,
+        "messages": [{"role": "assistant", "content": "primary response"}],
+    }
+
+    response = ChatCompletionResponse.model_validate(payload)
+
+    assert response.messages is not None
+    with pytest.raises(ValidationError):
+        ChatCompletion.model_validate(payload)

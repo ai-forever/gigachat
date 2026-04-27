@@ -26,7 +26,7 @@ import pydantic
 from typing_extensions import Self
 
 from gigachat._types import FileTypes
-from gigachat.api import auth, chat, embeddings, files, models, tools
+from gigachat.api import auth, chat_completions, embeddings, files, legacy_chat, models, tools
 from gigachat.assistants import AssistantsAsyncClient, AssistantsSyncClient
 from gigachat.authentication import _awith_auth, _awith_auth_stream, _with_auth, _with_auth_stream
 from gigachat.context import authorization_cvar
@@ -38,6 +38,16 @@ from gigachat.models.chat import (
     ChatCompletionChunk,
     Messages,
     MessagesRole,
+)
+from gigachat.models.chat_completions import (
+    ChatCompletionChunk as PrimaryChatCompletionChunk,
+)
+from gigachat.models.chat_completions import (
+    ChatCompletionRequest,
+    ChatCompletionResponse,
+    ChatMessage,
+    ChatResponseFormat,
+    ChatStorage,
 )
 from gigachat.models.embeddings import Embeddings
 from gigachat.models.files import DeletedFile, Image, UploadedFile, UploadedFiles
@@ -53,7 +63,7 @@ ModelT = TypeVar("ModelT", bound=pydantic.BaseModel)
 
 logger = logging.getLogger(__name__)
 
-GIGACHAT_MODEL = "GigaChat"
+GIGACHAT_MODEL = "GigaChat-2"
 
 
 def _warn_deprecated_legacy_api(old_path: str, new_path: str) -> None:
@@ -146,6 +156,37 @@ def _prepare_chat_for_parse(
     return chat_data
 
 
+def _prepare_chat_completion_for_parse(
+    payload: Union[ChatCompletionRequest, Dict[str, Any], str],
+    settings: Settings,
+    response_format: Type[pydantic.BaseModel],
+    strict: bool,
+) -> ChatCompletionRequest:
+    """Prepare a primary chat completion request with a structured response schema."""
+    chat_data = _parse_chat_completion(payload, settings)
+    chat_data.response_format = ChatResponseFormat(type="json_schema", schema=response_format, strict=strict)
+    return chat_data
+
+
+def _parse_chat_completion(
+    payload: Union[ChatCompletionRequest, Dict[str, Any], str],
+    settings: Settings,
+) -> ChatCompletionRequest:
+    if isinstance(payload, str):
+        chat = ChatCompletionRequest(messages=[ChatMessage(role="user", content=payload)])
+    else:
+        chat = ChatCompletionRequest.model_validate(payload)
+
+    using_assistant = chat.assistant_id is not None or (
+        isinstance(chat.storage, ChatStorage) and chat.storage.thread_id is not None
+    )
+    if not using_assistant and chat.model is None:
+        chat.model = settings.model or GIGACHAT_MODEL
+    if chat.flags is None:
+        chat.flags = settings.flags
+    return chat
+
+
 def _parse_completion(
     completion: ChatCompletion,
     response_format: Type[ModelT],
@@ -161,6 +202,41 @@ def _parse_completion(
 
     data = json.loads(choice.message.content)
     return response_format.model_validate(data)
+
+
+def _parse_primary_completion(
+    completion: ChatCompletionResponse,
+    response_format: Type[ModelT],
+) -> ModelT:
+    """Parse and validate assistant text content from *completion* into *response_format*."""
+    if not completion.messages:
+        raise ValueError("Response has no messages")
+
+    found_assistant_message = False
+
+    for message in completion.messages:
+        if message.role != "assistant":
+            continue
+
+        found_assistant_message = True
+
+        if message.finish_reason == "length":
+            raise LengthFinishReasonError(completion)
+
+        if not message.content:
+            continue
+
+        raw_content = "".join(part.text for part in message.content if part.text is not None)
+        if not raw_content:
+            continue
+
+        data = json.loads(raw_content)
+        return response_format.model_validate(data)
+
+    if not found_assistant_message:
+        raise ValueError("Response has no assistant messages")
+
+    raise ValueError("Response has no assistant text content")
 
 
 def _build_access_token(token: Token) -> AccessToken:
@@ -482,11 +558,40 @@ class GigaChatSyncClient(_BaseClient):
 
     @_with_retry
     @_with_auth
+    def _chat_create(self, payload: Union[ChatCompletionRequest, Dict[str, Any], str]) -> ChatCompletionResponse:
+        """Return a primary chat completion based on the provided messages."""
+        chat_data = _parse_chat_completion(payload, self._settings)
+        return chat_completions.chat_sync(self._client, chat=chat_data, access_token=self.token)
+
+    @_with_retry_stream
+    @_with_auth_stream
+    def _chat_stream(
+        self, payload: Union[ChatCompletionRequest, Dict[str, Any], str]
+    ) -> Iterator[PrimaryChatCompletionChunk]:
+        """Return a primary streaming chat completion based on the provided messages."""
+        chat_data = _parse_chat_completion(payload, self._settings)
+        yield from chat_completions.stream_sync(self._client, chat=chat_data, access_token=self.token)
+
+    def _chat_parse(
+        self,
+        payload: Union[ChatCompletionRequest, Dict[str, Any], str],
+        *,
+        response_format: Type[ModelT],
+        strict: bool = True,
+    ) -> Tuple[ChatCompletionResponse, ModelT]:
+        """Send a primary chat request and parse the response into a structured object."""
+        chat_data = _prepare_chat_completion_for_parse(payload, self._settings, response_format, strict)
+        completion = self._chat_create(chat_data)
+        parsed = _parse_primary_completion(completion, response_format)
+        return completion, parsed
+
+    @_with_retry
+    @_with_auth
     def _legacy_chat_create(self, payload: Union[Chat, Dict[str, Any], str]) -> ChatCompletion:
         """Return a legacy chat completion based on the provided messages."""
         _validate_response_format(payload)
         chat_data = _parse_chat(payload, self._settings)
-        return chat.chat_sync(self._client, chat=chat_data, access_token=self.token)
+        return legacy_chat.chat_sync(self._client, chat=chat_data, access_token=self.token)
 
     @_with_retry_stream
     @_with_auth_stream
@@ -494,7 +599,7 @@ class GigaChatSyncClient(_BaseClient):
         """Return a legacy streaming chat completion based on the provided messages."""
         chat_data = _parse_chat(payload, self._settings)
 
-        yield from chat.stream_sync(self._client, chat=chat_data, access_token=self.token)
+        yield from legacy_chat.stream_sync(self._client, chat=chat_data, access_token=self.token)
 
     def _legacy_chat_parse(
         self,
@@ -767,14 +872,43 @@ class GigaChatAsyncClient(_BaseClient):
         _validate_response_format(payload)
         chat_data = _parse_chat(payload, self._settings)
 
-        return await chat.chat_async(self._aclient, chat=chat_data, access_token=self.token)
+        return await legacy_chat.chat_async(self._aclient, chat=chat_data, access_token=self.token)
+
+    @_awith_retry
+    @_awith_auth
+    async def _achat_create(self, payload: Union[ChatCompletionRequest, Dict[str, Any], str]) -> ChatCompletionResponse:
+        """Return a primary chat completion based on the provided messages."""
+        chat_data = _parse_chat_completion(payload, self._settings)
+        return await chat_completions.chat_async(self._aclient, chat=chat_data, access_token=self.token)
+
+    @_awith_retry_stream
+    @_awith_auth_stream
+    def _achat_stream(
+        self, payload: Union[ChatCompletionRequest, Dict[str, Any], str]
+    ) -> AsyncIterator[PrimaryChatCompletionChunk]:
+        """Return a primary streaming chat completion based on the provided messages."""
+        chat_data = _parse_chat_completion(payload, self._settings)
+        return chat_completions.stream_async(self._aclient, chat=chat_data, access_token=self.token)
 
     @_awith_retry_stream
     @_awith_auth_stream
     def _legacy_achat_stream(self, payload: Union[Chat, Dict[str, Any], str]) -> AsyncIterator[ChatCompletionChunk]:
         """Return a legacy streaming chat completion based on the provided messages."""
         chat_data = _parse_chat(payload, self._settings)
-        return chat.stream_async(self._aclient, chat=chat_data, access_token=self.token)
+        return legacy_chat.stream_async(self._aclient, chat=chat_data, access_token=self.token)
+
+    async def _achat_parse(
+        self,
+        payload: Union[ChatCompletionRequest, Dict[str, Any], str],
+        *,
+        response_format: Type[ModelT],
+        strict: bool = True,
+    ) -> Tuple[ChatCompletionResponse, ModelT]:
+        """Send a primary chat request and parse the response into a structured object."""
+        chat_data = _prepare_chat_completion_for_parse(payload, self._settings, response_format, strict)
+        completion = await self._achat_create(chat_data)
+        parsed = _parse_primary_completion(completion, response_format)
+        return completion, parsed
 
     async def _legacy_achat_parse(
         self,
