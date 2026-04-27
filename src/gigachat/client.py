@@ -61,6 +61,7 @@ from gigachat.resources import (
     AssistantsAsyncClient,
     AssistantsSyncClient,
     AsyncChatNamespace,
+    AsyncRealtimeResource,
     BalanceAsyncResource,
     BalanceSyncResource,
     BatchesAsyncResource,
@@ -879,6 +880,11 @@ class GigaChatAsyncClient(_BaseClient):
     def a_threads(self) -> ThreadsAsyncClient:
         """Return the async threads resource."""
         return ThreadsAsyncClient(self)
+
+    @cached_property
+    def a_realtime(self) -> AsyncRealtimeResource:
+        """Return the async realtime resource."""
+        return AsyncRealtimeResource(self)
 
     @property
     def _aclient(self) -> httpx.AsyncClient:
