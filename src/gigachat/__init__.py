@@ -15,6 +15,11 @@ from gigachat.exceptions import (
     ServerError,
 )
 from gigachat.models import (
+    Batch,
+    BatchMethod,
+    BatchRequestCounts,
+    BatchStatus,
+    Batches,
     Chat,
     ChatCompletion,
     ChatCompletionChunk,
@@ -40,6 +45,11 @@ __all__ = [
     "AuthenticationError",
     "RateLimitError",
     "BadRequestError",
+    "Batch",
+    "BatchMethod",
+    "BatchRequestCounts",
+    "BatchStatus",
+    "Batches",
     "ForbiddenError",
     "LengthFinishReasonError",
     "NotFoundError",

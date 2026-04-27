@@ -12,7 +12,7 @@
 ## Срезы
 
 1. [done] Add follow-up plan/progress docs
-2. [todo] Add low-level batches API and models
+2. [done] Add low-level batches API and models
 3. [todo] Add batches resource namespace and deprecated root shims
 4. [todo] Add batch example/docs on resource paths
 5. [todo] Add low-level file content API and File model
@@ -32,3 +32,9 @@
   - Тесты: git diff --check.
   - Commit: docs(resources): add batches files resource api plan
   - Замечания: Python-код не менялся.
+- 2026-04-27: завершён срез 2.
+  - Что сделано: добавлены low-level batches API helpers, модели, фикстуры и unit-тесты.
+  - Изменённые файлы: src/gigachat/api/__init__.py, src/gigachat/api/batches.py, src/gigachat/models/__init__.py, src/gigachat/models/batches.py, src/gigachat/__init__.py, tests/constants.py, tests/data/batch.json, tests/data/batches.json, tests/unit/gigachat/api/test_batches.py, docs/internal/RESOURCE_API_BATCHES_FILES_PROGRESS.md.
+  - Тесты: uv run pytest tests/unit/gigachat/api/test_batches.py -q; uv run ruff check src/gigachat/api/batches.py src/gigachat/models/batches.py tests/unit/gigachat/api/test_batches.py; git diff --check.
+  - Commit: feat(batches): add low-level batch api
+  - Замечания: resource namespace и root shims не добавлялись.
