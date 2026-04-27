@@ -28,7 +28,7 @@
 | 13-sync-resource-namespace | done | this commit | Added sync realtime resource namespace. |
 | 14-voice-helper-conversions | done | this commit | Added lazy numpy PCM16 conversion helpers. |
 | 15-sounddevice-helpers | done | this commit | Added lazy sounddevice microphone and speaker helpers. |
-| 16-examples-text-and-functions | pending |  | Add JSON websocket text examples. |
+| 16-examples-text-and-functions | done | this commit | Added JSON websocket text and function examples. |
 | 17-example-microphone | pending |  | Add microphone realtime example. |
 | 18-readme-docs | pending |  | Document resource realtime API. |
 | 19-integration-smoke-tests | pending |  | Add JSON websocket integration smoke tests. |
@@ -337,6 +337,26 @@ Tests:
 
 Next:
 - 16-examples-text-and-functions
+
+Risks:
+- Backend JSON endpoint must be confirmed. If the current GigaVoice WebSocket endpoint accepts only protobuf frames, this SDK plan cannot pass integration smoke test without a backend adapter or gateway.
+
+### 2026-04-27 — slice 16-examples-text-and-functions
+
+Done:
+- Added `examples/example_realtime_text.py` with an async text-only JSON WebSocket realtime flow.
+- Added `examples/example_realtime_functions.py` with a client `get_weather` function and `function_result` response.
+- Documented realtime example requirements in `examples/README.md`: install `gigachat[realtime]`, set `GIGACHAT_REALTIME_URL`, and use a backend JSON WebSocket endpoint or gateway.
+- Kept this slice example-only: no microphone/audio-device helper usage and no protobuf/gRPC code.
+
+Tests:
+- `uv run ruff check examples/example_realtime_text.py examples/example_realtime_functions.py`
+- `uv run ruff format --check examples/example_realtime_text.py examples/example_realtime_functions.py`
+- `uv run mypy examples/example_realtime_text.py examples/example_realtime_functions.py` (rerun outside sandbox because `uv` cache access was blocked)
+- `uv run python -m py_compile examples/example_realtime_text.py examples/example_realtime_functions.py` (rerun outside sandbox because `uv` cache access was blocked)
+
+Next:
+- 17-example-microphone
 
 Risks:
 - Backend JSON endpoint must be confirmed. If the current GigaVoice WebSocket endpoint accepts only protobuf frames, this SDK plan cannot pass integration smoke test without a backend adapter or gateway.

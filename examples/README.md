@@ -38,6 +38,19 @@ uv run python -m examples.chat_completions.sync_chat
 * [Image generation](./tools/image_generation.py) - built-in `image_generate` tool and generated file IDs
 * Function validation - `client.functions.validate(...)`
 
+## Realtime
+
+Realtime examples use JSON events over WebSocket and require a backend JSON WebSocket endpoint or gateway. Install the
+extra dependencies and set the endpoint before running them:
+
+```bash
+uv sync --extra realtime
+export GIGACHAT_REALTIME_URL=wss://your-json-realtime-endpoint.example/ws
+```
+
+* [Text-only realtime](./example_realtime_text.py) - `client.a_realtime.connect(...)` with text output events
+* [Realtime functions](./example_realtime_functions.py) - handle `function_call` and send `function_result`
+
 ## Files and assistants
 
 * [File input](./files/file_input.py) - `client.files.upload(...)`, `client.files.retrieve_content(...)`, and file references in message content
