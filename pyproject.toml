@@ -33,8 +33,18 @@ dependencies = [
 
 [project.optional-dependencies]
 realtime = [
-    "protobuf>=4,<6",
-    "websockets>=12,<16",
+    "websockets>=13,<16",
+]
+voice_helpers = [
+    "sounddevice>=0.5.1",
+    "numpy>=1.24,<2 ; python_version == '3.8'",
+    "numpy>=2.0.2 ; python_version >= '3.9'",
+]
+realtime_voice = [
+    "websockets>=13,<16",
+    "sounddevice>=0.5.1",
+    "numpy>=1.24,<2 ; python_version == '3.8'",
+    "numpy>=2.0.2 ; python_version >= '3.9'",
 ]
 
 [project.urls]

@@ -14,7 +14,7 @@
 | Slice | Status | Commit | Notes |
 |---|---|---|---|
 | 01-docs-progress-reset | done | this commit | Reset plan from protobuf to JSON. |
-| 02-dependency-extras | pending |  | Add optional websocket and voice helper extras. |
+| 02-dependency-extras | done | this commit | Added JSON WebSocket and optional voice helper extras; removed protobuf from realtime extras. |
 | 03-realtime-settings-config | pending |  | Add realtime websocket URL setting. |
 | 04-client-param-types | pending |  | Add JSON client event param types. |
 | 05-server-event-models | pending |  | Add JSON server event models. |
@@ -53,3 +53,21 @@ Next:
 Risks:
 - Backend JSON endpoint must be confirmed. If the current GigaVoice WebSocket endpoint accepts only protobuf frames, this SDK plan cannot pass integration smoke tests without a backend adapter or gateway.
 - The repository still contains dependency plumbing from the previous protobuf plan; slice 02 must replace it with JSON-plan extras and remove protobuf from realtime extras.
+
+### 2026-04-27 — slice 02-dependency-extras
+
+Done:
+- Changed `realtime` optional dependencies to WebSocket-only: `websockets>=13,<16`.
+- Added `voice_helpers` optional dependencies for `sounddevice` and Python-versioned `numpy`.
+- Added `realtime_voice` convenience extra with WebSocket plus voice helper dependencies.
+- Removed protobuf from realtime extras to keep the SDK aligned with the JSON-only plan.
+
+Tests:
+- `uv run python -c "import gigachat"`
+- `uv run pytest tests/unit/gigachat/test_client_core.py`
+
+Next:
+- 03-realtime-settings-config
+
+Risks:
+- `uv.lock` was not updated in this slice because the plan scopes slice 02 to `pyproject.toml` only.
