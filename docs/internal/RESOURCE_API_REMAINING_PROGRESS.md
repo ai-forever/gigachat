@@ -16,7 +16,7 @@
 3. [done] Normalize assistants resource module
 4. [done] Normalize threads resource module
 5. [done] Add models resource
-6. [todo] Add embeddings resource
+6. [done] Add embeddings resource
 7. [todo] Add files resource
 8. [todo] Add tokens resource
 9. [todo] Add balance resource
@@ -59,3 +59,9 @@
   - Тесты: `uv run pytest tests/unit/gigachat/test_client_models.py -q`, `uv run pytest tests/unit/gigachat/api/test_models.py -q`, `uv run ruff check src/gigachat/resources/models.py src/gigachat/resources/__init__.py src/gigachat/client.py tests/unit/gigachat/test_client_models.py`, `git diff --check`.
   - Commit: `feat(resources): add models resource`.
   - Замечания: transport/API layer не менялся; новые resource methods не предупреждают, deprecated shims предупреждают через общий helper.
+- 2026-04-27: завершён срез 6.
+  - Что сделано: добавлен `embeddings` resource namespace с `create()` для sync и async клиентов; `client.embeddings(...)` оставлен callable deprecated shim, `client.aembeddings(...)` переведён в deprecated root shim.
+  - Изменённые файлы: `src/gigachat/resources/embeddings.py`, `src/gigachat/resources/__init__.py`, `src/gigachat/client.py`, `tests/unit/gigachat/test_client_embeddings.py`, `docs/internal/RESOURCE_API_REMAINING_PROGRESS.md`.
+  - Тесты: `uv run pytest tests/unit/gigachat/test_client_embeddings.py -q`, `uv run pytest tests/unit/gigachat/api/test_embeddings.py -q`, `uv run ruff check src/gigachat/resources/embeddings.py src/gigachat/resources/__init__.py src/gigachat/client.py tests/unit/gigachat/test_client_embeddings.py`, `git diff --check`.
+  - Commit: `feat(resources): add embeddings resource`.
+  - Замечания: default model сохранён как `"Embeddings"`; transport/API layer не менялся.

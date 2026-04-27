@@ -26,7 +26,7 @@ import pydantic
 from typing_extensions import Self
 
 from gigachat._types import FileTypes
-from gigachat.api import auth, chat_completions, embeddings, files, legacy_chat, tools
+from gigachat.api import auth, chat_completions, files, legacy_chat, tools
 from gigachat.authentication import _awith_auth, _awith_auth_stream, _with_auth, _with_auth_stream
 from gigachat.context import authorization_cvar
 from gigachat.exceptions import LengthFinishReasonError
@@ -58,6 +58,8 @@ from gigachat.resources import (
     AssistantsSyncClient,
     AsyncChatNamespace,
     ChatNamespace,
+    EmbeddingsAsyncResource,
+    EmbeddingsSyncResource,
     ModelsAsyncResource,
     ModelsSyncResource,
     ThreadsAsyncClient,
@@ -435,6 +437,11 @@ class GigaChatSyncClient(_BaseClient):
         return ModelsSyncResource(self)
 
     @cached_property
+    def embeddings(self) -> EmbeddingsSyncResource:
+        """Return the embeddings resource."""
+        return EmbeddingsSyncResource(self)
+
+    @cached_property
     def threads(self) -> ThreadsSyncClient:
         """Return the threads resource."""
         return ThreadsSyncClient(self)
@@ -513,12 +520,6 @@ class GigaChatSyncClient(_BaseClient):
         if not model:
             model = self._settings.model or GIGACHAT_MODEL
         return tools.tokens_count_sync(self._client, input_=input_, model=model, access_token=self.token)
-
-    @_with_retry
-    @_with_auth
-    def embeddings(self, texts: List[str], model: str = "Embeddings") -> Embeddings:
-        """Return embeddings."""
-        return embeddings.embeddings_sync(self._client, access_token=self.token, input_=texts, model=model)
 
     def get_models(self) -> Models:
         """Return a list of available models via deprecated root shim."""
@@ -779,6 +780,11 @@ class GigaChatAsyncClient(_BaseClient):
         return ModelsAsyncResource(self)
 
     @cached_property
+    def a_embeddings(self) -> EmbeddingsAsyncResource:
+        """Return the async embeddings resource."""
+        return EmbeddingsAsyncResource(self)
+
+    @cached_property
     def a_threads(self) -> ThreadsAsyncClient:
         """Return the async threads resource."""
         return ThreadsAsyncClient(self)
@@ -853,12 +859,10 @@ class GigaChatAsyncClient(_BaseClient):
 
         return await tools.tokens_count_async(self._aclient, input_=input_, model=model, access_token=self.token)
 
-    @_awith_retry
-    @_awith_auth
     async def aembeddings(self, texts: List[str], model: str = "Embeddings") -> Embeddings:
-        """Return embeddings."""
-
-        return await embeddings.embeddings_async(self._aclient, access_token=self.token, input_=texts, model=model)
+        """Return embeddings via deprecated root shim."""
+        warn_deprecated_resource_api("client.aembeddings(...)", "client.a_embeddings.create(...)")
+        return await self.a_embeddings.create(texts, model=model)
 
     async def aget_models(self) -> Models:
         """Return a list of available models via deprecated root shim."""
