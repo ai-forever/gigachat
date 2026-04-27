@@ -100,6 +100,8 @@ Root compatibility shims such as `client.chat(...)`, `client.stream(...)`, `clie
 
 During the migration, old `gigachat.models.Chat*`, `Messages*`, `Function*`, and `Usage` imports still resolve to legacy compatibility aliases. Use `ChatCompletionRequest`, `ChatCompletionResponse`, `ChatMessage`, and related `Chat*` primary models for the new contract.
 
+For a step-by-step checklist and import mapping, see [MIGRATION_GUIDE.md](MIGRATION_GUIDE.md) and [MIGRATION_GUIDE_ru.md](MIGRATION_GUIDE_ru.md).
+
 ### Basic Chat
 
 ```python
