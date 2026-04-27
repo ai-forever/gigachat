@@ -19,7 +19,7 @@
 6. [done] Add files.retrieve_content resource path and shims
 7. [done] Add low-level function validation API and models
 8. [done] Add functions.validate resource path and shims
-9. [todo] Add global resource/shim regression coverage
+9. [done] Add global resource/shim regression coverage
 10. [todo] Update public docs and migration guides
 11. [todo] Final audit and cleanup
 
@@ -74,3 +74,9 @@
   - Тесты: uv run pytest tests/unit/gigachat/test_client_functions.py -q; uv run pytest tests/unit/gigachat/test_client_resource_shims.py -q; uv run ruff check src/gigachat/resources/functions.py src/gigachat/client.py tests/unit/gigachat/test_client_functions.py tests/unit/gigachat/test_client_resource_shims.py; git diff --check.
   - Commit: feat(resources): add function validation resource
   - Замечания: `convert_openapi`, low-level `api/tools.py`, docs/examples и chat tools surface не менялись.
+- 2026-04-27: завершён срез 9.
+  - Что сделано: расширена regression coverage для deprecated `files.retrieve_image`/`a_files.retrieve_image` resource aliases; существующая global matrix покрывает canonical resources и root shims для batches/files/functions.
+  - Изменённые файлы: tests/unit/gigachat/test_client_resource_shims.py, docs/internal/RESOURCE_API_BATCHES_FILES_PROGRESS.md.
+  - Тесты: uv run pytest tests/unit/gigachat/test_client_resource_shims.py -q; uv run pytest tests/unit/gigachat/test_client_lifecycle.py -q; uv run ruff check tests/unit/gigachat/test_client_resource_shims.py tests/unit/gigachat/test_client_lifecycle.py; git diff --check.
+  - Commit: test(resources): cover batches files functions shims
+  - Замечания: production-код не менялся; незакоммиченные пользовательские файлы в рабочем дереве не трогались.

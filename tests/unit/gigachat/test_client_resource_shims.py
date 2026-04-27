@@ -483,3 +483,33 @@ async def test_async_deprecated_root_shims_warn_and_use_same_low_level_api(
 
     assert result is response
     api_mock.assert_awaited_once()
+
+
+def test_sync_deprecated_file_resource_alias_warns_and_uses_content_api() -> None:
+    response = object()
+
+    with patch(
+        "gigachat.resources.files.files.get_file_content_sync",
+        MagicMock(return_value=response),
+    ) as api_mock:
+        with GigaChatSyncClient(base_url=BASE_URL, model="model") as client:
+            with pytest.warns(DeprecationWarning, match=r"client\.files\.retrieve_content\(\.\.\.\)"):
+                result = client.files.retrieve_image("img_file")
+
+    assert result is response
+    api_mock.assert_called_once()
+
+
+async def test_async_deprecated_file_resource_alias_warns_and_uses_content_api() -> None:
+    response = object()
+
+    with patch(
+        "gigachat.resources.files.files.get_file_content_async",
+        AsyncMock(return_value=response),
+    ) as api_mock:
+        async with GigaChatAsyncClient(base_url=BASE_URL, model="model") as client:
+            with pytest.warns(DeprecationWarning, match=r"client\.a_files\.retrieve_content\(\.\.\.\)"):
+                result = await client.a_files.retrieve_image("img_file")
+
+    assert result is response
+    api_mock.assert_awaited_once()
