@@ -1,3 +1,4 @@
+import warnings
 from typing import TYPE_CHECKING, Literal
 
 from gigachat._types import FileTypes
@@ -51,7 +52,13 @@ class FilesSyncResource:
     @_with_auth
     def retrieve_image(self, file_id: str) -> Image:
         """Return an image in base64 encoding."""
-        return files.get_image_sync(self._base_client._client, file_id=file_id, access_token=self._base_client.token)
+        with warnings.catch_warnings():
+            warnings.filterwarnings("ignore", category=DeprecationWarning)
+            return files.get_image_sync(
+                self._base_client._client,
+                file_id=file_id,
+                access_token=self._base_client.token,
+            )
 
 
 class FilesAsyncResource:
@@ -99,8 +106,10 @@ class FilesAsyncResource:
     @_awith_auth
     async def retrieve_image(self, file_id: str) -> Image:
         """Return an image in base64 encoding."""
-        return await files.get_image_async(
-            self._base_client._aclient,
-            file_id=file_id,
-            access_token=self._base_client.token,
-        )
+        with warnings.catch_warnings():
+            warnings.filterwarnings("ignore", category=DeprecationWarning)
+            return await files.get_image_async(
+                self._base_client._aclient,
+                file_id=file_id,
+                access_token=self._base_client.token,
+            )

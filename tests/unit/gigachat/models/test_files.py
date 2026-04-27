@@ -1,7 +1,7 @@
 import pytest
 from pydantic import ValidationError
 
-from gigachat.models.files import DeletedFile, Image, UploadedFile, UploadedFiles
+from gigachat.models.files import DeletedFile, File, Image, UploadedFile, UploadedFiles
 
 
 def test_uploaded_file_creation() -> None:
@@ -48,6 +48,11 @@ def test_deleted_file_creation() -> None:
 def test_image_creation() -> None:
     img = Image(content="base64data")
     assert img.content == "base64data"
+
+
+def test_file_creation() -> None:
+    file_ = File(content="base64data")
+    assert file_.content == "base64data"
 
 
 def test_uploaded_file_validation() -> None:

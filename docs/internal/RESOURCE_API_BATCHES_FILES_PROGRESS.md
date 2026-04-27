@@ -15,7 +15,7 @@
 2. [done] Add low-level batches API and models
 3. [done] Add batches resource namespace and deprecated root shims
 4. [done] Add batch example/docs on resource paths
-5. [todo] Add low-level file content API and File model
+5. [done] Add low-level file content API and File model
 6. [todo] Add files.retrieve_content resource path and shims
 7. [todo] Add low-level function validation API and models
 8. [todo] Add functions.validate resource path and shims
@@ -50,3 +50,9 @@
   - Тесты: node -e "JSON.parse(require('fs').readFileSync('examples/example_batching.ipynb','utf8')); console.log('ok')"; git diff --check; uv run ruff check README.md MIGRATION_GUIDE.md MIGRATION_GUIDE_ru.md examples/README.md.
   - Commit: docs(batches): add resource batch example
   - Замечания: `ruff check` неприменим к Markdown-файлам и падает на markdown syntax; file content API не добавлялся, `files.retrieve_content` указан только как future path в notebook markdown.
+- 2026-04-27: завершён срез 5.
+  - Что сделано: добавлены модель `File`, low-level file content helpers и deprecated aliases `get_image_sync`/`get_image_async`.
+  - Изменённые файлы: src/gigachat/api/files.py, src/gigachat/models/files.py, src/gigachat/models/__init__.py, src/gigachat/__init__.py, src/gigachat/resources/files.py, tests/unit/gigachat/api/test_files.py, tests/unit/gigachat/models/test_files.py, docs/internal/RESOURCE_API_BATCHES_FILES_PROGRESS.md.
+  - Тесты: uv run pytest tests/unit/gigachat/api/test_files.py -q; uv run pytest tests/unit/gigachat/models/test_files.py -q; uv run pytest tests/unit/gigachat/test_client_files.py -q; uv run pytest tests/unit/gigachat/test_client_resource_shims.py -q; uv run ruff check src/gigachat/api/files.py src/gigachat/models/files.py src/gigachat/resources/files.py tests/unit/gigachat/api/test_files.py tests/unit/gigachat/models/test_files.py; git diff --check.
+  - Commit: feat(files): add low-level file content api
+  - Замечания: `client.files.retrieve_content` и root `get_file_content` не добавлялись; `resources/files.py` изменён только для подавления fallout от deprecated low-level alias и сохранения текущего `retrieve_image` поведения до среза 6.
