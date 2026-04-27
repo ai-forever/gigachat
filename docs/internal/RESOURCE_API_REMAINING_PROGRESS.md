@@ -23,7 +23,7 @@
 10. [done] Add functions resource
 11. [done] Add ai_check resource
 12. [done] Update docs/examples for non-chat resources
-13. [todo] Add global resource/shim regression tests
+13. [done] Add global resource/shim regression tests
 14. [todo] Final audit and cleanup
 
 ## Журнал
@@ -101,3 +101,9 @@
   - Тесты: `uv run pytest tests/unit/examples -q`, `git diff --check`.
   - Commit: `docs(resources): document non-chat resource api`.
   - Замечания: API-код не менялся; старые root calls остались только в migration replacement tables.
+- 2026-04-27: завершён срез 13.
+  - Что сделано: добавлена общая sync/async regression matrix для non-chat resource paths и deprecated root shims; lifecycle-тесты расширены на кэширование всех non-chat namespaces.
+  - Изменённые файлы: `tests/unit/gigachat/test_client_resource_shims.py`, `tests/unit/gigachat/test_client_lifecycle.py`, `docs/internal/RESOURCE_API_REMAINING_PROGRESS.md`.
+  - Тесты: `uv run pytest tests/unit/gigachat/test_client_resource_shims.py -q`, `uv run pytest tests/unit/gigachat/test_client_lifecycle.py -q`, `uv run ruff check tests/unit/gigachat/test_client_resource_shims.py tests/unit/gigachat/test_client_lifecycle.py`, `git diff --check`.
+  - Commit: `test(resources): cover non-chat resource shims`.
+  - Замечания: production-код не менялся; untracked локальные файлы `api.yml`, `request_v2.pdf`, `response_v2.pdf` не трогались.

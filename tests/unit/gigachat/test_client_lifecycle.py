@@ -4,7 +4,14 @@ from unittest.mock import MagicMock, patch
 
 from gigachat import GigaChat
 from gigachat.client import GigaChatAsyncClient, GigaChatSyncClient
+from gigachat.resources.ai_check import AICheckAsyncResource, AICheckSyncResource
+from gigachat.resources.balance import BalanceAsyncResource, BalanceSyncResource
+from gigachat.resources.embeddings import EmbeddingsAsyncResource, EmbeddingsSyncResource
+from gigachat.resources.files import FilesAsyncResource, FilesSyncResource
+from gigachat.resources.functions import FunctionsAsyncResource, FunctionsSyncResource
+from gigachat.resources.models import ModelsAsyncResource, ModelsSyncResource
 from gigachat.resources.threads import ThreadsAsyncClient, ThreadsSyncClient
+from gigachat.resources.tokens import TokensAsyncResource, TokensSyncResource
 
 
 def test_lazy_init_sync() -> None:
@@ -113,18 +120,46 @@ def test_sync_resources_are_cached_properties() -> None:
 
     assert "chat" not in client.__dict__
     assert "assistants" not in client.__dict__
+    assert "models" not in client.__dict__
+    assert "embeddings" not in client.__dict__
+    assert "files" not in client.__dict__
+    assert "tokens" not in client.__dict__
+    assert "balance" not in client.__dict__
+    assert "functions" not in client.__dict__
+    assert "ai_check" not in client.__dict__
     assert "threads" not in client.__dict__
 
     chat = client.chat
     legacy_chat = chat.legacy
     assistants = client.assistants
+    models = client.models
+    embeddings = client.embeddings
+    files = client.files
+    tokens = client.tokens
+    balance = client.balance
+    functions = client.functions
+    ai_check = client.ai_check
     threads = client.threads
 
     assert chat is client.chat
     assert legacy_chat is chat.legacy
     assert legacy_chat is client.chat.legacy
     assert assistants is client.assistants
+    assert models is client.models
+    assert embeddings is client.embeddings
+    assert files is client.files
+    assert tokens is client.tokens
+    assert balance is client.balance
+    assert functions is client.functions
+    assert ai_check is client.ai_check
     assert threads is client.threads
+    assert isinstance(models, ModelsSyncResource)
+    assert isinstance(embeddings, EmbeddingsSyncResource)
+    assert isinstance(files, FilesSyncResource)
+    assert isinstance(tokens, TokensSyncResource)
+    assert isinstance(balance, BalanceSyncResource)
+    assert isinstance(functions, FunctionsSyncResource)
+    assert isinstance(ai_check, AICheckSyncResource)
     assert isinstance(threads, ThreadsSyncClient)
 
 
@@ -133,16 +168,44 @@ async def test_async_resources_are_cached_properties() -> None:
 
     assert "achat" not in client.__dict__
     assert "a_assistants" not in client.__dict__
+    assert "a_models" not in client.__dict__
+    assert "a_embeddings" not in client.__dict__
+    assert "a_files" not in client.__dict__
+    assert "a_tokens" not in client.__dict__
+    assert "a_balance" not in client.__dict__
+    assert "a_functions" not in client.__dict__
+    assert "a_ai_check" not in client.__dict__
     assert "a_threads" not in client.__dict__
 
     chat = client.achat
     legacy_chat = chat.legacy
     assistants = client.a_assistants
+    models = client.a_models
+    embeddings = client.a_embeddings
+    files = client.a_files
+    tokens = client.a_tokens
+    balance = client.a_balance
+    functions = client.a_functions
+    ai_check = client.a_ai_check
     threads = client.a_threads
 
     assert chat is client.achat
     assert legacy_chat is chat.legacy
     assert legacy_chat is client.achat.legacy
     assert assistants is client.a_assistants
+    assert models is client.a_models
+    assert embeddings is client.a_embeddings
+    assert files is client.a_files
+    assert tokens is client.a_tokens
+    assert balance is client.a_balance
+    assert functions is client.a_functions
+    assert ai_check is client.a_ai_check
     assert threads is client.a_threads
+    assert isinstance(models, ModelsAsyncResource)
+    assert isinstance(embeddings, EmbeddingsAsyncResource)
+    assert isinstance(files, FilesAsyncResource)
+    assert isinstance(tokens, TokensAsyncResource)
+    assert isinstance(balance, BalanceAsyncResource)
+    assert isinstance(functions, FunctionsAsyncResource)
+    assert isinstance(ai_check, AICheckAsyncResource)
     assert isinstance(threads, ThreadsAsyncClient)
