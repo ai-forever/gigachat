@@ -27,7 +27,7 @@
 | 12-sync-helper-resources | done | this commit | Added sync realtime helper resources. |
 | 13-sync-resource-namespace | done | this commit | Added sync realtime resource namespace. |
 | 14-voice-helper-conversions | done | this commit | Added lazy numpy PCM16 conversion helpers. |
-| 15-sounddevice-helpers | pending |  | Add sounddevice microphone and speaker helpers. |
+| 15-sounddevice-helpers | done | this commit | Added lazy sounddevice microphone and speaker helpers. |
 | 16-examples-text-and-functions | pending |  | Add JSON websocket text examples. |
 | 17-example-microphone | pending |  | Add microphone realtime example. |
 | 18-readme-docs | pending |  | Document resource realtime API. |
@@ -310,10 +310,33 @@ Tests:
 - `uv run ruff check src/gigachat/realtime/audio.py src/gigachat/realtime/__init__.py tests/unit/gigachat/realtime/test_audio_helpers.py`
 - `uv run ruff format --check src/gigachat/realtime/audio.py src/gigachat/realtime/__init__.py tests/unit/gigachat/realtime/test_audio_helpers.py`
 - `uv run mypy src/gigachat/realtime/audio.py tests/unit/gigachat/realtime/test_audio_helpers.py` (rerun outside sandbox because `uv` cache access was blocked)
+- `uv run pytest tests/unit/gigachat/realtime`
+- `uv run python -c "import gigachat; import gigachat.realtime"` (rerun outside sandbox because `uv` cache access was blocked)
 - `uv run python -c "import gigachat; import gigachat.realtime"` (rerun outside sandbox because `uv` cache access was blocked)
 
 Next:
 - 15-sounddevice-helpers
+
+Risks:
+- Backend JSON endpoint must be confirmed. If the current GigaVoice WebSocket endpoint accepts only protobuf frames, this SDK plan cannot pass integration smoke test without a backend adapter or gateway.
+
+### 2026-04-27 — slice 15-sounddevice-helpers
+
+Done:
+- Added lazy `sounddevice` loading for optional voice helper streams.
+- Added `RealtimeMicrophone` as an async context manager and async iterator over PCM_S16LE bytes from `sounddevice.InputStream`.
+- Added `RealtimeSpeaker` as an async context manager with queued writes to `sounddevice.OutputStream`, plus `stop()` and `close()` support.
+- Exported microphone and speaker helpers from `gigachat.realtime`.
+- Added unit coverage with mocked `sounddevice` streams so tests do not use real audio devices.
+
+Tests:
+- `uv run pytest tests/unit/gigachat/realtime/test_audio_helpers.py tests/unit/gigachat/realtime/test_base64_audio.py`
+- `uv run ruff check src/gigachat/realtime/audio.py src/gigachat/realtime/__init__.py tests/unit/gigachat/realtime/test_audio_helpers.py`
+- `uv run ruff format --check src/gigachat/realtime/audio.py src/gigachat/realtime/__init__.py tests/unit/gigachat/realtime/test_audio_helpers.py`
+- `uv run mypy src/gigachat/realtime/audio.py tests/unit/gigachat/realtime/test_audio_helpers.py` (rerun outside sandbox because `uv` cache access was blocked)
+
+Next:
+- 16-examples-text-and-functions
 
 Risks:
 - Backend JSON endpoint must be confirmed. If the current GigaVoice WebSocket endpoint accepts only protobuf frames, this SDK plan cannot pass integration smoke test without a backend adapter or gateway.
