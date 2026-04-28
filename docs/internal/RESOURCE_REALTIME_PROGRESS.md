@@ -69,7 +69,7 @@ Do not implement gRPC. Do not generate or commit `voice_pb2_grpc.py`.
 | 27-remove-json-wire-assumptions | done | this commit | Removed stale JSON/base64 wire docs/tests/code paths. |
 | 28-examples-protobuf-websocket | done | this commit | Updated examples to protobuf-over-WebSocket and added microphone/speaker example. |
 | 29-integration-smoke-protobuf-ws | done | this commit | Added optional backend smoke test for protobuf realtime WebSocket. |
-| 30-docs-readme-protobuf-realtime | pending |  | README/API docs for protobuf realtime. |
+| 30-docs-readme-protobuf-realtime | done | this commit | Documented public protobuf WebSocket realtime API in README. |
 | 31-final-protobuf-audit | pending |  | Final no-gRPC/no-JSON-wire audit. |
 
 ## Log
@@ -355,3 +355,20 @@ Next:
 
 Risks:
 - Actual backend acceptance remains unverified in this local environment because realtime backend env was not configured.
+
+### 2026-04-28 — slice 30-docs-readme-protobuf-realtime
+
+Done:
+- Added README coverage for `client.a_realtime.connect(...)` and `client.realtime.connect(...)`.
+- Documented `gigachat[realtime]`, `gigachat[realtime_voice]`, and `GIGACHAT_REALTIME_URL`.
+- Documented WebSocket-only protobuf binary frames, no SDK gRPC support, required `voice_call_id`, 4 MiB client frames, 2 second audio chunks, event semantics, and optional audio helpers.
+- Added `realtime_url` to the README constructor parameter table and `GIGACHAT_REALTIME_URL` to the environment example.
+
+Tests:
+- not run, docs-only
+
+Next:
+- 31-final-protobuf-audit
+
+Risks:
+- Realtime backend acceptance remains unverified in this local environment because realtime backend env was not configured.

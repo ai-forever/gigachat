@@ -21,6 +21,7 @@ This library is part of [GigaChain](https://github.com/ai-forever/gigachain) and
   - [Async](#async)
   - [Embeddings](#embeddings)
   - [Function Calling](#function-calling)
+  - [Realtime](#realtime)
   - [More Examples](#more-examples)
 - [Configuration](#configuration)
   - [Constructor Parameters](#constructor-parameters)
@@ -43,6 +44,7 @@ This library is part of [GigaChain](https://github.com/ai-forever/gigachain) and
 - ✅ **Vision** — image understanding (multimodal)
 - ✅ **File operations** — upload, retrieve, and delete files
 - ✅ **Batch operations** — create and inspect asynchronous batch jobs
+- ✅ **Realtime voice/text** — protobuf binary frames over WebSocket
 - ✅ **Token counting** — estimate token usage before requests
 - ✅ **Multiple auth methods** — OAuth credentials, password, TLS certificates, access tokens
 - ✅ **Automatic retry** — configurable exponential backoff for transient errors
@@ -52,6 +54,13 @@ This library is part of [GigaChain](https://github.com/ai-forever/gigachain) and
 
 ```bash
 pip install gigachat
+```
+
+Optional realtime extras:
+
+```bash
+pip install "gigachat[realtime]"       # WebSocket + protobuf realtime client
+pip install "gigachat[realtime_voice]" # Realtime client + microphone/speaker helpers
 ```
 
 **Requirements:** Python 3.8 — 3.13
@@ -244,6 +253,97 @@ with GigaChat() as client:
     print(validation.message)
 ```
 
+### Realtime
+
+Realtime uses the public resource namespaces `client.realtime` and `client.a_realtime`. The SDK opens a WebSocket
+connection and serializes realtime frames internally as protobuf binary messages. The SDK does not implement gRPC for
+realtime, even though the underlying protobuf schema contains a service declaration.
+
+Configure an explicit realtime endpoint; the SDK does not derive it from `base_url`:
+
+```bash
+export GIGACHAT_REALTIME_URL="wss://your-realtime-endpoint.example/ws"
+```
+
+Async text-oriented example:
+
+```python
+import asyncio
+from uuid import uuid4
+
+from gigachat import GigaChat
+from gigachat.models import OutputTranscriptionEvent, RealtimeErrorEvent, RealtimeWarningEvent
+
+
+async def main():
+    settings = {
+        "voice_call_id": str(uuid4()),
+        "mode": "GIGACHAT",
+        "output_modalities": "TEXT",
+        "context": {
+            "messages": [
+                {"role": "user", "content": "Give a short overview of realtime SDK clients."}
+            ]
+        },
+    }
+
+    async with GigaChat() as client:
+        async with client.a_realtime.connect(settings=settings) as connection:
+            async for event in connection:
+                if isinstance(event, OutputTranscriptionEvent):
+                    print(event.text or "")
+                    break
+                if isinstance(event, RealtimeWarningEvent):
+                    print(f"Warning: {event.message}")
+                if isinstance(event, RealtimeErrorEvent):
+                    raise RuntimeError(event.message)
+
+
+asyncio.run(main())
+```
+
+The sync namespace has the same shape:
+
+```python
+from uuid import uuid4
+
+from gigachat import GigaChat
+
+settings = {
+    "voice_call_id": str(uuid4()),
+    "mode": "GIGACHAT_SYNTHESIS",
+    "output_modalities": "AUDIO",
+    "audio": {"output": {"voice": "Bys_24000", "audio_encoding": "PCM_S16LE"}},
+}
+
+with GigaChat() as client:
+    with client.realtime.connect(settings=settings) as connection:
+        connection.synthesis.send("Hello from realtime", is_final=True)
+        event = connection.recv()
+        print(event.type)
+```
+
+Client events are still Python dictionaries or helper calls:
+
+- `connection.session.send_settings(...)` sends the required initial/update settings; `voice_call_id` is required.
+- `connection.input_audio.send(audio_chunk=...)` sends raw `bytes`; the SDK does not base64-encode audio before
+  protobuf serialization.
+- `connection.synthesis.send(text, ...)` sends text or SSML for synthesis.
+- `connection.function_result.create(content=..., function_name=...)` returns results for `function_call` events.
+
+Protocol notes:
+
+- Transport is WebSocket only.
+- Realtime frames are protobuf binary frames; text WebSocket frames are treated as protocol errors.
+- A client frame is limited to 4 MiB.
+- PCM helper validation keeps audio chunks at 2 seconds or less.
+- Server `error` events are fatal by default when dispatching events; `warning` events are non-fatal; `output.interrupted`
+  means the current output was interrupted by the backend.
+- Optional audio helpers `RealtimeMicrophone` and `RealtimeSpeaker` require `gigachat[realtime_voice]` or
+  `gigachat[voice_helpers]`.
+
+See [examples/README.md](examples/README.md#realtime) for text, function-calling, and microphone examples.
+
 ### Structured Output (JSON Schema) — Beta
 
 > **Note:** This feature is in beta. It may not work correctly with all model versions.
@@ -295,6 +395,7 @@ See the [examples/](https://github.com/ai-forever/gigachat/tree/main/examples/) 
 | `model` | `str` | `GigaChat` | Default model for requests |
 | `base_url` | `str` | `https://gigachat.devices.sberbank.ru/api/v1` | API base URL |
 | `auth_url` | `str` | `https://ngw.devices.sberbank.ru:9443/api/v2/oauth` | OAuth token endpoint |
+| `realtime_url` | `str` | `None` | Explicit WebSocket URL for GigaVoice realtime API |
 | `access_token` | `str` | `None` | Pre-obtained access token (bypasses OAuth) |
 | `user` | `str` | `None` | Username for password authentication |
 | `password` | `str` | `None` | Password for password authentication |
@@ -330,6 +431,7 @@ export GIGACHAT_SCOPE="GIGACHAT_API_PERS"
 
 # Connection
 export GIGACHAT_BASE_URL="https://gigachat.devices.sberbank.ru/api/v1"
+export GIGACHAT_REALTIME_URL="wss://your-realtime-endpoint.example/ws"
 export GIGACHAT_TIMEOUT="60.0"
 export GIGACHAT_VERIFY_SSL_CERTS="true"
 # TLS: path to a CA bundle file (typically required - Python HTTP clients often don't use OS trust store by default)
