@@ -63,7 +63,7 @@ Do not implement gRPC. Do not generate or commit `voice_pb2_grpc.py`.
 | 21-protobuf-request-bridge-settings | done | this commit | Map settings params to protobuf Settings. |
 | 22-protobuf-client-event-serialization | done | this commit | Serialize all client events to protobuf bytes. |
 | 23-protobuf-server-event-parsing | done | this commit | Parse protobuf responses into Pydantic events. |
-| 24-async-binary-websocket-connection | pending |  | Async WS sends/receives binary protobuf frames. |
+| 24-async-binary-websocket-connection | done | this commit | Async WS sends/receives binary protobuf frames. |
 | 25-sync-binary-websocket-connection | pending |  | Sync WS sends/receives binary protobuf frames. |
 | 26-helper-resources-protobuf-regression | pending |  | Ensure helpers emit protobuf requests and handlers still work. |
 | 27-remove-json-wire-assumptions | pending |  | Remove stale JSON/base64 wire docs/tests/code paths. |
@@ -218,3 +218,28 @@ Next:
 
 Risks:
 - WebSocket transport still parses JSON frames until slice 24 switches the async connection to binary protobuf `parse_server_event(...)`.
+
+### 2026-04-28 — slice 24-async-binary-websocket-connection
+
+Done:
+- Switched async realtime connection send path to serialize client events as protobuf `GigaVoiceRequest` bytes.
+- Switched initial async settings frame and async helper resources to send binary protobuf frames.
+- Switched async `recv()` / `parse_event()` to parse binary `GigaVoiceResponse` frames.
+- Made async `send_raw()` accept bytes only and made async `recv_bytes()` reject text frames with a protocol error.
+- Kept protobuf bridge imports lazy inside `gigachat.api.realtime` so `import gigachat` does not eagerly import protobuf realtime bridge code.
+- Updated async connection tests to assert sent protobuf requests and feed protobuf server responses.
+
+Tests:
+- `uv run pytest tests/unit/gigachat/realtime/test_async_connection.py`
+- `uv run pytest tests/unit/gigachat/realtime`
+- `uv run python -c "import gigachat"`
+- `uv run ruff check src/gigachat/api/realtime.py tests/unit/gigachat/realtime/test_async_connection.py`
+- `uv run ruff check src tests`
+- `uv run mypy src/gigachat/api/realtime.py tests/unit/gigachat/realtime/test_async_connection.py`
+- `uv run mypy src tests`
+
+Next:
+- 25-sync-binary-websocket-connection
+
+Risks:
+- Sync realtime connection still sends/parses JSON frames until slice 25.
