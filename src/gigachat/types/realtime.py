@@ -84,6 +84,7 @@ class RealtimeGigaChatSettingsParam(TypedDict, total=False):
 
 
 class RealtimeAudioChunkMetaParam(TypedDict, total=False):
+    force_no_speech: NotRequired[bool]
     force_co_speech: NotRequired[bool]
 
 

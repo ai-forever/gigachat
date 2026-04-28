@@ -65,7 +65,7 @@ Do not implement gRPC. Do not generate or commit `voice_pb2_grpc.py`.
 | 23-protobuf-server-event-parsing | done | this commit | Parse protobuf responses into Pydantic events. |
 | 24-async-binary-websocket-connection | done | this commit | Async WS sends/receives binary protobuf frames. |
 | 25-sync-binary-websocket-connection | done | this commit | Sync WS sends/receives binary protobuf frames. |
-| 26-helper-resources-protobuf-regression | pending |  | Ensure helpers emit protobuf requests and handlers still work. |
+| 26-helper-resources-protobuf-regression | done | this commit | Added public resource namespace regressions for helper protobuf requests and handlers. |
 | 27-remove-json-wire-assumptions | pending |  | Remove stale JSON/base64 wire docs/tests/code paths. |
 | 28-examples-protobuf-websocket | pending |  | Update examples to protobuf-over-WebSocket. |
 | 29-integration-smoke-protobuf-ws | pending |  | Optional backend smoke tests. |
@@ -267,3 +267,25 @@ Next:
 
 Risks:
 - Helper resources now send protobuf through both async and sync connection paths; the next slice should add focused regression coverage at the resource namespace level.
+
+### 2026-04-28 — slice 26-helper-resources-protobuf-regression
+
+Done:
+- Added public `client.a_realtime.connect(...)` and `client.realtime.connect(...)` regression coverage using fake WebSocket connectors.
+- Verified `session` initial settings, `input_audio`, `synthesis`, and `function_result` helpers emit binary protobuf `GigaVoiceRequest` frames through the resource namespace.
+- Verified resource-level event handlers registered on the manager are copied into the active connection and dispatched from protobuf server frames.
+- Added the canonical `force_no_speech` audio meta key to `RealtimeAudioChunkMetaParam` while keeping the compatibility alias `force_co_speech`.
+
+Tests:
+- `uv run pytest tests/unit/gigachat/realtime/test_resources.py`
+- `uv run ruff check src/gigachat/types/realtime.py tests/unit/gigachat/realtime/test_resources.py`
+- `uv run mypy src/gigachat/types/realtime.py tests/unit/gigachat/realtime/test_resources.py`
+- `uv run pytest tests/unit/gigachat/realtime`
+- `uv run ruff check src tests`
+- `uv run mypy src tests`
+
+Next:
+- 27-remove-json-wire-assumptions
+
+Risks:
+- This slice covers resource namespace regressions with fake WebSocket connectors only; backend smoke coverage remains deferred to slice 29.
