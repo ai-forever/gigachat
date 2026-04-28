@@ -67,7 +67,7 @@ Do not implement gRPC. Do not generate or commit `voice_pb2_grpc.py`.
 | 25-sync-binary-websocket-connection | done | this commit | Sync WS sends/receives binary protobuf frames. |
 | 26-helper-resources-protobuf-regression | done | this commit | Added public resource namespace regressions for helper protobuf requests and handlers. |
 | 27-remove-json-wire-assumptions | done | this commit | Removed stale JSON/base64 wire docs/tests/code paths. |
-| 28-examples-protobuf-websocket | pending |  | Update examples to protobuf-over-WebSocket. |
+| 28-examples-protobuf-websocket | done | this commit | Updated examples to protobuf-over-WebSocket and added microphone/speaker example. |
 | 29-integration-smoke-protobuf-ws | pending |  | Optional backend smoke tests. |
 | 30-docs-readme-protobuf-realtime | pending |  | README/API docs for protobuf realtime. |
 | 31-final-protobuf-audit | pending |  | Final no-gRPC/no-JSON-wire audit. |
@@ -316,3 +316,23 @@ Next:
 
 Risks:
 - `_base64.py` still exists as a private legacy helper module for encode/decode tests and shared PCM duration validation; it is not used by realtime transport or exported from `gigachat.realtime`.
+
+### 2026-04-28 — slice 28-examples-protobuf-websocket
+
+Done:
+- Added explicit `GIGACHAT_REALTIME_URL` checks to text-only and function-calling realtime examples.
+- Added `examples/example_realtime_microphone.py` using `RealtimeMicrophone`, `RealtimeSpeaker`, raw PCM bytes, and OpenAI-style `client.a_realtime.connect(...)`.
+- Updated realtime examples README install commands for `gigachat[realtime]` and `gigachat[realtime_voice]`.
+- Kept examples on protobuf-over-WebSocket wording with no JSON frames or base64 wire audio.
+
+Tests:
+- `uv run ruff check examples/example_realtime_text.py examples/example_realtime_functions.py examples/example_realtime_microphone.py`
+- `uv run python -m py_compile examples/example_realtime_text.py examples/example_realtime_functions.py examples/example_realtime_microphone.py`
+- `uv run pytest tests/unit/gigachat/realtime/test_audio_helpers.py tests/unit/gigachat/realtime/test_protobuf_client_serialization.py`
+- `uv run pytest tests/unit/gigachat/realtime`
+
+Next:
+- 29-integration-smoke-protobuf-ws
+
+Risks:
+- Microphone example is not backend-smoked in this slice; backend smoke coverage remains deferred to slice 29.

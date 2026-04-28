@@ -44,12 +44,17 @@ Realtime examples use protobuf binary frames over WebSocket and require `GIGACHA
 dependencies and set the endpoint before running them:
 
 ```bash
+pip install "gigachat[realtime]"
+# or, for microphone/speaker helpers:
+pip install "gigachat[realtime_voice]"
+
 uv sync --extra realtime
 export GIGACHAT_REALTIME_URL=wss://your-realtime-endpoint.example/ws
 ```
 
 * [Text-only realtime](./example_realtime_text.py) - `client.a_realtime.connect(...)` with text output events
 * [Realtime functions](./example_realtime_functions.py) - handle `function_call` and send `function_result`
+* [Realtime microphone](./example_realtime_microphone.py) - stream raw PCM microphone bytes and play audio output
 
 ## Files and assistants
 

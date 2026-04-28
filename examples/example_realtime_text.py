@@ -11,6 +11,12 @@ from gigachat.models.realtime import OutputAdditionalDataEvent, OutputTranscript
 from gigachat.types.realtime import RealtimeSettingsParam
 
 
+def require_realtime_url() -> None:
+    """Require an explicit realtime WebSocket endpoint."""
+    if not os.getenv("GIGACHAT_REALTIME_URL"):
+        raise RuntimeError("Set GIGACHAT_REALTIME_URL to the protobuf-over-WebSocket realtime endpoint.")
+
+
 def build_settings(prompt: str) -> RealtimeSettingsParam:
     """Build text-only realtime settings."""
     return {
@@ -35,6 +41,7 @@ def build_settings(prompt: str) -> RealtimeSettingsParam:
 async def main() -> None:
     """Connect to a realtime WebSocket endpoint and print text events."""
     load_dotenv()
+    require_realtime_url()
 
     prompt = os.getenv("GIGACHAT_REALTIME_PROMPT", "Give a short overview of realtime SDK clients.")
 

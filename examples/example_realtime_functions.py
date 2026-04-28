@@ -33,6 +33,12 @@ WEATHER_FUNCTION: RealtimeFunctionParam = {
 }
 
 
+def require_realtime_url() -> None:
+    """Require an explicit realtime WebSocket endpoint."""
+    if not os.getenv("GIGACHAT_REALTIME_URL"):
+        raise RuntimeError("Set GIGACHAT_REALTIME_URL to the protobuf-over-WebSocket realtime endpoint.")
+
+
 def get_weather(location: str) -> Dict[str, Any]:
     """Return mock weather data for a city."""
     return {
@@ -77,6 +83,7 @@ async def handle_function_call(connection: Any, event: FunctionCallEvent) -> Non
 async def main() -> None:
     """Connect to a realtime WebSocket endpoint and answer function calls."""
     load_dotenv()
+    require_realtime_url()
 
     prompt = os.getenv("GIGACHAT_REALTIME_PROMPT", "What is the weather in Moscow? Answer in one sentence.")
 
