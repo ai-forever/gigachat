@@ -1,14 +1,17 @@
 import json
 from datetime import timedelta
-from typing import Any, Mapping, Sequence, Union, cast
+from typing import Any, Dict, Mapping, Sequence, Union, cast
 
 from google.protobuf import duration_pb2  # type: ignore[import-untyped]
+from google.protobuf.message import DecodeError  # type: ignore[import-untyped]
 
+from gigachat.models.realtime import RealtimeServerEvent, parse_realtime_event
 from gigachat.proto.gigavoice import voice_pb2
 from gigachat.realtime._base64 import validate_pcm16_chunk_duration
 from gigachat.types.realtime import RealtimeClientEventParam, RealtimeSettingsParam
 
 _PB2 = vars(voice_pb2)
+_AGE_TYPE: Any = _PB2["AgeType"]
 _ANY_EXAMPLE: Any = _PB2["AnyExample"]
 _AUDIO_CHUNK_META: Any = _PB2["AudioChunkMeta"]
 _AUDIO_CONTENT: Any = _PB2["AudioContent"]
@@ -23,6 +26,7 @@ _FUNCTION_CALL: Any = _PB2["FunctionCall"]
 _FUNCTION_RANKER: Any = _PB2["FunctionRanker"]
 _FUNCTION_REGISTRY: Any = _PB2["FunctionRegistry"]
 _FUNCTION_RESULT: Any = _PB2["FunctionResult"]
+_GENDER_TYPE: Any = _PB2["GenderType"]
 _GIGACHAT_SETTINGS: Any = _PB2["GigaChatSettings"]
 _GIGA_VOICE_REQUEST: Any = _PB2["GigaVoiceRequest"]
 _INITIAL_CONTEXT: Any = _PB2["InitialContext"]
@@ -34,6 +38,7 @@ _SETTINGS: Any = _PB2["Settings"]
 _STUB_SOUNDS: Any = _PB2["StubSounds"]
 _TRIGGER_FUNCTION: Any = _PB2["TriggerFunction"]
 _TRIGGER_GENERATION: Any = _PB2["TriggerGeneration"]
+_GIGA_VOICE_RESPONSE: Any = _PB2["GigaVoiceResponse"]
 
 MAX_CLIENT_EVENT_FRAME_SIZE = 4 * 1024 * 1024
 DEFAULT_PCM16_SAMPLE_RATE = 16000
@@ -96,6 +101,52 @@ def serialize_client_event(
     payload = cast(bytes, request.SerializeToString())
     _validate_frame_size(payload, max_frame_size=max_frame_size)
     return payload
+
+
+def parse_server_event(data: bytes) -> RealtimeServerEvent:
+    """Parse protobuf server frame bytes into a realtime event."""
+    if not isinstance(data, (bytes, bytearray)):
+        raise TypeError("Realtime server event frame must be bytes")
+
+    response = _GIGA_VOICE_RESPONSE()
+    try:
+        response.ParseFromString(bytes(data))
+    except DecodeError as exc:
+        raise ValueError("Invalid realtime protobuf server event frame") from exc
+    return response_to_event(response)
+
+
+def response_to_event(response: Any) -> RealtimeServerEvent:
+    """Convert protobuf GigaVoiceResponse to a realtime event."""
+    response_type = response.WhichOneof("response")
+    if response_type is None:
+        raise ValueError("Empty GigaVoiceResponse")
+
+    if response_type == "output":
+        return _output_to_event(response.output)
+    if response_type == "function_call":
+        return _function_calling_to_event(response.function_call)
+    if response_type == "input_transcription":
+        return _input_transcription_to_event(response.input_transcription)
+    if response_type == "output_transcription":
+        return _output_transcription_to_event(response.output_transcription)
+    if response_type == "error":
+        return parse_realtime_event(
+            {"type": "error", "status": response.error.status, "message": response.error.message}
+        )
+    if response_type == "warning":
+        return parse_realtime_event({"type": "warning", "message": response.warning.message})
+    if response_type == "input_files":
+        return _input_files_to_event(response.input_files)
+    if response_type == "platform_function_processing":
+        return parse_realtime_event(
+            {
+                "type": "platform_function_processing",
+                "name": response.platform_function_processing.name,
+                "timestamp": response.platform_function_processing.timestamp,
+            }
+        )
+    raise ValueError(f"Unsupported GigaVoiceResponse oneof: {response_type!r}")
 
 
 def settings_to_pb(settings: RealtimeSettingsParam) -> Any:
@@ -165,6 +216,11 @@ def duration_to_pb(value: Union[int, float, timedelta]) -> Any:
     return pb
 
 
+def duration_from_pb(value: Any) -> float:
+    """Convert protobuf Duration to seconds."""
+    return cast(float, value.seconds + value.nanos / 1_000_000_000)
+
+
 def enum_value(enum_cls: Any, value: str, *, field_name: str) -> int:
     """Return protobuf enum value by name."""
     try:
@@ -180,6 +236,124 @@ def json_string(value: Union[str, Mapping[str, Any], Sequence[Any]], *, field_na
     if isinstance(value, Mapping) or (isinstance(value, Sequence) and not isinstance(value, (bytes, bytearray))):
         return json.dumps(value, ensure_ascii=False, separators=(",", ":"))
     raise TypeError(f"Realtime `{field_name}` must be a string, mapping, or sequence")
+
+
+def _output_to_event(output: Any) -> RealtimeServerEvent:
+    output_type = output.WhichOneof("response")
+    if output_type is None:
+        raise ValueError("Empty GigaVoiceResponse.output")
+
+    if output_type == "audio":
+        return _output_audio_to_event(output.audio)
+    if output_type == "additional_data":
+        return _additional_data_to_event(output.additional_data)
+    if output_type == "interrupted":
+        return parse_realtime_event({"type": "output.interrupted", "interrupted": output.interrupted})
+    raise ValueError(f"Unsupported ContentFromModel oneof: {output_type!r}")
+
+
+def _output_audio_to_event(audio: Any) -> RealtimeServerEvent:
+    data: Dict[str, Any] = {"type": "output.audio", "audio_chunk": audio.audio_chunk}
+    if audio.HasField("audio_duration"):
+        data["audio_duration"] = duration_from_pb(audio.audio_duration)
+    if audio.HasField("is_final"):
+        data["is_final"] = audio.is_final
+    return parse_realtime_event(data)
+
+
+def _additional_data_to_event(additional_data: Any) -> RealtimeServerEvent:
+    data: Dict[str, Any] = {"type": "output.additional_data"}
+    if additional_data.HasField("usage"):
+        usage = additional_data.usage
+        data.update(
+            {
+                "prompt_tokens": usage.prompt_tokens,
+                "completion_tokens": usage.completion_tokens,
+                "total_tokens": usage.total_tokens,
+                "precached_prompt_tokens": usage.precached_prompt_tokens,
+            }
+        )
+    if additional_data.HasField("gigachat_model_info"):
+        data["gigachat_model_info"] = {
+            "name": additional_data.gigachat_model_info.name,
+            "version": additional_data.gigachat_model_info.version,
+        }
+    if additional_data.finish_reason:
+        data["finish_reason"] = additional_data.finish_reason
+    return parse_realtime_event(data)
+
+
+def _function_calling_to_event(function_calling: Any) -> RealtimeServerEvent:
+    return parse_realtime_event(
+        {
+            "type": "function_call",
+            "name": function_calling.function_call.name,
+            "arguments": function_calling.function_call.arguments,
+            "timestamp": function_calling.timestamp,
+        }
+    )
+
+
+def _input_transcription_to_event(input_transcription: Any) -> RealtimeServerEvent:
+    data: Dict[str, Any] = {
+        "type": "input_transcription",
+        "text": input_transcription.text,
+        "timestamp": input_transcription.timestamp,
+    }
+    if input_transcription.HasField("unnormalized_text"):
+        data["unnormalized_text"] = input_transcription.unnormalized_text
+    if input_transcription.HasField("person_identity"):
+        person_identity = input_transcription.person_identity
+        data["person_identity"] = {
+            "age": _enum_name(_AGE_TYPE, person_identity.age),
+            "gender": _enum_name(_GENDER_TYPE, person_identity.gender),
+            "age_score": person_identity.age_score,
+            "gender_score": person_identity.gender_score,
+        }
+    if input_transcription.HasField("prefetch"):
+        data["prefetch"] = input_transcription.prefetch
+    if input_transcription.HasField("whisper"):
+        data["whisper"] = input_transcription.whisper
+    if input_transcription.HasField("emotion"):
+        data["emotion"] = {
+            "positive": input_transcription.emotion.positive,
+            "neutral": input_transcription.emotion.neutral,
+            "negative": input_transcription.emotion.negative,
+        }
+    return parse_realtime_event(data)
+
+
+def _output_transcription_to_event(output_transcription: Any) -> RealtimeServerEvent:
+    data: Dict[str, Any] = {
+        "type": "output_transcription",
+        "text": output_transcription.text,
+        "functions_state_id": output_transcription.functions_state_id,
+        "finish_reason": output_transcription.finish_reason,
+        "timestamp": output_transcription.timestamp,
+    }
+    if output_transcription.HasField("stub_text"):
+        data["stub_text"] = output_transcription.stub_text
+    if output_transcription.inline_data:
+        data["inline_data"] = dict(output_transcription.inline_data)
+    if output_transcription.HasField("silence_phrase"):
+        data["silence_phrase"] = output_transcription.silence_phrase
+    return parse_realtime_event(data)
+
+
+def _input_files_to_event(input_files: Any) -> RealtimeServerEvent:
+    return parse_realtime_event(
+        {
+            "type": "input_files",
+            "files": [{"id": file.id, "type": file.type} for file in input_files.files],
+        }
+    )
+
+
+def _enum_name(enum_cls: Any, value: int) -> str:
+    try:
+        return cast(str, enum_cls.Name(value))
+    except ValueError:
+        return str(value)
 
 
 def _input_audio_content_event_to_pb(
@@ -519,9 +693,12 @@ __all__ = (
     "DEFAULT_PCM16_SAMPLE_RATE",
     "MAX_CLIENT_EVENT_FRAME_SIZE",
     "client_event_to_request",
+    "duration_from_pb",
     "duration_to_pb",
     "enum_value",
     "json_string",
+    "parse_server_event",
+    "response_to_event",
     "serialize_client_event",
     "settings_to_pb",
 )

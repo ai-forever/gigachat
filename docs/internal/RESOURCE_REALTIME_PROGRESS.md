@@ -62,7 +62,7 @@ Do not implement gRPC. Do not generate or commit `voice_pb2_grpc.py`.
 | 20-proto-message-bindings | done | this commit | Added generated `voice_pb2.py`; no `voice_pb2_grpc.py`. |
 | 21-protobuf-request-bridge-settings | done | this commit | Map settings params to protobuf Settings. |
 | 22-protobuf-client-event-serialization | done | this commit | Serialize all client events to protobuf bytes. |
-| 23-protobuf-server-event-parsing | pending |  | Parse protobuf responses into Pydantic events. |
+| 23-protobuf-server-event-parsing | done | this commit | Parse protobuf responses into Pydantic events. |
 | 24-async-binary-websocket-connection | pending |  | Async WS sends/receives binary protobuf frames. |
 | 25-sync-binary-websocket-connection | pending |  | Sync WS sends/receives binary protobuf frames. |
 | 26-helper-resources-protobuf-regression | pending |  | Ensure helpers emit protobuf requests and handlers still work. |
@@ -195,3 +195,26 @@ Next:
 
 Risks:
 - WebSocket transport still imports the JSON `_events.serialize_client_event` path until slices 24/25 switch async/sync connections to binary protobuf frames.
+
+### 2026-04-28 — slice 23-protobuf-server-event-parsing
+
+Done:
+- Added `parse_server_event(...)` for binary `GigaVoiceResponse` protobuf frames.
+- Added `response_to_event(...)` and response oneof mapping for output audio/additional data/interrupted, function calls, input/output transcriptions, errors, warnings, input files, and platform function processing.
+- Converted protobuf `Duration` to seconds floats for output audio duration.
+- Exposed protobuf enum names for `input_transcription.person_identity.age` and `gender`.
+- Added server parsing regression tests for every `GigaVoiceResponse` oneof, including `output_transcription.silence_phrase`, `input_transcription.person_identity`, `input_transcription.emotion`, `input_files`, and invalid/empty frames.
+
+Tests:
+- `uv run pytest tests/unit/gigachat/realtime/test_protobuf_server_parsing.py`
+- `uv run ruff check src/gigachat/realtime/_protobuf.py src/gigachat/realtime/__init__.py tests/unit/gigachat/realtime/test_protobuf_server_parsing.py`
+- `uv run mypy src/gigachat/realtime/_protobuf.py src/gigachat/realtime/__init__.py tests/unit/gigachat/realtime/test_protobuf_server_parsing.py`
+- `uv run pytest tests/unit/gigachat/realtime`
+- `uv run ruff check src tests`
+- `uv run mypy src tests`
+
+Next:
+- 24-async-binary-websocket-connection
+
+Risks:
+- WebSocket transport still parses JSON frames until slice 24 switches the async connection to binary protobuf `parse_server_event(...)`.
