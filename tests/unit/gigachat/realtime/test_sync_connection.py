@@ -1,6 +1,5 @@
-import base64
 import json
-from typing import Any, Dict, List, Optional, Tuple, Union
+from typing import Any, Dict, List, Optional, Tuple, Union, cast
 
 import pytest
 
@@ -8,8 +7,16 @@ from gigachat.api import realtime
 from gigachat.api.realtime import RealtimeConnectionManager
 from gigachat.exceptions import GigaChatException
 from gigachat.models.realtime import InputTranscriptionEvent, RealtimeServerEvent
+from gigachat.proto.gigavoice import voice_pb2
 from gigachat.settings import Settings
 from gigachat.types.realtime import RealtimeSettingsParam
+
+_PB2 = vars(voice_pb2)
+_ERROR: Any = _PB2["Error"]
+_GIGA_VOICE_REQUEST: Any = _PB2["GigaVoiceRequest"]
+_GIGA_VOICE_RESPONSE: Any = _PB2["GigaVoiceResponse"]
+_INPUT_TRANSCRIPTION: Any = _PB2["InputTranscription"]
+_WARNING: Any = _PB2["Warning"]
 
 
 class FakeWebSocket:
@@ -78,6 +85,27 @@ def _settings() -> RealtimeSettingsParam:
     return {"voice_call_id": "call-id"}
 
 
+def _request_from_frame(data: Union[str, bytes]) -> Any:
+    assert isinstance(data, bytes)
+    return _GIGA_VOICE_REQUEST.FromString(data)
+
+
+def _response_frame(response: Any) -> bytes:
+    return cast(bytes, response.SerializeToString())
+
+
+def _input_transcription_frame(text: str) -> bytes:
+    return _response_frame(_GIGA_VOICE_RESPONSE(input_transcription=_INPUT_TRANSCRIPTION(text=text)))
+
+
+def _warning_frame(message: str) -> bytes:
+    return _response_frame(_GIGA_VOICE_RESPONSE(warning=_WARNING(message=message)))
+
+
+def _error_frame(message: str) -> bytes:
+    return _response_frame(_GIGA_VOICE_RESPONSE(error=_ERROR(message=message)))
+
+
 class StopDispatch(Exception):
     pass
 
@@ -104,7 +132,9 @@ def test_sync_manager_connects_and_sends_initial_settings_first(url_source: str)
         "User-Agent": "GigaChat-python-lib",
         "X-Test": "1",
     }
-    assert websocket.sent[0] == '{"type":"settings","settings":{"voice_call_id":"call-id"}}'
+    request = _request_from_frame(websocket.sent[0])
+    assert request.WhichOneof("request") == "settings"
+    assert request.settings.voice_call_id == "call-id"
 
 
 def test_sync_manager_refreshes_token_before_connect() -> None:
@@ -125,16 +155,25 @@ def test_sync_manager_queues_messages_before_connect() -> None:
     manager = RealtimeConnectionManager(FakeClient(), settings=_settings(), connect_factory=connect)
 
     manager.send({"type": "input.synthesis_content", "text": "hello"})
-    manager.send_raw('{"type":"raw"}')
+    manager.send_raw(b"raw")
 
     with manager:
         pass
 
-    assert websocket.sent == [
-        '{"type":"settings","settings":{"voice_call_id":"call-id"}}',
-        '{"type":"input.synthesis_content","text":"hello"}',
-        '{"type":"raw"}',
-    ]
+    settings_request = _request_from_frame(websocket.sent[0])
+    synthesis_request = _request_from_frame(websocket.sent[1])
+
+    assert settings_request.WhichOneof("request") == "settings"
+    assert synthesis_request.input.WhichOneof("Content") == "content_for_synthesis"
+    assert synthesis_request.input.content_for_synthesis.text == "hello"
+    assert websocket.sent[2] == b"raw"
+
+
+def test_sync_manager_send_raw_rejects_text_frames() -> None:
+    manager = RealtimeConnectionManager(FakeClient(), settings=_settings(), connect_factory=None)
+
+    with pytest.raises(TypeError, match="raw data must be bytes"):
+        manager.send_raw(cast(bytes, cast(Any, '{"type":"raw"}')))
 
 
 def test_sync_connection_sends_audio_frame() -> None:
@@ -144,12 +183,12 @@ def test_sync_connection_sends_audio_frame() -> None:
     with RealtimeConnectionManager(FakeClient(), settings=_settings(), connect_factory=connect) as connection:
         connection.send({"type": "input.audio_content", "audio_chunk": b"pcm", "speech_start": True})
 
-    payload = json.loads(str(websocket.sent[1]))
-    assert payload == {
-        "type": "input.audio_content",
-        "audio_chunk": base64.b64encode(b"pcm").decode("ascii"),
-        "speech_start": True,
-    }
+    request = _request_from_frame(websocket.sent[1])
+    assert request.WhichOneof("request") == "input"
+    assert request.input.WhichOneof("Content") == "audio_content"
+    assert request.input.audio_content.audio_chunk == b"pcm"
+    assert request.input.audio_content.speech_start is True
+    assert b"cGNt" not in cast(bytes, websocket.sent[1])
 
 
 def test_sync_connection_session_helper_sends_settings() -> None:
@@ -159,10 +198,9 @@ def test_sync_connection_session_helper_sends_settings() -> None:
     with RealtimeConnectionManager(FakeClient(), settings=_settings(), connect_factory=connect) as connection:
         connection.session.send_settings({"voice_call_id": "updated-call-id"})
 
-    assert json.loads(str(websocket.sent[1])) == {
-        "type": "settings",
-        "settings": {"voice_call_id": "updated-call-id"},
-    }
+    request = _request_from_frame(websocket.sent[1])
+    assert request.WhichOneof("request") == "settings"
+    assert request.settings.voice_call_id == "updated-call-id"
 
 
 def test_sync_connection_input_audio_helper_sends_audio_content() -> None:
@@ -177,13 +215,12 @@ def test_sync_connection_input_audio_helper_sends_audio_content() -> None:
             meta={"force_co_speech": True},
         )
 
-    assert json.loads(str(websocket.sent[1])) == {
-        "type": "input.audio_content",
-        "audio_chunk": base64.b64encode(b"pcm").decode("ascii"),
-        "speech_start": True,
-        "speech_end": False,
-        "meta": {"force_co_speech": True},
-    }
+    request = _request_from_frame(websocket.sent[1])
+    assert request.input.WhichOneof("Content") == "audio_content"
+    assert request.input.audio_content.audio_chunk == b"pcm"
+    assert request.input.audio_content.speech_start is True
+    assert request.input.audio_content.speech_end is False
+    assert request.input.audio_content.meta.force_no_speech is True
 
 
 def test_sync_connection_synthesis_helper_sends_synthesis_content() -> None:
@@ -193,12 +230,10 @@ def test_sync_connection_synthesis_helper_sends_synthesis_content() -> None:
     with RealtimeConnectionManager(FakeClient(), settings=_settings(), connect_factory=connect) as connection:
         connection.synthesis.send("<speak>Hello</speak>", content_type="ssml", is_final=True)
 
-    assert json.loads(str(websocket.sent[1])) == {
-        "type": "input.synthesis_content",
-        "text": "<speak>Hello</speak>",
-        "content_type": "ssml",
-        "is_final": True,
-    }
+    request = _request_from_frame(websocket.sent[1])
+    assert request.input.WhichOneof("Content") == "content_for_synthesis"
+    assert request.input.content_for_synthesis.text == "<speak>Hello</speak>"
+    assert request.input.content_for_synthesis.is_final is True
 
 
 def test_sync_connection_function_result_helper_sends_function_result() -> None:
@@ -208,13 +243,11 @@ def test_sync_connection_function_result_helper_sends_function_result() -> None:
     with RealtimeConnectionManager(FakeClient(), settings=_settings(), connect_factory=connect) as connection:
         connection.function_result.create({"items": [{"title": "ГигаЧат"}]}, function_name="search")
 
-    data = json.loads(str(websocket.sent[1]))
-    assert data == {
-        "type": "function_result",
-        "content": '{"items":[{"title":"ГигаЧат"}]}',
-        "function_name": "search",
-    }
-    assert json.loads(data["content"]) == {"items": [{"title": "ГигаЧат"}]}
+    request = _request_from_frame(websocket.sent[1])
+    assert request.WhichOneof("request") == "function_result"
+    assert request.function_result.function_name == "search"
+    assert request.function_result.content == '{"items":[{"title":"ГигаЧат"}]}'
+    assert json.loads(request.function_result.content) == {"items": [{"title": "ГигаЧат"}]}
 
 
 def test_sync_connection_function_result_helper_can_omit_function_name() -> None:
@@ -224,14 +257,14 @@ def test_sync_connection_function_result_helper_can_omit_function_name() -> None
     with RealtimeConnectionManager(FakeClient(), settings=_settings(), connect_factory=connect) as connection:
         connection.function_result.create("done")
 
-    assert json.loads(str(websocket.sent[1])) == {
-        "type": "function_result",
-        "content": "done",
-    }
+    request = _request_from_frame(websocket.sent[1])
+    assert request.WhichOneof("request") == "function_result"
+    assert request.function_result.content == "done"
+    assert request.function_result.function_name == ""
 
 
-def test_sync_connection_recv_parses_event() -> None:
-    websocket = FakeWebSocket(['{"type":"input_transcription","text":"hello"}'])
+def test_sync_connection_recv_parses_protobuf_event() -> None:
+    websocket = FakeWebSocket([_input_transcription_frame("hello")])
     connect = FakeConnect(websocket)
 
     with RealtimeConnectionManager(FakeClient(), settings=_settings(), connect_factory=connect) as connection:
@@ -242,7 +275,7 @@ def test_sync_connection_recv_parses_event() -> None:
 
 
 def test_sync_connection_iter_parses_events() -> None:
-    websocket = FakeWebSocket(['{"type":"input_transcription","text":"hello"}'])
+    websocket = FakeWebSocket([_input_transcription_frame("hello")])
     connect = FakeConnect(websocket)
 
     with RealtimeConnectionManager(FakeClient(), settings=_settings(), connect_factory=connect) as connection:
@@ -255,8 +288,8 @@ def test_sync_connection_iter_parses_events() -> None:
 def test_sync_connection_dispatches_specific_handler() -> None:
     websocket = FakeWebSocket(
         [
-            '{"type":"input_transcription","text":"hello"}',
-            '{"type":"error","message":"stop"}',
+            _input_transcription_frame("hello"),
+            _error_frame("stop"),
         ]
     )
     connect = FakeConnect(websocket)
@@ -279,7 +312,7 @@ def test_sync_connection_dispatches_specific_handler() -> None:
 
 
 def test_sync_connection_unhandled_error_event_raises_gigachat_exception() -> None:
-    websocket = FakeWebSocket(['{"type":"error","message":"backend failed"}'])
+    websocket = FakeWebSocket([_error_frame("backend failed")])
     connect = FakeConnect(websocket)
 
     with RealtimeConnectionManager(FakeClient(), settings=_settings(), connect_factory=connect) as connection:
@@ -287,25 +320,53 @@ def test_sync_connection_unhandled_error_event_raises_gigachat_exception() -> No
             connection.dispatch_events()
 
 
-def test_sync_connection_parse_event_accepts_utf8_bytes() -> None:
+def test_sync_connection_parse_event_accepts_protobuf_bytes() -> None:
     websocket = FakeWebSocket()
     connect = FakeConnect(websocket)
 
     with RealtimeConnectionManager(FakeClient(), settings=_settings(), connect_factory=connect) as connection:
-        event = connection.parse_event(b'{"type":"input_transcription","text":"hello"}')
+        event = connection.parse_event(_input_transcription_frame("hello"))
 
     assert isinstance(event, InputTranscriptionEvent)
     assert event.text == "hello"
 
 
-def test_sync_connection_recv_bytes_returns_utf8_bytes() -> None:
-    websocket = FakeWebSocket(['{"type":"warning","message":"slow"}'])
+def test_sync_connection_parse_event_rejects_text_frames() -> None:
+    websocket = FakeWebSocket()
+    connect = FakeConnect(websocket)
+
+    with RealtimeConnectionManager(FakeClient(), settings=_settings(), connect_factory=connect) as connection:
+        with pytest.raises(ValueError, match="binary protobuf bytes"):
+            connection.parse_event('{"type":"input_transcription","text":"hello"}')
+
+
+def test_sync_connection_recv_bytes_returns_binary_frame() -> None:
+    frame = _warning_frame("slow")
+    websocket = FakeWebSocket([frame])
     connect = FakeConnect(websocket)
 
     with RealtimeConnectionManager(FakeClient(), settings=_settings(), connect_factory=connect) as connection:
         data = connection.recv_bytes()
 
-    assert data == b'{"type":"warning","message":"slow"}'
+    assert data == frame
+
+
+def test_sync_connection_recv_bytes_rejects_text_frames() -> None:
+    websocket = FakeWebSocket(['{"type":"warning","message":"slow"}'])
+    connect = FakeConnect(websocket)
+
+    with RealtimeConnectionManager(FakeClient(), settings=_settings(), connect_factory=connect) as connection:
+        with pytest.raises(ValueError, match="binary protobuf bytes"):
+            connection.recv_bytes()
+
+
+def test_sync_connection_send_raw_rejects_text_frames() -> None:
+    websocket = FakeWebSocket()
+    connect = FakeConnect(websocket)
+
+    with RealtimeConnectionManager(FakeClient(), settings=_settings(), connect_factory=connect) as connection:
+        with pytest.raises(TypeError, match="raw data must be bytes"):
+            connection.send_raw(cast(bytes, cast(Any, '{"type":"raw"}')))
 
 
 def test_sync_connection_close_closes_websocket() -> None:

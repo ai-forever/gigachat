@@ -64,7 +64,7 @@ Do not implement gRPC. Do not generate or commit `voice_pb2_grpc.py`.
 | 22-protobuf-client-event-serialization | done | this commit | Serialize all client events to protobuf bytes. |
 | 23-protobuf-server-event-parsing | done | this commit | Parse protobuf responses into Pydantic events. |
 | 24-async-binary-websocket-connection | done | this commit | Async WS sends/receives binary protobuf frames. |
-| 25-sync-binary-websocket-connection | pending |  | Sync WS sends/receives binary protobuf frames. |
+| 25-sync-binary-websocket-connection | done | this commit | Sync WS sends/receives binary protobuf frames. |
 | 26-helper-resources-protobuf-regression | pending |  | Ensure helpers emit protobuf requests and handlers still work. |
 | 27-remove-json-wire-assumptions | pending |  | Remove stale JSON/base64 wire docs/tests/code paths. |
 | 28-examples-protobuf-websocket | pending |  | Update examples to protobuf-over-WebSocket. |
@@ -243,3 +243,27 @@ Next:
 
 Risks:
 - Sync realtime connection still sends/parses JSON frames until slice 25.
+
+### 2026-04-28 — slice 25-sync-binary-websocket-connection
+
+Done:
+- Switched sync realtime connection send path to serialize client events as protobuf `GigaVoiceRequest` bytes.
+- Switched initial sync settings frame and sync helper resources to send binary protobuf frames.
+- Switched sync `recv()` / `parse_event()` to parse binary `GigaVoiceResponse` frames.
+- Made sync `send_raw()` accept bytes only and made sync `recv_bytes()` reject text frames with a protocol error.
+- Updated sync connection tests to assert sent protobuf requests and feed protobuf server responses.
+
+Tests:
+- `uv run pytest tests/unit/gigachat/realtime/test_sync_connection.py`
+- `uv run ruff check src/gigachat/api/realtime.py tests/unit/gigachat/realtime/test_sync_connection.py`
+- `uv run mypy src/gigachat/api/realtime.py tests/unit/gigachat/realtime/test_sync_connection.py`
+- `uv run pytest tests/unit/gigachat/realtime`
+- `uv run ruff check src tests`
+- `uv run mypy src tests`
+- `uv run pytest`
+
+Next:
+- 26-helper-resources-protobuf-regression
+
+Risks:
+- Helper resources now send protobuf through both async and sync connection paths; the next slice should add focused regression coverage at the resource namespace level.

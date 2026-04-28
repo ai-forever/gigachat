@@ -1,4 +1,3 @@
-import json
 from importlib import import_module
 from inspect import isawaitable
 from types import TracebackType
@@ -23,9 +22,8 @@ from typing_extensions import Literal
 
 from gigachat.api.utils import build_headers
 from gigachat.exceptions import GigaChatException
-from gigachat.models.realtime import RealtimeServerEvent, parse_realtime_event
+from gigachat.models.realtime import RealtimeServerEvent
 from gigachat.realtime._events import MAX_CLIENT_EVENT_FRAME_SIZE
-from gigachat.realtime._events import serialize_client_event as serialize_json_client_event
 from gigachat.settings import Settings
 from gigachat.types.realtime import (
     RealtimeAudioChunkMetaParam,
@@ -84,7 +82,7 @@ class WebSocketProtocol(Protocol):
 
 AsyncWebSocketConnect = Callable[..., Awaitable[AsyncWebSocketProtocol]]
 WebSocketConnect = Callable[..., WebSocketProtocol]
-QueuedMessage = Union[RealtimeClientEventParam, str, bytes]
+QueuedMessage = Union[RealtimeClientEventParam, bytes]
 RealtimeEventHandler = Callable[[RealtimeServerEvent], object]
 RealtimeEventDecorator = Callable[[RealtimeEventHandler], RealtimeEventHandler]
 
@@ -541,7 +539,9 @@ class RealtimeConnectionManager:
             return
         self._connection.send(event)
 
-    def send_raw(self, data: Union[str, bytes]) -> None:
+    def send_raw(self, data: bytes) -> None:
+        if not isinstance(data, bytes):
+            raise TypeError("Realtime client raw data must be bytes")
         if self._connection is None:
             self._queued_messages.append(data)
             return
@@ -612,7 +612,7 @@ class RealtimeConnectionManager:
         queued_messages = self._queued_messages
         self._queued_messages = []
         for message in queued_messages:
-            if isinstance(message, (str, bytes)):
+            if isinstance(message, bytes):
                 connection.send_raw(message)
             else:
                 connection.send(message)
@@ -644,31 +644,29 @@ class RealtimeConnection:
         data = self._websocket.recv()
         if isinstance(data, bytes):
             return data
-        return data.encode("utf-8")
+        if isinstance(data, str):
+            raise ValueError("Realtime server frame must be binary protobuf bytes; received text frame")
+        raise TypeError("data must be str or bytes")
 
     def send(self, event: RealtimeClientEventParam) -> None:
-        payload = serialize_json_client_event(
+        payload = _serialize_protobuf_client_event(
             event,
             max_frame_size=self._max_frame_size,
             validate_audio_chunks=self._validate_audio_chunks,
         )
         self.send_raw(payload)
 
-    def send_raw(self, data: Union[str, bytes]) -> None:
-        if not isinstance(data, (str, bytes)):
-            raise TypeError("data must be str or bytes")
+    def send_raw(self, data: bytes) -> None:
+        if not isinstance(data, bytes):
+            raise TypeError("Realtime client raw data must be bytes")
         self._websocket.send(data)
 
     def parse_event(self, data: Union[str, bytes]) -> RealtimeServerEvent:
         if isinstance(data, bytes):
-            data = data.decode("utf-8")
-        if not isinstance(data, str):
-            raise TypeError("data must be str or bytes")
-
-        json_data = json.loads(data)
-        if not isinstance(json_data, Mapping):
-            raise ValueError("Realtime server event must be a JSON object")
-        return parse_realtime_event(json_data)
+            return _parse_protobuf_server_event(data)
+        if isinstance(data, str):
+            raise ValueError("Realtime server frame must be binary protobuf bytes; received text frame")
+        raise TypeError("data must be str or bytes")
 
     def close(self, *, code: int = 1000, reason: str = "") -> None:
         self._websocket.close(code=code, reason=reason)
