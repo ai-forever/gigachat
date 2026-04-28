@@ -68,7 +68,7 @@ Do not implement gRPC. Do not generate or commit `voice_pb2_grpc.py`.
 | 26-helper-resources-protobuf-regression | done | this commit | Added public resource namespace regressions for helper protobuf requests and handlers. |
 | 27-remove-json-wire-assumptions | done | this commit | Removed stale JSON/base64 wire docs/tests/code paths. |
 | 28-examples-protobuf-websocket | done | this commit | Updated examples to protobuf-over-WebSocket and added microphone/speaker example. |
-| 29-integration-smoke-protobuf-ws | pending |  | Optional backend smoke tests. |
+| 29-integration-smoke-protobuf-ws | done | this commit | Added optional backend smoke test for protobuf realtime WebSocket. |
 | 30-docs-readme-protobuf-realtime | pending |  | README/API docs for protobuf realtime. |
 | 31-final-protobuf-audit | pending |  | Final no-gRPC/no-JSON-wire audit. |
 
@@ -336,3 +336,22 @@ Next:
 
 Risks:
 - Microphone example is not backend-smoked in this slice; backend smoke coverage remains deferred to slice 29.
+
+### 2026-04-28 — slice 29-integration-smoke-protobuf-ws
+
+Done:
+- Added optional `tests/integration/test_realtime_protobuf_ws.py` backend smoke coverage.
+- The smoke test skips unless `GIGACHAT_REALTIME_URL` and auth env (`GIGACHAT_CREDENTIALS`, `GIGACHAT_ACCESS_TOKEN`, or `GIGACHAT_USER`/`GIGACHAT_PASSWORD`) are present.
+- The test opens the public async resource namespace, sends initial settings as protobuf bytes through `client.a_realtime.connect(...)`, optionally sends a short raw PCM silence chunk with `GIGACHAT_REALTIME_SEND_SILENCE=1`, and parses the first protobuf response if one arrives before timeout.
+- Kept the test outside VCR because the existing cassette setup records HTTP calls, not WebSocket frames.
+
+Tests:
+- `uv run pytest tests/integration/test_realtime_protobuf_ws.py -m integration` (skipped: `GIGACHAT_REALTIME_URL` environment variable not set)
+- `uv run ruff check tests/integration/test_realtime_protobuf_ws.py`
+- `uv run mypy tests/integration/test_realtime_protobuf_ws.py`
+
+Next:
+- 30-docs-readme-protobuf-realtime
+
+Risks:
+- Actual backend acceptance remains unverified in this local environment because realtime backend env was not configured.
