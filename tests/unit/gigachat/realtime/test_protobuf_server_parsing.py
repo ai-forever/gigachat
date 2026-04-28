@@ -195,9 +195,7 @@ def test_parse_input_files_event() -> None:
 
 def test_parse_platform_function_processing_event() -> None:
     event = _parse_response(
-        _GIGA_VOICE_RESPONSE(
-            platform_function_processing=_PLATFORM_FUNCTION_PROCESSING(name="profile", timestamp=13)
-        )
+        _GIGA_VOICE_RESPONSE(platform_function_processing=_PLATFORM_FUNCTION_PROCESSING(name="profile", timestamp=13))
     )
 
     assert isinstance(event, PlatformFunctionProcessingEvent)
