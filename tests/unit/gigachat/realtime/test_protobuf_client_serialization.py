@@ -4,14 +4,27 @@ from typing import Any, cast
 import pytest
 
 from gigachat.proto.gigavoice import voice_pb2
-from gigachat.realtime._protobuf import duration_to_pb, enum_value, json_string, settings_to_pb
+from gigachat.realtime._protobuf import (
+    client_event_to_request,
+    duration_to_pb,
+    enum_value,
+    json_string,
+    serialize_client_event,
+    settings_to_pb,
+)
 from gigachat.types.realtime import RealtimeSettingsParam
 
 _PB2 = vars(voice_pb2)
+_CONTENT_FOR_SYNTHESIS = _PB2["ContentForSynthesis"]
+_GIGA_VOICE_REQUEST = _PB2["GigaVoiceRequest"]
 _INPUT = _PB2["Input"]
 _OUTPUT = _PB2["Output"]
 _SETTINGS = _PB2["Settings"]
 _TRIGGER_FUNCTION = _PB2["TriggerFunction"]
+
+
+def _request_from_bytes(data: bytes) -> Any:
+    return _GIGA_VOICE_REQUEST.FromString(data)
 
 
 def test_settings_to_pb_minimal() -> None:
@@ -174,3 +187,138 @@ def test_json_string_accepts_string_mapping_and_sequence() -> None:
     assert json_string("{}", field_name="parameters") == "{}"
     assert json_string({"type": "object"}, field_name="parameters") == '{"type":"object"}'
     assert json_string([{"name": "x"}], field_name="parameters") == '[{"name":"x"}]'
+
+
+def test_client_event_to_request_serializes_settings_event() -> None:
+    request = client_event_to_request(
+        {
+            "type": "settings",
+            "settings": {
+                "voice_call_id": "call-id",
+                "mode": "RECOGNIZE_GIGACHAT_SYNTHESIS",
+            },
+        }
+    )
+
+    assert request.WhichOneof("request") == "settings"
+    assert request.settings.voice_call_id == "call-id"
+    assert request.settings.mode == _SETTINGS.RECOGNIZE_GIGACHAT_SYNTHESIS
+
+
+def test_serialize_client_event_returns_protobuf_bytes() -> None:
+    payload = serialize_client_event({"type": "settings", "settings": {"voice_call_id": "call-id"}})
+    request = _request_from_bytes(payload)
+
+    assert isinstance(payload, bytes)
+    assert request.WhichOneof("request") == "settings"
+    assert request.settings.voice_call_id == "call-id"
+
+
+def test_serialize_audio_event_preserves_raw_bytes_without_base64() -> None:
+    payload = serialize_client_event(
+        {
+            "type": "input.audio_content",
+            "audio_chunk": b"pcm",
+            "speech_start": True,
+            "meta": cast(Any, {"force_no_speech": True}),
+        }
+    )
+    request = _request_from_bytes(payload)
+
+    assert request.WhichOneof("request") == "input"
+    assert request.input.WhichOneof("Content") == "audio_content"
+    assert request.input.audio_content.audio_chunk == b"pcm"
+    assert request.input.audio_content.speech_start is True
+    assert request.input.audio_content.meta.force_no_speech is True
+    assert b"cGNt" not in payload
+
+
+def test_serialize_audio_event_accepts_force_co_speech_alias() -> None:
+    payload = serialize_client_event(
+        {
+            "type": "input.audio_content",
+            "audio_chunk": b"pcm",
+            "meta": {"force_co_speech": False},
+        }
+    )
+    request = _request_from_bytes(payload)
+
+    assert request.input.audio_content.meta.force_no_speech is False
+    assert request.input.audio_content.meta.HasField("force_no_speech")
+
+
+def test_serialize_audio_event_rejects_meta_alias_conflict() -> None:
+    with pytest.raises(ValueError, match="values differ"):
+        serialize_client_event(
+            {
+                "type": "input.audio_content",
+                "audio_chunk": b"pcm",
+                "meta": cast(Any, {"force_no_speech": True, "force_co_speech": False}),
+            }
+        )
+
+
+def test_serialize_audio_event_validates_pcm_duration() -> None:
+    with pytest.raises(ValueError, match="exceeds 2 seconds"):
+        serialize_client_event({"type": "input.audio_content", "audio_chunk": b"\x00" * 64002})
+
+
+def test_serialize_audio_event_can_skip_pcm_duration_validation() -> None:
+    payload = serialize_client_event(
+        {"type": "input.audio_content", "audio_chunk": b"\x00" * 64002},
+        validate_audio_chunks=False,
+    )
+    request = _request_from_bytes(payload)
+
+    assert request.input.audio_content.audio_chunk == b"\x00" * 64002
+
+
+def test_serialize_synthesis_event_maps_content_type_aliases() -> None:
+    ssml_payload = serialize_client_event(
+        {
+            "type": "input.synthesis_content",
+            "text": "<speak>Hello</speak>",
+            "content_type": "ssml",
+            "is_final": True,
+        }
+    )
+    text_payload = serialize_client_event(
+        {
+            "type": "input.synthesis_content",
+            "text": "Hello",
+            "content_type": "TEXT",
+        }
+    )
+
+    ssml_request = _request_from_bytes(ssml_payload)
+    text_request = _request_from_bytes(text_payload)
+
+    assert ssml_request.input.WhichOneof("Content") == "content_for_synthesis"
+    assert ssml_request.input.content_for_synthesis.text == "<speak>Hello</speak>"
+    assert ssml_request.input.content_for_synthesis.content_type == _CONTENT_FOR_SYNTHESIS.SSML
+    assert ssml_request.input.content_for_synthesis.is_final is True
+    assert text_request.input.content_for_synthesis.content_type == _CONTENT_FOR_SYNTHESIS.TEXT
+
+
+def test_serialize_function_result_event_converts_mapping_and_list_content_to_json_string() -> None:
+    mapping_payload = serialize_client_event(
+        {
+            "type": "function_result",
+            "function_name": "search",
+            "content": {"items": [{"title": "ГигаЧат"}]},
+        }
+    )
+    list_payload = serialize_client_event({"type": "function_result", "content": [{"ok": True}]})
+
+    mapping_request = _request_from_bytes(mapping_payload)
+    list_request = _request_from_bytes(list_payload)
+
+    assert mapping_request.WhichOneof("request") == "function_result"
+    assert mapping_request.function_result.function_name == "search"
+    assert mapping_request.function_result.content == '{"items":[{"title":"ГигаЧат"}]}'
+    assert list_request.function_result.content == '[{"ok":true}]'
+
+
+def test_serialize_event_validates_protobuf_frame_size() -> None:
+    with pytest.raises(ValueError, match="frame exceeds 1 bytes"):
+        serialize_client_event({"type": "settings", "settings": {"voice_call_id": "call-id"}}, max_frame_size=1)

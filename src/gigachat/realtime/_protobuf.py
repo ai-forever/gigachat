@@ -5,11 +5,16 @@ from typing import Any, Mapping, Sequence, Union, cast
 from google.protobuf import duration_pb2  # type: ignore[import-untyped]
 
 from gigachat.proto.gigavoice import voice_pb2
-from gigachat.types.realtime import RealtimeSettingsParam
+from gigachat.realtime._base64 import validate_pcm16_chunk_duration
+from gigachat.types.realtime import RealtimeClientEventParam, RealtimeSettingsParam
 
 _PB2 = vars(voice_pb2)
 _ANY_EXAMPLE: Any = _PB2["AnyExample"]
+_AUDIO_CHUNK_META: Any = _PB2["AudioChunkMeta"]
+_AUDIO_CONTENT: Any = _PB2["AudioContent"]
 _AUDIO_SETTINGS: Any = _PB2["AudioSettings"]
+_CONTENT_FOR_SYNTHESIS: Any = _PB2["ContentForSynthesis"]
+_CONTENT_FROM_CLIENT: Any = _PB2["ContentFromClient"]
 _DISABLE_INTERRUPTION: Any = _PB2["DisableInterruption"]
 _FILTER_SETTINGS: Any = _PB2["FilterSettings"]
 _FIRST_SPEAKER: Any = _PB2["FirstSpeaker"]
@@ -17,7 +22,9 @@ _FUNCTION: Any = _PB2["Function"]
 _FUNCTION_CALL: Any = _PB2["FunctionCall"]
 _FUNCTION_RANKER: Any = _PB2["FunctionRanker"]
 _FUNCTION_REGISTRY: Any = _PB2["FunctionRegistry"]
+_FUNCTION_RESULT: Any = _PB2["FunctionResult"]
 _GIGACHAT_SETTINGS: Any = _PB2["GigaChatSettings"]
+_GIGA_VOICE_REQUEST: Any = _PB2["GigaVoiceRequest"]
 _INITIAL_CONTEXT: Any = _PB2["InitialContext"]
 _INPUT: Any = _PB2["Input"]
 _MESSAGE: Any = _PB2["Message"]
@@ -27,6 +34,68 @@ _SETTINGS: Any = _PB2["Settings"]
 _STUB_SOUNDS: Any = _PB2["StubSounds"]
 _TRIGGER_FUNCTION: Any = _PB2["TriggerFunction"]
 _TRIGGER_GENERATION: Any = _PB2["TriggerGeneration"]
+
+MAX_CLIENT_EVENT_FRAME_SIZE = 4 * 1024 * 1024
+DEFAULT_PCM16_SAMPLE_RATE = 16000
+DEFAULT_PCM16_CHANNELS = 1
+DEFAULT_MAX_AUDIO_CHUNK_SECONDS = 2.0
+
+
+def client_event_to_request(
+    event: RealtimeClientEventParam,
+    *,
+    validate_audio_chunks: bool = True,
+    audio_sample_rate: int = DEFAULT_PCM16_SAMPLE_RATE,
+    audio_channels: int = DEFAULT_PCM16_CHANNELS,
+    max_audio_chunk_seconds: float = DEFAULT_MAX_AUDIO_CHUNK_SECONDS,
+) -> Any:
+    """Convert a realtime client event param to protobuf GigaVoiceRequest."""
+    event_data = cast(Mapping[str, Any], event)
+    event_type = event_data.get("type")
+    request = _GIGA_VOICE_REQUEST()
+    if event_type == "settings":
+        request.settings.CopyFrom(settings_to_pb(cast(RealtimeSettingsParam, event_data["settings"])))
+        return request
+    if event_type == "input.audio_content":
+        request.input.CopyFrom(
+            _input_audio_content_event_to_pb(
+                event_data,
+                validate_audio_chunks,
+                audio_sample_rate,
+                audio_channels,
+                max_audio_chunk_seconds,
+            )
+        )
+        return request
+    if event_type == "input.synthesis_content":
+        request.input.CopyFrom(_input_synthesis_content_event_to_pb(event_data))
+        return request
+    if event_type == "function_result":
+        request.function_result.CopyFrom(_function_result_event_to_pb(event_data))
+        return request
+    raise ValueError(f"Unsupported realtime client event type: {event_type!r}")
+
+
+def serialize_client_event(
+    event: RealtimeClientEventParam,
+    *,
+    max_frame_size: int = MAX_CLIENT_EVENT_FRAME_SIZE,
+    validate_audio_chunks: bool = True,
+    audio_sample_rate: int = DEFAULT_PCM16_SAMPLE_RATE,
+    audio_channels: int = DEFAULT_PCM16_CHANNELS,
+    max_audio_chunk_seconds: float = DEFAULT_MAX_AUDIO_CHUNK_SECONDS,
+) -> bytes:
+    """Serialize a realtime client event param to protobuf frame bytes."""
+    request = client_event_to_request(
+        event,
+        validate_audio_chunks=validate_audio_chunks,
+        audio_sample_rate=audio_sample_rate,
+        audio_channels=audio_channels,
+        max_audio_chunk_seconds=max_audio_chunk_seconds,
+    )
+    payload = cast(bytes, request.SerializeToString())
+    _validate_frame_size(payload, max_frame_size=max_frame_size)
+    return payload
 
 
 def settings_to_pb(settings: RealtimeSettingsParam) -> Any:
@@ -111,6 +180,83 @@ def json_string(value: Union[str, Mapping[str, Any], Sequence[Any]], *, field_na
     if isinstance(value, Mapping) or (isinstance(value, Sequence) and not isinstance(value, (bytes, bytearray))):
         return json.dumps(value, ensure_ascii=False, separators=(",", ":"))
     raise TypeError(f"Realtime `{field_name}` must be a string, mapping, or sequence")
+
+
+def _input_audio_content_event_to_pb(
+    event: Mapping[str, Any],
+    validate_audio_chunks: bool,
+    audio_sample_rate: int,
+    audio_channels: int,
+    max_audio_chunk_seconds: float,
+) -> Any:
+    audio_chunk = event.get("audio_chunk")
+    if not isinstance(audio_chunk, bytes):
+        raise TypeError("audio_chunk must be bytes")
+
+    if validate_audio_chunks:
+        validate_pcm16_chunk_duration(
+            audio_chunk,
+            sample_rate=audio_sample_rate,
+            channels=audio_channels,
+            max_seconds=max_audio_chunk_seconds,
+        )
+
+    input_pb = _CONTENT_FROM_CLIENT()
+    audio_pb = _AUDIO_CONTENT()
+    audio_pb.audio_chunk = audio_chunk
+    _set_optional_scalars(audio_pb, event, ("speech_start", "speech_end"))
+
+    meta = event.get("meta")
+    if meta is not None:
+        audio_pb.meta.CopyFrom(_audio_chunk_meta_to_pb(meta))
+
+    input_pb.audio_content.CopyFrom(audio_pb)
+    return input_pb
+
+
+def _audio_chunk_meta_to_pb(data: Mapping[str, Any]) -> Any:
+    pb = _AUDIO_CHUNK_META()
+    force_no_speech = data.get("force_no_speech")
+    force_co_speech = data.get("force_co_speech")
+    if force_no_speech is not None and force_co_speech is not None and force_no_speech != force_co_speech:
+        raise ValueError("Realtime `meta.force_no_speech` and `meta.force_co_speech` values differ")
+    if force_no_speech is not None:
+        pb.force_no_speech = force_no_speech
+    elif force_co_speech is not None:
+        pb.force_no_speech = force_co_speech
+    return pb
+
+
+def _input_synthesis_content_event_to_pb(event: Mapping[str, Any]) -> Any:
+    text = event.get("text")
+    if not isinstance(text, str):
+        raise TypeError("text must be str")
+
+    input_pb = _CONTENT_FROM_CLIENT()
+    content_pb = _CONTENT_FOR_SYNTHESIS()
+    content_pb.text = text
+    content_type = event.get("content_type")
+    if content_type is not None:
+        content_pb.content_type = _content_for_synthesis_type_value(content_type)
+    _set_optional_scalars(content_pb, event, ("is_final",))
+    input_pb.content_for_synthesis.CopyFrom(content_pb)
+    return input_pb
+
+
+def _content_for_synthesis_type_value(value: str) -> int:
+    if not isinstance(value, str):
+        raise TypeError("content_type must be str")
+    return enum_value(_CONTENT_FOR_SYNTHESIS.ContentType, value.upper(), field_name="content_type")
+
+
+def _function_result_event_to_pb(event: Mapping[str, Any]) -> Any:
+    pb = _FUNCTION_RESULT()
+    content = event.get("content")
+    if content is None:
+        raise ValueError("Realtime function result requires `content`")
+    pb.content = json_string(content, field_name="content")
+    _set_optional_scalars(pb, event, ("function_name",))
+    return pb
 
 
 def _gigachat_settings_to_pb(data: Mapping[str, Any]) -> Any:
@@ -358,9 +504,24 @@ def _extend_repeated(pb_repeated: Any, values: Any) -> None:
         pb_repeated.extend(values)
 
 
+def _validate_frame_size(payload: bytes, *, max_frame_size: int) -> None:
+    if max_frame_size <= 0:
+        raise ValueError("max_frame_size must be positive")
+
+    frame_size = len(payload)
+    if frame_size > max_frame_size:
+        raise ValueError(f"Realtime client event frame exceeds {max_frame_size} bytes: {frame_size} bytes")
+
+
 __all__ = (
+    "DEFAULT_MAX_AUDIO_CHUNK_SECONDS",
+    "DEFAULT_PCM16_CHANNELS",
+    "DEFAULT_PCM16_SAMPLE_RATE",
+    "MAX_CLIENT_EVENT_FRAME_SIZE",
+    "client_event_to_request",
     "duration_to_pb",
     "enum_value",
     "json_string",
+    "serialize_client_event",
     "settings_to_pb",
 )

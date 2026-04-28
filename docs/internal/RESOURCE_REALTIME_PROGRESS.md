@@ -61,7 +61,7 @@ Do not implement gRPC. Do not generate or commit `voice_pb2_grpc.py`.
 | 19-latest-proto-schema | done | this commit | Added latest `voice.proto` schema and proto package markers; generated bindings are intentionally deferred. |
 | 20-proto-message-bindings | done | this commit | Added generated `voice_pb2.py`; no `voice_pb2_grpc.py`. |
 | 21-protobuf-request-bridge-settings | done | this commit | Map settings params to protobuf Settings. |
-| 22-protobuf-client-event-serialization | pending |  | Serialize all client events to protobuf bytes. |
+| 22-protobuf-client-event-serialization | done | this commit | Serialize all client events to protobuf bytes. |
 | 23-protobuf-server-event-parsing | pending |  | Parse protobuf responses into Pydantic events. |
 | 24-async-binary-websocket-connection | pending |  | Async WS sends/receives binary protobuf frames. |
 | 25-sync-binary-websocket-connection | pending |  | Sync WS sends/receives binary protobuf frames. |
@@ -174,3 +174,24 @@ Next:
 
 Risks:
 - WebSocket transport still sends JSON frames until slice 24/25; this slice only builds protobuf `Settings`.
+
+### 2026-04-28 — slice 22-protobuf-client-event-serialization
+
+Done:
+- Added `client_event_to_request(...)` for settings, audio content, synthesis content, and function result client events.
+- Added protobuf `serialize_client_event(...) -> bytes` with binary frame size validation.
+- Preserved raw audio bytes in `AudioContent.audio_chunk`; no base64 is used by the protobuf serializer.
+- Added audio meta mapping for canonical `force_no_speech` and compatibility alias `force_co_speech`, including conflict validation.
+- Added lower/upper content type alias mapping for synthesis and compact JSON-string conversion for mapping/list function results.
+- Exported the protobuf serializer helpers from `gigachat.realtime`.
+
+Tests:
+- `uv run pytest tests/unit/gigachat/realtime/test_protobuf_client_serialization.py`
+- `uv run ruff check src/gigachat/realtime/_protobuf.py src/gigachat/realtime/__init__.py tests/unit/gigachat/realtime/test_protobuf_client_serialization.py`
+- `uv run mypy src/gigachat/realtime/_protobuf.py src/gigachat/realtime/__init__.py tests/unit/gigachat/realtime/test_protobuf_client_serialization.py`
+
+Next:
+- 23-protobuf-server-event-parsing
+
+Risks:
+- WebSocket transport still imports the JSON `_events.serialize_client_event` path until slices 24/25 switch async/sync connections to binary protobuf frames.
