@@ -52,9 +52,10 @@ uv sync --extra realtime
 export GIGACHAT_REALTIME_URL=wss://your-realtime-endpoint.example/ws
 ```
 
-* [Text-only realtime](./example_realtime_text.py) - `client.a_realtime.connect(...)` with text output events
-* [Realtime functions](./example_realtime_functions.py) - handle `function_call` and send `function_result`
-* [Realtime microphone](./example_realtime_microphone.py) - stream raw PCM microphone bytes and play audio output
+* [Text-only realtime](./realtime/text.py) - `client.a_realtime.connect(...)` with text output events
+* [Realtime dialogue](./realtime/dialog.py) - endless console dialogue over one realtime WebSocket connection
+* [Realtime functions](./realtime/functions.py) - handle `function_call` and send `function_result`
+* [Realtime microphone](./realtime/microphone.py) - stream raw PCM microphone bytes and play audio output
 
 ## Files and assistants
 

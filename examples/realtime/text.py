@@ -9,8 +9,16 @@ from dotenv import load_dotenv
 from gigachat import GigaChat
 from gigachat.models.realtime import OutputAdditionalDataEvent, OutputTranscriptionEvent, RealtimeErrorEvent
 from gigachat.types.realtime import RealtimeSettingsParam
-
-
+from gigachat.realtime import RealtimeMicrophone, RealtimeSpeaker
+from gigachat.models.realtime import (
+    InputTranscriptionEvent,
+    OutputAdditionalDataEvent,
+    OutputAudioEvent,
+    OutputInterruptedEvent,
+    OutputTranscriptionEvent,
+    RealtimeErrorEvent,
+)
+SAMPLE_RATE = 16000
 def require_realtime_url() -> None:
     """Require an explicit realtime WebSocket endpoint."""
     if not os.getenv("GIGACHAT_REALTIME_URL"):
@@ -47,17 +55,21 @@ async def main() -> None:
 
     async with GigaChat() as client:
         async with client.a_realtime.connect(settings=build_settings(prompt)) as connection:
-            async for event in connection:
-                if isinstance(event, OutputTranscriptionEvent):
-                    print(event.text or "", end="", flush=True)
+            async with RealtimeSpeaker(sample_rate=SAMPLE_RATE) as speaker:
+                async for event in connection:
+                    if isinstance(event, OutputTranscriptionEvent):
+                        print(event.text or "", end="", flush=True)
 
-                elif isinstance(event, OutputAdditionalDataEvent):
-                    print()
-                    print(f"finish_reason={event.finish_reason}")
-                    break
+                    elif isinstance(event, OutputAudioEvent):
+                        await speaker.write(event.audio_chunk)
 
-                elif isinstance(event, RealtimeErrorEvent):
-                    raise RuntimeError(event.message)
+                    elif isinstance(event, OutputAdditionalDataEvent):
+                        print()
+                        print(f"finish_reason={event.finish_reason}")
+                        break
+
+                    elif isinstance(event, RealtimeErrorEvent):
+                        raise RuntimeError(event.message)
 
 
 if __name__ == "__main__":

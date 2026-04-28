@@ -20,7 +20,7 @@ from gigachat.models.realtime import (
 from gigachat.realtime import RealtimeMicrophone, RealtimeSpeaker
 from gigachat.types.realtime import RealtimeSettingsParam
 
-SAMPLE_RATE = 16000
+SAMPLE_RATE = 24000
 
 
 def require_realtime_url() -> None:
@@ -35,7 +35,7 @@ def build_settings() -> RealtimeSettingsParam:
         "voice_call_id": str(uuid4()),
         "mode": "RECOGNIZE_GIGACHAT_SYNTHESIS",
         "output_modalities": "AUDIO_TEXT",
-        "first_speaker": {"type": "user"},
+        "first_speaker": {"type": "model"},
         "enable_transcribe_input": True,
         "gigachat": {
             "model": os.getenv("GIGACHAT_MODEL", "GigaChat"),
@@ -47,14 +47,14 @@ def build_settings() -> RealtimeSettingsParam:
             },
             "output": {
                 "audio_encoding": "PCM_S16LE",
-                "voice": os.getenv("GIGACHAT_REALTIME_VOICE", "Bys_24000"),
+                "voice": os.getenv("GIGACHAT_REALTIME_VOICE", "Mar_24000"),
             },
         },
         "context": {
             "messages": [
                 {
                     "role": "system",
-                    "content": "Answer briefly and clearly.",
+                    "content": "Ты гигачат, голосовой ассистент, ты вежлив",
                 }
             ]
         },

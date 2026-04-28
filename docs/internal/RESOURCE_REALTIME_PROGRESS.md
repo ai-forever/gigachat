@@ -304,10 +304,10 @@ Done:
 Tests:
 - `uv run pytest tests/unit/gigachat/realtime/test_event_params.py tests/unit/gigachat/realtime/test_event_models.py tests/unit/gigachat/realtime/test_protobuf_client_serialization.py tests/unit/gigachat/realtime/test_protobuf_server_parsing.py tests/unit/gigachat/realtime/test_async_connection.py tests/unit/gigachat/realtime/test_sync_connection.py tests/unit/gigachat/realtime/test_resources.py`
 - `uv run pytest tests/unit/gigachat/realtime`
-- `uv run ruff check src/gigachat/realtime/_constants.py src/gigachat/realtime/_protobuf.py src/gigachat/api/realtime.py src/gigachat/resources/realtime.py src/gigachat/realtime/__init__.py src/gigachat/models/realtime.py tests/unit/gigachat/realtime/test_event_params.py tests/unit/gigachat/realtime/test_event_models.py examples/example_realtime_text.py examples/example_realtime_functions.py`
+- `uv run ruff check src/gigachat/realtime/_constants.py src/gigachat/realtime/_protobuf.py src/gigachat/api/realtime.py src/gigachat/resources/realtime.py src/gigachat/realtime/__init__.py src/gigachat/models/realtime.py tests/unit/gigachat/realtime/test_event_params.py tests/unit/gigachat/realtime/test_event_models.py examples/realtime/text.py examples/realtime/functions.py`
 - `uv run mypy src/gigachat/realtime/_constants.py src/gigachat/realtime/_protobuf.py src/gigachat/api/realtime.py src/gigachat/resources/realtime.py src/gigachat/realtime/__init__.py src/gigachat/models/realtime.py tests/unit/gigachat/realtime/test_event_params.py tests/unit/gigachat/realtime/test_event_models.py`
 - `rg -n "realtime\._events|_events\.py|JSON events over WebSocket|JSON WebSocket|JSON endpoint|json-realtime|base64.*wire|wire.*base64|protobuf: forbidden|voice_pb2_grpc|grpcio|transport=\"grpc\"" src/gigachat tests/unit/gigachat/realtime examples` (no matches)
-- `uv run ruff check src tests examples/example_realtime_text.py examples/example_realtime_functions.py`
+- `uv run ruff check src tests examples/realtime/text.py examples/realtime/functions.py`
 - `uv run mypy src tests`
 - `uv run pytest`
 
@@ -321,13 +321,13 @@ Risks:
 
 Done:
 - Added explicit `GIGACHAT_REALTIME_URL` checks to text-only and function-calling realtime examples.
-- Added `examples/example_realtime_microphone.py` using `RealtimeMicrophone`, `RealtimeSpeaker`, raw PCM bytes, and OpenAI-style `client.a_realtime.connect(...)`.
+- Added `examples/realtime/microphone.py` using `RealtimeMicrophone`, `RealtimeSpeaker`, raw PCM bytes, and OpenAI-style `client.a_realtime.connect(...)`.
 - Updated realtime examples README install commands for `gigachat[realtime]` and `gigachat[realtime_voice]`.
 - Kept examples on protobuf-over-WebSocket wording with no JSON frames or base64 wire audio.
 
 Tests:
-- `uv run ruff check examples/example_realtime_text.py examples/example_realtime_functions.py examples/example_realtime_microphone.py`
-- `uv run python -m py_compile examples/example_realtime_text.py examples/example_realtime_functions.py examples/example_realtime_microphone.py`
+- `uv run ruff check examples/realtime/text.py examples/realtime/functions.py examples/realtime/microphone.py`
+- `uv run python -m py_compile examples/realtime/text.py examples/realtime/functions.py examples/realtime/microphone.py`
 - `uv run pytest tests/unit/gigachat/realtime/test_audio_helpers.py tests/unit/gigachat/realtime/test_protobuf_client_serialization.py`
 - `uv run pytest tests/unit/gigachat/realtime`
 

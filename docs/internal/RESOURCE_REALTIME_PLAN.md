@@ -207,9 +207,9 @@ src/gigachat/api/realtime.py              # switch send/recv to binary protobuf 
 src/gigachat/types/realtime.py            # update TypedDicts and enum literals to latest proto
 src/gigachat/models/realtime.py           # update event models to latest proto response fields
 src/gigachat/resources/realtime.py        # mostly unchanged unless type hints need updates
-examples/example_realtime_text.py         # update from JSON endpoint wording to protobuf WS
-examples/example_realtime_functions.py    # update from JSON endpoint wording to protobuf WS
-examples/example_realtime_microphone.py   # update if already added
+examples/realtime/text.py         # update from JSON endpoint wording to protobuf WS
+examples/realtime/functions.py    # update from JSON endpoint wording to protobuf WS
+examples/realtime/microphone.py   # update if already added
 README.md / examples/README.md            # update install and protocol notes
 ```
 
@@ -1544,8 +1544,8 @@ Files:
 src/gigachat/realtime/_events.py
 src/gigachat/realtime/_base64.py
 examples/README.md
-examples/example_realtime_text.py
-examples/example_realtime_functions.py
+examples/realtime/text.py
+examples/realtime/functions.py
 README.md or docs if already touched
 tests/unit/gigachat/realtime/*
 ```
@@ -1580,9 +1580,9 @@ Goal: update/add examples for protobuf-over-WebSocket.
 Files:
 
 ```text
-examples/example_realtime_text.py
-examples/example_realtime_functions.py
-examples/example_realtime_microphone.py
+examples/realtime/text.py
+examples/realtime/functions.py
+examples/realtime/microphone.py
 examples/README.md
 ```
 
