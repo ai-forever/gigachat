@@ -40,12 +40,12 @@ uv run python -m examples.chat_completions.sync_chat
 
 ## Realtime
 
-Realtime examples use JSON events over WebSocket and require a backend JSON WebSocket endpoint or gateway. Install the
-extra dependencies and set the endpoint before running them:
+Realtime examples use protobuf binary frames over WebSocket and require `GIGACHAT_REALTIME_URL`. Install the extra
+dependencies and set the endpoint before running them:
 
 ```bash
 uv sync --extra realtime
-export GIGACHAT_REALTIME_URL=wss://your-json-realtime-endpoint.example/ws
+export GIGACHAT_REALTIME_URL=wss://your-realtime-endpoint.example/ws
 ```
 
 * [Text-only realtime](./example_realtime_text.py) - `client.a_realtime.connect(...)` with text output events

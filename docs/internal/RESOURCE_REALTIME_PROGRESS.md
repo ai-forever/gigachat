@@ -66,7 +66,7 @@ Do not implement gRPC. Do not generate or commit `voice_pb2_grpc.py`.
 | 24-async-binary-websocket-connection | done | this commit | Async WS sends/receives binary protobuf frames. |
 | 25-sync-binary-websocket-connection | done | this commit | Sync WS sends/receives binary protobuf frames. |
 | 26-helper-resources-protobuf-regression | done | this commit | Added public resource namespace regressions for helper protobuf requests and handlers. |
-| 27-remove-json-wire-assumptions | pending |  | Remove stale JSON/base64 wire docs/tests/code paths. |
+| 27-remove-json-wire-assumptions | done | this commit | Removed stale JSON/base64 wire docs/tests/code paths. |
 | 28-examples-protobuf-websocket | pending |  | Update examples to protobuf-over-WebSocket. |
 | 29-integration-smoke-protobuf-ws | pending |  | Optional backend smoke tests. |
 | 30-docs-readme-protobuf-realtime | pending |  | README/API docs for protobuf realtime. |
@@ -289,3 +289,30 @@ Next:
 
 Risks:
 - This slice covers resource namespace regressions with fake WebSocket connectors only; backend smoke coverage remains deferred to slice 29.
+
+### 2026-04-28 — slice 27-remove-json-wire-assumptions
+
+Done:
+- Removed the private JSON WebSocket serializer module `gigachat.realtime._events`.
+- Moved realtime frame/audio validation constants to `gigachat.realtime._constants` so resource defaults do not depend on JSON serialization code.
+- Removed base64 string decoding from `OutputAudioEvent`; protobuf response audio now stays raw `bytes`.
+- Removed legacy JSON-oneof event normalization from `parse_realtime_event(...)`.
+- Removed JSON/base64 wire serialization assertions from realtime event-param tests; protobuf serializer coverage remains in `test_protobuf_client_serialization.py`.
+- Updated realtime example wording and examples README from JSON endpoint/gateway language to protobuf binary WebSocket language.
+- Stopped exporting `encode_audio` / `decode_audio` from `gigachat.realtime`; the private `_base64.py` helpers remain only for legacy helper coverage and PCM duration validation.
+
+Tests:
+- `uv run pytest tests/unit/gigachat/realtime/test_event_params.py tests/unit/gigachat/realtime/test_event_models.py tests/unit/gigachat/realtime/test_protobuf_client_serialization.py tests/unit/gigachat/realtime/test_protobuf_server_parsing.py tests/unit/gigachat/realtime/test_async_connection.py tests/unit/gigachat/realtime/test_sync_connection.py tests/unit/gigachat/realtime/test_resources.py`
+- `uv run pytest tests/unit/gigachat/realtime`
+- `uv run ruff check src/gigachat/realtime/_constants.py src/gigachat/realtime/_protobuf.py src/gigachat/api/realtime.py src/gigachat/resources/realtime.py src/gigachat/realtime/__init__.py src/gigachat/models/realtime.py tests/unit/gigachat/realtime/test_event_params.py tests/unit/gigachat/realtime/test_event_models.py examples/example_realtime_text.py examples/example_realtime_functions.py`
+- `uv run mypy src/gigachat/realtime/_constants.py src/gigachat/realtime/_protobuf.py src/gigachat/api/realtime.py src/gigachat/resources/realtime.py src/gigachat/realtime/__init__.py src/gigachat/models/realtime.py tests/unit/gigachat/realtime/test_event_params.py tests/unit/gigachat/realtime/test_event_models.py`
+- `rg -n "realtime\._events|_events\.py|JSON events over WebSocket|JSON WebSocket|JSON endpoint|json-realtime|base64.*wire|wire.*base64|protobuf: forbidden|voice_pb2_grpc|grpcio|transport=\"grpc\"" src/gigachat tests/unit/gigachat/realtime examples` (no matches)
+- `uv run ruff check src tests examples/example_realtime_text.py examples/example_realtime_functions.py`
+- `uv run mypy src tests`
+- `uv run pytest`
+
+Next:
+- 28-examples-protobuf-websocket
+
+Risks:
+- `_base64.py` still exists as a private legacy helper module for encode/decode tests and shared PCM duration validation; it is not used by realtime transport or exported from `gigachat.realtime`.

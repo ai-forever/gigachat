@@ -1,4 +1,4 @@
-"""Run a text-only realtime conversation over JSON WebSocket."""
+"""Run a text-only realtime conversation over protobuf WebSocket."""
 
 import asyncio
 import os
@@ -33,7 +33,7 @@ def build_settings(prompt: str) -> RealtimeSettingsParam:
 
 
 async def main() -> None:
-    """Connect to a backend JSON WebSocket endpoint and print text events."""
+    """Connect to a realtime WebSocket endpoint and print text events."""
     load_dotenv()
 
     prompt = os.getenv("GIGACHAT_REALTIME_PROMPT", "Give a short overview of realtime SDK clients.")

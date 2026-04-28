@@ -1,7 +1,7 @@
 from typing import TYPE_CHECKING, Any, Mapping, Optional
 
 from gigachat.api.realtime import AsyncRealtimeConnectionManager, RealtimeConnectionManager
-from gigachat.realtime._events import MAX_CLIENT_EVENT_FRAME_SIZE
+from gigachat.realtime._constants import MAX_CLIENT_EVENT_FRAME_SIZE
 from gigachat.types.realtime import RealtimeSettingsParam
 
 if TYPE_CHECKING:

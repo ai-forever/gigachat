@@ -1,9 +1,4 @@
-from gigachat.realtime._base64 import (
-    decode_audio,
-    encode_audio,
-    pcm16_duration_seconds,
-    validate_pcm16_chunk_duration,
-)
+from gigachat.realtime._base64 import pcm16_duration_seconds, validate_pcm16_chunk_duration
 from gigachat.realtime._protobuf import (
     client_event_to_request,
     parse_server_event,
@@ -17,8 +12,6 @@ __all__ = (
     "RealtimeMicrophone",
     "RealtimeSpeaker",
     "client_event_to_request",
-    "decode_audio",
-    "encode_audio",
     "numpy_to_pcm16_bytes",
     "pcm16_bytes_to_numpy",
     "pcm16_duration_seconds",

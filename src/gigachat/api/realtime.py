@@ -23,7 +23,7 @@ from typing_extensions import Literal
 from gigachat.api.utils import build_headers
 from gigachat.exceptions import GigaChatException
 from gigachat.models.realtime import RealtimeServerEvent
-from gigachat.realtime._events import MAX_CLIENT_EVENT_FRAME_SIZE
+from gigachat.realtime._constants import MAX_CLIENT_EVENT_FRAME_SIZE
 from gigachat.settings import Settings
 from gigachat.types.realtime import (
     RealtimeAudioChunkMetaParam,

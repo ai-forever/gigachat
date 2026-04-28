@@ -1,4 +1,4 @@
-import base64
+import pytest
 
 from gigachat.models.realtime import (
     FunctionCallEvent,
@@ -16,11 +16,11 @@ from gigachat.models.realtime import (
 )
 
 
-def test_parse_output_audio_event_decodes_base64() -> None:
+def test_parse_output_audio_event_keeps_bytes() -> None:
     event = parse_realtime_event(
         {
             "type": "output.audio",
-            "audio_chunk": base64.b64encode(b"pcm").decode("ascii"),
+            "audio_chunk": b"pcm",
             "audio_duration": 0.1,
             "is_final": True,
             "new_field": "kept",
@@ -32,6 +32,11 @@ def test_parse_output_audio_event_decodes_base64() -> None:
     assert event.audio_duration == 0.1
     assert event.is_final is True
     assert event.model_extra == {"new_field": "kept"}
+
+
+def test_parse_output_audio_event_rejects_base64_string() -> None:
+    with pytest.raises(TypeError, match="audio_chunk must be bytes"):
+        parse_realtime_event({"type": "output.audio", "audio_chunk": "cGNt"})
 
 
 def test_parse_output_additional_data_event() -> None:
@@ -155,15 +160,9 @@ def test_parse_missing_type_returns_unknown_event() -> None:
     assert event.model_extra == {"payload": {"x": 1}}
 
 
-def test_parse_legacy_output_audio_event() -> None:
-    event = parse_realtime_event({"output": {"audio": {"audio_chunk": base64.b64encode(b"pcm").decode("ascii")}}})
-
-    assert isinstance(event, OutputAudioEvent)
-    assert event.audio_chunk == b"pcm"
-
-
-def test_parse_legacy_output_interrupted_bool_event() -> None:
+def test_parse_legacy_json_oneof_event_returns_unknown() -> None:
     event = parse_realtime_event({"output": {"interrupted": False}})
 
-    assert isinstance(event, OutputInterruptedEvent)
-    assert event.interrupted is False
+    assert isinstance(event, RealtimeUnknownEvent)
+    assert event.type == "unknown"
+    assert event.model_extra == {"output": {"interrupted": False}}

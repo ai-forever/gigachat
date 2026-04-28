@@ -8,6 +8,12 @@ from google.protobuf.message import DecodeError  # type: ignore[import-untyped]
 from gigachat.models.realtime import RealtimeServerEvent, parse_realtime_event
 from gigachat.proto.gigavoice import voice_pb2
 from gigachat.realtime._base64 import validate_pcm16_chunk_duration
+from gigachat.realtime._constants import (
+    DEFAULT_MAX_AUDIO_CHUNK_SECONDS,
+    DEFAULT_PCM16_CHANNELS,
+    DEFAULT_PCM16_SAMPLE_RATE,
+    MAX_CLIENT_EVENT_FRAME_SIZE,
+)
 from gigachat.types.realtime import RealtimeClientEventParam, RealtimeSettingsParam
 
 _PB2 = vars(voice_pb2)
@@ -39,12 +45,6 @@ _STUB_SOUNDS: Any = _PB2["StubSounds"]
 _TRIGGER_FUNCTION: Any = _PB2["TriggerFunction"]
 _TRIGGER_GENERATION: Any = _PB2["TriggerGeneration"]
 _GIGA_VOICE_RESPONSE: Any = _PB2["GigaVoiceResponse"]
-
-MAX_CLIENT_EVENT_FRAME_SIZE = 4 * 1024 * 1024
-DEFAULT_PCM16_SAMPLE_RATE = 16000
-DEFAULT_PCM16_CHANNELS = 1
-DEFAULT_MAX_AUDIO_CHUNK_SECONDS = 2.0
-
 
 def client_event_to_request(
     event: RealtimeClientEventParam,

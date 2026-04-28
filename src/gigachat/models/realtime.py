@@ -1,4 +1,3 @@
-import base64
 from typing import Any, Dict, List, Mapping, Optional, Type, Union
 
 from pydantic import BaseModel, ConfigDict, field_validator
@@ -29,9 +28,7 @@ class OutputAudioEvent(RealtimeServerEvent):
     def _decode_audio_chunk(cls, value: object) -> bytes:
         if isinstance(value, bytes):
             return value
-        if isinstance(value, str):
-            return base64.b64decode(value)
-        raise TypeError("audio_chunk must be base64 string or bytes")
+        raise TypeError("audio_chunk must be bytes")
 
 
 class OutputAdditionalDataEvent(RealtimeServerEvent):
@@ -157,62 +154,15 @@ _EVENT_MODELS: Dict[str, Type[RealtimeServerEvent]] = {
 }
 
 
-def _normalize_legacy_event(data: Mapping[str, Any]) -> Dict[str, Any]:
+def _normalize_event(data: Mapping[str, Any]) -> Dict[str, Any]:
     if "type" in data:
         return dict(data)
-
-    output_event = _normalize_legacy_output_event(data)
-    if output_event is not None:
-        return output_event
-
-    direct_event = _normalize_legacy_direct_event(data)
-    if direct_event is not None:
-        return direct_event
 
     return {"type": "unknown", **data}
 
 
-def _normalize_legacy_output_event(data: Mapping[str, Any]) -> Optional[Dict[str, Any]]:
-    output = data.get("output")
-    if not isinstance(output, Mapping):
-        return None
-
-    for legacy_key, event_type in (
-        ("audio", "output.audio"),
-        ("additional_data", "output.additional_data"),
-    ):
-        payload = output.get(legacy_key)
-        if isinstance(payload, Mapping):
-            return {"type": event_type, **payload}
-
-    interrupted = output.get("interrupted")
-    if isinstance(interrupted, Mapping):
-        return {"type": "output.interrupted", **interrupted}
-    if isinstance(interrupted, bool):
-        return {"type": "output.interrupted", "interrupted": interrupted}
-
-    return None
-
-
-def _normalize_legacy_direct_event(data: Mapping[str, Any]) -> Optional[Dict[str, Any]]:
-    for legacy_key, event_type in (
-        ("function_call", "function_call"),
-        ("input_transcription", "input_transcription"),
-        ("output_transcription", "output_transcription"),
-        ("input_files", "input_files"),
-        ("platform_function_processing", "platform_function_processing"),
-        ("error", "error"),
-        ("warning", "warning"),
-    ):
-        payload = data.get(legacy_key)
-        if isinstance(payload, Mapping):
-            return {"type": event_type, **payload}
-
-    return None
-
-
 def parse_realtime_event(data: Mapping[str, Any]) -> RealtimeServerEvent:
-    event_data = _normalize_legacy_event(data)
+    event_data = _normalize_event(data)
     event_type = event_data.get("type")
     model = _EVENT_MODELS.get(event_type) if isinstance(event_type, str) else None
     if model is None:

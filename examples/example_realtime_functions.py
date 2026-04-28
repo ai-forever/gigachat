@@ -1,4 +1,4 @@
-"""Handle realtime function calls over JSON WebSocket."""
+"""Handle realtime function calls over protobuf WebSocket."""
 
 import asyncio
 import json
@@ -75,7 +75,7 @@ async def handle_function_call(connection: Any, event: FunctionCallEvent) -> Non
 
 
 async def main() -> None:
-    """Connect to a backend JSON WebSocket endpoint and answer function calls."""
+    """Connect to a realtime WebSocket endpoint and answer function calls."""
     load_dotenv()
 
     prompt = os.getenv("GIGACHAT_REALTIME_PROMPT", "What is the weather in Moscow? Answer in one sentence.")
