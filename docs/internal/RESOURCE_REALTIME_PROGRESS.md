@@ -70,7 +70,7 @@ Do not implement gRPC. Do not generate or commit `voice_pb2_grpc.py`.
 | 28-examples-protobuf-websocket | done | this commit | Updated examples to protobuf-over-WebSocket and added microphone/speaker example. |
 | 29-integration-smoke-protobuf-ws | done | this commit | Added optional backend smoke test for protobuf realtime WebSocket. |
 | 30-docs-readme-protobuf-realtime | done | this commit | Documented public protobuf WebSocket realtime API in README. |
-| 31-final-protobuf-audit | pending |  | Final no-gRPC/no-JSON-wire audit. |
+| 31-final-protobuf-audit | done | this commit | Final no-gRPC/no-JSON-wire audit passed with only allowed internal-doc matches. |
 
 ## Log
 
@@ -372,3 +372,23 @@ Next:
 
 Risks:
 - Realtime backend acceptance remains unverified in this local environment because realtime backend env was not configured.
+
+### 2026-04-28 — slice 31-final-protobuf-audit
+
+Done:
+- Audited realtime source, tests, examples, docs, README, and dependency files for stale JSON-wire, base64-wire, protobuf-forbidden, gRPC transport, `voice_pb2_grpc`, and `grpcio` references.
+- Confirmed matches are limited to internal plan/progress notes documenting the superseded JSON plan, explicit no-gRPC constraints, no-base64 wire requirements, and allowed audit command text.
+- Confirmed no generated `voice_pb2_grpc.py` file exists under `src/gigachat/proto/gigavoice`.
+- Confirmed protobuf bindings import with `gigachat`.
+
+Tests:
+- `rg -n "JSON WebSocket|JSON events|json-realtime|base64.*wire|wire.*base64|protobuf: forbidden|voice_pb2_grpc|grpcio|transport=\"grpc\"|realtime\._events|_events\.py" src tests examples docs README.md pyproject.toml uv.lock` (allowed internal-doc matches only)
+- `uv run pytest tests/unit/gigachat/realtime`
+- `uv run python -c "import gigachat; from gigachat.proto.gigavoice import voice_pb2; print(voice_pb2.GigaVoiceRequest.__name__)"`
+- `find src/gigachat/proto/gigavoice -name '*grpc*' -print` (no output)
+
+Next:
+- protobuf realtime retrofit plan complete
+
+Risks:
+- Actual backend acceptance remains unverified in this local environment because realtime backend env was not configured.
