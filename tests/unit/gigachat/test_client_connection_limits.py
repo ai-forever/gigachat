@@ -38,7 +38,7 @@ def test_sync_client_with_max_connections(httpx_mock: HTTPXMock) -> None:
 
     with GigaChatSyncClient(base_url=BASE_URL, max_connections=10) as client:
         assert client._settings.max_connections == 10
-        response = client.chat("test")
+        response = client.chat.legacy.create("test")
 
     assert isinstance(response, ChatCompletion)
 
@@ -49,7 +49,7 @@ async def test_async_client_with_max_connections(httpx_mock: HTTPXMock) -> None:
 
     async with GigaChatAsyncClient(base_url=BASE_URL, max_connections=10) as client:
         assert client._settings.max_connections == 10
-        response = await client.achat("test")
+        response = await client.achat.legacy.create("test")
 
     assert isinstance(response, ChatCompletion)
 
@@ -60,7 +60,7 @@ async def test_concurrent_requests_respect_max_connections(httpx_mock: HTTPXMock
         httpx_mock.add_response(url=CHAT_URL, json=CHAT_COMPLETION)
 
     async with GigaChatAsyncClient(base_url=BASE_URL, max_connections=3) as client:
-        tasks = [client.achat("test") for _ in range(10)]
+        tasks = [client.achat.legacy.create("test") for _ in range(10)]
         responses = await asyncio.gather(*tasks)
 
     assert len(responses) == 10
@@ -81,6 +81,6 @@ def test_constructor_overrides_env_max_connections(monkeypatch: pytest.MonkeyPat
 
     with GigaChatSyncClient(base_url=BASE_URL, max_connections=10) as client:
         assert client._settings.max_connections == 10
-        response = client.chat("test")
+        response = client.chat.legacy.create("test")
 
     assert isinstance(response, ChatCompletion)
