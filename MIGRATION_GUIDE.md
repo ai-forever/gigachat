@@ -2,13 +2,13 @@
 
 This guide covers migration from the legacy chat contract to the primary `chat/completions` surface introduced in v2.
 
-In the codebase, `v2` is exposed as the primary API. The previous contract is still available under explicit `.legacy` namespaces.
+In the codebase, `v2` is exposed through explicit resource methods. The previous contract is still available through root compatibility methods.
 
 ## TL;DR
 
-1. Replace `client.chat(...)` with `client.chat.create(...)` or `client.chat.legacy.create(...)`.
-2. Replace `client.stream(...)` with `client.chat.stream(...)` or `client.chat.legacy.stream(...)`.
-3. Replace `client.chat_parse(...)` with `client.chat.parse(...)` or `client.chat.legacy.parse(...)`.
+1. Use `client.chat(...)` for the old contract or `client.chat.create(...)` for v2.
+2. Use `client.stream(...)` for the old contract or `client.chat.stream(...)` for v2.
+3. Use `client.chat_parse(...)` for the old contract or `client.chat.parse(...)` for v2.
 4. Replace legacy models such as `Chat` and `Messages` with primary models such as `ChatCompletionRequest` and `ChatMessage`.
 5. Update response access from `response.choices[0].message.content` to primary `messages[*].content[*].text`.
 
@@ -28,7 +28,7 @@ In v1, the SDK mostly revolved around a single assistant message inside `choices
 The migration has three separate layers. Keeping them separate makes upgrades easier:
 
 1. Call site changes
-   Replace deprecated root shims with explicit resource methods.
+   Replace root compatibility shims with explicit resource methods when you are ready.
 2. Payload model changes
    Replace legacy request models with primary request models.
 3. Response handling changes
@@ -40,14 +40,14 @@ If your code only sends a string prompt and prints one text response, migration 
 
 | Legacy call | v2 primary call | If you want old behavior |
 | --- | --- | --- |
-| `client.chat(payload)` | `client.chat.create(payload)` | `client.chat.legacy.create(payload)` |
-| `client.stream(payload)` | `client.chat.stream(payload)` | `client.chat.legacy.stream(payload)` |
-| `client.chat_parse(payload, response_format=...)` | `client.chat.parse(payload, response_format=...)` | `client.chat.legacy.parse(payload, response_format=...)` |
-| `await client.achat(payload)` | `await client.achat.create(payload)` | `await client.achat.legacy.create(payload)` |
-| `client.astream(payload)` | `client.achat.stream(payload)` | `client.achat.legacy.stream(payload)` |
-| `await client.achat_parse(payload, response_format=...)` | `await client.achat.parse(payload, response_format=...)` | `await client.achat.legacy.parse(payload, response_format=...)` |
+| `client.chat(payload)` | `client.chat.create(payload)` | `client.chat(payload)` |
+| `client.stream(payload)` | `client.chat.stream(payload)` | `client.stream(payload)` |
+| `client.chat_parse(payload, response_format=...)` | `client.chat.parse(payload, response_format=...)` | `client.chat_parse(payload, response_format=...)` |
+| `await client.achat(payload)` | `await client.achat.create(payload)` | `await client.achat(payload)` |
+| `client.astream(payload)` | `client.achat.stream(payload)` | `client.astream(payload)` |
+| `await client.achat_parse(payload, response_format=...)` | `await client.achat.parse(payload, response_format=...)` | `await client.achat_parse(payload, response_format=...)` |
 
-`client.chat(...)`, `client.stream(...)`, `client.chat_parse(...)`, `client.achat(...)`, `client.astream(...)`, and `client.achat_parse(...)` still work, but they are deprecated compatibility shims and emit `DeprecationWarning`.
+`client.chat(...)`, `client.stream(...)`, `client.chat_parse(...)`, `client.achat(...)`, `client.astream(...)`, and `client.achat_parse(...)` still work as compatibility shims for the old chat contract. They are not deprecated and do not emit `DeprecationWarning`.
 
 Primary chat completions use the v2 route. If the client `base_url` still ends with `/v1`, `client.chat.create(...)`, `client.chat.stream(...)`, `client.achat.create(...)`, and `client.achat.stream(...)` automatically send requests to the matching `/v2/chat/completions` URL. Explicit `chat_completions_url` overrides are still honored, including versioned paths such as `/v2/chat/completions`.
 
@@ -55,16 +55,16 @@ Why this changed:
 
 - `client.chat` and `client.achat` are now resource namespaces, not just callable shims.
 - The resource layout makes the API consistent with other SDK surfaces and leaves room for multiple operations such as `create`, `stream`, and `parse`.
-- The `.legacy` branch keeps the old contract available without making the old contract the default.
+- Root compatibility methods keep the old contract available while explicit resource methods expose v2.
 
 ## Recommended Migration Strategy
 
 For production applications, the safest path is incremental:
 
-1. Stop calling deprecated root shims.
+1. Move off root compatibility shims when you are ready.
    Move to `client.chat.create()` / `client.chat.stream()` / `client.chat.parse()` first.
-2. If you cannot migrate payloads immediately, move to `.legacy`.
-   This removes warnings without forcing a full contract rewrite.
+2. If you cannot migrate payloads immediately, keep using root compatibility methods.
+   This keeps the old contract available without forcing a full contract rewrite.
 3. Migrate request models.
    Replace `Chat` and `Messages` with `ChatCompletionRequest` and `ChatMessage`.
 4. Migrate response readers.
@@ -72,7 +72,7 @@ For production applications, the safest path is incremental:
 5. Migrate structured output and tool-calling code.
    These areas benefit the most from the primary contract.
 
-This order matters because deprecated shim removal is mechanical, while response and payload migration usually touches business logic.
+This order matters because replacing root shims is mechanical, while response and payload migration usually touches business logic.
 
 ## Request Model Migration
 
@@ -124,7 +124,7 @@ payload = Chat(
     ]
 )
 
-response = client.chat.legacy.create(payload)
+response = client.chat(payload)
 ```
 
 ### After
@@ -304,8 +304,8 @@ Important:
 
 - `client.chat.parse()` and `client.achat.parse()` send a primary request with `response_format={"type": "json_schema", ...}`.
 - On the wire, that schema is sent as `model_options.response_format`.
-- If you want to stay on the old contract, use `client.chat.legacy.parse()` and `client.achat.legacy.parse()`.
-- Passing a Pydantic model as `response_format` to legacy `create()` is not the migration path; use `parse()` instead.
+- If you want to stay on the old contract, use `client.chat_parse()` and `client.achat_parse()`.
+- Passing a Pydantic model as `response_format` to the old create path is not the migration path; use `parse()` instead.
 
 Why this is better in v2:
 
@@ -362,38 +362,38 @@ Why direct imports matter:
 
 If you are doing a broad application migration, updating imports explicitly is often the clearest signal that the codepath now expects the v2 contract.
 
-## Staying on the Legacy Contract
+## Staying on the Old Contract
 
-Migration is incremental. If you are not ready to move request and response handling yet, switch explicitly to `.legacy`.
+Migration is incremental. If you are not ready to move request and response handling yet, keep using root compatibility methods.
 
 ```python
-response = client.chat.legacy.create(payload)
+response = client.chat(payload)
 
-for chunk in client.chat.legacy.stream(payload):
+for chunk in client.stream(payload):
     ...
 
-completion, parsed = client.chat.legacy.parse(
+completion, parsed = client.chat_parse(
     payload,
     response_format=MathAnswer,
 )
 ```
 
-The same pattern applies to async code via `client.achat.legacy`.
+The same pattern applies to async code via `client.achat(...)`, `client.astream(...)`, and `client.achat_parse(...)`.
 
 This is useful when:
 
-- you want to remove deprecation warnings first
+- you want to make old-contract usage explicit first
 - your code depends heavily on `choices[0].message.content`
 - you have many downstream consumers that still expect legacy usage fields or chunk shapes
 
-Treat `.legacy` as a compatibility lane, not the long-term direction of new code.
+Treat root compatibility methods as the old-contract lane, not the long-term direction of new v2 code.
 
 ## Migration Checklist
 
 Use this checklist when upgrading an application from v1 to v2:
 
-1. Replace deprecated root methods with explicit resource methods.
-2. Decide whether each codepath should move to primary now or temporarily to `.legacy`.
+1. Replace root compatibility methods with explicit resource methods when you are ready.
+2. Decide whether each codepath should move to primary now or temporarily stay on root compatibility methods.
 3. Replace legacy request models with primary models in migrated codepaths.
 4. Rewrite response readers from `choices`-based access to `messages`-based access.
 5. Update streaming consumers to read primary chunks.
@@ -406,8 +406,8 @@ Use this checklist when upgrading an application from v1 to v2:
 - Renaming `client.chat(...)` to `client.chat.create(...)` but still reading `response.choices[0].message.content`.
 - Importing `ChatCompletionChunk` from `gigachat.models` and expecting the primary chunk shape.
 - Treating v2 as a field-for-field extension of the legacy payload.
-- Moving sync code to `client.chat.create()` but leaving async code on deprecated shims.
-- Passing a Pydantic model to legacy `create()` instead of switching to `parse()`.
+- Moving sync code to `client.chat.create()` but leaving async code on root compatibility shims.
+- Passing a Pydantic model to the old create path instead of switching to `parse()`.
 
 If you see one of those patterns in a code review, the migration is only partial.
 

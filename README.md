@@ -87,16 +87,16 @@ set `GIGACHAT_VERIFY_SSL_CERTS=false` or pass `verify_ssl_certs=False` to `GigaC
 - `client.achat.stream(...)`
 - `await client.achat.parse(...)`
 
-The previous contract remains available under explicit legacy namespaces:
+The previous contract remains available through root compatibility methods:
 
-- `client.chat.legacy.create(...)`
-- `client.chat.legacy.stream(...)`
-- `client.chat.legacy.parse(...)`
-- `await client.achat.legacy.create(...)`
-- `client.achat.legacy.stream(...)`
-- `await client.achat.legacy.parse(...)`
+- `client.chat(...)`
+- `client.stream(...)`
+- `client.chat_parse(...)`
+- `await client.achat(...)`
+- `client.astream(...)`
+- `await client.achat_parse(...)`
 
-Root compatibility shims such as `client.chat(...)`, `client.stream(...)`, `client.chat_parse(...)`, `client.achat(...)`, `client.astream(...)`, and `client.achat_parse(...)` still work, but they are deprecated and emit `DeprecationWarning`.
+Root compatibility shims such as `client.chat(...)`, `client.stream(...)`, `client.chat_parse(...)`, `client.achat(...)`, `client.astream(...)`, and `client.achat_parse(...)` still work for the old chat contract. They are not deprecated and do not emit `DeprecationWarning`.
 
 During the migration, old `gigachat.models.Chat*`, `Messages*`, `Function*`, and `Usage` imports still resolve to legacy compatibility aliases. Use `ChatCompletionRequest`, `ChatCompletionResponse`, `ChatMessage`, and related `Chat*` primary models for the new contract.
 
@@ -251,9 +251,9 @@ print(parsed.final_answer)
 - `json.JSONDecodeError` if the model returned invalid JSON
 - `pydantic.ValidationError` if the JSON is valid but does not match the schema
 
-The legacy helpers remain available at `client.chat.legacy.parse()` / `client.achat.legacy.parse()` for the old contract.
+The old-contract helpers remain available at `client.chat_parse()` / `client.achat_parse()`.
 
-See [examples/example_structured_output.ipynb](examples/example_structured_output.ipynb) for more approaches (raw dict schema, Pydantic model schema, and the legacy parse helper).
+See [examples/example_structured_output.ipynb](examples/example_structured_output.ipynb) for more approaches (raw dict schema, Pydantic model schema, and the old-contract parse helper).
 
 ### More examples
 See the [examples/](https://github.com/ai-forever/gigachat/tree/main/examples/) folder for complete working examples including the primary chat surface, functions, context variables, AI detection, vision, and structured output.

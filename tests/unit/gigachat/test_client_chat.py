@@ -78,6 +78,10 @@ PRIMARY_CHAT_COMPLETION_STREAM = (
 )
 
 
+def _assert_no_deprecation_warnings(caught: List[warnings.WarningMessage]) -> None:
+    assert not [warning for warning in caught if issubclass(warning.category, DeprecationWarning)]
+
+
 class MathResult(BaseModel):
     steps: List[str]
     final_answer: str
@@ -174,13 +178,15 @@ def test_chat(httpx_mock: HTTPXMock) -> None:
     httpx_mock.add_response(url=CHAT_URL, json=CHAT_COMPLETION)
 
     with GigaChatSyncClient(base_url=BASE_URL, model="model") as client:
-        with pytest.warns(DeprecationWarning, match=r"client\.chat\(\.\.\.\)"):
+        with warnings.catch_warnings(record=True) as caught:
+            warnings.simplefilter("always", DeprecationWarning)
             response = client.chat("text")
 
     assert isinstance(response, ChatCompletion)
+    _assert_no_deprecation_warnings(caught)
 
 
-def test_chat_root_shim_warns_and_uses_legacy_route_when_primary_route_differs(httpx_mock: HTTPXMock) -> None:
+def test_chat_root_shim_uses_legacy_route_when_primary_route_differs(httpx_mock: HTTPXMock) -> None:
     primary_url_token = chat_completions_url_cvar.set("/chat/completions/primary")
     legacy_url_token = chat_url_cvar.set("/chat/completions/legacy")
 
@@ -188,7 +194,8 @@ def test_chat_root_shim_warns_and_uses_legacy_route_when_primary_route_differs(h
         httpx_mock.add_response(url=f"{BASE_URL}/chat/completions/legacy", json=CHAT_COMPLETION)
 
         with GigaChatSyncClient(base_url=BASE_URL, access_token=ACCESS_TOKEN) as client:
-            with pytest.warns(DeprecationWarning, match=r"client\.chat\(\.\.\.\)"):
+            with warnings.catch_warnings(record=True) as caught:
+                warnings.simplefilter("always", DeprecationWarning)
                 response = client.chat("text")
     finally:
         chat_completions_url_cvar.reset(primary_url_token)
@@ -199,6 +206,7 @@ def test_chat_root_shim_warns_and_uses_legacy_route_when_primary_route_differs(h
     assert not isinstance(response, ChatCompletionResponse)
     assert len(requests) == 1
     assert str(requests[0].url) == f"{BASE_URL}/chat/completions/legacy"
+    _assert_no_deprecation_warnings(caught)
 
 
 def test_chat_rejects_pydantic_response_format_on_chat() -> None:
@@ -208,8 +216,8 @@ def test_chat_rejects_pydantic_response_format_on_chat() -> None:
     }
 
     with GigaChatSyncClient(base_url=BASE_URL, access_token=ACCESS_TOKEN) as client:
-        with pytest.raises(TypeError, match="client\\.chat\\.legacy\\.parse"):
-            client.chat.legacy.create(payload)
+        with pytest.raises(TypeError, match="client\\.chat_parse"):
+            client.chat(payload)
 
 
 def test_chat_legacy_create_does_not_warn(httpx_mock: HTTPXMock) -> None:
@@ -218,10 +226,10 @@ def test_chat_legacy_create_does_not_warn(httpx_mock: HTTPXMock) -> None:
     with GigaChatSyncClient(base_url=BASE_URL, access_token=ACCESS_TOKEN) as client:
         with warnings.catch_warnings(record=True) as caught:
             warnings.simplefilter("always", DeprecationWarning)
-            response = client.chat.legacy.create("text")
+            response = client.chat("text")
 
     assert isinstance(response, ChatCompletion)
-    assert not [warning for warning in caught if issubclass(warning.category, DeprecationWarning)]
+    _assert_no_deprecation_warnings(caught)
 
 
 def test_chat_create_uses_primary_route(httpx_mock: HTTPXMock) -> None:
@@ -294,7 +302,7 @@ def test_chat_legacy_create_uses_legacy_route_when_primary_route_differs(httpx_m
         httpx_mock.add_response(url=f"{BASE_URL}/chat/completions/legacy", json=CHAT_COMPLETION)
 
         with GigaChatSyncClient(base_url=BASE_URL, access_token=ACCESS_TOKEN) as client:
-            response = client.chat.legacy.create("text")
+            response = client.chat("text")
     finally:
         chat_completions_url_cvar.reset(primary_url_token)
         chat_url_cvar.reset(legacy_url_token)
@@ -347,7 +355,7 @@ def test_chat_legacy_stream_uses_legacy_route_when_primary_route_differs(httpx_m
         )
 
         with GigaChatSyncClient(base_url=BASE_URL, access_token=ACCESS_TOKEN) as client:
-            response = list(client.chat.legacy.stream("text"))
+            response = list(client.stream("text"))
     finally:
         chat_completions_url_cvar.reset(primary_url_token)
         chat_url_cvar.reset(legacy_url_token)
@@ -507,7 +515,7 @@ def test_chat_access_token(httpx_mock: HTTPXMock) -> None:
     httpx_mock.add_response(url=CHAT_URL, json=CHAT_COMPLETION)
 
     with GigaChatSyncClient(base_url=BASE_URL, access_token=ACCESS_TOKEN) as client:
-        response = client.chat.legacy.create(CHAT)
+        response = client.chat(CHAT)
 
     assert isinstance(response, ChatCompletion)
 
@@ -517,7 +525,7 @@ def test_chat_credentials(httpx_mock: HTTPXMock) -> None:
     httpx_mock.add_response(url=CHAT_URL, json=CHAT_COMPLETION)
 
     with GigaChatSyncClient(base_url=BASE_URL, auth_url=AUTH_URL, credentials=CREDENTIALS) as client:
-        response = client.chat.legacy.create(CHAT)
+        response = client.chat(CHAT)
 
     assert isinstance(response, ChatCompletion)
 
@@ -529,8 +537,8 @@ def test_chat_credentials_token_reuse(httpx_mock: HTTPXMock) -> None:
     httpx_mock.add_response(url=CHAT_URL, json=CHAT_COMPLETION)
 
     with GigaChatSyncClient(base_url=BASE_URL, auth_url=AUTH_URL, credentials=CREDENTIALS) as client:
-        response1 = client.chat.legacy.create(CHAT)
-        response2 = client.chat.legacy.create(CHAT)
+        response1 = client.chat(CHAT)
+        response2 = client.chat(CHAT)
 
     assert isinstance(response1, ChatCompletion)
     assert isinstance(response2, ChatCompletion)
@@ -544,8 +552,8 @@ def test_chat_credentials_expired_token_refresh(httpx_mock: HTTPXMock) -> None:
     httpx_mock.add_response(url=CHAT_URL, json=CHAT_COMPLETION)
 
     with GigaChatSyncClient(base_url=BASE_URL, auth_url=AUTH_URL, credentials=CREDENTIALS) as client:
-        response1 = client.chat.legacy.create(CHAT)
-        response2 = client.chat.legacy.create(CHAT)
+        response1 = client.chat(CHAT)
+        response2 = client.chat(CHAT)
 
     assert isinstance(response1, ChatCompletion)
     assert isinstance(response2, ChatCompletion)
@@ -558,8 +566,8 @@ def test_chat_user_password_token_reuse(httpx_mock: HTTPXMock) -> None:
     httpx_mock.add_response(url=CHAT_URL, json=CHAT_COMPLETION)
 
     with GigaChatSyncClient(base_url=BASE_URL, user=USER, password=PASSWORD) as client:
-        response1 = client.chat.legacy.create(CHAT)
-        response2 = client.chat.legacy.create(CHAT)
+        response1 = client.chat(CHAT)
+        response2 = client.chat(CHAT)
 
     assert isinstance(response1, ChatCompletion)
     assert isinstance(response2, ChatCompletion)
@@ -573,8 +581,8 @@ def test_chat_user_password_expired_token_refresh(httpx_mock: HTTPXMock) -> None
     httpx_mock.add_response(url=CHAT_URL, json=CHAT_COMPLETION)
 
     with GigaChatSyncClient(base_url=BASE_URL, user=USER, password=PASSWORD) as client:
-        response1 = client.chat.legacy.create(CHAT)
-        response2 = client.chat.legacy.create(CHAT)
+        response1 = client.chat(CHAT)
+        response2 = client.chat(CHAT)
 
     assert isinstance(response1, ChatCompletion)
     assert isinstance(response2, ChatCompletion)
@@ -585,7 +593,7 @@ def test_chat_user_password(httpx_mock: HTTPXMock) -> None:
     httpx_mock.add_response(url=CHAT_URL, json=CHAT_COMPLETION)
 
     with GigaChatSyncClient(base_url=BASE_URL, user=USER, password=PASSWORD) as client:
-        response = client.chat.legacy.create(CHAT)
+        response = client.chat(CHAT)
 
     assert isinstance(response, ChatCompletion)
 
@@ -596,7 +604,7 @@ def test_chat_authentication_error(httpx_mock: HTTPXMock) -> None:
 
     with GigaChatSyncClient(base_url=BASE_URL, auth_url=AUTH_URL, credentials=CREDENTIALS) as client:
         with pytest.raises(AuthenticationError):
-            client.chat.legacy.create(CHAT)
+            client.chat(CHAT)
 
 
 def test_chat_update_token_credentials(httpx_mock: HTTPXMock) -> None:
@@ -611,7 +619,7 @@ def test_chat_update_token_credentials(httpx_mock: HTTPXMock) -> None:
     ) as client:
         assert client.token == ACCESS_TOKEN
         with pytest.raises(AuthenticationError):
-            client.chat.legacy.create(CHAT)
+            client.chat(CHAT)
         assert client.token
         assert client.token != ACCESS_TOKEN
 
@@ -623,7 +631,7 @@ def test_chat_update_token_user_password(httpx_mock: HTTPXMock) -> None:
     with GigaChatSyncClient(base_url=BASE_URL, access_token=ACCESS_TOKEN, user=USER, password=PASSWORD) as client:
         assert client.token == ACCESS_TOKEN
         with pytest.raises(AuthenticationError):
-            client.chat.legacy.create(CHAT)
+            client.chat(CHAT)
         assert client.token
         assert client.token != ACCESS_TOKEN
 
@@ -634,7 +642,7 @@ def test_chat_update_token_false(httpx_mock: HTTPXMock) -> None:
     with GigaChatSyncClient(base_url=BASE_URL, access_token=ACCESS_TOKEN) as client:
         assert client.token == ACCESS_TOKEN
         with pytest.raises(AuthenticationError):
-            client.chat.legacy.create(CHAT)
+            client.chat(CHAT)
         assert client.token == ACCESS_TOKEN
 
 
@@ -645,7 +653,7 @@ def test_chat_update_token_success(httpx_mock: HTTPXMock) -> None:
 
     with GigaChatSyncClient(base_url=BASE_URL, access_token=ACCESS_TOKEN, user=USER, password=PASSWORD) as client:
         assert client.token == ACCESS_TOKEN
-        response = client.chat.legacy.create(CHAT)
+        response = client.chat(CHAT)
 
     assert client.token
     assert client.token != ACCESS_TOKEN
@@ -659,7 +667,7 @@ def test_chat_update_token_error(httpx_mock: HTTPXMock) -> None:
     with GigaChatSyncClient(base_url=BASE_URL, access_token=ACCESS_TOKEN, user=USER, password=PASSWORD) as client:
         assert client.token == ACCESS_TOKEN
         with pytest.raises(AuthenticationError):
-            client.chat.legacy.create(CHAT)
+            client.chat(CHAT)
 
     assert client.token
     assert client.token != ACCESS_TOKEN
@@ -669,7 +677,7 @@ def test_chat_with_functions(httpx_mock: HTTPXMock) -> None:
     httpx_mock.add_response(url=CHAT_URL, json=CHAT_COMPLETION_FUNCTION)
 
     with GigaChatSyncClient(base_url=BASE_URL, access_token=ACCESS_TOKEN) as client:
-        response = client.chat.legacy.create(CHAT_FUNCTION)
+        response = client.chat(CHAT_FUNCTION)
 
     assert isinstance(response, ChatCompletion)
     assert response.choices[0].finish_reason == "function_call"
@@ -686,15 +694,17 @@ def test_stream_access_token(httpx_mock: HTTPXMock) -> None:
     httpx_mock.add_response(url=CHAT_URL, content=CHAT_COMPLETION_STREAM, headers=HEADERS_STREAM)
 
     with GigaChatSyncClient(base_url=BASE_URL, access_token=ACCESS_TOKEN, user=USER, password=PASSWORD) as client:
-        with pytest.warns(DeprecationWarning, match=r"client\.stream\(\.\.\.\)"):
+        with warnings.catch_warnings(record=True) as caught:
+            warnings.simplefilter("always", DeprecationWarning)
             response = list(client.stream(CHAT))
 
     assert len(response) == 3
     assert all(isinstance(chunk, ChatCompletionChunk) for chunk in response)
     assert response[2].choices[0].finish_reason == "stop"
+    _assert_no_deprecation_warnings(caught)
 
 
-def test_stream_root_shim_warns_and_uses_legacy_route_when_primary_route_differs(httpx_mock: HTTPXMock) -> None:
+def test_stream_root_shim_uses_legacy_route_when_primary_route_differs(httpx_mock: HTTPXMock) -> None:
     primary_url_token = chat_completions_url_cvar.set("/chat/completions/primary")
     legacy_url_token = chat_url_cvar.set("/chat/completions/legacy")
 
@@ -706,7 +716,8 @@ def test_stream_root_shim_warns_and_uses_legacy_route_when_primary_route_differs
         )
 
         with GigaChatSyncClient(base_url=BASE_URL, access_token=ACCESS_TOKEN) as client:
-            with pytest.warns(DeprecationWarning, match=r"client\.stream\(\.\.\.\)"):
+            with warnings.catch_warnings(record=True) as caught:
+                warnings.simplefilter("always", DeprecationWarning)
                 response = list(client.stream("text"))
     finally:
         chat_completions_url_cvar.reset(primary_url_token)
@@ -718,6 +729,7 @@ def test_stream_root_shim_warns_and_uses_legacy_route_when_primary_route_differs
     assert not any(isinstance(chunk, PrimaryChatCompletionChunk) for chunk in response)
     assert len(requests) == 1
     assert str(requests[0].url) == f"{BASE_URL}/chat/completions/legacy"
+    _assert_no_deprecation_warnings(caught)
 
 
 def test_chat_legacy_stream_does_not_warn(httpx_mock: HTTPXMock) -> None:
@@ -726,11 +738,11 @@ def test_chat_legacy_stream_does_not_warn(httpx_mock: HTTPXMock) -> None:
     with GigaChatSyncClient(base_url=BASE_URL, access_token=ACCESS_TOKEN) as client:
         with warnings.catch_warnings(record=True) as caught:
             warnings.simplefilter("always", DeprecationWarning)
-            response = list(client.chat.legacy.stream(CHAT))
+            response = list(client.stream(CHAT))
 
     assert len(response) == 3
     assert all(isinstance(chunk, ChatCompletionChunk) for chunk in response)
-    assert not [warning for warning in caught if issubclass(warning.category, DeprecationWarning)]
+    _assert_no_deprecation_warnings(caught)
 
 
 def test_chat_legacy_create_uses_explicit_legacy_transport(monkeypatch: pytest.MonkeyPatch) -> None:
@@ -745,7 +757,7 @@ def test_chat_legacy_create_uses_explicit_legacy_transport(monkeypatch: pytest.M
     monkeypatch.setattr(legacy_chat, "chat_sync", fake_chat_sync)
 
     with GigaChatSyncClient(base_url=BASE_URL, access_token=ACCESS_TOKEN) as client:
-        response = client.chat.legacy.create("text")
+        response = client.chat("text")
 
     assert isinstance(response, ChatCompletion)
     assert captured["access_token"] == ACCESS_TOKEN
@@ -775,7 +787,7 @@ def test_chat_legacy_stream_uses_explicit_legacy_transport(monkeypatch: pytest.M
     monkeypatch.setattr(legacy_chat, "stream_sync", fake_stream_sync)
 
     with GigaChatSyncClient(base_url=BASE_URL, access_token=ACCESS_TOKEN) as client:
-        response = list(client.chat.legacy.stream("text"))
+        response = list(client.stream("text"))
 
     assert len(response) == 1
     assert captured["access_token"] == ACCESS_TOKEN
@@ -788,7 +800,7 @@ def test_stream_authentication_error(httpx_mock: HTTPXMock) -> None:
 
     with GigaChatSyncClient(base_url=BASE_URL, auth_url=AUTH_URL, credentials=CREDENTIALS) as client:
         with pytest.raises(AuthenticationError):
-            list(client.chat.legacy.stream(CHAT))
+            list(client.stream(CHAT))
 
 
 def test_stream_update_token_success(httpx_mock: HTTPXMock) -> None:
@@ -798,7 +810,7 @@ def test_stream_update_token_success(httpx_mock: HTTPXMock) -> None:
 
     with GigaChatSyncClient(base_url=BASE_URL, access_token=ACCESS_TOKEN, user=USER, password=PASSWORD) as client:
         assert client.token == ACCESS_TOKEN
-        response = list(client.chat.legacy.stream(CHAT))
+        response = list(client.stream(CHAT))
 
     assert client.token
     assert client.token != ACCESS_TOKEN
@@ -814,7 +826,7 @@ def test_stream_update_token_error(httpx_mock: HTTPXMock) -> None:
     with GigaChatSyncClient(base_url=BASE_URL, access_token=ACCESS_TOKEN, user=USER, password=PASSWORD) as client:
         assert client.token == ACCESS_TOKEN
         with pytest.raises(AuthenticationError):
-            list(client.chat.legacy.stream(CHAT))
+            list(client.stream(CHAT))
 
     assert client.token
     assert client.token != ACCESS_TOKEN
@@ -824,13 +836,15 @@ async def test_achat(httpx_mock: HTTPXMock) -> None:
     httpx_mock.add_response(url=CHAT_URL, json=CHAT_COMPLETION)
 
     async with GigaChatAsyncClient(base_url=BASE_URL) as client:
-        with pytest.warns(DeprecationWarning, match=r"client\.achat\(\.\.\.\)"):
+        with warnings.catch_warnings(record=True) as caught:
+            warnings.simplefilter("always", DeprecationWarning)
             response = await client.achat("text")
 
     assert isinstance(response, ChatCompletion)
+    _assert_no_deprecation_warnings(caught)
 
 
-async def test_achat_root_shim_warns_and_uses_legacy_route_when_primary_route_differs(httpx_mock: HTTPXMock) -> None:
+async def test_achat_root_shim_uses_legacy_route_when_primary_route_differs(httpx_mock: HTTPXMock) -> None:
     primary_url_token = chat_completions_url_cvar.set("/chat/completions/primary")
     legacy_url_token = chat_url_cvar.set("/chat/completions/legacy")
 
@@ -838,7 +852,8 @@ async def test_achat_root_shim_warns_and_uses_legacy_route_when_primary_route_di
         httpx_mock.add_response(url=f"{BASE_URL}/chat/completions/legacy", json=CHAT_COMPLETION)
 
         async with GigaChatAsyncClient(base_url=BASE_URL, access_token=ACCESS_TOKEN) as client:
-            with pytest.warns(DeprecationWarning, match=r"client\.achat\(\.\.\.\)"):
+            with warnings.catch_warnings(record=True) as caught:
+                warnings.simplefilter("always", DeprecationWarning)
                 response = await client.achat("text")
     finally:
         chat_completions_url_cvar.reset(primary_url_token)
@@ -849,6 +864,7 @@ async def test_achat_root_shim_warns_and_uses_legacy_route_when_primary_route_di
     assert not isinstance(response, ChatCompletionResponse)
     assert len(requests) == 1
     assert str(requests[0].url) == f"{BASE_URL}/chat/completions/legacy"
+    _assert_no_deprecation_warnings(caught)
 
 
 async def test_achat_rejects_pydantic_response_format_on_chat() -> None:
@@ -861,8 +877,8 @@ async def test_achat_rejects_pydantic_response_format_on_chat() -> None:
     )
 
     async with GigaChatAsyncClient(base_url=BASE_URL, access_token=ACCESS_TOKEN) as client:
-        with pytest.raises(TypeError, match="client\\.chat\\.legacy\\.parse"):
-            await client.achat.legacy.create(payload)
+        with pytest.raises(TypeError, match="client\\.chat_parse"):
+            await client.achat(payload)
 
 
 async def test_achat_legacy_create_does_not_warn(httpx_mock: HTTPXMock) -> None:
@@ -871,10 +887,10 @@ async def test_achat_legacy_create_does_not_warn(httpx_mock: HTTPXMock) -> None:
     async with GigaChatAsyncClient(base_url=BASE_URL, access_token=ACCESS_TOKEN) as client:
         with warnings.catch_warnings(record=True) as caught:
             warnings.simplefilter("always", DeprecationWarning)
-            response = await client.achat.legacy.create("text")
+            response = await client.achat("text")
 
     assert isinstance(response, ChatCompletion)
-    assert not [warning for warning in caught if issubclass(warning.category, DeprecationWarning)]
+    _assert_no_deprecation_warnings(caught)
 
 
 async def test_achat_create_uses_primary_route(httpx_mock: HTTPXMock) -> None:
@@ -919,7 +935,7 @@ async def test_achat_legacy_create_uses_legacy_route_when_primary_route_differs(
         httpx_mock.add_response(url=f"{BASE_URL}/chat/completions/legacy", json=CHAT_COMPLETION)
 
         async with GigaChatAsyncClient(base_url=BASE_URL, access_token=ACCESS_TOKEN) as client:
-            response = await client.achat.legacy.create("text")
+            response = await client.achat("text")
     finally:
         chat_completions_url_cvar.reset(primary_url_token)
         chat_url_cvar.reset(legacy_url_token)
@@ -934,7 +950,7 @@ async def test_achat_access_token(httpx_mock: HTTPXMock) -> None:
     httpx_mock.add_response(url=CHAT_URL, json=CHAT_COMPLETION)
 
     async with GigaChatAsyncClient(base_url=BASE_URL, access_token=ACCESS_TOKEN) as client:
-        response = await client.achat.legacy.create(CHAT)
+        response = await client.achat(CHAT)
 
     assert isinstance(response, ChatCompletion)
 
@@ -951,7 +967,7 @@ async def test_achat_legacy_create_uses_explicit_legacy_transport(monkeypatch: p
     monkeypatch.setattr(legacy_chat, "chat_async", fake_chat_async)
 
     async with GigaChatAsyncClient(base_url=BASE_URL, access_token=ACCESS_TOKEN) as client:
-        response = await client.achat.legacy.create("text")
+        response = await client.achat("text")
 
     assert isinstance(response, ChatCompletion)
     assert captured["access_token"] == ACCESS_TOKEN
@@ -1153,7 +1169,7 @@ async def test_achat_legacy_stream_uses_explicit_legacy_transport(monkeypatch: p
     monkeypatch.setattr(legacy_chat, "stream_async", fake_stream_async)
 
     async with GigaChatAsyncClient(base_url=BASE_URL, access_token=ACCESS_TOKEN) as client:
-        response = [chunk async for chunk in client.achat.legacy.stream("text")]
+        response = [chunk async for chunk in client.astream("text")]
 
     assert len(response) == 1
     assert captured["access_token"] == ACCESS_TOKEN
@@ -1165,7 +1181,7 @@ async def test_achat_credentials(httpx_mock: HTTPXMock) -> None:
     httpx_mock.add_response(url=CHAT_URL, json=CHAT_COMPLETION)
 
     async with GigaChatAsyncClient(base_url=BASE_URL, auth_url=AUTH_URL, credentials=CREDENTIALS) as client:
-        response = await client.achat.legacy.create(CHAT)
+        response = await client.achat(CHAT)
 
     assert isinstance(response, ChatCompletion)
 
@@ -1177,8 +1193,8 @@ async def test_achat_credentials_token_reuse(httpx_mock: HTTPXMock) -> None:
     httpx_mock.add_response(url=CHAT_URL, json=CHAT_COMPLETION)
 
     async with GigaChatAsyncClient(base_url=BASE_URL, auth_url=AUTH_URL, credentials=CREDENTIALS) as client:
-        response1 = await client.achat.legacy.create(CHAT)
-        response2 = await client.achat.legacy.create(CHAT)
+        response1 = await client.achat(CHAT)
+        response2 = await client.achat(CHAT)
 
     assert isinstance(response1, ChatCompletion)
     assert isinstance(response2, ChatCompletion)
@@ -1192,8 +1208,8 @@ async def test_achat_credentials_expired_token_refresh(httpx_mock: HTTPXMock) ->
     httpx_mock.add_response(url=CHAT_URL, json=CHAT_COMPLETION)
 
     async with GigaChatAsyncClient(base_url=BASE_URL, auth_url=AUTH_URL, credentials=CREDENTIALS) as client:
-        response1 = await client.achat.legacy.create(CHAT)
-        response2 = await client.achat.legacy.create(CHAT)
+        response1 = await client.achat(CHAT)
+        response2 = await client.achat(CHAT)
 
     assert isinstance(response1, ChatCompletion)
     assert isinstance(response2, ChatCompletion)
@@ -1206,8 +1222,8 @@ async def test_achat_user_password_token_reuse(httpx_mock: HTTPXMock) -> None:
     httpx_mock.add_response(url=CHAT_URL, json=CHAT_COMPLETION)
 
     async with GigaChatAsyncClient(base_url=BASE_URL, user=USER, password=PASSWORD) as client:
-        response1 = await client.achat.legacy.create(CHAT)
-        response2 = await client.achat.legacy.create(CHAT)
+        response1 = await client.achat(CHAT)
+        response2 = await client.achat(CHAT)
 
     assert isinstance(response1, ChatCompletion)
     assert isinstance(response2, ChatCompletion)
@@ -1221,8 +1237,8 @@ async def test_achat_user_password_expired_token_refresh(httpx_mock: HTTPXMock) 
     httpx_mock.add_response(url=CHAT_URL, json=CHAT_COMPLETION)
 
     async with GigaChatAsyncClient(base_url=BASE_URL, user=USER, password=PASSWORD) as client:
-        response1 = await client.achat.legacy.create(CHAT)
-        response2 = await client.achat.legacy.create(CHAT)
+        response1 = await client.achat(CHAT)
+        response2 = await client.achat(CHAT)
 
     assert isinstance(response1, ChatCompletion)
     assert isinstance(response2, ChatCompletion)
@@ -1233,7 +1249,7 @@ async def test_achat_user_password(httpx_mock: HTTPXMock) -> None:
     httpx_mock.add_response(url=CHAT_URL, json=CHAT_COMPLETION)
 
     async with GigaChatAsyncClient(base_url=BASE_URL, user=USER, password=PASSWORD) as client:
-        response = await client.achat.legacy.create(CHAT)
+        response = await client.achat(CHAT)
 
     assert isinstance(response, ChatCompletion)
 
@@ -1244,7 +1260,7 @@ async def test_achat_authentication_error(httpx_mock: HTTPXMock) -> None:
 
     async with GigaChatAsyncClient(base_url=BASE_URL, auth_url=AUTH_URL, credentials=CREDENTIALS) as client:
         with pytest.raises(AuthenticationError):
-            await client.achat.legacy.create(CHAT)
+            await client.achat(CHAT)
 
 
 async def test_achat_update_token_false(httpx_mock: HTTPXMock) -> None:
@@ -1253,7 +1269,7 @@ async def test_achat_update_token_false(httpx_mock: HTTPXMock) -> None:
     async with GigaChatAsyncClient(base_url=BASE_URL, auth_url=AUTH_URL, access_token=ACCESS_TOKEN) as client:
         assert client.token == ACCESS_TOKEN
         with pytest.raises(AuthenticationError):
-            await client.achat.legacy.create(CHAT)
+            await client.achat(CHAT)
         assert client.token == ACCESS_TOKEN
 
 
@@ -1269,7 +1285,7 @@ async def test_achat_update_token_credentials(httpx_mock: HTTPXMock) -> None:
     ) as client:
         assert client.token == ACCESS_TOKEN
         with pytest.raises(AuthenticationError):
-            await client.achat.legacy.create(CHAT)
+            await client.achat(CHAT)
         assert client.token
         assert client.token != ACCESS_TOKEN
 
@@ -1283,7 +1299,7 @@ async def test_achat_update_token_user_password(httpx_mock: HTTPXMock) -> None:
     ) as client:
         assert client.token == ACCESS_TOKEN
         with pytest.raises(AuthenticationError):
-            await client.achat.legacy.create(CHAT)
+            await client.achat(CHAT)
         assert client.token
         assert client.token != ACCESS_TOKEN
 
@@ -1294,15 +1310,17 @@ async def test_astream_access_token(httpx_mock: HTTPXMock) -> None:
     async with GigaChatAsyncClient(
         base_url=BASE_URL, access_token=ACCESS_TOKEN, user=USER, password=PASSWORD
     ) as client:
-        with pytest.warns(DeprecationWarning, match=r"client\.astream\(\.\.\.\)"):
+        with warnings.catch_warnings(record=True) as caught:
+            warnings.simplefilter("always", DeprecationWarning)
             response = [chunk async for chunk in client.astream(CHAT)]
 
     assert len(response) == 3
     assert all(isinstance(chunk, ChatCompletionChunk) for chunk in response)
     assert response[2].choices[0].finish_reason == "stop"
+    _assert_no_deprecation_warnings(caught)
 
 
-async def test_astream_root_shim_warns_and_uses_legacy_route_when_primary_route_differs(httpx_mock: HTTPXMock) -> None:
+async def test_astream_root_shim_uses_legacy_route_when_primary_route_differs(httpx_mock: HTTPXMock) -> None:
     primary_url_token = chat_completions_url_cvar.set("/chat/completions/primary")
     legacy_url_token = chat_url_cvar.set("/chat/completions/legacy")
 
@@ -1314,7 +1332,8 @@ async def test_astream_root_shim_warns_and_uses_legacy_route_when_primary_route_
         )
 
         async with GigaChatAsyncClient(base_url=BASE_URL, access_token=ACCESS_TOKEN) as client:
-            with pytest.warns(DeprecationWarning, match=r"client\.astream\(\.\.\.\)"):
+            with warnings.catch_warnings(record=True) as caught:
+                warnings.simplefilter("always", DeprecationWarning)
                 response = [chunk async for chunk in client.astream("text")]
     finally:
         chat_completions_url_cvar.reset(primary_url_token)
@@ -1326,6 +1345,7 @@ async def test_astream_root_shim_warns_and_uses_legacy_route_when_primary_route_
     assert not any(isinstance(chunk, PrimaryChatCompletionChunk) for chunk in response)
     assert len(requests) == 1
     assert str(requests[0].url) == f"{BASE_URL}/chat/completions/legacy"
+    _assert_no_deprecation_warnings(caught)
 
 
 async def test_achat_legacy_stream_does_not_warn(httpx_mock: HTTPXMock) -> None:
@@ -1334,11 +1354,11 @@ async def test_achat_legacy_stream_does_not_warn(httpx_mock: HTTPXMock) -> None:
     async with GigaChatAsyncClient(base_url=BASE_URL, access_token=ACCESS_TOKEN) as client:
         with warnings.catch_warnings(record=True) as caught:
             warnings.simplefilter("always", DeprecationWarning)
-            response = [chunk async for chunk in client.achat.legacy.stream(CHAT)]
+            response = [chunk async for chunk in client.astream(CHAT)]
 
     assert len(response) == 3
     assert all(isinstance(chunk, ChatCompletionChunk) for chunk in response)
-    assert not [warning for warning in caught if issubclass(warning.category, DeprecationWarning)]
+    _assert_no_deprecation_warnings(caught)
 
 
 async def test_astream_authentication_error(httpx_mock: HTTPXMock) -> None:
@@ -1347,7 +1367,7 @@ async def test_astream_authentication_error(httpx_mock: HTTPXMock) -> None:
 
     async with GigaChatAsyncClient(base_url=BASE_URL, auth_url=AUTH_URL, credentials=CREDENTIALS) as client:
         with pytest.raises(AuthenticationError):
-            _ = [chunk async for chunk in client.achat.legacy.stream(CHAT)]
+            _ = [chunk async for chunk in client.astream(CHAT)]
 
 
 async def test_astream_update_token_success(httpx_mock: HTTPXMock) -> None:
@@ -1359,7 +1379,7 @@ async def test_astream_update_token_success(httpx_mock: HTTPXMock) -> None:
         base_url=BASE_URL, access_token=ACCESS_TOKEN, user=USER, password=PASSWORD
     ) as client:
         assert client.token == ACCESS_TOKEN
-        response = [chunk async for chunk in client.achat.legacy.stream(CHAT)]
+        response = [chunk async for chunk in client.astream(CHAT)]
 
     assert client.token
     assert client.token != ACCESS_TOKEN
@@ -1377,6 +1397,6 @@ async def test_astream_update_token_error(httpx_mock: HTTPXMock) -> None:
     ) as client:
         assert client.token == ACCESS_TOKEN
         with pytest.raises(AuthenticationError):
-            _ = [chunk async for chunk in client.achat.legacy.stream(CHAT)]
+            _ = [chunk async for chunk in client.astream(CHAT)]
         assert client.token
         assert client.token != ACCESS_TOKEN
