@@ -119,7 +119,7 @@ def test_sync_resources_are_cached_properties() -> None:
     threads = client.threads
 
     assert chat is client.chat
-    assert chat.legacy is chat.legacy
+    assert not hasattr(chat, "legacy")
     assert assistants is client.assistants
     assert threads is client.threads
 
@@ -136,6 +136,6 @@ async def test_async_resources_are_cached_properties() -> None:
     threads = client.a_threads
 
     assert chat is client.achat
-    assert chat.legacy is chat.legacy
+    assert not hasattr(chat, "legacy")
     assert assistants is client.a_assistants
     assert threads is client.a_threads

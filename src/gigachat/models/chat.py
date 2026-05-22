@@ -7,7 +7,7 @@ from gigachat.models.base import APIResponse
 from gigachat.models.response_format import ResponseFormat
 
 
-class MessagesRole(str, Enum):
+class LegacyMessageRole(str, Enum):
     """Role of the message author."""
 
     ASSISTANT = "assistant"
@@ -18,21 +18,21 @@ class MessagesRole(str, Enum):
     FUNCTION_IN_PROGRESS = "function_in_progress"
 
 
-class FunctionCall(BaseModel):
+class LegacyFunctionCall(BaseModel):
     """Model function call."""
 
     name: str = Field(description="Name of the function to call.")
     arguments: Optional[Dict[Any, Any]] = Field(default=None, description="Function call arguments.")
 
 
-class FewShotExample(BaseModel):
+class LegacyFewShotExample(BaseModel):
     """Few-shot example for function definition."""
 
     request: str = Field(description="User request.")
     params: Dict[str, Any] = Field(description="Parameters corresponding to the request.")
 
 
-class Storage(BaseModel):
+class LegacyStorage(BaseModel):
     """Context storage settings for GigaChat."""
 
     is_stateful: bool = Field(
@@ -61,7 +61,7 @@ class Storage(BaseModel):
     metadata: Optional[Dict[Any, Any]] = Field(default=None, description="Arbitrary metadata.")
 
 
-class Usage(BaseModel):
+class LegacyUsage(BaseModel):
     """Model usage statistics."""
 
     prompt_tokens: int = Field(description="Number of tokens in the input message.")
@@ -70,35 +70,35 @@ class Usage(BaseModel):
     precached_prompt_tokens: Optional[int] = Field(default=None, description="Number of tokens served from cache.")
 
 
-class FunctionParametersProperty(BaseModel):
+class LegacyFunctionParametersProperty(BaseModel):
     """Property of a function parameter."""
 
     type_: str = Field(default="object", alias="type", description="Type of the argument.")
     description: str = Field(default="", description="Description of the argument.")
     items: Optional[Dict[str, Any]] = Field(default=None, description="Items schema for array types.")
     enum: Optional[List[str]] = Field(default=None, description="List of possible values for enum types.")
-    properties: Optional[Dict[Any, "FunctionParametersProperty"]] = Field(
+    properties: Optional[Dict[Any, "LegacyFunctionParametersProperty"]] = Field(
         default=None, description="Nested properties for object types."
     )
 
 
-class FunctionParameters(BaseModel):
+class LegacyFunctionParameters(BaseModel):
     """Parameters definition for a function."""
 
     type_: str = Field(default="object", alias="type", description="Type of the parameters object (usually 'object').")
-    properties: Optional[Dict[Any, FunctionParametersProperty]] = Field(
+    properties: Optional[Dict[Any, LegacyFunctionParametersProperty]] = Field(
         default=None, description="Dictionary of parameter properties."
     )
     required: Optional[List[str]] = Field(default=None, description="List of required parameter names.")
 
 
-class Function(BaseModel):
+class LegacyFunction(BaseModel):
     """Function definition that can be called by the model."""
 
     name: str = Field(description="Name of the function.")
     description: Optional[str] = Field(default=None, description="Description of the function.")
-    parameters: Optional[FunctionParameters] = Field(default=None, description="Parameters definition.")
-    few_shot_examples: Optional[List[FewShotExample]] = Field(
+    parameters: Optional[LegacyFunctionParameters] = Field(default=None, description="Parameters definition.")
+    few_shot_examples: Optional[List[LegacyFewShotExample]] = Field(
         default=None, description="List of few-shot examples for the function."
     )
     return_parameters: Optional[Dict[Any, Any]] = Field(default=None, description="Description of return parameters.")
@@ -121,22 +121,22 @@ class Function(BaseModel):
         return values
 
 
-class ChatFunctionCall(BaseModel):
+class LegacyChatFunctionCall(BaseModel):
     """Specific function call request."""
 
     name: str = Field(description="Name of the function.")
     partial_arguments: Optional[Dict[str, Any]] = Field(default=None, description="Partial arguments for the function.")
 
 
-class Messages(BaseModel):
+class LegacyMessage(BaseModel):
     """Message in a chat conversation."""
 
-    role: MessagesRole = Field(description="Role of the message author.")
+    role: LegacyMessageRole = Field(description="Role of the message author.")
     content: str = Field(default="", description="Text content of the message.")
-    function_call: Optional[FunctionCall] = Field(default=None, description="Function call details.")
+    function_call: Optional[LegacyFunctionCall] = Field(default=None, description="Function call details.")
     name: Optional[str] = Field(default=None, description="Function name. Required if role is 'function'.")
     attachments: Optional[List[str]] = Field(default=None, description="List of attached file IDs.")
-    data_for_context: Optional[List["Messages"]] = Field(default=None, description="DEPRECATED: Data for context.")
+    data_for_context: Optional[List["LegacyMessage"]] = Field(default=None, description="DEPRECATED: Data for context.")
     functions_state_id: Optional[str] = Field(
         default=None, description="ID of the function state generating images/video."
     )
@@ -146,37 +146,37 @@ class Messages(BaseModel):
     model_config = ConfigDict(use_enum_values=True)
 
 
-class MessagesChunk(BaseModel):
+class LegacyMessageChunk(BaseModel):
     """Chunk of a message in a stream."""
 
-    role: Optional[MessagesRole] = Field(default=None, description="Role of the message author.")
+    role: Optional[LegacyMessageRole] = Field(default=None, description="Role of the message author.")
     content: Optional[str] = Field(default=None, description="Text content chunk.")
     reasoning_content: Optional[str] = Field(default=None, description="Reasoning content chunk.")
-    function_call: Optional[FunctionCall] = Field(default=None, description="Function call chunk.")
+    function_call: Optional[LegacyFunctionCall] = Field(default=None, description="Function call chunk.")
     functions_state_id: Optional[str] = Field(default=None, description="Function state ID.")
 
 
-class Choices(BaseModel):
+class LegacyChoice(BaseModel):
     """Completion choice."""
 
-    message: Messages = Field(description="Generated message.")
+    message: LegacyMessage = Field(description="Generated message.")
     index: int = Field(description="Index of the choice in the list.")
     finish_reason: Optional[str] = Field(default=None, description="Reason why the generation finished.")
 
 
-class ChoicesChunk(BaseModel):
+class LegacyChoiceChunk(BaseModel):
     """Completion choice chunk in a stream."""
 
-    delta: MessagesChunk = Field(description="Message delta.")
+    delta: LegacyMessageChunk = Field(description="Message delta.")
     index: int = Field(description="Index of the choice in the list.")
     finish_reason: Optional[str] = Field(default=None, description="Reason why the generation finished.")
 
 
-class Chat(BaseModel):
+class LegacyChat(BaseModel):
     """Chat completion request parameters."""
 
     model: Optional[str] = Field(default=None, description="Name of the model to use.")
-    messages: List[Messages] = Field(description="List of messages in the conversation.")
+    messages: List[LegacyMessage] = Field(description="List of messages in the conversation.")
     temperature: Optional[float] = Field(default=None, description="Sampling temperature.")
     top_p: Optional[float] = Field(default=None, description="Nucleus sampling parameter (alternative to temperature).")
     n: Optional[int] = Field(default=None, description="Number of completion choices to generate.")
@@ -185,12 +185,14 @@ class Chat(BaseModel):
     repetition_penalty: Optional[float] = Field(default=None, description="Repetition penalty factor.")
     update_interval: Optional[float] = Field(default=None, description="Interval in seconds between stream updates.")
     profanity_check: Optional[bool] = Field(default=None, description="Enable profanity filtering.")
-    function_call: Optional[Union[Literal["auto", "none"], ChatFunctionCall]] = Field(
+    function_call: Optional[Union[Literal["auto", "none"], LegacyChatFunctionCall]] = Field(
         default=None, description="Controls which function is called."
     )
-    functions: Optional[List[Function]] = Field(default=None, description="List of functions available to the model.")
+    functions: Optional[List[LegacyFunction]] = Field(
+        default=None, description="List of functions available to the model."
+    )
     flags: Optional[List[str]] = Field(default=None, description="List of feature flags.")
-    storage: Optional[Storage] = Field(default=None, description="Context storage settings.")
+    storage: Optional[LegacyStorage] = Field(default=None, description="Context storage settings.")
     response_format: Optional[ResponseFormat] = Field(default=None, description="Response format (e.g. JSON Schema).")
     additional_fields: Optional[Dict[str, Any]] = Field(
         default=None, description="Additional fields to pass to the API."
@@ -200,23 +202,126 @@ class Chat(BaseModel):
     )
 
 
-class ChatCompletion(APIResponse):
+class LegacyChatCompletion(APIResponse):
     """Chat completion response."""
 
-    choices: List[Choices] = Field(description="List of completion choices.")
+    choices: List[LegacyChoice] = Field(description="List of completion choices.")
     created: int = Field(description="Creation timestamp (Unix time).")
     model: str = Field(description="Model name used for generation.")
     thread_id: Optional[str] = Field(default=None, description="Thread ID.")
     message_id: Optional[str] = Field(default=None, description="Message ID. Present if storage mode is used.")
-    usage: Usage = Field(description="Usage statistics.")
+    usage: LegacyUsage = Field(description="Usage statistics.")
     object_: str = Field(alias="object", description="Object type (e.g. 'chat.completion').")
 
 
-class ChatCompletionChunk(APIResponse):
+class LegacyChatCompletionChunk(APIResponse):
     """Chat completion response chunk."""
 
-    choices: List[ChoicesChunk] = Field(description="List of completion choice chunks.")
+    choices: List[LegacyChoiceChunk] = Field(description="List of completion choice chunks.")
     created: int = Field(description="Creation timestamp (Unix time).")
     model: str = Field(description="Model name used for generation.")
     object_: str = Field(alias="object", description="Object type (e.g. 'chat.completion.chunk').")
-    usage: Optional[Usage] = Field(default=None, description="Usage statistics.")
+    usage: Optional[LegacyUsage] = Field(default=None, description="Usage statistics.")
+
+
+LegacyFunctionParametersProperty.model_rebuild()
+LegacyMessage.model_rebuild()
+
+
+class FunctionCall(LegacyFunctionCall):
+    pass
+
+
+class FewShotExample(LegacyFewShotExample):
+    pass
+
+
+class Storage(LegacyStorage):
+    pass
+
+
+class Usage(LegacyUsage):
+    pass
+
+
+class FunctionParametersProperty(LegacyFunctionParametersProperty):
+    pass
+
+
+class FunctionParameters(LegacyFunctionParameters):
+    pass
+
+
+class Function(LegacyFunction):
+    pass
+
+
+class ChatFunctionCall(LegacyChatFunctionCall):
+    pass
+
+
+MessagesRole = LegacyMessageRole
+
+
+class Messages(LegacyMessage):
+    pass
+
+
+class MessagesChunk(LegacyMessageChunk):
+    pass
+
+
+class Choices(LegacyChoice):
+    pass
+
+
+class ChoicesChunk(LegacyChoiceChunk):
+    pass
+
+
+class Chat(LegacyChat):
+    pass
+
+
+class ChatCompletion(LegacyChatCompletion):
+    pass
+
+
+class ChatCompletionChunk(LegacyChatCompletionChunk):
+    pass
+
+
+__all__ = (
+    "Chat",
+    "ChatCompletion",
+    "ChatCompletionChunk",
+    "ChatFunctionCall",
+    "Choices",
+    "ChoicesChunk",
+    "FewShotExample",
+    "Function",
+    "FunctionCall",
+    "FunctionParameters",
+    "FunctionParametersProperty",
+    "LegacyChat",
+    "LegacyChatCompletion",
+    "LegacyChatCompletionChunk",
+    "LegacyChatFunctionCall",
+    "LegacyChoice",
+    "LegacyChoiceChunk",
+    "LegacyFewShotExample",
+    "LegacyFunction",
+    "LegacyFunctionCall",
+    "LegacyFunctionParameters",
+    "LegacyFunctionParametersProperty",
+    "LegacyMessage",
+    "LegacyMessageChunk",
+    "LegacyMessageRole",
+    "LegacyStorage",
+    "LegacyUsage",
+    "Messages",
+    "MessagesChunk",
+    "MessagesRole",
+    "Storage",
+    "Usage",
+)
