@@ -25,7 +25,7 @@ import pydantic
 from typing_extensions import Self
 
 from gigachat._types import FileTypes
-from gigachat.api import auth, chat_completions, embeddings, files, legacy_chat, models, tools
+from gigachat.api import auth, chat, chat_completions, embeddings, files, models, tools
 from gigachat.assistants import AssistantsAsyncClient, AssistantsSyncClient
 from gigachat.authentication import _awith_auth, _awith_auth_stream, _with_auth, _with_auth_stream
 from gigachat.context import authorization_cvar
@@ -101,7 +101,7 @@ def _get_auth_kwargs(settings: Settings) -> Dict[str, Any]:
 
 
 def _validate_response_format(payload: Union[Chat, Dict[str, Any], str]) -> None:
-    """Raise TypeError if response_format is a Pydantic model on the legacy chat create path."""
+    """Raise TypeError if response_format is a Pydantic model on the v1 chat create path."""
     if isinstance(payload, dict):
         response_format = payload.get("response_format")
     elif isinstance(payload, Chat):
@@ -578,30 +578,30 @@ class GigaChatSyncClient(_BaseClient):
 
     @_with_retry
     @_with_auth
-    def _legacy_chat_create(self, payload: Union[Chat, Dict[str, Any], str]) -> ChatCompletion:
-        """Return a legacy chat completion based on the provided messages."""
+    def _chat_v1_create(self, payload: Union[Chat, Dict[str, Any], str]) -> ChatCompletion:
+        """Return a v1 chat completion based on the provided messages."""
         _validate_response_format(payload)
         chat_data = _parse_chat(payload, self._settings)
-        return legacy_chat.chat_sync(self._client, chat=chat_data, access_token=self.token)
+        return chat.chat_sync(self._client, chat=chat_data, access_token=self.token)
 
     @_with_retry_stream
     @_with_auth_stream
-    def _legacy_chat_stream(self, payload: Union[Chat, Dict[str, Any], str]) -> Iterator[ChatCompletionChunk]:
-        """Return a legacy streaming chat completion based on the provided messages."""
+    def _chat_v1_stream(self, payload: Union[Chat, Dict[str, Any], str]) -> Iterator[ChatCompletionChunk]:
+        """Return a v1 streaming chat completion based on the provided messages."""
         chat_data = _parse_chat(payload, self._settings)
 
-        yield from legacy_chat.stream_sync(self._client, chat=chat_data, access_token=self.token)
+        yield from chat.stream_sync(self._client, chat=chat_data, access_token=self.token)
 
-    def _legacy_chat_parse(
+    def _chat_v1_parse(
         self,
         payload: Union[Chat, Dict[str, Any], str],
         *,
         response_format: Type[ModelT],
         strict: bool = True,
     ) -> Tuple[ChatCompletion, ModelT]:
-        """Send a legacy chat request and parse the response into a structured object."""
+        """Send a v1 chat request and parse the response into a structured object."""
         chat_data = _prepare_chat_for_parse(payload, self._settings, response_format, strict)
-        completion = self._legacy_chat_create(chat_data)
+        completion = self._chat_v1_create(chat_data)
         parsed = _parse_completion(completion, response_format)
         return completion, parsed
 
@@ -612,18 +612,18 @@ class GigaChatSyncClient(_BaseClient):
         response_format: Type[ModelT],
         strict: bool = True,
     ) -> Tuple[ChatCompletion, ModelT]:
-        """Parse via the old chat contract compatibility shim.
+        """Parse via the v1 chat contract compatibility shim.
 
         .. note:: **Beta.** This feature may not work correctly with all model versions.
 
         *response_format* accepts a Pydantic ``BaseModel`` subclass.
-        The method derives a JSON Schema from it, sends the request via the old
+        The method derives a JSON Schema from it, sends the request via the v1
         chat contract, then parses and validates ``message.content``.
 
         Raise :class:`~gigachat.exceptions.LengthFinishReasonError` if
         ``finish_reason`` is ``"length"`` (truncated response).
         """
-        return self._legacy_chat_parse(payload, response_format=response_format, strict=strict)
+        return self._chat_v1_parse(payload, response_format=response_format, strict=strict)
 
     @_with_retry
     @_with_auth
@@ -648,8 +648,8 @@ class GigaChatSyncClient(_BaseClient):
         return tools.ai_check_sync(self._client, input_=text, model=model, access_token=self.token)
 
     def stream(self, payload: Union[Chat, Dict[str, Any], str]) -> Iterator[ChatCompletionChunk]:
-        """Stream via the old chat contract compatibility shim."""
-        yield from self._legacy_chat_stream(payload)
+        """Stream via the v1 chat contract compatibility shim."""
+        yield from self._chat_v1_stream(payload)
 
 
 class GigaChatAsyncClient(_BaseClient):
@@ -850,12 +850,12 @@ class GigaChatAsyncClient(_BaseClient):
 
     @_awith_retry
     @_awith_auth
-    async def _legacy_achat_create(self, payload: Union[Chat, Dict[str, Any], str]) -> ChatCompletion:
-        """Return a legacy chat completion based on the provided messages."""
+    async def _achat_v1_create(self, payload: Union[Chat, Dict[str, Any], str]) -> ChatCompletion:
+        """Return a v1 chat completion based on the provided messages."""
         _validate_response_format(payload)
         chat_data = _parse_chat(payload, self._settings)
 
-        return await legacy_chat.chat_async(self._aclient, chat=chat_data, access_token=self.token)
+        return await chat.chat_async(self._aclient, chat=chat_data, access_token=self.token)
 
     @_awith_retry
     @_awith_auth
@@ -875,10 +875,10 @@ class GigaChatAsyncClient(_BaseClient):
 
     @_awith_retry_stream
     @_awith_auth_stream
-    def _legacy_achat_stream(self, payload: Union[Chat, Dict[str, Any], str]) -> AsyncIterator[ChatCompletionChunk]:
-        """Return a legacy streaming chat completion based on the provided messages."""
+    def _achat_v1_stream(self, payload: Union[Chat, Dict[str, Any], str]) -> AsyncIterator[ChatCompletionChunk]:
+        """Return a v1 streaming chat completion based on the provided messages."""
         chat_data = _parse_chat(payload, self._settings)
-        return legacy_chat.stream_async(self._aclient, chat=chat_data, access_token=self.token)
+        return chat.stream_async(self._aclient, chat=chat_data, access_token=self.token)
 
     async def _achat_parse(
         self,
@@ -893,16 +893,16 @@ class GigaChatAsyncClient(_BaseClient):
         parsed = _parse_primary_completion(completion, response_format)
         return completion, parsed
 
-    async def _legacy_achat_parse(
+    async def _achat_v1_parse(
         self,
         payload: Union[Chat, Dict[str, Any], str],
         *,
         response_format: Type[ModelT],
         strict: bool = True,
     ) -> Tuple[ChatCompletion, ModelT]:
-        """Send a legacy chat request and parse the response into *response_format*."""
+        """Send a v1 chat request and parse the response into *response_format*."""
         chat_data = _prepare_chat_for_parse(payload, self._settings, response_format, strict)
-        completion = await self._legacy_achat_create(chat_data)
+        completion = await self._achat_v1_create(chat_data)
         parsed = _parse_completion(completion, response_format)
         return completion, parsed
 
@@ -913,7 +913,7 @@ class GigaChatAsyncClient(_BaseClient):
         response_format: Type[ModelT],
         strict: bool = True,
     ) -> Tuple[ChatCompletion, ModelT]:
-        """Parse via the old async chat contract compatibility shim.
+        """Parse via the v1 async chat contract compatibility shim.
 
         .. note:: **Beta.** This feature may not work correctly with all model versions.
 
@@ -922,7 +922,7 @@ class GigaChatAsyncClient(_BaseClient):
         Raise :class:`~gigachat.exceptions.LengthFinishReasonError` if
         ``finish_reason`` is ``"length"`` (truncated response).
         """
-        return await self._legacy_achat_parse(payload, response_format=response_format, strict=strict)
+        return await self._achat_v1_parse(payload, response_format=response_format, strict=strict)
 
     @_awith_retry
     @_awith_auth
@@ -987,8 +987,8 @@ class GigaChatAsyncClient(_BaseClient):
         return await tools.ai_check_async(self._aclient, input_=text, model=model, access_token=self.token)
 
     def astream(self, payload: Union[Chat, Dict[str, Any], str]) -> AsyncIterator[ChatCompletionChunk]:
-        """Stream via the old async chat contract compatibility shim."""
-        return self._legacy_achat_stream(payload)
+        """Stream via the v1 async chat contract compatibility shim."""
+        return self._achat_v1_stream(payload)
 
 
 class GigaChat(GigaChatSyncClient, GigaChatAsyncClient):

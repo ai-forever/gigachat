@@ -7,7 +7,7 @@ import pytest
 from pydantic import BaseModel, ValidationError
 from pytest_httpx import HTTPXMock
 
-from gigachat.api import chat_completions, legacy_chat
+from gigachat.api import chat, chat_completions
 from gigachat.client import (
     GIGACHAT_MODEL,
     GigaChatAsyncClient,
@@ -754,7 +754,7 @@ def test_chat_legacy_create_uses_explicit_legacy_transport(monkeypatch: pytest.M
         captured["access_token"] = access_token
         return ChatCompletion.model_validate(CHAT_COMPLETION)
 
-    monkeypatch.setattr(legacy_chat, "chat_sync", fake_chat_sync)
+    monkeypatch.setattr(chat, "chat_sync", fake_chat_sync)
 
     with GigaChatSyncClient(base_url=BASE_URL, access_token=ACCESS_TOKEN) as client:
         response = client.chat("text")
@@ -784,7 +784,7 @@ def test_chat_legacy_stream_uses_explicit_legacy_transport(monkeypatch: pytest.M
             ]
         )
 
-    monkeypatch.setattr(legacy_chat, "stream_sync", fake_stream_sync)
+    monkeypatch.setattr(chat, "stream_sync", fake_stream_sync)
 
     with GigaChatSyncClient(base_url=BASE_URL, access_token=ACCESS_TOKEN) as client:
         response = list(client.stream("text"))
@@ -964,7 +964,7 @@ async def test_achat_legacy_create_uses_explicit_legacy_transport(monkeypatch: p
         captured["access_token"] = access_token
         return ChatCompletion.model_validate(CHAT_COMPLETION)
 
-    monkeypatch.setattr(legacy_chat, "chat_async", fake_chat_async)
+    monkeypatch.setattr(chat, "chat_async", fake_chat_async)
 
     async with GigaChatAsyncClient(base_url=BASE_URL, access_token=ACCESS_TOKEN) as client:
         response = await client.achat("text")
@@ -1166,7 +1166,7 @@ async def test_achat_legacy_stream_uses_explicit_legacy_transport(monkeypatch: p
         captured["access_token"] = access_token
         return iterate()
 
-    monkeypatch.setattr(legacy_chat, "stream_async", fake_stream_async)
+    monkeypatch.setattr(chat, "stream_async", fake_stream_async)
 
     async with GigaChatAsyncClient(base_url=BASE_URL, access_token=ACCESS_TOKEN) as client:
         response = [chunk async for chunk in client.astream("text")]
