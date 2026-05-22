@@ -1,4 +1,5 @@
 import json
+from copy import deepcopy
 from pathlib import Path
 from typing import Any, Dict, cast
 
@@ -11,13 +12,12 @@ from gigachat.models import (
 from gigachat.models import (
     ChatCompletionRequest,
     ChatCompletionResponse,
-    LegacyChat,
-    LegacyChatCompletion,
-    LegacyChatCompletionChunk,
 )
+from gigachat.models import chat as chat_models
 from gigachat.models.chat import (
     Chat,
     ChatCompletion,
+    ChatCompletionChunk,
     Function,
     FunctionCall,
     FunctionParameters,
@@ -86,40 +86,38 @@ def test_function_parameters_default() -> None:
     assert params.type_ == "object"
 
 
-def test_chat_module_exports_legacy_aliases() -> None:
-    assert issubclass(Chat, LegacyChat)
-    assert issubclass(ChatCompletion, LegacyChatCompletion)
+def test_chat_module_exports_public_models_without_legacy_names() -> None:
+    assert Chat.__name__ == "Chat"
+    assert ChatCompletion.__name__ == "ChatCompletion"
+    assert all(not name.startswith("Legacy") for name in chat_models.__all__)
 
 
-def test_gigachat_models_exports_keep_legacy_aliases_and_primary_contracts_separate() -> None:
-    assert issubclass(CompatChatCompletionChunk, LegacyChatCompletionChunk)
+def test_gigachat_models_exports_keep_compat_and_primary_contracts_separate() -> None:
+    assert cast(object, CompatChatCompletionChunk) is cast(object, ChatCompletionChunk)
     assert cast(object, ChatCompletionRequest) is not cast(object, Chat)
     assert cast(object, ChatCompletionResponse) is not cast(object, ChatCompletion)
     assert cast(object, PrimaryChatCompletionChunk) is not cast(object, CompatChatCompletionChunk)
 
 
-def test_legacy_chat_request_round_trip_unchanged() -> None:
+def test_chat_request_round_trip_unchanged() -> None:
     payload = json.loads((TEST_DATA_DIR / "chat.json").read_text(encoding="utf-8"))
+    expected_payload = deepcopy(payload)
+    expected_payload["messages"][0].pop("reasoning_effort")
 
     compat_model = Chat.model_validate(payload)
-    legacy_model = LegacyChat.model_validate(payload)
 
-    assert compat_model.model_dump(exclude_none=True, by_alias=True) == legacy_model.model_dump(
-        exclude_none=True, by_alias=True
-    )
+    assert compat_model.model_dump(exclude_none=True, by_alias=True) == expected_payload
 
 
-def test_legacy_chat_completion_response_round_trip_unchanged() -> None:
+def test_chat_completion_response_round_trip_unchanged() -> None:
     payload = json.loads((TEST_DATA_DIR / "chat_completion.json").read_text(encoding="utf-8"))
 
     compat_model = ChatCompletion.model_validate(payload)
-    legacy_model = LegacyChatCompletion.model_validate(payload)
 
     assert compat_model.model_dump(exclude_none=True, by_alias=True) == payload
-    assert legacy_model.model_dump(exclude_none=True, by_alias=True) == payload
 
 
-def test_primary_response_contract_does_not_validate_as_legacy_chat_completion() -> None:
+def test_primary_response_contract_does_not_validate_as_chat_completion() -> None:
     payload = {
         "model": "GigaChat-2-Max",
         "created_at": 1760434636,
