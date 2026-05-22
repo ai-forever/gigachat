@@ -195,9 +195,7 @@ class Chat(BaseModel):
     function_call: Optional[Union[Literal["auto", "none"], ChatFunctionCall]] = Field(
         default=None, description="Controls which function is called."
     )
-    functions: Optional[List[Function]] = Field(
-        default=None, description="List of functions available to the model."
-    )
+    functions: Optional[List[Function]] = Field(default=None, description="List of functions available to the model.")
     flags: Optional[List[str]] = Field(default=None, description="List of feature flags.")
     storage: Optional[Storage] = Field(default=None, description="Context storage settings.")
     function_ranker: Optional[FunctionRanker] = Field(default=None, description="Function/tool ranking settings.")

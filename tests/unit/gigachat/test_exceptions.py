@@ -1,4 +1,4 @@
-from typing import Type
+from typing import Type, cast
 
 import httpx
 import pytest
@@ -16,6 +16,7 @@ from gigachat.exceptions import (
     ServerError,
     UnprocessableEntityError,
 )
+from gigachat.models.chat import ChatCompletion
 
 
 def test_response_error_init() -> None:
@@ -62,7 +63,7 @@ def test_rate_limit_retry_after_none_headers() -> None:
 
 
 def test_length_finish_reason_error_message() -> None:
-    completion = object()
+    completion = cast(ChatCompletion, object())
     exc = LengthFinishReasonError(completion=completion)
     assert exc.completion is completion
     assert str(exc) == "Could not parse response content as the length limit was reached"

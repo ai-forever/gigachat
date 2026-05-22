@@ -16,7 +16,6 @@ from gigachat.models import (
 from gigachat.models import chat as chat_models
 from gigachat.models.chat import (
     Chat,
-    Chat,
     ChatCompletion,
     ChatCompletionChunk,
     Function,
