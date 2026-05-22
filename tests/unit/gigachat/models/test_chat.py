@@ -16,11 +16,13 @@ from gigachat.models import (
 from gigachat.models import chat as chat_models
 from gigachat.models.chat import (
     Chat,
+    Chat,
     ChatCompletion,
     ChatCompletionChunk,
     Function,
     FunctionCall,
     FunctionParameters,
+    FunctionRanker,
     Messages,
     MessagesRole,
     Usage,
@@ -84,6 +86,22 @@ def test_usage_validation() -> None:
 def test_function_parameters_default() -> None:
     params = FunctionParameters()
     assert params.type_ == "object"
+
+
+def test_chat_function_ranker_from_dict() -> None:
+    chat = Chat(messages=[], function_ranker={"enabled": True, "top_n": 3})
+
+    assert isinstance(chat.function_ranker, FunctionRanker)
+    assert chat.function_ranker.enabled is True
+    assert chat.function_ranker.top_n == 3
+    assert chat.model_dump(exclude_none=True)["function_ranker"] == {"enabled": True, "top_n": 3}
+
+
+def test_chat_function_ranker_omitted_by_default() -> None:
+    chat = Chat(messages=[])
+
+    assert chat.function_ranker is None
+    assert "function_ranker" not in chat.model_dump(exclude_none=True)
 
 
 def test_chat_module_exports_public_models_without_legacy_names() -> None:
