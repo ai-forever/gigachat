@@ -43,7 +43,7 @@ class ChatNamespace:
 
     def __call__(self, payload: Union[Chat, Dict[str, Any], str]) -> ChatCompletion:
         """Call the root chat compatibility shim."""
-        return self._base_client._chat_v1_create(payload)
+        return self._base_client._chat(payload)
 
 
 class AsyncChatNamespace:
@@ -78,4 +78,4 @@ class AsyncChatNamespace:
 
     async def __call__(self, payload: Union[Chat, Dict[str, Any], str]) -> ChatCompletion:
         """Call the async root chat compatibility shim."""
-        return await self._base_client._achat_v1_create(payload)
+        return await self._base_client._achat(payload)
