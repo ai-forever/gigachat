@@ -1,6 +1,6 @@
-# Формат primary `chat/completions`
+# Формат primary `v2/chat/completions`
 
-Этот документ фиксирует wire-format нового primary chat surface, который в рабочих материалах иногда назывался `v2`.
+Этот документ фиксирует wire-format нового primary chat surface, который называется `v2/chat/completions`.
 Он также учитывает текущую толерантную реализацию SDK в `src/gigachat/models/chat_completions.py`.
 
 ## Что важно заранее
