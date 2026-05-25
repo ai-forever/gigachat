@@ -1,4 +1,5 @@
 import base64
+import warnings
 from http import HTTPStatus
 from typing import Any, Dict, Literal, Optional
 
@@ -7,7 +8,7 @@ import httpx
 from gigachat._types import FileTypes
 from gigachat.api.utils import build_headers, build_x_headers, execute_request_async, execute_request_sync
 from gigachat.exceptions import AuthenticationError, ResponseError
-from gigachat.models.files import DeletedFile, Image, UploadedFile, UploadedFiles
+from gigachat.models.files import DeletedFile, File, Image, UploadedFile, UploadedFiles
 
 
 def _get_file_kwargs(
@@ -153,7 +154,7 @@ async def delete_file_async(
     return await execute_request_async(client, kwargs, DeletedFile)
 
 
-def _get_image_kwargs(
+def _get_file_content_kwargs(
     *,
     file_id: str,
     access_token: Optional[str] = None,
@@ -167,14 +168,38 @@ def _get_image_kwargs(
     }
 
 
-def _build_image_response(response: httpx.Response) -> Image:
+def _build_file_content_response(response: httpx.Response) -> File:
     if response.status_code == HTTPStatus.OK:
         x_headers = build_x_headers(response)
-        return Image(x_headers=x_headers, content=base64.b64encode(response.content).decode())
+        return File(x_headers=x_headers, content=base64.b64encode(response.content).decode())
     elif response.status_code == HTTPStatus.UNAUTHORIZED:
         raise AuthenticationError(response.url, response.status_code, response.content, response.headers)
     else:
         raise ResponseError(response.url, response.status_code, response.content, response.headers)
+
+
+def get_file_content_sync(
+    client: httpx.Client,
+    *,
+    file_id: str,
+    access_token: Optional[str] = None,
+) -> File:
+    """Return file content in base64 encoding."""
+    kwargs = _get_file_content_kwargs(access_token=access_token, file_id=file_id)
+    response = client.request(**kwargs)
+    return _build_file_content_response(response)
+
+
+async def get_file_content_async(
+    client: httpx.AsyncClient,
+    *,
+    file_id: str,
+    access_token: Optional[str] = None,
+) -> File:
+    """Return file content in base64 encoding."""
+    kwargs = _get_file_content_kwargs(access_token=access_token, file_id=file_id)
+    response = await client.request(**kwargs)
+    return _build_file_content_response(response)
 
 
 def get_image_sync(
@@ -183,10 +208,14 @@ def get_image_sync(
     file_id: str,
     access_token: Optional[str] = None,
 ) -> Image:
-    """Return an image in base64 encoding."""
-    kwargs = _get_image_kwargs(access_token=access_token, file_id=file_id)
-    response = client.request(**kwargs)
-    return _build_image_response(response)
+    """Use get_file_content_sync; this alias is deprecated."""
+    warnings.warn(
+        "Function 'get_image_sync' is deprecated, use 'get_file_content_sync'.",
+        DeprecationWarning,
+        stacklevel=2,
+    )
+    file = get_file_content_sync(client, file_id=file_id, access_token=access_token)
+    return Image(x_headers=file.x_headers, content=file.content)
 
 
 async def get_image_async(
@@ -195,7 +224,11 @@ async def get_image_async(
     file_id: str,
     access_token: Optional[str] = None,
 ) -> Image:
-    """Return an image in base64 encoding."""
-    kwargs = _get_image_kwargs(access_token=access_token, file_id=file_id)
-    response = await client.request(**kwargs)
-    return _build_image_response(response)
+    """Use get_file_content_async; this alias is deprecated."""
+    warnings.warn(
+        "Function 'get_image_async' is deprecated, use 'get_file_content_async'.",
+        DeprecationWarning,
+        stacklevel=2,
+    )
+    file = await get_file_content_async(client, file_id=file_id, access_token=access_token)
+    return Image(x_headers=file.x_headers, content=file.content)

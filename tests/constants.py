@@ -55,6 +55,8 @@ BALANCE_URL = f"{BASE_URL}/balance"
 CONVERT_FUNCTIONS_URL = f"{BASE_URL}/functions/convert"
 AI_CHECK_URL = f"{BASE_URL}/ai/check"
 EMBEDDINGS_URL = f"{BASE_URL}/embeddings"
+BATCHES_URL = f"{BASE_URL}/batches"
+BATCH_BY_ID_URL = f"{BASE_URL}/batches?batch_id=batch_1"
 GET_ASSISTANTS_URL = f"{BASE_URL}/assistants"
 POST_ASSISTANTS_URL = f"{BASE_URL}/assistants"
 POST_ASSISTANT_MODIFY_URL = f"{BASE_URL}/assistants/modify"
@@ -85,6 +87,9 @@ POST_ASSISTANT_FILES_DELETE = get_json("assistants/post_assistant_files_delete.j
 POST_ASSISTANT_DELETE = get_json("assistants/post_assistant_delete.json")
 
 EMBEDDINGS = get_json("embeddings.json")
+BATCH = get_json("batch.json")
+BATCHES = get_json("batches.json")
+BATCHES_LIST = BATCHES["batches"]
 
 FILES = get_json("post_files.json")
 GET_FILE = get_json("get_file.json")

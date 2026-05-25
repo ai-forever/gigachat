@@ -186,12 +186,12 @@ def test_chat(httpx_mock: HTTPXMock) -> None:
     _assert_no_deprecation_warnings(caught)
 
 
-def test_chat_root_shim_uses_legacy_route_when_primary_route_differs(httpx_mock: HTTPXMock) -> None:
+def test_chat_root_shim_uses_chat_v1_route_when_primary_route_differs(httpx_mock: HTTPXMock) -> None:
     primary_url_token = chat_completions_url_cvar.set("/chat/completions/primary")
-    legacy_url_token = chat_url_cvar.set("/chat/completions/legacy")
+    chat_v1_url_token = chat_url_cvar.set("/chat/completions/chat_v1")
 
     try:
-        httpx_mock.add_response(url=f"{BASE_URL}/chat/completions/legacy", json=CHAT_COMPLETION)
+        httpx_mock.add_response(url=f"{BASE_URL}/chat/completions/chat_v1", json=CHAT_COMPLETION)
 
         with GigaChatSyncClient(base_url=BASE_URL, access_token=ACCESS_TOKEN) as client:
             with warnings.catch_warnings(record=True) as caught:
@@ -199,13 +199,13 @@ def test_chat_root_shim_uses_legacy_route_when_primary_route_differs(httpx_mock:
                 response = client.chat("text")
     finally:
         chat_completions_url_cvar.reset(primary_url_token)
-        chat_url_cvar.reset(legacy_url_token)
+        chat_url_cvar.reset(chat_v1_url_token)
 
     requests = httpx_mock.get_requests()
     assert isinstance(response, ChatCompletion)
     assert not isinstance(response, ChatCompletionResponse)
     assert len(requests) == 1
-    assert str(requests[0].url) == f"{BASE_URL}/chat/completions/legacy"
+    assert str(requests[0].url) == f"{BASE_URL}/chat/completions/chat_v1"
     _assert_no_deprecation_warnings(caught)
 
 
@@ -220,7 +220,7 @@ def test_chat_rejects_pydantic_response_format_on_chat() -> None:
             client.chat(payload)
 
 
-def test_chat_legacy_create_does_not_warn(httpx_mock: HTTPXMock) -> None:
+def test_chat_v1_create_does_not_warn(httpx_mock: HTTPXMock) -> None:
     httpx_mock.add_response(url=CHAT_URL, json=CHAT_COMPLETION)
 
     with GigaChatSyncClient(base_url=BASE_URL, access_token=ACCESS_TOKEN) as client:
@@ -234,7 +234,7 @@ def test_chat_legacy_create_does_not_warn(httpx_mock: HTTPXMock) -> None:
 
 def test_chat_create_uses_primary_route(httpx_mock: HTTPXMock) -> None:
     primary_url_token = chat_completions_url_cvar.set("/chat/completions/primary")
-    legacy_url_token = chat_url_cvar.set("/chat/completions/legacy")
+    chat_v1_url_token = chat_url_cvar.set("/chat/completions/chat_v1")
 
     try:
         httpx_mock.add_response(url=f"{BASE_URL}/chat/completions/primary", json=PRIMARY_CHAT_COMPLETION)
@@ -243,7 +243,7 @@ def test_chat_create_uses_primary_route(httpx_mock: HTTPXMock) -> None:
             response = client.chat.create("text")
     finally:
         chat_completions_url_cvar.reset(primary_url_token)
-        chat_url_cvar.reset(legacy_url_token)
+        chat_url_cvar.reset(chat_v1_url_token)
 
     requests = httpx_mock.get_requests()
     assert isinstance(response, ChatCompletionResponse)
@@ -251,7 +251,7 @@ def test_chat_create_uses_primary_route(httpx_mock: HTTPXMock) -> None:
     assert str(requests[0].url) == f"{BASE_URL}/chat/completions/primary"
 
 
-def test_chat_create_uses_v2_primary_route_with_legacy_v1_base_url_and_token(httpx_mock: HTTPXMock) -> None:
+def test_chat_create_uses_v2_primary_route_with_v1_base_url_and_token(httpx_mock: HTTPXMock) -> None:
     versioned_base_url = "https://host/v1"
     httpx_mock.add_response(url=f"{versioned_base_url}/token", json=PASSWORD_TOKEN_VALID)
     httpx_mock.add_response(url="https://host/v2/chat/completions", json=PRIMARY_CHAT_COMPLETION)
@@ -268,7 +268,7 @@ def test_chat_create_uses_v2_primary_route_with_legacy_v1_base_url_and_token(htt
 
 def test_chat_create_normalizes_string_tools_in_request_body(httpx_mock: HTTPXMock) -> None:
     primary_url_token = chat_completions_url_cvar.set("/chat/completions/primary")
-    legacy_url_token = chat_url_cvar.set("/chat/completions/legacy")
+    chat_v1_url_token = chat_url_cvar.set("/chat/completions/chat_v1")
 
     try:
         httpx_mock.add_response(url=f"{BASE_URL}/chat/completions/primary", json=PRIMARY_CHAT_COMPLETION)
@@ -282,7 +282,7 @@ def test_chat_create_normalizes_string_tools_in_request_body(httpx_mock: HTTPXMo
             )
     finally:
         chat_completions_url_cvar.reset(primary_url_token)
-        chat_url_cvar.reset(legacy_url_token)
+        chat_url_cvar.reset(chat_v1_url_token)
 
     requests = httpx_mock.get_requests()
     request_body = json.loads(requests[0].content)
@@ -294,28 +294,28 @@ def test_chat_create_normalizes_string_tools_in_request_body(httpx_mock: HTTPXMo
     ]
 
 
-def test_chat_legacy_create_uses_legacy_route_when_primary_route_differs(httpx_mock: HTTPXMock) -> None:
+def test_chat_v1_create_uses_chat_v1_route_when_primary_route_differs(httpx_mock: HTTPXMock) -> None:
     primary_url_token = chat_completions_url_cvar.set("/chat/completions/primary")
-    legacy_url_token = chat_url_cvar.set("/chat/completions/legacy")
+    chat_v1_url_token = chat_url_cvar.set("/chat/completions/chat_v1")
 
     try:
-        httpx_mock.add_response(url=f"{BASE_URL}/chat/completions/legacy", json=CHAT_COMPLETION)
+        httpx_mock.add_response(url=f"{BASE_URL}/chat/completions/chat_v1", json=CHAT_COMPLETION)
 
         with GigaChatSyncClient(base_url=BASE_URL, access_token=ACCESS_TOKEN) as client:
             response = client.chat("text")
     finally:
         chat_completions_url_cvar.reset(primary_url_token)
-        chat_url_cvar.reset(legacy_url_token)
+        chat_url_cvar.reset(chat_v1_url_token)
 
     requests = httpx_mock.get_requests()
     assert isinstance(response, ChatCompletion)
     assert len(requests) == 1
-    assert str(requests[0].url) == f"{BASE_URL}/chat/completions/legacy"
+    assert str(requests[0].url) == f"{BASE_URL}/chat/completions/chat_v1"
 
 
 def test_chat_stream_uses_primary_route(httpx_mock: HTTPXMock) -> None:
     primary_url_token = chat_completions_url_cvar.set("/chat/completions/primary")
-    legacy_url_token = chat_url_cvar.set("/chat/completions/legacy")
+    chat_v1_url_token = chat_url_cvar.set("/chat/completions/chat_v1")
 
     try:
         httpx_mock.add_response(
@@ -328,7 +328,7 @@ def test_chat_stream_uses_primary_route(httpx_mock: HTTPXMock) -> None:
             response = list(client.chat.stream("text"))
     finally:
         chat_completions_url_cvar.reset(primary_url_token)
-        chat_url_cvar.reset(legacy_url_token)
+        chat_url_cvar.reset(chat_v1_url_token)
 
     requests = httpx_mock.get_requests()
     assert len(response) == 2
@@ -343,13 +343,13 @@ def test_chat_stream_uses_primary_route(httpx_mock: HTTPXMock) -> None:
     assert str(requests[0].url) == f"{BASE_URL}/chat/completions/primary"
 
 
-def test_chat_legacy_stream_uses_legacy_route_when_primary_route_differs(httpx_mock: HTTPXMock) -> None:
+def test_chat_v1_stream_uses_chat_v1_route_when_primary_route_differs(httpx_mock: HTTPXMock) -> None:
     primary_url_token = chat_completions_url_cvar.set("/chat/completions/primary")
-    legacy_url_token = chat_url_cvar.set("/chat/completions/legacy")
+    chat_v1_url_token = chat_url_cvar.set("/chat/completions/chat_v1")
 
     try:
         httpx_mock.add_response(
-            url=f"{BASE_URL}/chat/completions/legacy",
+            url=f"{BASE_URL}/chat/completions/chat_v1",
             content=CHAT_COMPLETION_STREAM,
             headers=HEADERS_STREAM,
         )
@@ -358,13 +358,13 @@ def test_chat_legacy_stream_uses_legacy_route_when_primary_route_differs(httpx_m
             response = list(client.stream("text"))
     finally:
         chat_completions_url_cvar.reset(primary_url_token)
-        chat_url_cvar.reset(legacy_url_token)
+        chat_url_cvar.reset(chat_v1_url_token)
 
     requests = httpx_mock.get_requests()
     assert len(response) == 3
     assert all(isinstance(chunk, ChatCompletionChunk) for chunk in response)
     assert len(requests) == 1
-    assert str(requests[0].url) == f"{BASE_URL}/chat/completions/legacy"
+    assert str(requests[0].url) == f"{BASE_URL}/chat/completions/chat_v1"
 
 
 def test_chat_create_uses_explicit_primary_transport(monkeypatch: pytest.MonkeyPatch) -> None:
@@ -432,7 +432,7 @@ def test_chat_stream_uses_explicit_primary_transport(monkeypatch: pytest.MonkeyP
 
 def test_chat_parse_uses_primary_route(httpx_mock: HTTPXMock) -> None:
     primary_url_token = chat_completions_url_cvar.set("/chat/completions/primary")
-    legacy_url_token = chat_url_cvar.set("/chat/completions/legacy")
+    chat_v1_url_token = chat_url_cvar.set("/chat/completions/chat_v1")
     response_payload = copy.deepcopy(PRIMARY_CHAT_COMPLETION)
     response_payload["messages"][0]["content"] = [
         {"text": '{"steps": ["Переносим 7 в правую часть", "Делим на 8"], '},
@@ -446,7 +446,7 @@ def test_chat_parse_uses_primary_route(httpx_mock: HTTPXMock) -> None:
             completion, parsed = client.chat.parse("Solve 8x+7=-23", response_format=MathResult)
     finally:
         chat_completions_url_cvar.reset(primary_url_token)
-        chat_url_cvar.reset(legacy_url_token)
+        chat_url_cvar.reset(chat_v1_url_token)
 
     requests = httpx_mock.get_requests()
     request_body = json.loads(requests[0].content)
@@ -704,13 +704,13 @@ def test_stream_access_token(httpx_mock: HTTPXMock) -> None:
     _assert_no_deprecation_warnings(caught)
 
 
-def test_stream_root_shim_uses_legacy_route_when_primary_route_differs(httpx_mock: HTTPXMock) -> None:
+def test_stream_root_shim_uses_chat_v1_route_when_primary_route_differs(httpx_mock: HTTPXMock) -> None:
     primary_url_token = chat_completions_url_cvar.set("/chat/completions/primary")
-    legacy_url_token = chat_url_cvar.set("/chat/completions/legacy")
+    chat_v1_url_token = chat_url_cvar.set("/chat/completions/chat_v1")
 
     try:
         httpx_mock.add_response(
-            url=f"{BASE_URL}/chat/completions/legacy",
+            url=f"{BASE_URL}/chat/completions/chat_v1",
             content=CHAT_COMPLETION_STREAM,
             headers=HEADERS_STREAM,
         )
@@ -721,18 +721,18 @@ def test_stream_root_shim_uses_legacy_route_when_primary_route_differs(httpx_moc
                 response = list(client.stream("text"))
     finally:
         chat_completions_url_cvar.reset(primary_url_token)
-        chat_url_cvar.reset(legacy_url_token)
+        chat_url_cvar.reset(chat_v1_url_token)
 
     requests = httpx_mock.get_requests()
     assert len(response) == 3
     assert all(isinstance(chunk, ChatCompletionChunk) for chunk in response)
     assert not any(isinstance(chunk, PrimaryChatCompletionChunk) for chunk in response)
     assert len(requests) == 1
-    assert str(requests[0].url) == f"{BASE_URL}/chat/completions/legacy"
+    assert str(requests[0].url) == f"{BASE_URL}/chat/completions/chat_v1"
     _assert_no_deprecation_warnings(caught)
 
 
-def test_chat_legacy_stream_does_not_warn(httpx_mock: HTTPXMock) -> None:
+def test_chat_v1_stream_does_not_warn(httpx_mock: HTTPXMock) -> None:
     httpx_mock.add_response(url=CHAT_URL, content=CHAT_COMPLETION_STREAM, headers=HEADERS_STREAM)
 
     with GigaChatSyncClient(base_url=BASE_URL, access_token=ACCESS_TOKEN) as client:
@@ -745,7 +745,7 @@ def test_chat_legacy_stream_does_not_warn(httpx_mock: HTTPXMock) -> None:
     _assert_no_deprecation_warnings(caught)
 
 
-def test_chat_legacy_create_uses_explicit_legacy_transport(monkeypatch: pytest.MonkeyPatch) -> None:
+def test_chat_v1_create_uses_explicit_chat_v1_transport(monkeypatch: pytest.MonkeyPatch) -> None:
     captured = {}
 
     def fake_chat_sync(client: Any, *, chat: Chat, access_token: Optional[str] = None) -> ChatCompletion:
@@ -764,7 +764,7 @@ def test_chat_legacy_create_uses_explicit_legacy_transport(monkeypatch: pytest.M
     assert isinstance(captured["chat"], Chat)
 
 
-def test_chat_legacy_stream_uses_explicit_legacy_transport(monkeypatch: pytest.MonkeyPatch) -> None:
+def test_chat_v1_stream_uses_explicit_chat_v1_transport(monkeypatch: pytest.MonkeyPatch) -> None:
     captured = {}
 
     def fake_stream_sync(client: Any, *, chat: Chat, access_token: Optional[str] = None) -> Any:
@@ -844,12 +844,12 @@ async def test_achat(httpx_mock: HTTPXMock) -> None:
     _assert_no_deprecation_warnings(caught)
 
 
-async def test_achat_root_shim_uses_legacy_route_when_primary_route_differs(httpx_mock: HTTPXMock) -> None:
+async def test_achat_root_shim_uses_chat_v1_route_when_primary_route_differs(httpx_mock: HTTPXMock) -> None:
     primary_url_token = chat_completions_url_cvar.set("/chat/completions/primary")
-    legacy_url_token = chat_url_cvar.set("/chat/completions/legacy")
+    chat_v1_url_token = chat_url_cvar.set("/chat/completions/chat_v1")
 
     try:
-        httpx_mock.add_response(url=f"{BASE_URL}/chat/completions/legacy", json=CHAT_COMPLETION)
+        httpx_mock.add_response(url=f"{BASE_URL}/chat/completions/chat_v1", json=CHAT_COMPLETION)
 
         async with GigaChatAsyncClient(base_url=BASE_URL, access_token=ACCESS_TOKEN) as client:
             with warnings.catch_warnings(record=True) as caught:
@@ -857,13 +857,13 @@ async def test_achat_root_shim_uses_legacy_route_when_primary_route_differs(http
                 response = await client.achat("text")
     finally:
         chat_completions_url_cvar.reset(primary_url_token)
-        chat_url_cvar.reset(legacy_url_token)
+        chat_url_cvar.reset(chat_v1_url_token)
 
     requests = httpx_mock.get_requests()
     assert isinstance(response, ChatCompletion)
     assert not isinstance(response, ChatCompletionResponse)
     assert len(requests) == 1
-    assert str(requests[0].url) == f"{BASE_URL}/chat/completions/legacy"
+    assert str(requests[0].url) == f"{BASE_URL}/chat/completions/chat_v1"
     _assert_no_deprecation_warnings(caught)
 
 
@@ -881,7 +881,7 @@ async def test_achat_rejects_pydantic_response_format_on_chat() -> None:
             await client.achat(payload)
 
 
-async def test_achat_legacy_create_does_not_warn(httpx_mock: HTTPXMock) -> None:
+async def test_achat_v1_create_does_not_warn(httpx_mock: HTTPXMock) -> None:
     httpx_mock.add_response(url=CHAT_URL, json=CHAT_COMPLETION)
 
     async with GigaChatAsyncClient(base_url=BASE_URL, access_token=ACCESS_TOKEN) as client:
@@ -895,7 +895,7 @@ async def test_achat_legacy_create_does_not_warn(httpx_mock: HTTPXMock) -> None:
 
 async def test_achat_create_uses_primary_route(httpx_mock: HTTPXMock) -> None:
     primary_url_token = chat_completions_url_cvar.set("/chat/completions/primary")
-    legacy_url_token = chat_url_cvar.set("/chat/completions/legacy")
+    chat_v1_url_token = chat_url_cvar.set("/chat/completions/chat_v1")
 
     try:
         httpx_mock.add_response(url=f"{BASE_URL}/chat/completions/primary", json=PRIMARY_CHAT_COMPLETION)
@@ -904,7 +904,7 @@ async def test_achat_create_uses_primary_route(httpx_mock: HTTPXMock) -> None:
             response = await client.achat.create("text")
     finally:
         chat_completions_url_cvar.reset(primary_url_token)
-        chat_url_cvar.reset(legacy_url_token)
+        chat_url_cvar.reset(chat_v1_url_token)
 
     requests = httpx_mock.get_requests()
     assert isinstance(response, ChatCompletionResponse)
@@ -912,7 +912,7 @@ async def test_achat_create_uses_primary_route(httpx_mock: HTTPXMock) -> None:
     assert str(requests[0].url) == f"{BASE_URL}/chat/completions/primary"
 
 
-async def test_achat_create_uses_v2_primary_route_with_legacy_v1_base_url_and_token(httpx_mock: HTTPXMock) -> None:
+async def test_achat_create_uses_v2_primary_route_with_v1_base_url_and_token(httpx_mock: HTTPXMock) -> None:
     versioned_base_url = "https://host/v1"
     httpx_mock.add_response(url=f"{versioned_base_url}/token", json=PASSWORD_TOKEN_VALID)
     httpx_mock.add_response(url="https://host/v2/chat/completions", json=PRIMARY_CHAT_COMPLETION)
@@ -927,23 +927,23 @@ async def test_achat_create_uses_v2_primary_route_with_legacy_v1_base_url_and_to
     assert str(requests[1].url) == "https://host/v2/chat/completions"
 
 
-async def test_achat_legacy_create_uses_legacy_route_when_primary_route_differs(httpx_mock: HTTPXMock) -> None:
+async def test_achat_v1_create_uses_chat_v1_route_when_primary_route_differs(httpx_mock: HTTPXMock) -> None:
     primary_url_token = chat_completions_url_cvar.set("/chat/completions/primary")
-    legacy_url_token = chat_url_cvar.set("/chat/completions/legacy")
+    chat_v1_url_token = chat_url_cvar.set("/chat/completions/chat_v1")
 
     try:
-        httpx_mock.add_response(url=f"{BASE_URL}/chat/completions/legacy", json=CHAT_COMPLETION)
+        httpx_mock.add_response(url=f"{BASE_URL}/chat/completions/chat_v1", json=CHAT_COMPLETION)
 
         async with GigaChatAsyncClient(base_url=BASE_URL, access_token=ACCESS_TOKEN) as client:
             response = await client.achat("text")
     finally:
         chat_completions_url_cvar.reset(primary_url_token)
-        chat_url_cvar.reset(legacy_url_token)
+        chat_url_cvar.reset(chat_v1_url_token)
 
     requests = httpx_mock.get_requests()
     assert isinstance(response, ChatCompletion)
     assert len(requests) == 1
-    assert str(requests[0].url) == f"{BASE_URL}/chat/completions/legacy"
+    assert str(requests[0].url) == f"{BASE_URL}/chat/completions/chat_v1"
 
 
 async def test_achat_access_token(httpx_mock: HTTPXMock) -> None:
@@ -955,7 +955,7 @@ async def test_achat_access_token(httpx_mock: HTTPXMock) -> None:
     assert isinstance(response, ChatCompletion)
 
 
-async def test_achat_legacy_create_uses_explicit_legacy_transport(monkeypatch: pytest.MonkeyPatch) -> None:
+async def test_achat_v1_create_uses_explicit_chat_v1_transport(monkeypatch: pytest.MonkeyPatch) -> None:
     captured = {}
 
     async def fake_chat_async(client: Any, *, chat: Chat, access_token: Optional[str] = None) -> ChatCompletion:
@@ -1002,7 +1002,7 @@ async def test_achat_create_uses_explicit_primary_transport(monkeypatch: pytest.
 
 async def test_achat_stream_uses_primary_route(httpx_mock: HTTPXMock) -> None:
     primary_url_token = chat_completions_url_cvar.set("/chat/completions/primary")
-    legacy_url_token = chat_url_cvar.set("/chat/completions/legacy")
+    chat_v1_url_token = chat_url_cvar.set("/chat/completions/chat_v1")
 
     try:
         httpx_mock.add_response(
@@ -1015,7 +1015,7 @@ async def test_achat_stream_uses_primary_route(httpx_mock: HTTPXMock) -> None:
             response = [chunk async for chunk in client.achat.stream("text")]
     finally:
         chat_completions_url_cvar.reset(primary_url_token)
-        chat_url_cvar.reset(legacy_url_token)
+        chat_url_cvar.reset(chat_v1_url_token)
 
     requests = httpx_mock.get_requests()
     assert len(response) == 2
@@ -1068,7 +1068,7 @@ async def test_achat_stream_uses_explicit_primary_transport(monkeypatch: pytest.
 
 async def test_achat_parse_uses_primary_route(httpx_mock: HTTPXMock) -> None:
     primary_url_token = chat_completions_url_cvar.set("/chat/completions/primary")
-    legacy_url_token = chat_url_cvar.set("/chat/completions/legacy")
+    chat_v1_url_token = chat_url_cvar.set("/chat/completions/chat_v1")
     response_payload = copy.deepcopy(PRIMARY_CHAT_COMPLETION)
     response_payload["messages"][0]["content"] = [
         {"text": '{"steps": ["Переносим 7 в правую часть", "Делим на 8"], '},
@@ -1082,7 +1082,7 @@ async def test_achat_parse_uses_primary_route(httpx_mock: HTTPXMock) -> None:
             completion, parsed = await client.achat.parse("Solve 8x+7=-23", response_format=MathResult)
     finally:
         chat_completions_url_cvar.reset(primary_url_token)
-        chat_url_cvar.reset(legacy_url_token)
+        chat_url_cvar.reset(chat_v1_url_token)
 
     requests = httpx_mock.get_requests()
     request_body = json.loads(requests[0].content)
@@ -1147,7 +1147,7 @@ async def test_achat_parse_raises_for_primary_length_finish_reason(httpx_mock: H
             await client.achat.parse("Solve 2+2", response_format=MathResult)
 
 
-async def test_achat_legacy_stream_uses_explicit_legacy_transport(monkeypatch: pytest.MonkeyPatch) -> None:
+async def test_achat_v1_stream_uses_explicit_chat_v1_transport(monkeypatch: pytest.MonkeyPatch) -> None:
     captured = {}
 
     async def iterate() -> Any:
@@ -1320,13 +1320,13 @@ async def test_astream_access_token(httpx_mock: HTTPXMock) -> None:
     _assert_no_deprecation_warnings(caught)
 
 
-async def test_astream_root_shim_uses_legacy_route_when_primary_route_differs(httpx_mock: HTTPXMock) -> None:
+async def test_astream_root_shim_uses_chat_v1_route_when_primary_route_differs(httpx_mock: HTTPXMock) -> None:
     primary_url_token = chat_completions_url_cvar.set("/chat/completions/primary")
-    legacy_url_token = chat_url_cvar.set("/chat/completions/legacy")
+    chat_v1_url_token = chat_url_cvar.set("/chat/completions/chat_v1")
 
     try:
         httpx_mock.add_response(
-            url=f"{BASE_URL}/chat/completions/legacy",
+            url=f"{BASE_URL}/chat/completions/chat_v1",
             content=CHAT_COMPLETION_STREAM,
             headers=HEADERS_STREAM,
         )
@@ -1337,18 +1337,18 @@ async def test_astream_root_shim_uses_legacy_route_when_primary_route_differs(ht
                 response = [chunk async for chunk in client.astream("text")]
     finally:
         chat_completions_url_cvar.reset(primary_url_token)
-        chat_url_cvar.reset(legacy_url_token)
+        chat_url_cvar.reset(chat_v1_url_token)
 
     requests = httpx_mock.get_requests()
     assert len(response) == 3
     assert all(isinstance(chunk, ChatCompletionChunk) for chunk in response)
     assert not any(isinstance(chunk, PrimaryChatCompletionChunk) for chunk in response)
     assert len(requests) == 1
-    assert str(requests[0].url) == f"{BASE_URL}/chat/completions/legacy"
+    assert str(requests[0].url) == f"{BASE_URL}/chat/completions/chat_v1"
     _assert_no_deprecation_warnings(caught)
 
 
-async def test_achat_legacy_stream_does_not_warn(httpx_mock: HTTPXMock) -> None:
+async def test_achat_v1_stream_does_not_warn(httpx_mock: HTTPXMock) -> None:
     httpx_mock.add_response(url=CHAT_URL, content=CHAT_COMPLETION_STREAM, headers=HEADERS_STREAM)
 
     async with GigaChatAsyncClient(base_url=BASE_URL, access_token=ACCESS_TOKEN) as client:

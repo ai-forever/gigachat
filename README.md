@@ -98,7 +98,7 @@ The previous contract remains available through root compatibility methods:
 
 Root compatibility shims such as `client.chat(...)`, `client.stream(...)`, `client.chat_parse(...)`, `client.achat(...)`, `client.astream(...)`, and `client.achat_parse(...)` still work for the old chat contract. They are not deprecated and do not emit `DeprecationWarning`.
 
-During the migration, old `gigachat.models.Chat*`, `Messages*`, `Function*`, and `Usage` imports still resolve to legacy compatibility aliases. Use `ChatCompletionRequest`, `ChatCompletionResponse`, `ChatMessage`, and related `Chat*` primary models for the new contract.
+During the migration, old `gigachat.models.Chat*`, `Messages*`, `Function*`, and `Usage` imports still resolve to chat_v1 compatibility aliases. Use `ChatCompletionRequest`, `ChatCompletionResponse`, `ChatMessage`, and related `Chat*` primary models for the new contract.
 
 For a step-by-step checklist and import mapping, see [MIGRATION_GUIDE.md](MIGRATION_GUIDE.md) and [MIGRATION_GUIDE_ru.md](MIGRATION_GUIDE_ru.md).
 

@@ -1,0 +1,10 @@
+{
+  "id": "batch_1",
+  "method": "chat_completions",
+  "request_counts": {
+    "total": 3
+  },
+  "status": "created",
+  "created_at": 1726478395,
+  "updated_at": 1726478395
+}

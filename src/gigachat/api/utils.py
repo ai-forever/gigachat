@@ -64,7 +64,7 @@ def resolve_request_url(client: Union[httpx.Client, httpx.AsyncClient], url: str
 
 
 def resolve_primary_chat_url(client: Union[httpx.Client, httpx.AsyncClient], url: str) -> str:
-    """Resolve the primary chat route with a legacy ``/v1`` -> ``/v2`` fallback."""
+    """Resolve the primary chat route with a versioned ``/v1`` -> ``/v2`` fallback."""
     if url not in ("/chat/completions", "chat/completions"):
         return resolve_request_url(client, url)
 

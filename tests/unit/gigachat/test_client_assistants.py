@@ -1,5 +1,7 @@
 from pytest_httpx import HTTPXMock
 
+from gigachat.assistants import AssistantsAsyncClient as CompatAssistantsAsyncClient
+from gigachat.assistants import AssistantsSyncClient as CompatAssistantsSyncClient
 from gigachat.client import GigaChatAsyncClient, GigaChatSyncClient
 from gigachat.models.assistants import (
     Assistant,
@@ -8,6 +10,7 @@ from gigachat.models.assistants import (
     Assistants,
     CreateAssistant,
 )
+from gigachat.resources.assistants import AssistantsAsyncClient, AssistantsSyncClient
 from tests.constants import (
     BASE_URL,
     GET_ASSISTANTS,
@@ -21,6 +24,11 @@ from tests.constants import (
     POST_ASSISTANTS,
     POST_ASSISTANTS_URL,
 )
+
+
+def test_assistants_compat_module_reexports_resources() -> None:
+    assert CompatAssistantsSyncClient is AssistantsSyncClient
+    assert CompatAssistantsAsyncClient is AssistantsAsyncClient
 
 
 def test_get_assistants(httpx_mock: HTTPXMock) -> None:
