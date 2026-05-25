@@ -62,7 +62,7 @@ ModelT = TypeVar("ModelT", bound=pydantic.BaseModel)
 
 logger = logging.getLogger(__name__)
 
-GIGACHAT_MODEL = "GigaChat-2"
+GIGACHAT_MODEL = "GigaChat"
 
 
 def _get_kwargs(settings: Settings) -> Dict[str, Any]:
