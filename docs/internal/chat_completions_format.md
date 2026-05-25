@@ -1,18 +1,13 @@
-# Формат primary `chat/completions`
+# Формат primary `v2/chat/completions`
 
-Этот документ фиксирует wire-format нового primary chat surface, который в рабочих материалах иногда назывался `v2`.
-
-Источник:
-- `request_v2.pdf`
-- `response_v2.pdf`
-- текущая tolerантная реализация SDK в `src/gigachat/models/chat_completions.py`
+Этот документ фиксирует wire-format нового primary chat surface, который называется `v2/chat/completions`.
+Он также учитывает текущую толерантную реализацию SDK в `src/gigachat/models/chat_completions.py`.
 
 ## Что важно заранее
 
-- Это отдельный контракт, а не расширение legacy `chat`-формата.
 - SDK намеренно парсит его не слишком строго: в моделях включен `extra="allow"`.
-- `messages[].content` в PDF описан как массив частей, но в примерах и живом трафике может приходить строкой. SDK нормализует строку, объект и массив к списку частей.
-- Request-модель SDK шире PDF: некоторые поля response-message принимаются в `ChatMessage` для round-trip/толерантного парсинга, но wire-format request ниже описан по `request_v2.pdf`.
+- `messages[].content` описан как массив частей, но в примерах и живом трафике может приходить строкой. SDK нормализует строку, объект и массив к списку частей.
+- Request-модель SDK шире wire-format: некоторые поля response-message принимаются в `ChatMessage` для round-trip/толерантного парсинга.
 - Для совместимости SDK также принимает `tool_state_id` и `functions_state_id` как alias для `tools_state_id`.
 - В response SDK принимает `created` как alias для `created_at`.
 
@@ -45,7 +40,7 @@
 
 | Поле | Тип | Обязательность | Назначение |
 | --- | --- | --- | --- |
-| `role` | `string` | да | Роль сообщения. В PDF явно перечислены `user`, `system`, `assistant`, `tool`, `reasoning`; контракт допускает и другие роли. |
+| `role` | `string` | да | Роль сообщения. Явно перечислены `user`, `system`, `assistant`, `tool`, `reasoning`; контракт допускает и другие роли. |
 | `tools_state_id` | `string` | нет | Состояние работы с tools на уровне сообщения. |
 | `content` | `array[object]` | условно | Контент сообщения. Обязателен для `role="system"`, для остальных ролей может отсутствовать. На практике SDK также принимает строку или один объект и нормализует их в список частей. |
 
@@ -95,11 +90,11 @@
 | `preset` | `string` | Пресет модели/фильтра/LoRA. |
 | `temperature` | `number` | Температура сэмплирования. Дефолт зависит от модели. |
 | `top_p` | `number` | Nucleus sampling, значение от 0 до 1. Дефолт зависит от модели. |
-| `max_tokens` | `integer` | Лимит выходных токенов, допустимое значение > 0. В PDF указан дефолт `1024`. |
+| `max_tokens` | `integer` | Лимит выходных токенов, допустимое значение > 0. Указан дефолт `1024`. |
 | `repetition_penalty` | `number` | Штраф за повторения, допустимое значение > 0. Дефолт зависит от модели. |
 | `update_interval` | `number` | Частота отправки токенов в stream-режиме. По умолчанию `0`: токены отправляются сразу после генерации; значение `1` означает отправку накопленных токенов раз в секунду. |
 | `unnormalized_history` | `bool` | Отключение серверной нормализации истории. По умолчанию `false`; нормализация может заменять одиночный `system` на `user` и конкатенировать соседние `user`/`assistant` сообщения. |
-| `top_logprobs` | `integer` | Сколько top tokens вернуть в `logprobs`. Функциональность закрыта permission, допустимые значения от 1 до 5. |
+| `top_logprobs` | `integer` | Сколько top tokens вернуть в `logprobs`. Допустимые значения от 1 до 5. |
 | `reasoning` | `object` | Настройки reasoning. |
 | `response_format` | `object` | Настройки формата ответа модели. |
 
@@ -107,7 +102,7 @@
 
 | Поле | Тип | Назначение |
 | --- | --- | --- |
-| `effort` | `string` | Степень reasoning. В PDF перечислены `low`, `medium`, `high`, при этом указано, что сейчас фактически используется только `medium`. |
+| `effort` | `string` | Степень reasoning. Перечислены `low`, `medium`, `high`, при этом указано, что сейчас фактически используется только `medium`. |
 
 ### `model_options.response_format`
 
@@ -120,7 +115,7 @@
 
 ### `filter_config`
 
-`filter_config` закрыт permissions, но в PDF описана такая структура:
+Структура `filter_config`:
 
 | Поле | Тип | Назначение |
 | --- | --- | --- |
@@ -131,7 +126,7 @@
 
 ### `storage`
 
-`storage` описан в PDF как `object || bool` с пометкой, что `bool` - future-режим. Если передан пустой object, запрос все равно считается stateful, просто тред еще не создан.
+`storage` описан как `object || bool` с пометкой, что `bool` - future-режим. Если передан пустой object, запрос все равно считается stateful, просто тред еще не создан.
 
 | Поле | Тип | Назначение |
 | --- | --- | --- |
@@ -165,7 +160,7 @@
 
 Каждый элемент - oneof-конфигурация одного tool.
 
-Поддержанные поля в PDF и в SDK:
+Поддержанные поля:
 
 | Поле | Тип | Назначение |
 | --- | --- | --- |
@@ -210,7 +205,7 @@
 | `usage` | `object` | Токен-usage. |
 | `tool_execution` | `object` | Состояние top-level built-in tool execution. |
 | `logprobs` | `array[object]` | Top-level логарифмические вероятности. |
-| `additional_data` | `array[object]` | Дополнительные метаданные ответа. SDK сохраняет элементы как opaque objects без детализации закрытых permission-полей. |
+| `additional_data` | `array[object]` | Дополнительные метаданные ответа. SDK сохраняет элементы как opaque objects без детализации вложенных полей. |
 
 ### `messages[]`
 
@@ -218,7 +213,7 @@
 
 | Поле | Тип | Назначение |
 | --- | --- | --- |
-| `message_id` | `string` | Идентификатор сообщения. В PDF описан внутри `messages[]`. |
+| `message_id` | `string` | Идентификатор сообщения. Описан внутри `messages[]`. |
 | `role` | `string` | Роль участника диалога. |
 | `tools_state_id` | `string` | Состояние работы с tools. |
 | `content` | `array[object]` | Контент сообщения. |

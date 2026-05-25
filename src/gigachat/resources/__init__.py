@@ -6,8 +6,6 @@ from gigachat.resources.batches import BatchesAsyncResource, BatchesSyncResource
 from gigachat.resources.chat import (
     AsyncChatNamespace,
     ChatNamespace,
-    LegacyChatAsyncResource,
-    LegacyChatSyncResource,
 )
 from gigachat.resources.embeddings import EmbeddingsAsyncResource, EmbeddingsSyncResource
 from gigachat.resources.files import FilesAsyncResource, FilesSyncResource
@@ -33,8 +31,6 @@ __all__ = (
     "FilesSyncResource",
     "FunctionsAsyncResource",
     "FunctionsSyncResource",
-    "LegacyChatAsyncResource",
-    "LegacyChatSyncResource",
     "ModelsAsyncResource",
     "ModelsSyncResource",
     "ThreadsAsyncClient",

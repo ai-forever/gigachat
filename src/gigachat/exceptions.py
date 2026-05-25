@@ -1,6 +1,10 @@
-from __future__ import annotations
+from typing import TYPE_CHECKING, Optional, Union
 
 import httpx
+
+if TYPE_CHECKING:
+    from gigachat.models.chat import ChatCompletion
+    from gigachat.models.chat_completions import ChatCompletionResponse
 
 __all__ = [
     "GigaChatException",
@@ -26,10 +30,10 @@ class ResponseError(GigaChatException):
 
     def __init__(
         self,
-        url: httpx.URL | str,
+        url: Union[httpx.URL, str],
         status_code: int,
-        content: bytes | None,
-        headers: httpx.Headers | None,
+        content: Optional[bytes],
+        headers: Optional[httpx.Headers],
     ) -> None:
         self.url = url
         self.status_code = status_code
@@ -88,6 +92,6 @@ class ServerError(ResponseError):
 class LengthFinishReasonError(GigaChatException):
     """Exception raised when finish_reason is 'length' (response truncated)."""
 
-    def __init__(self, completion: object) -> None:
+    def __init__(self, completion: Union["ChatCompletion", "ChatCompletionResponse"]) -> None:
         self.completion = completion
         super().__init__("Could not parse response content as the length limit was reached")

@@ -42,7 +42,6 @@ This library is part of [GigaChain](https://github.com/ai-forever/gigachain) and
 - ✅ **Function calling** — tool use for building agents
 - ✅ **Vision** — image understanding (multimodal)
 - ✅ **File operations** — upload, retrieve, and delete files
-- ✅ **Batch operations** — create and inspect asynchronous batch jobs
 - ✅ **Token counting** — estimate token usage before requests
 - ✅ **Multiple auth methods** — OAuth credentials, password, TLS certificates, access tokens
 - ✅ **Automatic retry** — configurable exponential backoff for transient errors
@@ -88,18 +87,18 @@ set `GIGACHAT_VERIFY_SSL_CERTS=false` or pass `verify_ssl_certs=False` to `GigaC
 - `client.achat.stream(...)`
 - `await client.achat.parse(...)`
 
-The previous contract remains available under explicit legacy namespaces:
+The previous contract remains available through root compatibility methods:
 
-- `client.chat.legacy.create(...)`
-- `client.chat.legacy.stream(...)`
-- `client.chat.legacy.parse(...)`
-- `await client.achat.legacy.create(...)`
-- `client.achat.legacy.stream(...)`
-- `await client.achat.legacy.parse(...)`
+- `client.chat(...)`
+- `client.stream(...)`
+- `client.chat_parse(...)`
+- `await client.achat(...)`
+- `client.astream(...)`
+- `await client.achat_parse(...)`
 
-Root compatibility shims such as `client.chat(...)`, `client.stream(...)`, `client.chat_parse(...)`, `client.achat(...)`, `client.astream(...)`, and `client.achat_parse(...)` still work, but they are deprecated and emit `DeprecationWarning`.
+Root compatibility shims such as `client.chat(...)`, `client.stream(...)`, `client.chat_parse(...)`, `client.achat(...)`, `client.astream(...)`, and `client.achat_parse(...)` still work for the old chat contract. They are not deprecated and do not emit `DeprecationWarning`.
 
-During the migration, old `gigachat.models.Chat*`, `Messages*`, `Function*`, and `Usage` imports still resolve to legacy compatibility aliases. Use `ChatCompletionRequest`, `ChatCompletionResponse`, `ChatMessage`, and related `Chat*` primary models for the new contract.
+During the migration, old `gigachat.models.Chat*`, `Messages*`, `Function*`, and `Usage` imports still resolve to chat_v1 compatibility aliases. Use `ChatCompletionRequest`, `ChatCompletionResponse`, `ChatMessage`, and related `Chat*` primary models for the new contract.
 
 For a step-by-step checklist and import mapping, see [MIGRATION_GUIDE.md](MIGRATION_GUIDE.md) and [MIGRATION_GUIDE_ru.md](MIGRATION_GUIDE_ru.md).
 
@@ -159,7 +158,7 @@ Generate vector representations of text:
 from gigachat import GigaChat
 
 with GigaChat() as client:
-    result = client.embeddings.create(
+    result = client.embeddings(
         ["Hello, world!", "Machine learning is fascinating"],
         model="Embeddings",
     )
@@ -168,7 +167,7 @@ with GigaChat() as client:
         print(f"Text {i + 1}: {len(item.embedding)} dimensions")
 ```
 
-> **Note:** The `model` parameter must be passed directly to the `embeddings.create()` method (default: `"Embeddings"`).
+> **Note:** The `model` parameter must be passed directly to the `embeddings()` method (default: `"Embeddings"`).
 > The `model` set in the `GigaChat()` constructor does not affect embeddings.
 
 ### Function Calling
@@ -219,29 +218,16 @@ with GigaChat() as client:
         print(f"Arguments: {message.function_call.arguments}")
 ```
 
-Validate a function schema before using it in chat requests:
+> **Note:** By default, `function_ranker` is not sent.
+
+Enable function/tool ranking explicitly and limit the number of ranked functions:
 
 ```python
-from gigachat import GigaChat
-
-function = {
-    "name": "get_weather",
-    "description": "Get current weather for a location",
-    "parameters": {
-        "type": "object",
-        "properties": {
-            "location": {
-                "type": "string",
-                "description": "City name, e.g., Tokyo",
-            }
-        },
-        "required": ["location"],
-    },
-}
-
-with GigaChat() as client:
-    validation = client.functions.validate(function)
-    print(validation.message)
+chat = Chat(
+    messages=[Messages(role=MessagesRole.USER, content="What's the weather in Tokyo?")],
+    functions=[weather_function],
+    function_ranker={"enabled": True, "top_n": 3},
+)
 ```
 
 ### Structured Output (JSON Schema) — Beta
@@ -277,9 +263,9 @@ print(parsed.final_answer)
 - `json.JSONDecodeError` if the model returned invalid JSON
 - `pydantic.ValidationError` if the JSON is valid but does not match the schema
 
-The legacy helpers remain available at `client.chat.legacy.parse()` / `client.achat.legacy.parse()` for the old contract.
+The old-contract helpers remain available at `client.chat_parse()` / `client.achat_parse()`.
 
-See [examples/example_structured_output.ipynb](examples/example_structured_output.ipynb) for more approaches (raw dict schema, Pydantic model schema, and the legacy parse helper).
+See [examples/example_structured_output.ipynb](examples/example_structured_output.ipynb) for more approaches (raw dict schema, Pydantic model schema, and the old-contract parse helper).
 
 ### More examples
 See the [examples/](https://github.com/ai-forever/gigachat/tree/main/examples/) folder for complete working examples including the primary chat surface, functions, context variables, AI detection, vision, and structured output.
@@ -630,7 +616,7 @@ Estimate token usage before sending requests:
 from gigachat import GigaChat
 
 with GigaChat() as client:
-    counts = client.tokens.count(["Hello, world!", "How are you today?"])
+    counts = client.tokens_count(["Hello, world!", "How are you today?"])
     for count in counts:
         print(f"Tokens: {count.tokens}, Characters: {count.characters}")
 ```
@@ -643,7 +629,7 @@ List available models and their capabilities:
 from gigachat import GigaChat
 
 with GigaChat() as client:
-    models = client.models.list()
+    models = client.get_models()
     for model in models.data:
         print(f"{model.id_} (owned_by={model.owned_by})")
 ```
@@ -658,40 +644,16 @@ from gigachat import GigaChat
 with GigaChat() as client:
     # Upload a file
     with open("document.pdf", "rb") as f:
-        uploaded = client.files.upload(f, purpose="general")
-    print(f"Uploaded: {uploaded.id_}")
+        uploaded = client.upload_file(f, purpose="general")
+    print(f"Uploaded: {uploaded.id}")
 
     # List files
-    files = client.files.list()
+    files = client.get_files()
     for file in files.data:
-        print(f"{file.id_}: {file.filename}")
-
-    # Retrieve file content as base64
-    content = client.files.retrieve_content(uploaded.id_)
-    print(content.content)
+        print(f"{file.id}: {file.filename}")
 
     # Delete a file
-    client.files.delete(uploaded.id_)
-```
-
-### Batch Operations
-
-Create and inspect asynchronous batch jobs:
-
-```python
-from gigachat import GigaChat
-
-with open("batch_file_500.jsonl", "rb") as f:
-    data = f.read()
-
-with GigaChat() as client:
-    batch = client.batches.create(data, method="chat_completions")
-    result = client.batches.retrieve(batch.id_)
-    print(result.batches[0].status)
-
-    if result.batches[0].output_file_id is not None:
-        output = client.files.retrieve_content(result.batches[0].output_file_id)
-        print(output.content)
+    client.delete_file(uploaded.id)
 ```
 
 
@@ -703,7 +665,7 @@ Check your remaining token balance (prepaid accounts only):
 from gigachat import GigaChat
 
 with GigaChat(scope="GIGACHAT_API_B2B") as client:
-    balance = client.balance.get()
+    balance = client.get_balance()
     for entry in balance.balance:
         print(f"{entry.usage}: {entry.value}")
 ```
