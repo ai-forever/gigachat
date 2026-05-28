@@ -1,0 +1,57 @@
+interactions:
+- request:
+    body: scope=REDACTED
+    headers:
+      User-Agent:
+      - GigaChat-python-lib
+      authorization:
+      - Bearer REDACTED
+    method: POST
+    uri: https://ngw.devices.sberbank.ru:9443/api/v2/oauth
+  response:
+    body:
+      string: '{"access_token": "REDACTED", "expires_at": 4102444800000}'
+    headers:
+      Content-Type:
+      - application/json
+    status:
+      code: 200
+      message: OK
+- request:
+    body: '{"model": "GigaChat", "messages": [{"content": [{"text": "Count from 1 to 3"}], "role": "user"}], "stream": true}'
+    headers:
+      Accept:
+      - text/event-stream
+      Cache-Control:
+      - no-store
+      Content-Type:
+      - application/json
+      User-Agent:
+      - GigaChat-python-lib
+      authorization:
+      - Bearer REDACTED
+    method: POST
+    uri: https://gigachat.devices.sberbank.ru/api/v2/chat/completions
+  response:
+    body:
+      string: |
+        event: response.message.delta
+        data: {"model":"GigaChat:2.0.28.2","created_at":1768996177,"messages":[{"role":"assistant","content":[{"text":"1"}]}]}
+
+        event: response.message.delta
+        data: {"model":"GigaChat:2.0.28.2","created_at":1768996177,"messages":[{"role":"assistant","content":[{"text":", 2, 3"}]}]}
+
+        event: response.message.done
+        data: {"model":"GigaChat:2.0.28.2","created_at":1768996177,"finish_reason":"stop","usage":{"input_tokens":17,"output_tokens":6,"total_tokens":23}}
+
+    headers:
+      Content-Type:
+      - text/event-stream
+      X-Request-Id:
+      - primary-astream-request
+      X-Session-Id:
+      - primary-astream-session
+    status:
+      code: 200
+      message: OK
+version: 1

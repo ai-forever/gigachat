@@ -1,0 +1,44 @@
+interactions:
+- request:
+    body: scope=REDACTED
+    headers:
+      User-Agent:
+      - GigaChat-python-lib
+      authorization:
+      - Bearer REDACTED
+    method: POST
+    uri: https://ngw.devices.sberbank.ru:9443/api/v2/oauth
+  response:
+    body:
+      string: '{"access_token": "REDACTED", "expires_at": 4102444800000}'
+    headers:
+      Content-Type:
+      - application/json
+    status:
+      code: 200
+      message: OK
+- request:
+    body: '{"model": "GigaChat", "messages": [{"content": [{"text": "Say ''Hello'' and nothing else"}], "role": "user"}]}'
+    headers:
+      Content-Type:
+      - application/json
+      User-Agent:
+      - GigaChat-python-lib
+      authorization:
+      - Bearer REDACTED
+    method: POST
+    uri: https://gigachat.devices.sberbank.ru/api/v2/chat/completions
+  response:
+    body:
+      string: '{"model":"GigaChat:2.0.28.2","created_at":1768996172,"message_id":"message-primary-acreate","thread_id":"thread-primary-acreate","messages":[{"role":"assistant","content":[{"text":"Hello."}],"finish_reason":"stop"}],"usage":{"input_tokens":17,"output_tokens":3,"total_tokens":20}}'
+    headers:
+      Content-Type:
+      - application/json; charset=utf-8
+      X-Request-Id:
+      - primary-acreate-request
+      X-Session-Id:
+      - primary-acreate-session
+    status:
+      code: 200
+      message: OK
+version: 1

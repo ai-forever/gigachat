@@ -1,0 +1,44 @@
+interactions:
+- request:
+    body: scope=REDACTED
+    headers:
+      User-Agent:
+      - GigaChat-python-lib
+      authorization:
+      - Bearer REDACTED
+    method: POST
+    uri: https://ngw.devices.sberbank.ru:9443/api/v2/oauth
+  response:
+    body:
+      string: '{"access_token": "REDACTED", "expires_at": 4102444800000}'
+    headers:
+      Content-Type:
+      - application/json
+    status:
+      code: 200
+      message: OK
+- request:
+    body: '{"model": "GigaChat-3-Ultra", "messages": [{"content": [{"text": "Return {\"answer\":\"ok\",\"n\":3} exactly."}], "role": "user"}], "model_options": {"response_format": {"type": "json_schema", "schema": {"description": "Structured answer returned by response_format=json_schema.", "properties": {"answer": {"title": "Answer", "type": "string"}, "n": {"maximum": 10, "minimum": 0, "title": "N", "type": "integer"}}, "required": ["answer", "n"], "title": "StructuredAnswer", "type": "object"}, "strict": true}}}'
+    headers:
+      Content-Type:
+      - application/json
+      User-Agent:
+      - GigaChat-python-lib
+      authorization:
+      - Bearer REDACTED
+    method: POST
+    uri: https://gigachat.devices.sberbank.ru/api/v2/chat/completions
+  response:
+    body:
+      string: '{"model":"GigaChat-3-Ultra:32.3.7.3","created_at":1776163526,"message_id":"message-primary-aparse","messages":[{"role":"assistant","content":[{"text":"{\"answer\":\"ok\",\"n\":3}"}],"finish_reason":"stop"}],"usage":{"input_tokens":24,"output_tokens":21,"total_tokens":45}}'
+    headers:
+      Content-Type:
+      - application/json; charset=utf-8
+      X-Request-Id:
+      - primary-aparse-request
+      X-Session-Id:
+      - primary-aparse-session
+    status:
+      code: 200
+      message: OK
+version: 1

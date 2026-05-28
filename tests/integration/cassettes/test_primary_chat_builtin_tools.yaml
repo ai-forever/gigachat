@@ -1,0 +1,116 @@
+interactions:
+- request:
+    body: scope=REDACTED
+    headers:
+      User-Agent:
+      - GigaChat-python-lib
+      authorization:
+      - Bearer REDACTED
+    method: POST
+    uri: https://ngw.devices.sberbank.ru:9443/api/v2/oauth
+  response:
+    body:
+      string: '{"access_token": "REDACTED", "expires_at": 4102444800000}'
+    headers:
+      Content-Type:
+      - application/json
+    status:
+      code: 200
+      message: OK
+- request:
+    body: '{"model": "GigaChat", "messages": [{"content": [{"text": "What is new in the latest stable Python release?"}], "role": "user"}], "tool_config": {"mode": "forced", "tool_name": "web_search"}, "tools": [{"web_search": {"type": "actual_info_web_search"}}]}'
+    headers:
+      Content-Type:
+      - application/json
+      User-Agent:
+      - GigaChat-python-lib
+      authorization:
+      - Bearer REDACTED
+    method: POST
+    uri: https://gigachat.devices.sberbank.ru/api/v2/chat/completions
+  response:
+    body:
+      string: '{"model":"GigaChat:2.0.28.2","created_at":1768996190,"message_id":"message-primary-web-search","messages":[{"role":"assistant","content":[{"text":"Python 3.14 adds language, typing, and standard-library improvements.","inline_data":{"sources":{"1":{"title":"Python 3.14.0 documentation","url":"https://docs.python.org/3/whatsnew/3.14.html"}}}}],"finish_reason":"stop"}],"usage":{"input_tokens":29,"output_tokens":18,"total_tokens":47}}'
+    headers:
+      Content-Type:
+      - application/json; charset=utf-8
+      X-Request-Id:
+      - primary-web-search-request
+      X-Session-Id:
+      - primary-web-search-session
+    status:
+      code: 200
+      message: OK
+- request:
+    body: '{"model": "GigaChat", "messages": [{"content": [{"text": "Calculate the sum of the first 20 prime numbers. Use code."}], "role": "user"}], "tool_config": {"mode": "auto"}, "tools": [{"code_interpreter": {}}]}'
+    headers:
+      Content-Type:
+      - application/json
+      User-Agent:
+      - GigaChat-python-lib
+      authorization:
+      - Bearer REDACTED
+    method: POST
+    uri: https://gigachat.devices.sberbank.ru/api/v2/chat/completions
+  response:
+    body:
+      string: '{"model":"GigaChat:2.0.28.2","created_at":1768996191,"message_id":"message-primary-code","messages":[{"role":"assistant","content":[{"tool_execution":{"name":"code_interpreter","status":"success"}},{"text":"The sum of the first 20 prime numbers is 639."}],"finish_reason":"stop"}],"usage":{"input_tokens":25,"output_tokens":14,"total_tokens":39}}'
+    headers:
+      Content-Type:
+      - application/json; charset=utf-8
+      X-Request-Id:
+      - primary-code-request
+      X-Session-Id:
+      - primary-code-session
+    status:
+      code: 200
+      message: OK
+- request:
+    body: '{"model": "GigaChat", "messages": [{"content": [{"text": "Read https://docs.python.org/3/library/pathlib.html and list three use cases for pathlib."}], "role": "user"}], "tool_config": {"mode": "forced", "tool_name": "url_content_extraction"}, "tools": [{"url_content_extraction": {}}]}'
+    headers:
+      Content-Type:
+      - application/json
+      User-Agent:
+      - GigaChat-python-lib
+      authorization:
+      - Bearer REDACTED
+    method: POST
+    uri: https://gigachat.devices.sberbank.ru/api/v2/chat/completions
+  response:
+    body:
+      string: '{"model":"GigaChat:2.0.28.2","created_at":1768996192,"message_id":"message-primary-url","messages":[{"role":"assistant","content":[{"tool_execution":{"name":"url_content_extraction","status":"success"}},{"text":"pathlib can create paths, inspect filesystem metadata, and iterate directories."}],"finish_reason":"stop"}],"usage":{"input_tokens":31,"output_tokens":17,"total_tokens":48}}'
+    headers:
+      Content-Type:
+      - application/json; charset=utf-8
+      X-Request-Id:
+      - primary-url-request
+      X-Session-Id:
+      - primary-url-session
+    status:
+      code: 200
+      message: OK
+- request:
+    body: '{"model": "GigaChat", "messages": [{"content": [{"text": "Create a simple square icon concept for a Python SDK release."}], "role": "user"}], "tool_config": {"mode": "forced", "tool_name": "image_generate"}, "tools": [{"image_generate": {}}]}'
+    headers:
+      Content-Type:
+      - application/json
+      User-Agent:
+      - GigaChat-python-lib
+      authorization:
+      - Bearer REDACTED
+    method: POST
+    uri: https://gigachat.devices.sberbank.ru/api/v2/chat/completions
+  response:
+    body:
+      string: '{"model":"GigaChat:2.0.28.2","created_at":1768996193,"message_id":"message-primary-image","messages":[{"role":"assistant","content":[{"text":"Generated a square Python SDK release icon concept."},{"files":[{"id":"generated-image-1","target":"image","mime":"image/png"}]}],"finish_reason":"stop"}],"usage":{"input_tokens":24,"output_tokens":9,"total_tokens":33}}'
+    headers:
+      Content-Type:
+      - application/json; charset=utf-8
+      X-Request-Id:
+      - primary-image-request
+      X-Session-Id:
+      - primary-image-session
+    status:
+      code: 200
+      message: OK
+version: 1
