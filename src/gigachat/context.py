@@ -35,5 +35,8 @@ custom_headers_cvar: ContextVar[Optional[Dict[str, str]]] = ContextVar("custom_h
 """Additional HTTP headers to be added to the request."""
 chat_url_cvar: ContextVar[str] = ContextVar("chat_url_cvar", default="/chat/completions")
 """Custom URL for chat/completions if a different chat URL is required."""
-chat_completions_url_cvar: ContextVar[str] = ContextVar("chat_completions_url_cvar", default="/chat/completions")
-"""Custom URL for the primary chat/completions endpoint."""
+chat_completions_url_cvar: ContextVar[Optional[str]] = ContextVar("chat_completions_url_cvar", default=None)
+"""Override URL for the primary chat/completions endpoint.
+
+``None`` means use the SDK default (``/v2/chat/completions`` on the client's origin).
+"""

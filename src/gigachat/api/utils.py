@@ -1,5 +1,6 @@
 import json
 import logging
+import re
 from http import HTTPStatus
 from typing import (
     Any,
@@ -50,31 +51,33 @@ USER_AGENT = "GigaChat-python-lib"
 EVENT_STREAM = "text/event-stream"
 
 
+_VERSIONED_PATH = re.compile(r"^/(api/)?v\d+(/|$)")
+_VERSION_SUFFIX = re.compile(r"/v\d+$")
+
+
+def _at_origin(client: Union[httpx.Client, httpx.AsyncClient], path: str) -> str:
+    base = urlsplit(str(client.base_url))
+    return urlunsplit((base.scheme, base.netloc, path, "", ""))
+
+
 def resolve_request_url(client: Union[httpx.Client, httpx.AsyncClient], url: str) -> str:
-    """Resolve request URL, allowing versioned API paths relative to the origin."""
-    parsed_url = urlsplit(url)
-    if parsed_url.scheme or parsed_url.netloc:
+    """Anchor versioned absolute paths (e.g. ``/v1/...``, ``/api/v2/...``) at the client's origin."""
+    parsed = urlsplit(url)
+    if parsed.scheme or parsed.netloc:
         return url
-
-    if url.startswith("/v") or url.startswith("/api/v"):
-        base_url = urlsplit(str(client.base_url))
-        return urlunsplit((base_url.scheme, base_url.netloc, url, "", ""))
-
+    if _VERSIONED_PATH.match(url):
+        return _at_origin(client, url)
     return url
 
 
-def resolve_primary_chat_url(client: Union[httpx.Client, httpx.AsyncClient], url: str) -> str:
-    """Resolve the primary chat route with a legacy ``/v1`` -> ``/v2`` fallback."""
-    if url not in ("/chat/completions", "chat/completions"):
-        return resolve_request_url(client, url)
-
-    base_url = urlsplit(str(client.base_url))
-    base_path = base_url.path.rstrip("/")
-    if not base_path.endswith("/v1"):
-        return url
-
-    path_prefix = base_path[:-3]
-    return urlunsplit((base_url.scheme, base_url.netloc, f"{path_prefix}/v2/chat/completions", "", ""))
+def resolve_primary_chat_url(client: Union[httpx.Client, httpx.AsyncClient], override: Optional[str]) -> str:
+    """Resolve the primary chat URL, rewriting any ``/vN`` suffix in ``base_url`` to ``/v2``."""
+    if override is not None:
+        return resolve_request_url(client, override)
+    base_path = urlsplit(str(client.base_url)).path.rstrip("/")
+    if not _VERSION_SUFFIX.search(base_path):
+        return "/chat/completions"
+    return _at_origin(client, _VERSION_SUFFIX.sub("/v2/chat/completions", base_path))
 
 
 def build_headers(access_token: Optional[str] = None) -> Dict[str, str]:

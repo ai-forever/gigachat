@@ -24,7 +24,7 @@ def test_default_values() -> None:
     assert agent_id_cvar.get() is None
     assert custom_headers_cvar.get() is None
     assert chat_url_cvar.get() == "/chat/completions"
-    assert chat_completions_url_cvar.get() == "/chat/completions"
+    assert chat_completions_url_cvar.get() is None
 
 
 def test_set_values() -> None:
@@ -75,4 +75,4 @@ def test_set_values() -> None:
     assert agent_id_cvar.get() is None
     assert custom_headers_cvar.get() is None
     assert chat_url_cvar.get() == "/chat/completions"
-    assert chat_completions_url_cvar.get() == "/chat/completions"
+    assert chat_completions_url_cvar.get() is None
