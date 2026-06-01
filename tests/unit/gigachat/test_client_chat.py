@@ -511,6 +511,17 @@ def test_chat_parse_raises_for_primary_length_finish_reason(httpx_mock: HTTPXMoc
             client.chat.parse("Solve 2+2", response_format=MathResult)
 
 
+def test_chat_parse_raises_for_top_level_primary_length_finish_reason(httpx_mock: HTTPXMock) -> None:
+    response_payload = copy.deepcopy(PRIMARY_CHAT_COMPLETION)
+    response_payload["finish_reason"] = "length"
+    response_payload["messages"][0]["content"] = [{"text": '{"steps": ["Шаг"]'}]
+    httpx_mock.add_response(url=CHAT_URL, json=response_payload)
+
+    with GigaChatSyncClient(base_url=BASE_URL, access_token=ACCESS_TOKEN) as client:
+        with pytest.raises(LengthFinishReasonError):
+            client.chat.parse("Solve 2+2", response_format=MathResult)
+
+
 def test_chat_access_token(httpx_mock: HTTPXMock) -> None:
     httpx_mock.add_response(url=CHAT_URL, json=CHAT_COMPLETION)
 
@@ -1139,6 +1150,17 @@ async def test_achat_parse_raises_for_primary_schema_mismatch(httpx_mock: HTTPXM
 async def test_achat_parse_raises_for_primary_length_finish_reason(httpx_mock: HTTPXMock) -> None:
     response_payload = copy.deepcopy(PRIMARY_CHAT_COMPLETION)
     response_payload["messages"][0]["finish_reason"] = "length"
+    response_payload["messages"][0]["content"] = [{"text": '{"steps": ["Шаг"]'}]
+    httpx_mock.add_response(url=CHAT_URL, json=response_payload)
+
+    async with GigaChatAsyncClient(base_url=BASE_URL, access_token=ACCESS_TOKEN) as client:
+        with pytest.raises(LengthFinishReasonError):
+            await client.achat.parse("Solve 2+2", response_format=MathResult)
+
+
+async def test_achat_parse_raises_for_top_level_primary_length_finish_reason(httpx_mock: HTTPXMock) -> None:
+    response_payload = copy.deepcopy(PRIMARY_CHAT_COMPLETION)
+    response_payload["finish_reason"] = "length"
     response_payload["messages"][0]["content"] = [{"text": '{"steps": ["Шаг"]'}]
     httpx_mock.add_response(url=CHAT_URL, json=response_payload)
 

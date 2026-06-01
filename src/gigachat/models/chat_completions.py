@@ -477,6 +477,7 @@ class ChatCompletionResponse(_ChatCompletionsAPIResponse):
     messages: List[ChatMessage] = Field(description="Returned chat messages.")
     message_id: Optional[str] = Field(default=None, description="Message identifier.")
     thread_id: Optional[str] = Field(default=None, description="Thread identifier.")
+    finish_reason: Optional[str] = Field(default=None, description="Generation finish reason.")
     usage: Optional[ChatUsage] = Field(default=None, description="Usage information.")
     tool_execution: Optional[ChatToolExecution] = Field(default=None, description="Top-level tool execution state.")
     logprobs: Optional[List[ChatLogprob]] = Field(default=None, description="Top-level logprob metadata.")

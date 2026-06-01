@@ -245,6 +245,7 @@ def test_chat_completion_response_parses_primary_contract() -> None:
             "output_tokens": 20,
             "total_tokens": 28,
         },
+        "finish_reason": "stop",
         "additional_data": [{"type": "tool_call", "name": "image_generation"}],
     }
 
@@ -267,6 +268,7 @@ def test_chat_completion_response_parses_primary_contract() -> None:
     assert response.usage is not None
     assert response.usage.input_tokens_details is not None
     assert response.usage.input_tokens_details.cached_tokens == 2
+    assert response.finish_reason == "stop"
     assert response.additional_data == [{"type": "tool_call", "name": "image_generation"}]
 
 

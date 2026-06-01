@@ -203,6 +203,9 @@ def _parse_primary_completion(
     if not completion.messages:
         raise ValueError("Response has no messages")
 
+    if completion.finish_reason == "length":
+        raise LengthFinishReasonError(completion)
+
     found_assistant_message = False
 
     for message in completion.messages:
