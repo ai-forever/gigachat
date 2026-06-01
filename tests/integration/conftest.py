@@ -11,7 +11,8 @@ from dotenv import load_dotenv
 
 from gigachat import GigaChat
 
-load_dotenv()
+if not os.getenv("CI"):
+    load_dotenv()
 
 # 2100-01-01 00:00:00 UTC (milliseconds) - ensures cassette tokens never appear expired during replay
 EXPIRES_AT_VALID = 4102444800000

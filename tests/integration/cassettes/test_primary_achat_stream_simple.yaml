@@ -1,6 +1,6 @@
 interactions:
 - request:
-    body: ''
+    body: scope=REDACTED
     headers:
       Accept:
       - '*/*'
@@ -11,13 +11,13 @@ interactions:
       Content-Length:
       - '0'
       Host:
-      - gigachat.ift.sberdevices.ru
+      - ngw.devices.sberbank.ru:9443
       User-Agent:
       - GigaChat-python-lib
       authorization:
       - Bearer REDACTED
     method: POST
-    uri: https://gigachat.ift.sberdevices.ru/v1/token
+    uri: https://ngw.devices.sberbank.ru:9443/api/v2/oauth
   response:
     body:
       string: '{"tok": "REDACTED", "exp": 4102444800}'
@@ -74,15 +74,13 @@ interactions:
       Content-Type:
       - application/json
       Host:
-      - gigachat.ift.sberdevices.ru
+      - gigachat.devices.sberbank.ru
       User-Agent:
       - GigaChat-python-lib
       authorization:
       - Bearer REDACTED
-      cookie:
-      - REDACTED
     method: POST
-    uri: https://gigachat.ift.sberdevices.ru/v2/chat/completions
+    uri: https://gigachat.devices.sberbank.ru/api/v2/chat/completions
   response:
     body:
       string: 'event: response.message.delta

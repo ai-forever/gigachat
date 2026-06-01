@@ -29,7 +29,7 @@ class StructuredAnswer(BaseModel):
     n: int = Field(ge=0, le=10)
 
 
-PRIMARY_MODEL = os.getenv("GIGACHAT_MODEL", "GigaChat")
+PRIMARY_MODEL = os.getenv("GIGACHAT_PRIMARY_TEST_MODEL", "GigaChat-3-Ultra")
 
 
 ORDER_STATUS_FUNCTION = {
