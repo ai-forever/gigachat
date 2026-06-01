@@ -148,9 +148,9 @@ Notes:
 
 - A plain string payload still works: `client.chat.create("Hello!")`.
 - Primary message `content` accepts a string, a single object, or a list. The SDK normalizes it to a list of content parts.
-- When you call through the client, `model` defaults to `GigaChat-2` unless you use `assistant_id` or an existing `storage.thread_id`.
+- When you call through the client, `model` defaults to `GigaChat` unless you use `assistant_id` or an existing `storage.thread_id`.
 - The SDK accepts top-level `response_format` and `reasoning` as convenience inputs on `ChatCompletionRequest`, but serializes them under `model_options`.
-- `tools` accepts full tool objects and supported shorthand strings such as `"code_interpreter"`, `"image_generate"`, `"web_search"`, `"url_content_extraction"`, `"model_3d_generate"`, and `"functions"`.
+- `tools` accepts full tool objects and supported shorthand strings such as `"code_interpreter"`, `"image_generate"`, `"web_search"`, `"url_content_extraction"`, and `"model_3d_generate"`.
 
 ### How to Think About `content`
 
@@ -349,15 +349,15 @@ During the transition, existing imports still resolve to compatibility aliases.
 | `from gigachat.models import ChatCompletion` | Previous response alias | `from gigachat.models import ChatCompletionResponse` |
 | `from gigachat.models import Usage` | Previous usage alias | `from gigachat.models import ChatUsage` |
 | `from gigachat.models import Storage` | Previous storage alias | `from gigachat.models import ChatStorage` |
-| `from gigachat.models import ChatCompletionChunk` | Previous stream chunk alias | `from gigachat.models.chat_completions import ChatCompletionChunk` |
-| `from gigachat.models import ChatFunctionCall` | Previous function-call alias | `from gigachat.models.chat_completions import ChatFunctionCall` |
+| `from gigachat.models import ChatCompletionChunk` | Previous stream chunk alias | `from gigachat.models import PrimaryChatCompletionChunk` |
+| `from gigachat.models import ChatFunctionCall` | Previous function-call alias | `from gigachat.models import PrimaryChatFunctionCall` |
 
-Use `gigachat.models.chat_completions` directly for primary types whose names collide with compatibility aliases.
+Use `Primary*` aliases, or direct imports from `gigachat.models.chat_completions`, for primary types whose names collide with compatibility aliases.
 
-Why direct imports matter:
+Why explicit primary imports matter:
 
 - some top-level names are intentionally kept as aliases for backwards compatibility
-- direct imports from `gigachat.models.chat_completions` remove ambiguity
+- primary aliases and direct imports from `gigachat.models.chat_completions` remove ambiguity
 - this is especially important for colliding names such as `ChatCompletionChunk`
 
 If you are doing a broad application migration, updating imports explicitly is often the clearest signal that the codepath now expects the v2 contract.
@@ -404,7 +404,7 @@ Use this checklist when upgrading an application from v1 to v2:
 ## Common Migration Mistakes
 
 - Renaming `client.chat(...)` to `client.chat.create(...)` but still reading `response.choices[0].message.content`.
-- Importing `ChatCompletionChunk` from `gigachat.models` and expecting the primary chunk shape.
+- Importing `ChatCompletionChunk` from `gigachat.models` and expecting the primary chunk shape; use `PrimaryChatCompletionChunk`.
 - Treating v2 as a field-for-field extension of the previous payload.
 - Moving sync code to `client.chat.create()` but leaving async code on root compatibility shims.
 - Passing a Pydantic model to the previous-contract create path instead of switching to `parse()`.

@@ -38,7 +38,6 @@ def _normalize_tool(value: Any) -> Any:
         "web_search",
         "url_content_extraction",
         "model_3d_generate",
-        "functions",
     )
     if isinstance(value, str):
         if value not in supported_tools:
@@ -302,10 +301,26 @@ class ChatFunctionSpecification(_ChatCompletionsModel):
                 values["name"] = values.pop("title", None)
 
             if values.get("parameters") in (None, "", {}) and "properties" in values:
-                values["parameters"] = {
-                    "type": "object",
-                    "properties": values.pop("properties", {}),
-                }
+                parameter_keys = (
+                    "type",
+                    "properties",
+                    "required",
+                    "additionalProperties",
+                    "$defs",
+                    "definitions",
+                    "dependentRequired",
+                    "dependentSchemas",
+                    "patternProperties",
+                    "propertyNames",
+                    "minProperties",
+                    "maxProperties",
+                )
+                parameters = {}
+                for key in parameter_keys:
+                    if key in values:
+                        parameters[key] = values.pop(key)
+                parameters.setdefault("type", "object")
+                values["parameters"] = parameters
 
         return values
 

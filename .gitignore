@@ -167,3 +167,4 @@ cython_debug/
 *.tmp
 **/.free-code-logs/
 local/
+PROBLEMS.md

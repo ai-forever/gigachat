@@ -1,43 +1,126 @@
 interactions:
 - request:
-    body: scope=REDACTED
+    body: ''
     headers:
+      Accept:
+      - '*/*'
+      Accept-Encoding:
+      - gzip, deflate
+      Connection:
+      - keep-alive
+      Content-Length:
+      - '0'
+      Host:
+      - gigachat.ift.sberdevices.ru
       User-Agent:
       - GigaChat-python-lib
       authorization:
       - Bearer REDACTED
     method: POST
-    uri: https://ngw.devices.sberbank.ru:9443/api/v2/oauth
+    uri: https://gigachat.ift.sberdevices.ru/v1/token
   response:
     body:
-      string: '{"access_token": "REDACTED", "expires_at": 4102444800000}'
+      string: '{"tok": "REDACTED", "exp": 4102444800}'
     headers:
+      Connection:
+      - keep-alive
       Content-Type:
-      - application/json
+      - application/json; charset=utf-8
+      Date:
+      - Mon, 01 Jun 2026 13:51:05 GMT
+      Keep-Alive:
+      - timeout=15
+      Server:
+      - nginx
+      Transfer-Encoding:
+      - chunked
+      Vary:
+      - Accept-Encoding
+      X-Backend:
+      - itsme
+      X-SP-CRID:
+      - '107858057:1'
+      access-control-allow-credentials:
+      - 'true'
+      access-control-allow-headers:
+      - Origin, X-Requested-With, Content-Type, Accept, Authorization
+      access-control-allow-methods:
+      - GET, POST, DELETE, OPTIONS
+      access-control-allow-origin:
+      - https://gigachat.sberdevices.ru
+      content-length:
+      - '200'
+      x-request-id:
+      - 44d63de4-751a-474a-99c1-7ad01c41d8ba
+      x-session-id:
+      - a8226d6c-bf78-49b0-9ab2-5557fa3a5828
     status:
       code: 200
       message: OK
 - request:
-    body: '{"model": "GigaChat", "messages": [{"content": [{"text": "Generate one support ticket code."}], "role": "user"}], "model_options": {"response_format": {"type": "regex", "regex": "[A-Z]{3}-\\d{4}"}}}'
+    body: '{"model": "GigaChat-3-Ultra", "messages": [{"content": [{"text": "Generate
+      one support ticket code."}], "role": "user"}], "model_options": {"response_format":
+      {"type": "regex", "regex": "[A-Z]{3}-\\d{4}"}}}'
     headers:
+      Accept:
+      - '*/*'
+      Accept-Encoding:
+      - gzip, deflate
+      Connection:
+      - keep-alive
+      Content-Length:
+      - '206'
       Content-Type:
       - application/json
+      Host:
+      - gigachat.ift.sberdevices.ru
       User-Agent:
       - GigaChat-python-lib
       authorization:
       - Bearer REDACTED
+      cookie:
+      - REDACTED
     method: POST
-    uri: https://gigachat.devices.sberbank.ru/api/v2/chat/completions
+    uri: https://gigachat.ift.sberdevices.ru/v2/chat/completions
   response:
     body:
-      string: '{"model":"GigaChat:2.0.28.2","created_at":1768996180,"message_id":"message-primary-regex","messages":[{"role":"assistant","content":[{"text":"SDK-2048"}],"finish_reason":"stop"}],"usage":{"input_tokens":14,"output_tokens":4,"total_tokens":18}}'
+      string: '{"model": "GigaChat-3-Ultra:32.3.18.5", "created_at": 1780321866, "messages":
+        [{"role": "assistant", "content": [{"text": "TKT-2023"}]}], "finish_reason":
+        "stop", "usage": {"input_tokens": 18, "input_tokens_details": {"prompt_tokens":
+        18, "cached_tokens": 0}, "output_tokens": 8, "total_tokens": 26}}'
     headers:
+      Connection:
+      - keep-alive
       Content-Type:
       - application/json; charset=utf-8
-      X-Request-Id:
-      - primary-regex-request
-      X-Session-Id:
-      - primary-regex-session
+      Date:
+      - Mon, 01 Jun 2026 13:51:06 GMT
+      Keep-Alive:
+      - timeout=15
+      Server:
+      - nginx
+      Transfer-Encoding:
+      - chunked
+      Vary:
+      - Accept-Encoding
+      X-Backend:
+      - itsme
+      X-SP-CRID:
+      - '10716813714:1'
+      access-control-allow-credentials:
+      - 'true'
+      access-control-allow-headers:
+      - Origin, X-Requested-With, Content-Type, Accept, Authorization
+      access-control-allow-methods:
+      - GET, POST, DELETE, OPTIONS
+      access-control-allow-origin:
+      - https://gigachat.sberdevices.ru
+      content-length:
+      - '277'
+      x-request-id:
+      - 0fc63363-4476-4046-9aa4-161da856bcc3
+      x-session-id:
+      - 1fdd2ab8-d2e9-42ff-9953-2008ceba4bf4
     status:
       code: 200
       message: OK

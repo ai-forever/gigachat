@@ -1,6 +1,7 @@
 from typing import List
 
-from pydantic import BaseModel
+import pytest
+from pydantic import BaseModel, ValidationError
 
 from gigachat.models import ChatCompletionRequest, ChatCompletionResponse, ChatMessage
 from gigachat.models.chat_completions import ChatCompletionChunk, ChatResponseFormat
@@ -83,6 +84,7 @@ def test_chat_completion_request_round_trip() -> None:
                                 "location": {"type": "string"},
                                 "num_days": {"type": "integer"},
                             },
+                            "required": ["location"],
                             "few_shot_examples": [
                                 {
                                     "request": "Погода в Москве на три дня",
@@ -113,9 +115,12 @@ def test_chat_completion_request_round_trip() -> None:
     assert request.tools[1].functions.specifications is not None
     assert request.tools[1].functions.specifications[0].name == "gismeteo-get_n_day_weather_forecast"
     assert request.tools[1].functions.specifications[0].parameters["type"] == "object"
+    assert request.tools[1].functions.specifications[0].parameters["required"] == ["location"]
     assert dumped["messages"][0]["content"] == [{"text": "Верни JSON-ответ"}]
     assert dumped["model_options"]["response_format"]["schema"]["properties"]["answer"]["title"] == "Answer"
     assert dumped["tools"][1]["functions"]["specifications"][0]["name"] == "gismeteo-get_n_day_weather_forecast"
+    assert dumped["tools"][1]["functions"]["specifications"][0]["parameters"]["required"] == ["location"]
+    assert "required" not in dumped["tools"][1]["functions"]["specifications"][0]
 
 
 def test_chat_completion_request_moves_legacy_root_options_to_model_options() -> None:
@@ -328,7 +333,7 @@ def test_chat_completion_request_normalizes_string_tools() -> None:
     request = ChatCompletionRequest.model_validate(
         {
             "messages": [{"role": "user", "content": "Найди свежие новости"}],
-            "tools": ["code_interpreter", "web_search", "functions"],
+            "tools": ["code_interpreter", "web_search"],
         }
     )
 
@@ -338,13 +343,20 @@ def test_chat_completion_request_normalizes_string_tools() -> None:
     assert request.tools[0].code_interpreter == {}
     assert request.tools[1].web_search is not None
     assert request.tools[1].web_search.model_dump(exclude_none=True, by_alias=True) == {}
-    assert request.tools[2].functions is not None
-    assert request.tools[2].functions.model_dump(exclude_none=True, by_alias=True) == {}
     assert dumped["tools"] == [
         {"code_interpreter": {}},
         {"web_search": {}},
-        {"functions": {}},
     ]
+
+
+def test_chat_completion_request_rejects_empty_functions_shorthand() -> None:
+    with pytest.raises(ValidationError, match="'tools' string items must be one of"):
+        ChatCompletionRequest.model_validate(
+            {
+                "messages": [{"role": "user", "content": "Вызови функцию"}],
+                "tools": ["functions"],
+            }
+        )
 
 
 def test_chat_tool_accepts_string_shorthand() -> None:

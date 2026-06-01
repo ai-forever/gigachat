@@ -12,12 +12,18 @@ from gigachat.models import (
 from gigachat.models import (
     ChatCompletionRequest,
     ChatCompletionResponse,
+    PrimaryChatCompletionChunk,
+    PrimaryChatFunctionCall,
+)
+from gigachat.models import (
+    ChatFunctionCall as CompatChatFunctionCall,
 )
 from gigachat.models import chat as chat_models
 from gigachat.models.chat import (
     Chat,
     ChatCompletion,
     ChatCompletionChunk,
+    ChatFunctionCall,
     Function,
     FunctionCall,
     FunctionParameters,
@@ -26,7 +32,8 @@ from gigachat.models.chat import (
     MessagesRole,
     Usage,
 )
-from gigachat.models.chat_completions import ChatCompletionChunk as PrimaryChatCompletionChunk
+from gigachat.models.chat_completions import ChatCompletionChunk as DirectPrimaryChatCompletionChunk
+from gigachat.models.chat_completions import ChatFunctionCall as DirectPrimaryChatFunctionCall
 
 TEST_DATA_DIR = Path(__file__).resolve().parents[3] / "data"
 
@@ -111,9 +118,13 @@ def test_chat_module_exports_public_models_without_legacy_names() -> None:
 
 def test_gigachat_models_exports_keep_compat_and_primary_contracts_separate() -> None:
     assert cast(object, CompatChatCompletionChunk) is cast(object, ChatCompletionChunk)
+    assert cast(object, CompatChatFunctionCall) is cast(object, ChatFunctionCall)
     assert cast(object, ChatCompletionRequest) is not cast(object, Chat)
     assert cast(object, ChatCompletionResponse) is not cast(object, ChatCompletion)
+    assert cast(object, PrimaryChatCompletionChunk) is cast(object, DirectPrimaryChatCompletionChunk)
+    assert cast(object, PrimaryChatFunctionCall) is cast(object, DirectPrimaryChatFunctionCall)
     assert cast(object, PrimaryChatCompletionChunk) is not cast(object, CompatChatCompletionChunk)
+    assert cast(object, PrimaryChatFunctionCall) is not cast(object, CompatChatFunctionCall)
 
 
 def test_chat_request_round_trip_unchanged() -> None:

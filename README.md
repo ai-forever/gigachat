@@ -175,58 +175,74 @@ with GigaChat() as client:
 Enable the model to call functions (tools):
 
 ```python
+from typing import Optional
+
 from gigachat import GigaChat
-from gigachat.models import ChatCompletionRequest, ChatMessage
+from gigachat.models import (
+    ChatCompletionRequest,
+    ChatFunctionSpecification,
+    ChatMessage,
+    ChatRankerOptions,
+    ChatTool,
+    PrimaryChatFunctionCall,
+)
+
+
+def extract_function_call(message: ChatMessage) -> Optional[PrimaryChatFunctionCall]:
+    if message.function_call is not None:
+        return message.function_call
+
+    for part in message.content or []:
+        if part.function_call is not None:
+            return part.function_call
+
+    return None
+
+
+weather_function = ChatFunctionSpecification(
+    name="get_weather",
+    description="Get current weather for a location",
+    parameters={
+        "type": "object",
+        "properties": {
+            "location": {
+                "type": "string",
+                "description": "City name, e.g., Tokyo",
+            },
+            "unit": {
+                "type": "string",
+                "enum": ["celsius", "fahrenheit"],
+                "description": "Temperature unit",
+            },
+        },
+        "required": ["location"],
+    },
+)
 
 chat = ChatCompletionRequest(
     messages=[ChatMessage(role="user", content="What's the weather in Tokyo?")],
-    tools=[
-        {
-            "functions": {
-                "specifications": [
-                    {
-                        "name": "get_weather",
-                        "description": "Get current weather for a location",
-                        "parameters": {
-                            "type": "object",
-                            "properties": {
-                                "location": {
-                                    "type": "string",
-                                    "description": "City name, e.g., Tokyo",
-                                },
-                                "unit": {
-                                    "type": "string",
-                                    "enum": ["celsius", "fahrenheit"],
-                                    "description": "Temperature unit",
-                                },
-                            },
-                            "required": ["location"],
-                        },
-                    }
-                ]
-            }
-        }
-    ],
+    tools=[ChatTool(functions={"specifications": [weather_function]})],
 )
 
 with GigaChat() as client:
     response = client.chat.create(chat)
     message = response.messages[0]
+    function_call = extract_function_call(message)
 
-    if message.function_call is not None:
-        print(f"Function: {message.function_call.name}")
-        print(f"Arguments: {message.function_call.arguments}")
+    if function_call is not None:
+        print(f"Function: {function_call.name}")
+        print(f"Arguments: {function_call.arguments}")
 ```
 
-> **Note:** By default, `function_ranker` is not sent.
+> **Note:** By default, `ranker_options` is not sent.
 
 Enable function/tool ranking explicitly and limit the number of ranked functions:
 
 ```python
-chat = Chat(
-    messages=[Messages(role=MessagesRole.USER, content="What's the weather in Tokyo?")],
-    functions=[weather_function],
-    function_ranker={"enabled": True, "top_n": 3},
+chat = ChatCompletionRequest(
+    messages=[ChatMessage(role="user", content="What's the weather in Tokyo?")],
+    tools=[ChatTool(functions={"specifications": [weather_function]})],
+    ranker_options=ChatRankerOptions(enabled=True, top_n=3),
 )
 ```
 

@@ -29,6 +29,9 @@ from gigachat.models.chat import (
     Usage,
 )
 from gigachat.models.chat_completions import (
+    ChatCompletionChunk as PrimaryChatCompletionChunk,
+)
+from gigachat.models.chat_completions import (
     ChatCompletionRequest,
     ChatCompletionResponse,
     ChatContentFile,
@@ -55,6 +58,9 @@ from gigachat.models.chat_completions import (
     ChatUsageInputTokensDetails,
     ChatUserInfo,
     ChatWebSearchTool,
+)
+from gigachat.models.chat_completions import (
+    ChatFunctionCall as PrimaryChatFunctionCall,
 )
 from gigachat.models.embeddings import Embedding, Embeddings, EmbeddingsUsage
 from gigachat.models.files import DeletedFile, Image, UploadedFile, UploadedFiles
@@ -137,6 +143,8 @@ __all__ = (
     "Model",
     "Models",
     "OpenApiFunctions",
+    "PrimaryChatCompletionChunk",
+    "PrimaryChatFunctionCall",
     "ResponseFormat",
     "Storage",
     "Thread",

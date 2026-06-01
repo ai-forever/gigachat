@@ -1,115 +1,570 @@
 interactions:
 - request:
-    body: scope=REDACTED
+    body: ''
     headers:
+      Accept:
+      - '*/*'
+      Accept-Encoding:
+      - gzip, deflate
+      Connection:
+      - keep-alive
+      Content-Length:
+      - '0'
+      Host:
+      - gigachat.ift.sberdevices.ru
       User-Agent:
       - GigaChat-python-lib
       authorization:
       - Bearer REDACTED
     method: POST
-    uri: https://ngw.devices.sberbank.ru:9443/api/v2/oauth
+    uri: https://gigachat.ift.sberdevices.ru/v1/token
   response:
     body:
-      string: '{"access_token": "REDACTED", "expires_at": 4102444800000}'
+      string: '{"tok": "REDACTED", "exp": 4102444800}'
     headers:
+      Connection:
+      - keep-alive
       Content-Type:
-      - application/json
+      - application/json; charset=utf-8
+      Date:
+      - Mon, 01 Jun 2026 13:51:12 GMT
+      Keep-Alive:
+      - timeout=15
+      Server:
+      - nginx
+      Transfer-Encoding:
+      - chunked
+      Vary:
+      - Accept-Encoding
+      X-Backend:
+      - itsme
+      X-SP-CRID:
+      - '183532168:1'
+      access-control-allow-credentials:
+      - 'true'
+      access-control-allow-headers:
+      - Origin, X-Requested-With, Content-Type, Accept, Authorization
+      access-control-allow-methods:
+      - GET, POST, DELETE, OPTIONS
+      access-control-allow-origin:
+      - https://gigachat.sberdevices.ru
+      content-length:
+      - '200'
+      x-request-id:
+      - c950e585-fd6f-4f54-98f9-ab9842181afc
+      x-session-id:
+      - af4b522b-0bcb-49e2-9cbc-41c20e0515b6
     status:
       code: 200
       message: OK
 - request:
-    body: '{"model": "GigaChat", "messages": [{"content": [{"text": "What is new in the latest stable Python release?"}], "role": "user"}], "tool_config": {"mode": "forced", "tool_name": "web_search"}, "tools": [{"web_search": {"type": "actual_info_web_search"}}]}'
+    body: '{"model": "GigaChat-3-Ultra", "messages": [{"content": [{"text": "What
+      is new in the latest stable Python release?"}], "role": "user"}], "tool_config":
+      {"mode": "forced", "tool_name": "web_search"}, "tools": [{"web_search": {"type":
+      "actual_info_web_search"}}]}'
     headers:
+      Accept:
+      - '*/*'
+      Accept-Encoding:
+      - gzip, deflate
+      Connection:
+      - keep-alive
+      Content-Length:
+      - '261'
       Content-Type:
       - application/json
+      Host:
+      - gigachat.ift.sberdevices.ru
       User-Agent:
       - GigaChat-python-lib
       authorization:
       - Bearer REDACTED
+      cookie:
+      - REDACTED
     method: POST
-    uri: https://gigachat.devices.sberbank.ru/api/v2/chat/completions
+    uri: https://gigachat.ift.sberdevices.ru/v2/chat/completions
   response:
     body:
-      string: '{"model":"GigaChat:2.0.28.2","created_at":1768996190,"message_id":"message-primary-web-search","messages":[{"role":"assistant","content":[{"text":"Python 3.14 adds language, typing, and standard-library improvements.","inline_data":{"sources":{"1":{"title":"Python 3.14.0 documentation","url":"https://docs.python.org/3/whatsnew/3.14.html"}}}}],"finish_reason":"stop"}],"usage":{"input_tokens":29,"output_tokens":18,"total_tokens":47}}'
+      string: '{"model": "GigaChat-3-Ultra:32.3.18.5", "created_at": 1780321888, "messages":
+        [{"role": "assistant", "tool_state_id": "019e8374-28b2-741f-a05c-54c968fd20c2",
+        "content": [{"text": "The latest stable release of Python, Python 3.15, has
+        introduced several significant changes and improvements. Here are some of
+        the key highlights:\n\n1. **JIT Compiler Improvements**: Python 3.15 alpha
+        releases have shown performance gains of up to 7-8% on some platforms due
+        to enhancements in the JIT compiler. This is particularly notable on AArch64
+        macOS and x86-64 Linux systems [sources=[2]].\n\n2. **UTF-8 as Default Encoding**:
+        PEP 686 has introduced UTF-8 as the default text encoding for files that do
+        not specify an encoding, which aims to improve compatibility and reduce encoding
+        errors [sources=[2]].\n\n3. **New Statistical Sampling Profiler**: PEP 799
+        introduces a high-frequency, low-overhead statistical sampling profiler, which
+        can help developers optimize their code more effectively [sources=[2]].\n\n4.
+        **Enhanced Error Messages**: The error messages in Python 3.15 have been improved
+        for better clarity and usefulness, making debugging easier for developers
+        [sources=[2]].\n\n5. **Dedented Multiline Strings (d-strings)**: PEP 822 proposes
+        a new syntax for multiline strings that automatically strips common leading
+        whitespace, simplifying the writing of multiline strings within indented code
+        blocks [sources=[2]].\n\n6. **Security Enhancements**: The Python Software
+        Foundation has received a $1.5 million investment from Anthropic to enhance
+        security across the Python ecosystem, focusing on protecting PyPI users from
+        supply-chain attacks [sources=[2]].\n\n7. **Library and Tooling Updates**:
+        \n   - **pandas 3.0**: This major release includes breaking changes such as
+        a dedicated string dtype by default and copy-on-write semantics, which affect
+        most pandas users. It also introduces new expression syntax and zero-copy
+        data transfer capabilities [sources=[2]].\n   - **Polars 1.37**: This release
+        brings performance improvements and requires Python 3.10 or higher, dropping
+        support for Python 3.9 [sources=[2]].\n   - **PyTorch 2.10**: This version
+        deprecates TorchScript and recommends migrating to `torch.export` for model
+        deployment, along with various performance optimizations [sources=[2]].\n\nThese
+        updates reflect ongoing efforts to improve Python''s performance, security,
+        and usability, making it a more robust and efficient programming language
+        for developers.", "inline_data": {"images": [], "sources": {"1": {"url": "https://learn.microsoft.com/ru-ru/agent-framework/support/upgrade/python-2026-significant-changes",
+        "title": "\u0420\u0443\u043a\u043e\u0432\u043e\u0434\u0441\u0442\u0432\u043e
+        \u043f\u043e \u0437\u043d\u0430\u0447\u0438\u0442\u0435\u043b\u044c\u043d\u044b\u043c
+        \u0438\u0437\u043c\u0435\u043d\u0435\u043d\u0438\u044f\u043c \u0432 Python
+        2026"}, "2": {"url": "https://realpython.com/python-news-february-2026/",
+        "title": "pandas 3.0 Lands Breaking Changes and Other Python News for February
+        2026..."}}}}]}], "finish_reason": "stop", "usage": {"input_tokens": 23767,
+        "input_tokens_details": {"prompt_tokens": 23767, "cached_tokens": 2557}, "output_tokens":
+        570, "total_tokens": 24337}}'
     headers:
+      Connection:
+      - keep-alive
       Content-Type:
       - application/json; charset=utf-8
-      X-Request-Id:
-      - primary-web-search-request
-      X-Session-Id:
-      - primary-web-search-session
+      Date:
+      - Mon, 01 Jun 2026 13:51:28 GMT
+      Keep-Alive:
+      - timeout=15
+      Server:
+      - nginx
+      Transfer-Encoding:
+      - chunked
+      Vary:
+      - Accept-Encoding
+      X-Backend:
+      - itsme
+      X-SP-CRID:
+      - '10709768473:1'
+      access-control-allow-credentials:
+      - 'true'
+      access-control-allow-headers:
+      - Origin, X-Requested-With, Content-Type, Accept, Authorization
+      access-control-allow-methods:
+      - GET, POST, DELETE, OPTIONS
+      access-control-allow-origin:
+      - https://gigachat.sberdevices.ru
+      content-length:
+      - '3040'
+      x-request-id:
+      - e44c2315-d89a-4939-b207-e4bbb044d3d0
+      x-session-id:
+      - fd9cd139-ec24-4a44-9e44-6ad932e49e99
     status:
       code: 200
       message: OK
 - request:
-    body: '{"model": "GigaChat", "messages": [{"content": [{"text": "Calculate the sum of the first 20 prime numbers. Use code."}], "role": "user"}], "tool_config": {"mode": "auto"}, "tools": [{"code_interpreter": {}}]}'
+    body: ''
     headers:
-      Content-Type:
-      - application/json
+      Accept:
+      - '*/*'
+      Accept-Encoding:
+      - gzip, deflate
+      Connection:
+      - keep-alive
+      Content-Length:
+      - '0'
+      Host:
+      - gigachat.ift.sberdevices.ru
       User-Agent:
       - GigaChat-python-lib
       authorization:
       - Bearer REDACTED
+      cookie:
+      - REDACTED
     method: POST
-    uri: https://gigachat.devices.sberbank.ru/api/v2/chat/completions
+    uri: https://gigachat.ift.sberdevices.ru/v1/token
   response:
     body:
-      string: '{"model":"GigaChat:2.0.28.2","created_at":1768996191,"message_id":"message-primary-code","messages":[{"role":"assistant","content":[{"tool_execution":{"name":"code_interpreter","status":"success"}},{"text":"The sum of the first 20 prime numbers is 639."}],"finish_reason":"stop"}],"usage":{"input_tokens":25,"output_tokens":14,"total_tokens":39}}'
+      string: '{"tok": "REDACTED", "exp": 4102444800}'
     headers:
+      Connection:
+      - keep-alive
       Content-Type:
       - application/json; charset=utf-8
-      X-Request-Id:
-      - primary-code-request
-      X-Session-Id:
-      - primary-code-session
+      Date:
+      - Mon, 01 Jun 2026 13:51:29 GMT
+      Keep-Alive:
+      - timeout=15
+      Server:
+      - nginx
+      Transfer-Encoding:
+      - chunked
+      Vary:
+      - Accept-Encoding
+      X-Backend:
+      - itsme
+      X-SP-CRID:
+      - '28977468352:1'
+      access-control-allow-credentials:
+      - 'true'
+      access-control-allow-headers:
+      - Origin, X-Requested-With, Content-Type, Accept, Authorization
+      access-control-allow-methods:
+      - GET, POST, DELETE, OPTIONS
+      access-control-allow-origin:
+      - https://gigachat.sberdevices.ru
+      content-length:
+      - '200'
+      x-request-id:
+      - 56b2fccc-a7e4-4333-a701-b5696db5b242
+      x-session-id:
+      - 2e7c8178-df7e-47a0-b681-770bee564725
     status:
       code: 200
       message: OK
 - request:
-    body: '{"model": "GigaChat", "messages": [{"content": [{"text": "Read https://docs.python.org/3/library/pathlib.html and list three use cases for pathlib."}], "role": "user"}], "tool_config": {"mode": "forced", "tool_name": "url_content_extraction"}, "tools": [{"url_content_extraction": {}}]}'
+    body: '{"model": "GigaChat-3-Ultra", "messages": [{"content": [{"text": "Calculate
+      the sum of the first 20 prime numbers. Use code."}], "role": "user"}], "tool_config":
+      {"mode": "auto"}, "tools": [{"code_interpreter": {}}]}'
     headers:
+      Accept:
+      - '*/*'
+      Accept-Encoding:
+      - gzip, deflate
+      Connection:
+      - keep-alive
+      Content-Length:
+      - '216'
       Content-Type:
       - application/json
+      Host:
+      - gigachat.ift.sberdevices.ru
       User-Agent:
       - GigaChat-python-lib
       authorization:
       - Bearer REDACTED
+      cookie:
+      - REDACTED
     method: POST
-    uri: https://gigachat.devices.sberbank.ru/api/v2/chat/completions
+    uri: https://gigachat.ift.sberdevices.ru/v2/chat/completions
   response:
     body:
-      string: '{"model":"GigaChat:2.0.28.2","created_at":1768996192,"message_id":"message-primary-url","messages":[{"role":"assistant","content":[{"tool_execution":{"name":"url_content_extraction","status":"success"}},{"text":"pathlib can create paths, inspect filesystem metadata, and iterate directories."}],"finish_reason":"stop"}],"usage":{"input_tokens":31,"output_tokens":17,"total_tokens":48}}'
+      string: '{"model": "GigaChat-3-Ultra:32.3.18.5", "created_at": 1780321894, "messages":
+        [{"role": "assistant", "tool_state_id": "019e8374-4195-79f1-98ec-55a4de3ab317",
+        "content": [{"text": "The sum of the first 20 prime numbers is 639."}]}],
+        "finish_reason": "stop", "usage": {"input_tokens": 3963, "input_tokens_details":
+        {"prompt_tokens": 3963, "cached_tokens": 3710}, "output_tokens": 157, "total_tokens":
+        4120}}'
     headers:
+      Connection:
+      - keep-alive
       Content-Type:
       - application/json; charset=utf-8
-      X-Request-Id:
-      - primary-url-request
-      X-Session-Id:
-      - primary-url-session
+      Date:
+      - Mon, 01 Jun 2026 13:51:34 GMT
+      Keep-Alive:
+      - timeout=15
+      Server:
+      - nginx
+      Transfer-Encoding:
+      - chunked
+      Vary:
+      - Accept-Encoding
+      X-Backend:
+      - itsme
+      X-SP-CRID:
+      - '251390490:1'
+      access-control-allow-credentials:
+      - 'true'
+      access-control-allow-headers:
+      - Origin, X-Requested-With, Content-Type, Accept, Authorization
+      access-control-allow-methods:
+      - GET, POST, DELETE, OPTIONS
+      access-control-allow-origin:
+      - https://gigachat.sberdevices.ru
+      content-length:
+      - '380'
+      x-request-id:
+      - 5948e0fd-1b77-45ca-95fd-c5d9025a953d
+      x-session-id:
+      - 36ac085a-59aa-4e8e-961e-9a7b53caec81
     status:
       code: 200
       message: OK
 - request:
-    body: '{"model": "GigaChat", "messages": [{"content": [{"text": "Create a simple square icon concept for a Python SDK release."}], "role": "user"}], "tool_config": {"mode": "forced", "tool_name": "image_generate"}, "tools": [{"image_generate": {}}]}'
+    body: ''
     headers:
-      Content-Type:
-      - application/json
+      Accept:
+      - '*/*'
+      Accept-Encoding:
+      - gzip, deflate
+      Connection:
+      - keep-alive
+      Content-Length:
+      - '0'
+      Host:
+      - gigachat.ift.sberdevices.ru
       User-Agent:
       - GigaChat-python-lib
       authorization:
       - Bearer REDACTED
+      cookie:
+      - REDACTED
     method: POST
-    uri: https://gigachat.devices.sberbank.ru/api/v2/chat/completions
+    uri: https://gigachat.ift.sberdevices.ru/v1/token
   response:
     body:
-      string: '{"model":"GigaChat:2.0.28.2","created_at":1768996193,"message_id":"message-primary-image","messages":[{"role":"assistant","content":[{"text":"Generated a square Python SDK release icon concept."},{"files":[{"id":"generated-image-1","target":"image","mime":"image/png"}]}],"finish_reason":"stop"}],"usage":{"input_tokens":24,"output_tokens":9,"total_tokens":33}}'
+      string: '{"tok": "REDACTED", "exp": 4102444800}'
     headers:
+      Connection:
+      - keep-alive
       Content-Type:
       - application/json; charset=utf-8
-      X-Request-Id:
-      - primary-image-request
-      X-Session-Id:
-      - primary-image-session
+      Date:
+      - Mon, 01 Jun 2026 13:51:35 GMT
+      Keep-Alive:
+      - timeout=15
+      Server:
+      - nginx
+      Transfer-Encoding:
+      - chunked
+      Vary:
+      - Accept-Encoding
+      X-Backend:
+      - itsme
+      X-SP-CRID:
+      - '9048223857:1'
+      access-control-allow-credentials:
+      - 'true'
+      access-control-allow-headers:
+      - Origin, X-Requested-With, Content-Type, Accept, Authorization
+      access-control-allow-methods:
+      - GET, POST, DELETE, OPTIONS
+      access-control-allow-origin:
+      - https://gigachat.sberdevices.ru
+      content-length:
+      - '200'
+      x-request-id:
+      - 87c711b2-f65f-4f05-9a0c-2be1e74fa815
+      x-session-id:
+      - c2700118-352d-448f-8d22-35fefc021823
+    status:
+      code: 200
+      message: OK
+- request:
+    body: '{"model": "GigaChat-3-Ultra", "messages": [{"content": [{"text": "Read
+      https://docs.python.org/3/library/pathlib.html and list three use cases for
+      pathlib."}], "role": "user"}], "tool_config": {"mode": "forced", "tool_name":
+      "url_content_extraction"}, "tools": [{"url_content_extraction": {}}]}'
+    headers:
+      Accept:
+      - '*/*'
+      Accept-Encoding:
+      - gzip, deflate
+      Connection:
+      - keep-alive
+      Content-Length:
+      - '294'
+      Content-Type:
+      - application/json
+      Host:
+      - gigachat.ift.sberdevices.ru
+      User-Agent:
+      - GigaChat-python-lib
+      authorization:
+      - Bearer REDACTED
+      cookie:
+      - REDACTED
+    method: POST
+    uri: https://gigachat.ift.sberdevices.ru/v2/chat/completions
+  response:
+    body:
+      string: '{"model": "GigaChat-3-Ultra:32.3.18.5", "created_at": 1780321909, "messages":
+        [{"role": "assistant", "tool_state_id": "019e8374-7b4a-7ece-8c44-cea79f702dc3",
+        "content": [{"text": "The `pathlib` module in Python provides an object-oriented
+        approach to handling filesystem paths. Here are three use cases for `pathlib`:\n\n1.
+        **Cross-Platform Path Handling**: `pathlib` allows you to work with file paths
+        in a way that is consistent across different operating systems. For example,
+        you can create a path object using `Path(''some/directory'')` and it will
+        automatically use the correct path separator for the operating system you
+        are on, whether it''s Windows or Unix-based systems.\n\n2. **Path Manipulation**:
+        You can easily manipulate paths using `pathlib`. For instance, you can join
+        paths using the `/` operator, get the parent directory with `.parent`, or
+        check if a path is absolute with `.is_absolute()`. This makes it easy to navigate
+        and modify file paths without worrying about the underlying system''s path
+        conventions.\n\n3. **File and Directory Operations**: `pathlib` provides methods
+        to perform common filesystem operations such as checking if a path exists
+        with `.exists()`, determining if a path is a directory with `.is_dir()`, or
+        opening files directly from a path object with `.open()`. This simplifies
+        file handling by integrating these operations into the path object itself.\n\nThese
+        features make `pathlib` a powerful tool for managing file paths and performing
+        filesystem operations in a clean and Pythonic way."}]}], "finish_reason":
+        "stop", "usage": {"input_tokens": 17493, "input_tokens_details": {"prompt_tokens":
+        17493, "cached_tokens": 830}, "output_tokens": 306, "total_tokens": 17799}}'
+    headers:
+      Connection:
+      - keep-alive
+      Content-Type:
+      - application/json; charset=utf-8
+      Date:
+      - Mon, 01 Jun 2026 13:51:49 GMT
+      Keep-Alive:
+      - timeout=15
+      Server:
+      - nginx
+      Transfer-Encoding:
+      - chunked
+      Vary:
+      - Accept-Encoding
+      X-Backend:
+      - itsme
+      X-SP-CRID:
+      - '108069516:1'
+      access-control-allow-credentials:
+      - 'true'
+      access-control-allow-headers:
+      - Origin, X-Requested-With, Content-Type, Accept, Authorization
+      access-control-allow-methods:
+      - GET, POST, DELETE, OPTIONS
+      access-control-allow-origin:
+      - https://gigachat.sberdevices.ru
+      content-length:
+      - '1688'
+      x-request-id:
+      - 4370275a-1355-4cd9-9323-b25adec05a98
+      x-session-id:
+      - 9b440c49-9665-4872-93d4-42ce2be138bb
+    status:
+      code: 200
+      message: OK
+- request:
+    body: ''
+    headers:
+      Accept:
+      - '*/*'
+      Accept-Encoding:
+      - gzip, deflate
+      Connection:
+      - keep-alive
+      Content-Length:
+      - '0'
+      Host:
+      - gigachat.ift.sberdevices.ru
+      User-Agent:
+      - GigaChat-python-lib
+      authorization:
+      - Bearer REDACTED
+      cookie:
+      - REDACTED
+    method: POST
+    uri: https://gigachat.ift.sberdevices.ru/v1/token
+  response:
+    body:
+      string: '{"tok": "REDACTED", "exp": 4102444800}'
+    headers:
+      Connection:
+      - keep-alive
+      Content-Type:
+      - application/json; charset=utf-8
+      Date:
+      - Mon, 01 Jun 2026 13:51:50 GMT
+      Keep-Alive:
+      - timeout=15
+      Server:
+      - nginx
+      Transfer-Encoding:
+      - chunked
+      Vary:
+      - Accept-Encoding
+      X-Backend:
+      - itsme
+      X-SP-CRID:
+      - '28865912791:1'
+      access-control-allow-credentials:
+      - 'true'
+      access-control-allow-headers:
+      - Origin, X-Requested-With, Content-Type, Accept, Authorization
+      access-control-allow-methods:
+      - GET, POST, DELETE, OPTIONS
+      access-control-allow-origin:
+      - https://gigachat.sberdevices.ru
+      content-length:
+      - '200'
+      x-request-id:
+      - 8fc20fcf-d4ea-4392-9d57-56e22c49f8b6
+      x-session-id:
+      - 4883cfe3-52a9-4294-b253-34f99e05752e
+    status:
+      code: 200
+      message: OK
+- request:
+    body: '{"model": "GigaChat-3-Ultra", "messages": [{"content": [{"text": "Create
+      a simple square icon concept for a Python SDK release."}], "role": "user"}],
+      "tool_config": {"mode": "forced", "tool_name": "image_generate"}, "tools": [{"image_generate":
+      {}}]}'
+    headers:
+      Accept:
+      - '*/*'
+      Accept-Encoding:
+      - gzip, deflate
+      Connection:
+      - keep-alive
+      Content-Length:
+      - '250'
+      Content-Type:
+      - application/json
+      Host:
+      - gigachat.ift.sberdevices.ru
+      User-Agent:
+      - GigaChat-python-lib
+      authorization:
+      - Bearer REDACTED
+      cookie:
+      - REDACTED
+    method: POST
+    uri: https://gigachat.ift.sberdevices.ru/v2/chat/completions
+  response:
+    body:
+      string: '{"model": "GigaChat-3-Ultra:32.3.18.5", "created_at": 1780321922, "messages":
+        [{"role": "assistant", "tool_state_id": "019e8374-ae4c-7c7d-bc58-056e61761eb7",
+        "content": [{"files": [{"id": "f4b17167-3fa4-40aa-80c6-c737ee40d961", "mime":
+        "image/jpeg", "target": "image"}]}, {"text": "A simple square icon concept
+        for a Python SDK release has been created."}]}], "finish_reason": "stop",
+        "usage": {"input_tokens": 999, "input_tokens_details": {"prompt_tokens": 999,
+        "cached_tokens": 830}, "output_tokens": 42, "total_tokens": 1041}}'
+    headers:
+      Connection:
+      - keep-alive
+      Content-Type:
+      - application/json; charset=utf-8
+      Date:
+      - Mon, 01 Jun 2026 13:52:02 GMT
+      Keep-Alive:
+      - timeout=15
+      Server:
+      - nginx
+      Transfer-Encoding:
+      - chunked
+      Vary:
+      - Accept-Encoding
+      X-Backend:
+      - itsme
+      X-SP-CRID:
+      - '28942077104:1'
+      access-control-allow-credentials:
+      - 'true'
+      access-control-allow-headers:
+      - Origin, X-Requested-With, Content-Type, Accept, Authorization
+      access-control-allow-methods:
+      - GET, POST, DELETE, OPTIONS
+      access-control-allow-origin:
+      - https://gigachat.sberdevices.ru
+      content-length:
+      - '497'
+      x-request-id:
+      - 42529d96-e966-4014-afcb-09aed7328aa4
+      x-session-id:
+      - 054af669-3e67-497c-9a55-1a7419ab43f0
     status:
       code: 200
       message: OK

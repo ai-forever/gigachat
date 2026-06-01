@@ -1,67 +1,272 @@
 interactions:
 - request:
-    body: scope=REDACTED
+    body: ''
     headers:
+      Accept:
+      - '*/*'
+      Accept-Encoding:
+      - gzip, deflate
+      Connection:
+      - keep-alive
+      Content-Length:
+      - '0'
+      Host:
+      - gigachat.ift.sberdevices.ru
       User-Agent:
       - GigaChat-python-lib
       authorization:
       - Bearer REDACTED
     method: POST
-    uri: https://ngw.devices.sberbank.ru:9443/api/v2/oauth
+    uri: https://gigachat.ift.sberdevices.ru/v1/token
   response:
     body:
-      string: '{"access_token": "REDACTED", "expires_at": 4102444800000}'
+      string: '{"tok": "REDACTED", "exp": 4102444800}'
     headers:
+      Connection:
+      - keep-alive
       Content-Type:
-      - application/json
+      - application/json; charset=utf-8
+      Date:
+      - Mon, 01 Jun 2026 13:51:07 GMT
+      Keep-Alive:
+      - timeout=15
+      Server:
+      - nginx
+      Transfer-Encoding:
+      - chunked
+      Vary:
+      - Accept-Encoding
+      X-Backend:
+      - itsme
+      X-SP-CRID:
+      - '9051309091:1'
+      access-control-allow-credentials:
+      - 'true'
+      access-control-allow-headers:
+      - Origin, X-Requested-With, Content-Type, Accept, Authorization
+      access-control-allow-methods:
+      - GET, POST, DELETE, OPTIONS
+      access-control-allow-origin:
+      - https://gigachat.sberdevices.ru
+      content-length:
+      - '200'
+      x-request-id:
+      - 2cec3f81-38da-4e51-ac8b-866a4006e70a
+      x-session-id:
+      - 571d069a-4ec4-4284-8140-5daed6329e19
     status:
       code: 200
       message: OK
 - request:
-    body: '{"model": "GigaChat", "messages": [{"content": [{"text": "Check order A-1024 and answer naturally."}], "role": "user"}], "tool_config": {"mode": "forced", "function_name": "get_order_status"}, "tools": [{"functions": {"specifications": [{"name": "get_order_status", "description": "Get delivery status for an order.", "parameters": {"type": "object", "properties": {"order_id": {"type": "string", "description": "Order identifier."}}, "required": ["order_id"]}, "return_parameters": {"type": "object", "properties": {"order_id": {"type": "string"}, "status": {"type": "string"}, "eta": {"type": "string"}}, "required": ["order_id", "status", "eta"]}}]}}]}'
+    body: '{"model": "GigaChat-3-Ultra", "messages": [{"content": [{"text": "Check
+      order A-1024 and answer naturally."}], "role": "user"}], "tool_config": {"mode":
+      "forced", "function_name": "get_order_status"}, "tools": [{"functions": {"specifications":
+      [{"name": "get_order_status", "description": "Get delivery status for an order.",
+      "parameters": {"type": "object", "properties": {"order_id": {"type": "string",
+      "description": "Order identifier."}}, "required": ["order_id"]}, "return_parameters":
+      {"type": "object", "properties": {"order_id": {"type": "string"}, "status":
+      {"type": "string"}, "eta": {"type": "string"}}, "required": ["order_id", "status",
+      "eta"]}}]}}]}'
     headers:
+      Accept:
+      - '*/*'
+      Accept-Encoding:
+      - gzip, deflate
+      Connection:
+      - keep-alive
+      Content-Length:
+      - '663'
       Content-Type:
       - application/json
+      Host:
+      - gigachat.ift.sberdevices.ru
       User-Agent:
       - GigaChat-python-lib
       authorization:
       - Bearer REDACTED
+      cookie:
+      - REDACTED
     method: POST
-    uri: https://gigachat.devices.sberbank.ru/api/v2/chat/completions
+    uri: https://gigachat.ift.sberdevices.ru/v2/chat/completions
   response:
     body:
-      string: '{"model":"GigaChat:2.0.28.2","created_at":1768996181,"message_id":"message-primary-function-call","messages":[{"role":"assistant","tools_state_id":"tools-state-order","content":[{"function_call":{"name":"get_order_status","arguments":{"order_id":"A-1024"}}}],"finish_reason":"function_call"}],"usage":{"input_tokens":42,"output_tokens":8,"total_tokens":50}}'
+      string: '{"model": "GigaChat-3-Ultra:32.3.18.5", "created_at": 1780321868, "messages":
+        [{"role": "assistant", "tool_state_id": "019e8373-dc9a-7883-af60-ebb20b79e1e1",
+        "content": [{"function_call": {"name": "get_order_status", "arguments": {"order_id":
+        "A-1024"}}}]}], "finish_reason": "function_call", "usage": {"input_tokens":
+        88, "input_tokens_details": {"prompt_tokens": 88, "cached_tokens": 0}, "output_tokens":
+        25, "total_tokens": 113}}'
     headers:
+      Connection:
+      - keep-alive
       Content-Type:
       - application/json; charset=utf-8
-      X-Request-Id:
-      - primary-function-call-request
-      X-Session-Id:
-      - primary-function-call-session
+      Date:
+      - Mon, 01 Jun 2026 13:51:08 GMT
+      Keep-Alive:
+      - timeout=15
+      Server:
+      - nginx
+      Transfer-Encoding:
+      - chunked
+      Vary:
+      - Accept-Encoding
+      X-Backend:
+      - itsme
+      X-SP-CRID:
+      - '9048034504:1'
+      access-control-allow-credentials:
+      - 'true'
+      access-control-allow-headers:
+      - Origin, X-Requested-With, Content-Type, Accept, Authorization
+      access-control-allow-methods:
+      - GET, POST, DELETE, OPTIONS
+      access-control-allow-origin:
+      - https://gigachat.sberdevices.ru
+      content-length:
+      - '403'
+      x-request-id:
+      - 8127a521-e65f-4ada-b0a9-7594d66b64ae
+      x-session-id:
+      - da76539a-c302-44ff-a105-ba8fd82d2fbd
     status:
       code: 200
       message: OK
 - request:
-    body: '{"model": "GigaChat", "messages": [{"content": [{"text": "Check order A-1024 and answer naturally."}], "role": "user"}, {"content": [{"function_call": {"name": "get_order_status", "arguments": {"order_id": "A-1024"}}}], "tools_state_id": "tools-state-order", "finish_reason": "function_call", "role": "assistant"}, {"content": [{"function_result": {"name": "get_order_status", "result": {"order_id": "A-1024", "status": "packed", "eta": "tomorrow"}}}], "tools_state_id": "tools-state-order", "role": "tool"}], "tools": [{"functions": {"specifications": [{"name": "get_order_status", "description": "Get delivery status for an order.", "parameters": {"type": "object", "properties": {"order_id": {"type": "string", "description": "Order identifier."}}, "required": ["order_id"]}, "return_parameters": {"type": "object", "properties": {"order_id": {"type": "string"}, "status": {"type": "string"}, "eta": {"type": "string"}}, "required": ["order_id", "status", "eta"]}}]}}]}'
+    body: ''
     headers:
-      Content-Type:
-      - application/json
+      Accept:
+      - '*/*'
+      Accept-Encoding:
+      - gzip, deflate
+      Connection:
+      - keep-alive
+      Content-Length:
+      - '0'
+      Host:
+      - gigachat.ift.sberdevices.ru
       User-Agent:
       - GigaChat-python-lib
       authorization:
       - Bearer REDACTED
+      cookie:
+      - REDACTED
     method: POST
-    uri: https://gigachat.devices.sberbank.ru/api/v2/chat/completions
+    uri: https://gigachat.ift.sberdevices.ru/v1/token
   response:
     body:
-      string: '{"model":"GigaChat:2.0.28.2","created_at":1768996182,"message_id":"message-primary-function-final","messages":[{"role":"assistant","content":[{"text":"Order A-1024 is packed and should arrive tomorrow."}],"finish_reason":"stop"}],"usage":{"input_tokens":61,"output_tokens":11,"total_tokens":72}}'
+      string: '{"tok": "REDACTED", "exp": 4102444800}'
     headers:
+      Connection:
+      - keep-alive
       Content-Type:
       - application/json; charset=utf-8
-      X-Request-Id:
-      - primary-function-final-request
-      X-Session-Id:
-      - primary-function-final-session
+      Date:
+      - Mon, 01 Jun 2026 13:51:09 GMT
+      Keep-Alive:
+      - timeout=15
+      Server:
+      - nginx
+      Transfer-Encoding:
+      - chunked
+      Vary:
+      - Accept-Encoding
+      X-Backend:
+      - itsme
+      X-SP-CRID:
+      - '98756991:1'
+      access-control-allow-credentials:
+      - 'true'
+      access-control-allow-headers:
+      - Origin, X-Requested-With, Content-Type, Accept, Authorization
+      access-control-allow-methods:
+      - GET, POST, DELETE, OPTIONS
+      access-control-allow-origin:
+      - https://gigachat.sberdevices.ru
+      content-length:
+      - '200'
+      x-request-id:
+      - ccd6eb71-ceef-4298-bb0a-588265624856
+      x-session-id:
+      - 9cfdab93-6c06-447c-9db3-1b55f82501d4
+    status:
+      code: 200
+      message: OK
+- request:
+    body: '{"model": "GigaChat-3-Ultra", "messages": [{"content": [{"text": "Check
+      order A-1024 and answer naturally."}], "role": "user"}, {"content": [{"function_call":
+      {"name": "get_order_status", "arguments": {"order_id": "A-1024"}}}], "tools_state_id":
+      "019e8373-dc9a-7883-af60-ebb20b79e1e1", "role": "assistant"}, {"content": [{"function_result":
+      {"name": "get_order_status", "result": {"order_id": "A-1024", "status": "packed",
+      "eta": "tomorrow"}}}], "tools_state_id": "019e8373-dc9a-7883-af60-ebb20b79e1e1",
+      "role": "tool"}], "tools": [{"functions": {"specifications": [{"name": "get_order_status",
+      "description": "Get delivery status for an order.", "parameters": {"type": "object",
+      "properties": {"order_id": {"type": "string", "description": "Order identifier."}},
+      "required": ["order_id"]}, "return_parameters": {"type": "object", "properties":
+      {"order_id": {"type": "string"}, "status": {"type": "string"}, "eta": {"type":
+      "string"}}, "required": ["order_id", "status", "eta"]}}]}}]}'
+    headers:
+      Accept:
+      - '*/*'
+      Accept-Encoding:
+      - gzip, deflate
+      Connection:
+      - keep-alive
+      Content-Length:
+      - '984'
+      Content-Type:
+      - application/json
+      Host:
+      - gigachat.ift.sberdevices.ru
+      User-Agent:
+      - GigaChat-python-lib
+      authorization:
+      - Bearer REDACTED
+      cookie:
+      - REDACTED
+    method: POST
+    uri: https://gigachat.ift.sberdevices.ru/v2/chat/completions
+  response:
+    body:
+      string: '{"model": "GigaChat-3-Ultra:32.3.18.5", "created_at": 1780321871, "messages":
+        [{"role": "assistant", "tool_state_id": "019e8373-e5fb-754f-a5b6-3025cdf27848",
+        "content": [{"text": "Order A-1024 is currently packed and scheduled for delivery
+        tomorrow."}]}], "finish_reason": "stop", "usage": {"input_tokens": 150, "input_tokens_details":
+        {"prompt_tokens": 150, "cached_tokens": 0}, "output_tokens": 17, "total_tokens":
+        167}}'
+    headers:
+      Connection:
+      - keep-alive
+      Content-Type:
+      - application/json; charset=utf-8
+      Date:
+      - Mon, 01 Jun 2026 13:51:11 GMT
+      Keep-Alive:
+      - timeout=15
+      Server:
+      - nginx
+      Transfer-Encoding:
+      - chunked
+      Vary:
+      - Accept-Encoding
+      X-Backend:
+      - itsme
+      X-SP-CRID:
+      - '28923097854:1'
+      access-control-allow-credentials:
+      - 'true'
+      access-control-allow-headers:
+      - Origin, X-Requested-With, Content-Type, Accept, Authorization
+      access-control-allow-methods:
+      - GET, POST, DELETE, OPTIONS
+      access-control-allow-origin:
+      - https://gigachat.sberdevices.ru
+      content-length:
+      - '397'
+      x-request-id:
+      - dc399f38-8a36-492a-b09b-8b167a675239
+      x-session-id:
+      - a07de6ee-69c6-4c13-8589-5fde22270981
     status:
       code: 200
       message: OK
