@@ -2,6 +2,7 @@
 
 import copy
 import json
+import warnings
 from typing import List
 
 import pytest
@@ -14,6 +15,7 @@ from gigachat.client import (
     _parse_completion,
     _prepare_chat_for_parse,
 )
+from gigachat.context import chat_completions_url_cvar, chat_url_cvar
 from gigachat.exceptions import LengthFinishReasonError
 from gigachat.models import Chat, ChatCompletion, Messages, MessagesRole
 from gigachat.settings import Settings
@@ -21,6 +23,10 @@ from tests.constants import ACCESS_TOKEN, BASE_URL, CHAT_URL
 from tests.utils import get_json
 
 CHAT_COMPLETION_JSON = get_json("chat_completion_json.json")
+
+
+def _assert_no_deprecation_warnings(caught: List[warnings.WarningMessage]) -> None:
+    assert not [warning for warning in caught if issubclass(warning.category, DeprecationWarning)]
 
 
 class MathResult(BaseModel):
@@ -122,17 +128,57 @@ def test_chat_parse_sync_happy(httpx_mock: HTTPXMock) -> None:
     httpx_mock.add_response(url=CHAT_URL, json=CHAT_COMPLETION_JSON)
 
     with GigaChatSyncClient(base_url=BASE_URL, access_token=ACCESS_TOKEN) as client:
-        completion, parsed = client.chat_parse("Solve 8x+7=-23", response_format=MathResult)
+        with warnings.catch_warnings(record=True) as caught:
+            warnings.simplefilter("always", DeprecationWarning)
+            completion, parsed = client.chat_parse("Solve 8x+7=-23", response_format=MathResult)
 
     assert isinstance(completion, ChatCompletion)
     assert isinstance(parsed, MathResult)
     assert parsed.final_answer == "x = -3.75"
+    _assert_no_deprecation_warnings(caught)
 
     request = httpx_mock.get_requests()[0]
     body = json.loads(request.content)
     assert body["response_format"]["type"] == "json_schema"
     assert "schema" in body["response_format"]
     assert isinstance(body["response_format"]["schema"], dict)
+
+
+def test_chat_parse_root_shim_uses_legacy_route_when_primary_route_differs(httpx_mock: HTTPXMock) -> None:
+    primary_url_token = chat_completions_url_cvar.set("/chat/completions/primary")
+    legacy_url_token = chat_url_cvar.set("/chat/completions/legacy")
+
+    try:
+        httpx_mock.add_response(url=f"{BASE_URL}/chat/completions/legacy", json=CHAT_COMPLETION_JSON)
+
+        with GigaChatSyncClient(base_url=BASE_URL, access_token=ACCESS_TOKEN) as client:
+            with warnings.catch_warnings(record=True) as caught:
+                warnings.simplefilter("always", DeprecationWarning)
+                completion, parsed = client.chat_parse("Solve 8x+7=-23", response_format=MathResult)
+    finally:
+        chat_completions_url_cvar.reset(primary_url_token)
+        chat_url_cvar.reset(legacy_url_token)
+
+    requests = httpx_mock.get_requests()
+    assert isinstance(completion, ChatCompletion)
+    assert isinstance(parsed, MathResult)
+    assert len(requests) == 1
+    assert str(requests[0].url) == f"{BASE_URL}/chat/completions/legacy"
+    _assert_no_deprecation_warnings(caught)
+
+
+def test_chat_legacy_parse_sync_happy_without_warning(httpx_mock: HTTPXMock) -> None:
+    httpx_mock.add_response(url=CHAT_URL, json=CHAT_COMPLETION_JSON)
+
+    with GigaChatSyncClient(base_url=BASE_URL, access_token=ACCESS_TOKEN) as client:
+        with warnings.catch_warnings(record=True) as caught:
+            warnings.simplefilter("always", DeprecationWarning)
+            completion, parsed = client.chat_parse("Solve 8x+7=-23", response_format=MathResult)
+
+    assert isinstance(completion, ChatCompletion)
+    assert isinstance(parsed, MathResult)
+    assert parsed.final_answer == "x = -3.75"
+    _assert_no_deprecation_warnings(caught)
 
 
 def test_chat_parse_sync_strict(httpx_mock: HTTPXMock) -> None:
@@ -198,8 +244,50 @@ async def test_achat_parse_happy(httpx_mock: HTTPXMock) -> None:
     httpx_mock.add_response(url=CHAT_URL, json=CHAT_COMPLETION_JSON)
 
     async with GigaChatAsyncClient(base_url=BASE_URL, access_token=ACCESS_TOKEN) as client:
-        completion, parsed = await client.achat_parse("Solve 8x+7=-23", response_format=MathResult)
+        with warnings.catch_warnings(record=True) as caught:
+            warnings.simplefilter("always", DeprecationWarning)
+            completion, parsed = await client.achat_parse("Solve 8x+7=-23", response_format=MathResult)
 
     assert isinstance(completion, ChatCompletion)
     assert isinstance(parsed, MathResult)
     assert parsed.final_answer == "x = -3.75"
+    _assert_no_deprecation_warnings(caught)
+
+
+async def test_achat_parse_root_shim_uses_legacy_route_when_primary_route_differs(
+    httpx_mock: HTTPXMock,
+) -> None:
+    primary_url_token = chat_completions_url_cvar.set("/chat/completions/primary")
+    legacy_url_token = chat_url_cvar.set("/chat/completions/legacy")
+
+    try:
+        httpx_mock.add_response(url=f"{BASE_URL}/chat/completions/legacy", json=CHAT_COMPLETION_JSON)
+
+        async with GigaChatAsyncClient(base_url=BASE_URL, access_token=ACCESS_TOKEN) as client:
+            with warnings.catch_warnings(record=True) as caught:
+                warnings.simplefilter("always", DeprecationWarning)
+                completion, parsed = await client.achat_parse("Solve 8x+7=-23", response_format=MathResult)
+    finally:
+        chat_completions_url_cvar.reset(primary_url_token)
+        chat_url_cvar.reset(legacy_url_token)
+
+    requests = httpx_mock.get_requests()
+    assert isinstance(completion, ChatCompletion)
+    assert isinstance(parsed, MathResult)
+    assert len(requests) == 1
+    assert str(requests[0].url) == f"{BASE_URL}/chat/completions/legacy"
+    _assert_no_deprecation_warnings(caught)
+
+
+async def test_achat_legacy_parse_happy_without_warning(httpx_mock: HTTPXMock) -> None:
+    httpx_mock.add_response(url=CHAT_URL, json=CHAT_COMPLETION_JSON)
+
+    async with GigaChatAsyncClient(base_url=BASE_URL, access_token=ACCESS_TOKEN) as client:
+        with warnings.catch_warnings(record=True) as caught:
+            warnings.simplefilter("always", DeprecationWarning)
+            completion, parsed = await client.achat_parse("Solve 8x+7=-23", response_format=MathResult)
+
+    assert isinstance(completion, ChatCompletion)
+    assert isinstance(parsed, MathResult)
+    assert parsed.final_answer == "x = -3.75"
+    _assert_no_deprecation_warnings(caught)

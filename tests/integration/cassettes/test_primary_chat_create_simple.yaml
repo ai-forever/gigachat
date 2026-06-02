@@ -1,0 +1,124 @@
+interactions:
+- request:
+    body: scope=REDACTED
+    headers:
+      Accept:
+      - '*/*'
+      Accept-Encoding:
+      - gzip, deflate
+      Connection:
+      - keep-alive
+      Content-Length:
+      - '0'
+      Host:
+      - ngw.devices.sberbank.ru:9443
+      User-Agent:
+      - GigaChat-python-lib
+      authorization:
+      - Bearer REDACTED
+    method: POST
+    uri: https://ngw.devices.sberbank.ru:9443/api/v2/oauth
+  response:
+    body:
+      string: '{"tok": "REDACTED", "exp": 4102444800}'
+    headers:
+      Connection:
+      - keep-alive
+      Content-Type:
+      - application/json; charset=utf-8
+      Date:
+      - Mon, 01 Jun 2026 13:50:54 GMT
+      Keep-Alive:
+      - timeout=15
+      Server:
+      - nginx
+      Transfer-Encoding:
+      - chunked
+      Vary:
+      - Accept-Encoding
+      X-Backend:
+      - itsme
+      X-SP-CRID:
+      - '10711324449:1'
+      access-control-allow-credentials:
+      - 'true'
+      access-control-allow-headers:
+      - Origin, X-Requested-With, Content-Type, Accept, Authorization
+      access-control-allow-methods:
+      - GET, POST, DELETE, OPTIONS
+      access-control-allow-origin:
+      - https://gigachat.sberdevices.ru
+      content-length:
+      - '200'
+      x-request-id:
+      - f213a945-db1e-4373-9623-8764a213fc72
+      x-session-id:
+      - 81cb6daa-20a0-48fe-a121-61aca77d4be7
+    status:
+      code: 200
+      message: OK
+- request:
+    body: '{"model": "GigaChat-3-Ultra", "messages": [{"content": [{"text": "Say ''Hello''
+      and nothing else"}], "role": "user"}]}'
+    headers:
+      Accept:
+      - '*/*'
+      Accept-Encoding:
+      - gzip, deflate
+      Connection:
+      - keep-alive
+      Content-Length:
+      - '116'
+      Content-Type:
+      - application/json
+      Host:
+      - gigachat.devices.sberbank.ru
+      User-Agent:
+      - GigaChat-python-lib
+      authorization:
+      - Bearer REDACTED
+    method: POST
+    uri: https://gigachat.devices.sberbank.ru/api/v2/chat/completions
+  response:
+    body:
+      string: '{"model": "GigaChat-3-Ultra:32.3.18.5", "created_at": 1780321855, "messages":
+        [{"role": "assistant", "content": [{"text": "Hello"}]}], "finish_reason":
+        "stop", "usage": {"input_tokens": 19, "input_tokens_details": {"prompt_tokens":
+        19, "cached_tokens": 0}, "output_tokens": 2, "total_tokens": 21}}'
+    headers:
+      Connection:
+      - keep-alive
+      Content-Type:
+      - application/json; charset=utf-8
+      Date:
+      - Mon, 01 Jun 2026 13:50:55 GMT
+      Keep-Alive:
+      - timeout=15
+      Server:
+      - nginx
+      Transfer-Encoding:
+      - chunked
+      Vary:
+      - Accept-Encoding
+      X-Backend:
+      - itsme
+      X-SP-CRID:
+      - '8075482130:1'
+      access-control-allow-credentials:
+      - 'true'
+      access-control-allow-headers:
+      - Origin, X-Requested-With, Content-Type, Accept, Authorization
+      access-control-allow-methods:
+      - GET, POST, DELETE, OPTIONS
+      access-control-allow-origin:
+      - https://gigachat.sberdevices.ru
+      content-length:
+      - '274'
+      x-request-id:
+      - 6793f98b-435a-4a6b-a956-f495c7606f70
+      x-session-id:
+      - faac098e-0bc1-4435-8ff3-8169fecc8c96
+    status:
+      code: 200
+      message: OK
+version: 1

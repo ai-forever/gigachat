@@ -228,3 +228,27 @@ class ChatCompletionChunk(APIResponse):
     model: str = Field(description="Model name used for generation.")
     object_: str = Field(alias="object", description="Object type (e.g. 'chat.completion.chunk').")
     usage: Optional[Usage] = Field(default=None, description="Usage statistics.")
+
+
+FunctionParametersProperty.model_rebuild()
+Messages.model_rebuild()
+
+
+__all__ = (
+    "Chat",
+    "ChatCompletion",
+    "ChatCompletionChunk",
+    "ChatFunctionCall",
+    "Choices",
+    "ChoicesChunk",
+    "FewShotExample",
+    "Function",
+    "FunctionCall",
+    "FunctionParameters",
+    "FunctionParametersProperty",
+    "Messages",
+    "MessagesChunk",
+    "MessagesRole",
+    "Storage",
+    "Usage",
+)
