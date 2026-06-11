@@ -411,6 +411,11 @@ class ChatCompletionRequest(_ChatCompletionsModel):
     user_info: Optional[ChatUserInfo] = Field(default=None, description="End-user metadata.")
     stream: Optional[bool] = Field(default=None, description="Stream response fragments.")
     disable_filter: Optional[bool] = Field(default=None, description="Disable filtering.")
+    profanity_check: Optional[bool] = Field(
+        default=None,
+        exclude=True,
+        description="Enable profanity filtering.",
+    )
     flags: Optional[List[str]] = Field(default=None, description="Feature flags.")
 
     @model_validator(mode="before")
@@ -441,6 +446,12 @@ class ChatCompletionRequest(_ChatCompletionsModel):
             values["model_options"] = model_options
 
         return values
+
+    @model_validator(mode="after")
+    def _map_profanity_check(self) -> "ChatCompletionRequest":
+        if self.disable_filter is None and self.profanity_check is not None:
+            self.disable_filter = not self.profanity_check
+        return self
 
     @property
     def reasoning(self) -> Optional[ChatReasoning]:

@@ -50,6 +50,18 @@ def test_get_stream_kwargs_sets_primary_stream_payload() -> None:
     assert request_content["messages"][0]["content"] == [{"text": "solve 2+2"}]
 
 
+def test_build_request_json_maps_profanity_check_to_disable_filter() -> None:
+    chat_data = ChatCompletionRequest(
+        messages=[ChatMessage(role="user", content="solve 2+2")],
+        profanity_check=False,
+    )
+
+    request_content = chat_completions._build_request_json(chat_data)
+
+    assert request_content["disable_filter"] is True
+    assert "profanity_check" not in request_content
+
+
 def test_stream_sync_parses_primary_chunk(httpx_mock: HTTPXMock) -> None:
     httpx_mock.add_response(url=MOCK_URL, content=PRIMARY_CHAT_COMPLETION_STREAM, headers=HEADERS_STREAM)
     chat_data = ChatCompletionRequest(messages=[ChatMessage(role="user", content="solve 2+2")])
