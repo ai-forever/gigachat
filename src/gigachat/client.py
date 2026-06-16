@@ -173,6 +173,8 @@ def _parse_chat_completion(
     )
     if not using_assistant and chat.model is None:
         chat.model = settings.model or GIGACHAT_MODEL
+    if chat.disable_filter is None and settings.profanity_check is not None:
+        chat.disable_filter = not settings.profanity_check
     if chat.flags is None:
         chat.flags = settings.flags
     return chat

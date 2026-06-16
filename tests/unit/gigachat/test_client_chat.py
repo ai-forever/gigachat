@@ -130,6 +130,47 @@ def test__parse_chat_profanity_check(
 @pytest.mark.parametrize(
     ("payload_value", "setting_value", "expected"),
     [
+        (None, None, None),
+        (None, False, True),
+        (None, True, False),
+        (False, None, True),
+        (False, False, True),
+        (False, True, True),
+        (True, None, False),
+        (True, False, False),
+        (True, True, False),
+    ],
+)
+def test__parse_chat_completion_profanity_check(
+    payload_value: Optional[bool],
+    setting_value: Optional[bool],
+    expected: Optional[bool],
+) -> None:
+    actual = _parse_chat_completion(
+        ChatCompletionRequest(
+            messages=[ChatMessage(role="user", content="text")],
+            profanity_check=payload_value,
+        ),
+        Settings(profanity_check=setting_value),
+    )
+    assert actual.disable_filter is expected
+
+
+def test__parse_chat_completion_disable_filter_takes_precedence() -> None:
+    actual = _parse_chat_completion(
+        ChatCompletionRequest(
+            messages=[ChatMessage(role="user", content="text")],
+            disable_filter=False,
+            profanity_check=False,
+        ),
+        Settings(profanity_check=False),
+    )
+    assert actual.disable_filter is False
+
+
+@pytest.mark.parametrize(
+    ("payload_value", "setting_value", "expected"),
+    [
         (None, None, GIGACHAT_MODEL),
         (None, "setting_model", "setting_model"),
         ("payload_model", None, "payload_model"),
