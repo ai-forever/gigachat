@@ -404,7 +404,10 @@ class ChatCompletionRequest(_ChatCompletionsModel):
     tools_state_id: Optional[str] = Field(default=None, description="Tool execution state identifier.")
     model_options: Optional[ChatModelOptions] = Field(default=None, description="Model generation options.")
     filter_config: Optional[ChatFilterConfig] = Field(default=None, description="Filtering configuration.")
-    storage: Optional[Union[ChatStorage, bool]] = Field(default=None, description="Thread storage settings.")
+    storage: Optional[Union[ChatStorage, bool]] = Field(
+        default=None,
+        description="Thread storage settings. `True` enables storage with defaults; `False` disables it.",
+    )
     ranker_options: Optional[ChatRankerOptions] = Field(default=None, description="Tool ranking settings.")
     tool_config: Optional[ChatToolConfig] = Field(default=None, description="Tool calling configuration.")
     tools: Optional[List[ChatTool]] = Field(default=None, description="Available tools.")
@@ -427,6 +430,12 @@ class ChatCompletionRequest(_ChatCompletionsModel):
         values = dict(values)
 
         _normalize_tools_state_id(values)
+
+        storage = values.get("storage")
+        if storage is True:
+            values["storage"] = {}
+        elif storage is False:
+            values["storage"] = None
 
         model_options = values.get("model_options")
         if model_options is None:

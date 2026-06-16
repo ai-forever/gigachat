@@ -24,6 +24,7 @@ from gigachat.models import (
     ChatCompletionRequest,
     ChatCompletionResponse,
     ChatMessage,
+    ChatStorage,
     Messages,
     MessagesRole,
 )
@@ -202,7 +203,7 @@ def test__parse_chat_completion_preserves_missing_model_for_assistant() -> None:
     assert actual.assistant_id == "assistant-1"
 
 
-def test__parse_chat_completion_accepts_storage_bool() -> None:
+def test__parse_chat_completion_normalizes_storage_bool() -> None:
     actual = _parse_chat_completion(
         {
             "messages": [{"role": "user", "content": "text"}],
@@ -211,7 +212,7 @@ def test__parse_chat_completion_accepts_storage_bool() -> None:
         Settings(model="setting_model"),
     )
 
-    assert actual.storage is True
+    assert isinstance(actual.storage, ChatStorage)
     assert actual.model == "setting_model"
 
 
