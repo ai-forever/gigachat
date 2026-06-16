@@ -4,7 +4,7 @@ import pytest
 from pydantic import BaseModel, ValidationError
 
 from gigachat.models import ChatCompletionRequest, ChatCompletionResponse, ChatMessage
-from gigachat.models.chat_completions import ChatCompletionChunk, ChatResponseFormat
+from gigachat.models.chat_completions import ChatCompletionChunk, ChatResponseFormat, ChatStorage
 
 
 class WeatherAnswer(BaseModel):
@@ -168,7 +168,7 @@ def test_chat_completion_request_accepts_regex_response_format() -> None:
     }
 
 
-def test_chat_completion_request_accepts_storage_bool_future_shape() -> None:
+def test_chat_completion_request_normalizes_storage_true_to_object() -> None:
     request = ChatCompletionRequest.model_validate(
         {
             "messages": [{"role": "user", "content": "Сохрани контекст"}],
@@ -178,8 +178,22 @@ def test_chat_completion_request_accepts_storage_bool_future_shape() -> None:
 
     dumped = request.model_dump(exclude_none=True, by_alias=True)
 
-    assert request.storage is True
-    assert dumped["storage"] is True
+    assert isinstance(request.storage, ChatStorage)
+    assert dumped["storage"] == {}
+
+
+def test_chat_completion_request_drops_storage_when_false() -> None:
+    request = ChatCompletionRequest.model_validate(
+        {
+            "messages": [{"role": "user", "content": "Не сохраняй контекст"}],
+            "storage": False,
+        }
+    )
+
+    dumped = request.model_dump(exclude_none=True, by_alias=True)
+
+    assert request.storage is None
+    assert "storage" not in dumped
 
 
 def test_chat_completion_response_parses_primary_contract() -> None:

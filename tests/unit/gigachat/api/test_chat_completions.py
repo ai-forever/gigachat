@@ -5,7 +5,7 @@ from pytest_httpx import HTTPXMock
 
 from gigachat.api import chat_completions
 from gigachat.context import chat_completions_url_cvar
-from gigachat.models.chat_completions import ChatCompletionChunk, ChatCompletionRequest, ChatMessage
+from gigachat.models.chat_completions import ChatCompletionChunk, ChatCompletionRequest, ChatMessage, ChatStorage
 from tests.constants import BASE_URL, HEADERS_STREAM, MOCK_URL
 
 PRIMARY_CHAT_COMPLETION_STREAM = (
@@ -60,6 +60,39 @@ def test_build_request_json_maps_profanity_check_to_disable_filter() -> None:
 
     assert request_content["disable_filter"] is True
     assert "profanity_check" not in request_content
+
+
+def test_build_request_json_maps_storage_true_to_object() -> None:
+    chat_data = ChatCompletionRequest(
+        messages=[ChatMessage(role="user", content="solve 2+2")],
+        storage=True,
+    )
+
+    request_content = chat_completions._build_request_json(chat_data)
+
+    assert request_content["storage"] == {}
+
+
+def test_build_request_json_omits_storage_when_false() -> None:
+    chat_data = ChatCompletionRequest(
+        messages=[ChatMessage(role="user", content="solve 2+2")],
+        storage=False,
+    )
+
+    request_content = chat_completions._build_request_json(chat_data)
+
+    assert "storage" not in request_content
+
+
+def test_build_request_json_keeps_storage_object() -> None:
+    chat_data = ChatCompletionRequest(
+        messages=[ChatMessage(role="user", content="solve 2+2")],
+        storage=ChatStorage(thread_id="thread-1", limit=10),
+    )
+
+    request_content = chat_completions._build_request_json(chat_data)
+
+    assert request_content["storage"] == {"thread_id": "thread-1", "limit": 10}
 
 
 def test_stream_sync_parses_primary_chunk(httpx_mock: HTTPXMock) -> None:
