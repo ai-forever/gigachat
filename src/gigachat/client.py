@@ -65,6 +65,24 @@ logger = logging.getLogger(__name__)
 GIGACHAT_MODEL = "GigaChat"
 
 
+def _get_ssl_context(settings: Settings, *, load_client_cert: bool) -> Optional[ssl.SSLContext]:
+    """Build an SSL context for custom trust stores and client certificates."""
+    if settings.ssl_context is not None:
+        context = settings.ssl_context
+    elif settings.ca_bundle_file:
+        context = ssl.create_default_context(cafile=settings.ca_bundle_file)
+    else:
+        return None
+
+    if load_client_cert and settings.cert_file:
+        context.load_cert_chain(
+            certfile=settings.cert_file,
+            keyfile=settings.key_file,
+            password=settings.key_file_password,
+        )
+    return context
+
+
 def _get_kwargs(settings: Settings) -> Dict[str, Any]:
     """Return settings for connecting to the GigaChat API."""
     kwargs = {
@@ -72,11 +90,10 @@ def _get_kwargs(settings: Settings) -> Dict[str, Any]:
         "verify": settings.verify_ssl_certs,
         "timeout": httpx.Timeout(settings.timeout),
     }
-    if settings.ssl_context:
-        kwargs["verify"] = settings.ssl_context
-    if settings.ca_bundle_file:
-        kwargs["verify"] = settings.ca_bundle_file
-    if settings.cert_file:
+    context = _get_ssl_context(settings, load_client_cert=True)
+    if context is not None:
+        kwargs["verify"] = context
+    elif settings.cert_file:
         kwargs["cert"] = (
             settings.cert_file,
             settings.key_file,
@@ -93,10 +110,9 @@ def _get_auth_kwargs(settings: Settings) -> Dict[str, Any]:
         "verify": settings.verify_ssl_certs,
         "timeout": httpx.Timeout(settings.timeout),
     }
-    if settings.ssl_context:
-        kwargs["verify"] = settings.ssl_context
-    if settings.ca_bundle_file:
-        kwargs["verify"] = settings.ca_bundle_file
+    context = _get_ssl_context(settings, load_client_cert=False)
+    if context is not None:
+        kwargs["verify"] = context
     return kwargs
 
 
