@@ -1,6 +1,10 @@
+from gigachat.models.chat import Messages, MessagesRole
 from gigachat.models.tools import (
     AICheckResult,
     Balance,
+    FilterCheckRequest,
+    FilterCheckResult,
+    FilterCheckSettings,
     OpenApiFunctions,
     TokensCount,
 )
@@ -16,6 +20,17 @@ def test_ai_check_result_creation() -> None:
     res = AICheckResult.model_validate(data)
     assert res.category == "ai"
     assert res.tokens == 20
+
+
+def test_filter_check_models() -> None:
+    request = FilterCheckRequest(messages=[Messages(role=MessagesRole.USER, content="text")])
+    result = FilterCheckResult.model_validate({"is_profane": False, "usage": {"filter_tokens": 3}})
+
+    assert request.model == "GigaFilter"
+    assert request.settings is None
+    assert FilterCheckSettings().model_dump() == {"neuro": True, "blacklist": True, "whitelist": True}
+    assert result.is_profane is False
+    assert result.usage.filter_tokens == 3
 
 
 def test_balance_creation() -> None:

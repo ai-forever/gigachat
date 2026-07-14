@@ -6,7 +6,14 @@ import httpx
 
 from gigachat.api.utils import build_headers, execute_request_async, execute_request_sync
 from gigachat.exceptions import AuthenticationError, ResponseError
-from gigachat.models.tools import AICheckResult, Balance, OpenApiFunctions, TokensCount
+from gigachat.models.tools import (
+    AICheckResult,
+    Balance,
+    FilterCheckRequest,
+    FilterCheckResult,
+    OpenApiFunctions,
+    TokensCount,
+)
 
 
 def _get_tokens_count_kwargs(
@@ -138,6 +145,43 @@ async def ai_check_async(
     """Check text for AI-generated content."""
     kwargs = _get_ai_check_kwargs(input_=input_, model=model, access_token=access_token)
     return await execute_request_async(client, kwargs, AICheckResult)
+
+
+def _get_filter_check_kwargs(
+    *,
+    payload: FilterCheckRequest,
+    access_token: Optional[str] = None,
+) -> Dict[str, Any]:
+    headers = build_headers(access_token)
+
+    return {
+        "method": "POST",
+        "url": "/filter/check",
+        "json": payload.model_dump(exclude_none=True, by_alias=True),
+        "headers": headers,
+    }
+
+
+def filter_check_sync(
+    client: httpx.Client,
+    *,
+    payload: FilterCheckRequest,
+    access_token: Optional[str] = None,
+) -> FilterCheckResult:
+    """Check messages against thematic restrictions."""
+    kwargs = _get_filter_check_kwargs(payload=payload, access_token=access_token)
+    return execute_request_sync(client, kwargs, FilterCheckResult)
+
+
+async def filter_check_async(
+    client: httpx.AsyncClient,
+    *,
+    payload: FilterCheckRequest,
+    access_token: Optional[str] = None,
+) -> FilterCheckResult:
+    """Check messages against thematic restrictions."""
+    kwargs = _get_filter_check_kwargs(payload=payload, access_token=access_token)
+    return await execute_request_async(client, kwargs, FilterCheckResult)
 
 
 def _get_balance_kwargs(
