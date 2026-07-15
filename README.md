@@ -564,31 +564,60 @@ except GigaChatException as e:
 
 ### Context Variables
 
-Track requests with custom headers for logging and debugging:
+Context variables let application code attach request metadata without passing it through every SDK call. The SDK
+forwards the values as HTTP headers; it does not generate identifiers or enforce tracing semantics. Agree on the
+meaning and lifetime of each identifier with the service that consumes the headers.
 
 ```python
-from gigachat import GigaChat, session_id_cvar, request_id_cvar, custom_headers_cvar
 import uuid
 
-# Set session and request identifiers
-session_id_cvar.set("user-session-12345")
-request_id_cvar.set(str(uuid.uuid4()))
+from gigachat import GigaChat
+from gigachat.context import operation_id_cvar, request_id_cvar, session_id_cvar, trace_id_cvar
 
-# Or add custom headers
-custom_headers_cvar.set({"X-Custom-Header": "custom-value"})
+# This is one possible application convention, not SDK-enforced semantics.
+tokens = [
+    trace_id_cvar.set(str(uuid.uuid4())),       # stable across one distributed trace
+    request_id_cvar.set(str(uuid.uuid4())),     # stable across one inbound request
+    session_id_cvar.set("user-session-12345"), # stable across related user requests
+    operation_id_cvar.set(str(uuid.uuid4())),   # unique for this outbound operation
+]
 
-with GigaChat() as client:
-    response = client.chat.create("Hello!")
+try:
+    with GigaChat() as client:
+        response = client.chat.create("Hello!")
+finally:
+    # Reset in reverse order so pooled workers do not leak context into later work.
+    for cvar, token in zip(
+        (operation_id_cvar, session_id_cvar, request_id_cvar, trace_id_cvar),
+        reversed(tokens),
+    ):
+        cvar.reset(token)
 ```
 
-Available context variables:
+Header context variables:
 
 | Variable | Header | Description |
 |----------|--------|-------------|
-| `session_id_cvar` | `X-Session-ID` | Session identifier for grouping requests |
-| `request_id_cvar` | `X-Request-ID` | Unique request identifier |
-| `client_id_cvar` | `X-Client-ID` | Client identifier |
-| `custom_headers_cvar` | (various) | Dictionary of additional headers |
+| `authorization_cvar` | `Authorization` | Complete authorization header value; disables SDK token refresh while set |
+| `session_id_cvar` | `X-Session-ID` | Application-defined session identifier |
+| `request_id_cvar` | `X-Request-ID` | Application-defined request identifier |
+| `service_id_cvar` | `X-Service-ID` | Application-defined service identifier |
+| `operation_id_cvar` | `X-Operation-ID` | Application-defined operation identifier |
+| `client_id_cvar` | `X-Client-ID` | Application-defined client identifier |
+| `trace_id_cvar` | `X-Trace-ID` | Application-defined trace identifier |
+| `agent_id_cvar` | `X-Agent-ID` | Application-defined agent identifier |
+| `custom_headers_cvar` | (various) | Additional header dictionary, applied after the fields above |
+
+`ContextVar` values are isolated per context and are inherited by newly created asyncio tasks. Prefer `set()` plus
+`reset(token)` in `finally` when a long-lived worker handles unrelated requests. Setting one identifier does not set,
+derive, or validate any of the others.
+
+Endpoint override context variables do not create headers:
+
+| Variable | Effect |
+|----------|--------|
+| `chat_url_cvar` | Overrides the legacy chat endpoint path |
+| `chat_completions_url_cvar` | Overrides the primary chat completions URL; `None` uses the SDK default |
 
 **Header precedence (when multiple sources set the same header):**
 
