@@ -294,8 +294,8 @@ See the [examples/](https://github.com/ai-forever/gigachat/tree/main/examples/) 
 |-----------|------|---------|-------------|
 | `credentials` | `str` | `None` | Authorization key from GigaChat API |
 | `scope` | `str` | `GIGACHAT_API_PERS` | API scope (see below) |
-| `model` | `str` | `GigaChat` | Default model for requests |
-| `base_url` | `str` | `https://gigachat.devices.sberbank.ru/api/v1` | API base URL |
+| `model` | `str` | `GigaChat-2` | Default model for requests |
+| `base_url` | `str` | `https://api.giga.chat/v1` | API base URL |
 | `auth_url` | `str` | `https://ngw.devices.sberbank.ru:9443/api/v2/oauth` | OAuth token endpoint |
 | `access_token` | `str` | `None` | Pre-obtained access token (bypasses OAuth) |
 | `user` | `str` | `None` | Username for password authentication |
@@ -331,14 +331,14 @@ export GIGACHAT_CREDENTIALS="<your_authorization_key>"
 export GIGACHAT_SCOPE="GIGACHAT_API_PERS"
 
 # Connection
-export GIGACHAT_BASE_URL="https://gigachat.devices.sberbank.ru/api/v1"
+export GIGACHAT_BASE_URL="https://api.giga.chat/v1"
 export GIGACHAT_TIMEOUT="60.0"
 export GIGACHAT_VERIFY_SSL_CERTS="true"
 # TLS: path to a CA bundle file (typically required - Python HTTP clients often don't use OS trust store by default)
 export GIGACHAT_CA_BUNDLE_FILE="<your_ca_bundle_file>"
 
 # Model
-export GIGACHAT_MODEL="GigaChat"
+export GIGACHAT_MODEL="GigaChat-2"
 
 # Retry
 export GIGACHAT_MAX_RETRIES="3"
@@ -393,7 +393,7 @@ client = GigaChat(
 
 ### 2. Username and Password
 
-Authenticate with a username and password:
+Authenticate with a username and password. The default host (`api.giga.chat`) does not expose the `/token` endpoint, so this method requires an explicit `base_url` that supports password authentication:
 
 ```python
 from gigachat import GigaChat

@@ -18,6 +18,11 @@ if not os.getenv("CI"):
 EXPIRES_AT_VALID = 4102444800000
 EXP_VALID = EXPIRES_AT_VALID // 1000
 TEST_TIMEOUT = float(os.getenv("GIGACHAT_TEST_TIMEOUT", "120"))
+# Cassettes are recorded against this host and default model; VCR matches on
+# host/path/body, so pin them regardless of the SDK defaults. Override with
+# GIGACHAT_BASE_URL / GIGACHAT_TEST_MODEL to re-record.
+CASSETTE_BASE_URL = os.getenv("GIGACHAT_BASE_URL", "https://gigachat.devices.sberbank.ru/api/v1")
+CASSETTE_MODEL = os.getenv("GIGACHAT_TEST_MODEL", "GigaChat")
 
 
 def _scrub_request(request: Any) -> Any:
@@ -128,6 +133,8 @@ def gigachat_client() -> Generator[GigaChat, None, None]:
     auth_settings = _get_auth_settings()
 
     with GigaChat(
+        base_url=CASSETTE_BASE_URL,
+        model=CASSETTE_MODEL,
         credentials=auth_settings.get("credentials"),
         scope=auth_settings.get("scope"),
         user=auth_settings.get("user"),
@@ -144,6 +151,8 @@ async def gigachat_async_client() -> AsyncGenerator[GigaChat, None]:
     auth_settings = _get_auth_settings()
 
     async with GigaChat(
+        base_url=CASSETTE_BASE_URL,
+        model=CASSETTE_MODEL,
         credentials=auth_settings.get("credentials"),
         scope=auth_settings.get("scope"),
         user=auth_settings.get("user"),
