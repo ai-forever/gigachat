@@ -74,7 +74,7 @@ set `GIGACHAT_VERIFY_SSL_CERTS=false` or pass `verify_ssl_certs=False` to `GigaC
 
 ## Usage Examples
 
-> The examples below assume authentication is configured via environment variables (for example, `GIGACHAT_CREDENTIALS`). See [Authentication](#authentication).
+> The examples below assume authentication and the model are configured via environment variables (for example, `GIGACHAT_CREDENTIALS` and `GIGACHAT_MODEL`). See [Authentication](#authentication).
 
 ### Migration Note
 
@@ -107,10 +107,12 @@ For a step-by-step checklist and import mapping, see [MIGRATION_GUIDE.md](MIGRAT
 ```python
 from gigachat import GigaChat
 
-with GigaChat(credentials="<your_authorization_key>") as client:
+with GigaChat(credentials="<your_authorization_key>", model="GigaChat-2") as client:
     response = client.chat.create("Hello, GigaChat!")
     print(response.messages[0].content[0].text)
 ```
+
+> There is no default model: specify one via `model=` in the request payload, the `GigaChat(model=...)` constructor, or the `GIGACHAT_MODEL` environment variable. Otherwise the SDK raises `ModelNotSpecifiedError`. Use `client.get_models()` to list available models.
 
 ### Streaming
 
@@ -294,7 +296,7 @@ See the [examples/](https://github.com/ai-forever/gigachat/tree/main/examples/) 
 |-----------|------|---------|-------------|
 | `credentials` | `str` | `None` | Authorization key from GigaChat API |
 | `scope` | `str` | `GIGACHAT_API_PERS` | API scope (see below) |
-| `model` | `str` | `GigaChat-2` | Default model for requests |
+| `model` | `str` | `None` | Model for requests. No built-in default: must be set here, via `GIGACHAT_MODEL`, or per request |
 | `base_url` | `str` | `https://api.giga.chat/v1` | API base URL |
 | `auth_url` | `str` | `https://ngw.devices.sberbank.ru:9443/api/v2/oauth` | OAuth token endpoint |
 | `access_token` | `str` | `None` | Pre-obtained access token (bypasses OAuth) |
@@ -337,7 +339,7 @@ export GIGACHAT_VERIFY_SSL_CERTS="true"
 # TLS: path to a CA bundle file (typically required - Python HTTP clients often don't use OS trust store by default)
 export GIGACHAT_CA_BUNDLE_FILE="<your_ca_bundle_file>"
 
-# Model
+# Model (required unless passed per request - the SDK has no default model)
 export GIGACHAT_MODEL="GigaChat-2"
 
 # Retry
@@ -559,6 +561,7 @@ except GigaChatException as e:
 | `RateLimitError` | 429 | Too many requests (use `e.retry_after`) |
 | `ServerError` | 5xx | Server-side error |
 | `LengthFinishReasonError` | — | Structured output parsing stopped because the model response was truncated (`finish_reason="length"`) |
+| `ModelNotSpecifiedError` | — | No model specified in the request, constructor, or `GIGACHAT_MODEL` environment variable |
 
 ## Advanced Features
 
