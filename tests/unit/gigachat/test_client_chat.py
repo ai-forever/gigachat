@@ -100,9 +100,11 @@ def test__parse_chat_model(payload_value: Optional[str], setting_value: Optional
     assert actual.model is expected
 
 
-def test__parse_chat_model_not_specified() -> None:
+@pytest.mark.parametrize("payload_value", [None, ""])
+@pytest.mark.parametrize("setting_value", [None, ""])
+def test__parse_chat_model_not_specified(payload_value: Optional[str], setting_value: Optional[str]) -> None:
     with pytest.raises(ModelNotSpecifiedError):
-        _parse_chat(Chat(messages=[]), Settings())
+        _parse_chat(Chat(messages=[], model=payload_value), Settings(model=setting_value))
 
 
 @pytest.mark.parametrize(
@@ -194,11 +196,13 @@ def test__parse_chat_completion_model(
     assert actual.model == expected
 
 
-def test__parse_chat_completion_model_not_specified() -> None:
+@pytest.mark.parametrize("payload_value", [None, ""])
+@pytest.mark.parametrize("setting_value", [None, ""])
+def test__parse_chat_completion_model_not_specified(payload_value: Optional[str], setting_value: Optional[str]) -> None:
     with pytest.raises(ModelNotSpecifiedError):
         _parse_chat_completion(
-            ChatCompletionRequest(messages=[ChatMessage(role="user", content="text")]),
-            Settings(),
+            ChatCompletionRequest(messages=[ChatMessage(role="user", content="text")], model=payload_value),
+            Settings(model=setting_value),
         )
 
 

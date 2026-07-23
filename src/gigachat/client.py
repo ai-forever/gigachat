@@ -65,7 +65,7 @@ logger = logging.getLogger(__name__)
 
 def _require_model(settings: Settings) -> str:
     """Return the configured model or raise if none is set."""
-    if settings.model is None:
+    if not settings.model:
         raise ModelNotSpecifiedError()
     return settings.model
 
@@ -131,7 +131,7 @@ def _parse_chat(payload: Union[Chat, Dict[str, Any], str], settings: Settings) -
     else:
         chat = Chat.model_validate(payload)
     using_assistant = chat.storage is not None and (chat.storage.assistant_id or chat.storage.thread_id)
-    if not using_assistant and chat.model is None:
+    if not using_assistant and not chat.model:
         chat.model = _require_model(settings)
     if chat.profanity_check is None:
         chat.profanity_check = settings.profanity_check
@@ -176,7 +176,7 @@ def _parse_chat_completion(
     using_assistant = chat.assistant_id is not None or (
         isinstance(chat.storage, ChatStorage) and chat.storage.thread_id is not None
     )
-    if not using_assistant and chat.model is None:
+    if not using_assistant and not chat.model:
         chat.model = _require_model(settings)
     if chat.disable_filter is None and settings.profanity_check is not None:
         chat.disable_filter = not settings.profanity_check
