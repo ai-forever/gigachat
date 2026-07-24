@@ -18,6 +18,7 @@ __all__ = [
     "RateLimitError",
     "ServerError",
     "LengthFinishReasonError",
+    "ModelNotSpecifiedError",
 ]
 
 
@@ -95,3 +96,14 @@ class LengthFinishReasonError(GigaChatException):
     def __init__(self, completion: Union["ChatCompletion", "ChatCompletionResponse"]) -> None:
         self.completion = completion
         super().__init__("Could not parse response content as the length limit was reached")
+
+
+class ModelNotSpecifiedError(GigaChatException):
+    """Exception raised when no model is specified for a request."""
+
+    def __init__(self) -> None:
+        super().__init__(
+            "No model specified. Pass `model` in the request payload, "
+            "set `GigaChat(model=...)` or the GIGACHAT_MODEL environment variable. "
+            "Use `get_models()` to list available models."
+        )

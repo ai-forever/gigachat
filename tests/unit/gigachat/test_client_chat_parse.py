@@ -127,7 +127,7 @@ def test_parse_completion_empty_choices() -> None:
 def test_chat_parse_sync_happy(httpx_mock: HTTPXMock) -> None:
     httpx_mock.add_response(url=CHAT_URL, json=CHAT_COMPLETION_JSON)
 
-    with GigaChatSyncClient(base_url=BASE_URL, access_token=ACCESS_TOKEN) as client:
+    with GigaChatSyncClient(base_url=BASE_URL, access_token=ACCESS_TOKEN, model="model") as client:
         with warnings.catch_warnings(record=True) as caught:
             warnings.simplefilter("always", DeprecationWarning)
             completion, parsed = client.chat_parse("Solve 8x+7=-23", response_format=MathResult)
@@ -151,7 +151,7 @@ def test_chat_parse_root_shim_uses_legacy_route_when_primary_route_differs(httpx
     try:
         httpx_mock.add_response(url=f"{BASE_URL}/chat/completions/legacy", json=CHAT_COMPLETION_JSON)
 
-        with GigaChatSyncClient(base_url=BASE_URL, access_token=ACCESS_TOKEN) as client:
+        with GigaChatSyncClient(base_url=BASE_URL, access_token=ACCESS_TOKEN, model="model") as client:
             with warnings.catch_warnings(record=True) as caught:
                 warnings.simplefilter("always", DeprecationWarning)
                 completion, parsed = client.chat_parse("Solve 8x+7=-23", response_format=MathResult)
@@ -170,7 +170,7 @@ def test_chat_parse_root_shim_uses_legacy_route_when_primary_route_differs(httpx
 def test_chat_legacy_parse_sync_happy_without_warning(httpx_mock: HTTPXMock) -> None:
     httpx_mock.add_response(url=CHAT_URL, json=CHAT_COMPLETION_JSON)
 
-    with GigaChatSyncClient(base_url=BASE_URL, access_token=ACCESS_TOKEN) as client:
+    with GigaChatSyncClient(base_url=BASE_URL, access_token=ACCESS_TOKEN, model="model") as client:
         with warnings.catch_warnings(record=True) as caught:
             warnings.simplefilter("always", DeprecationWarning)
             completion, parsed = client.chat_parse("Solve 8x+7=-23", response_format=MathResult)
@@ -184,7 +184,7 @@ def test_chat_legacy_parse_sync_happy_without_warning(httpx_mock: HTTPXMock) -> 
 def test_chat_parse_sync_strict(httpx_mock: HTTPXMock) -> None:
     httpx_mock.add_response(url=CHAT_URL, json=CHAT_COMPLETION_JSON)
 
-    with GigaChatSyncClient(base_url=BASE_URL, access_token=ACCESS_TOKEN) as client:
+    with GigaChatSyncClient(base_url=BASE_URL, access_token=ACCESS_TOKEN, model="model") as client:
         completion, parsed = client.chat_parse("Solve 8x+7=-23", response_format=MathResult, strict=True)
 
     request = httpx_mock.get_requests()[0]
@@ -197,7 +197,7 @@ def test_chat_parse_sync_invalid_json(httpx_mock: HTTPXMock) -> None:
     data["choices"][0]["message"]["content"] = "not json"
     httpx_mock.add_response(url=CHAT_URL, json=data)
 
-    with GigaChatSyncClient(base_url=BASE_URL, access_token=ACCESS_TOKEN) as client:
+    with GigaChatSyncClient(base_url=BASE_URL, access_token=ACCESS_TOKEN, model="model") as client:
         with pytest.raises(json.JSONDecodeError):
             client.chat_parse("Solve 8x+7=-23", response_format=MathResult)
 
@@ -207,7 +207,7 @@ def test_chat_parse_sync_validation_error(httpx_mock: HTTPXMock) -> None:
     data["choices"][0]["message"]["content"] = json.dumps({"bad": "data"})
     httpx_mock.add_response(url=CHAT_URL, json=data)
 
-    with GigaChatSyncClient(base_url=BASE_URL, access_token=ACCESS_TOKEN) as client:
+    with GigaChatSyncClient(base_url=BASE_URL, access_token=ACCESS_TOKEN, model="model") as client:
         with pytest.raises(ValidationError):
             client.chat_parse("Solve 8x+7=-23", response_format=MathResult)
 
@@ -217,7 +217,7 @@ def test_chat_parse_sync_length_error(httpx_mock: HTTPXMock) -> None:
     data["choices"][0]["finish_reason"] = "length"
     httpx_mock.add_response(url=CHAT_URL, json=data)
 
-    with GigaChatSyncClient(base_url=BASE_URL, access_token=ACCESS_TOKEN) as client:
+    with GigaChatSyncClient(base_url=BASE_URL, access_token=ACCESS_TOKEN, model="model") as client:
         with pytest.raises(LengthFinishReasonError):
             client.chat_parse("Solve 8x+7=-23", response_format=MathResult)
 
@@ -229,7 +229,7 @@ def test_chat_parse_sync_with_chat_object(httpx_mock: HTTPXMock) -> None:
         model="GigaChat-2-Max",
         messages=[Messages(role=MessagesRole.USER, content="Solve 8x+7=-23")],
     )
-    with GigaChatSyncClient(base_url=BASE_URL, access_token=ACCESS_TOKEN) as client:
+    with GigaChatSyncClient(base_url=BASE_URL, access_token=ACCESS_TOKEN, model="model") as client:
         completion, parsed = client.chat_parse(chat_obj, response_format=MathResult)
 
     assert isinstance(parsed, MathResult)
@@ -243,7 +243,7 @@ def test_chat_parse_sync_with_chat_object(httpx_mock: HTTPXMock) -> None:
 async def test_achat_parse_happy(httpx_mock: HTTPXMock) -> None:
     httpx_mock.add_response(url=CHAT_URL, json=CHAT_COMPLETION_JSON)
 
-    async with GigaChatAsyncClient(base_url=BASE_URL, access_token=ACCESS_TOKEN) as client:
+    async with GigaChatAsyncClient(base_url=BASE_URL, access_token=ACCESS_TOKEN, model="model") as client:
         with warnings.catch_warnings(record=True) as caught:
             warnings.simplefilter("always", DeprecationWarning)
             completion, parsed = await client.achat_parse("Solve 8x+7=-23", response_format=MathResult)
@@ -263,7 +263,7 @@ async def test_achat_parse_root_shim_uses_legacy_route_when_primary_route_differ
     try:
         httpx_mock.add_response(url=f"{BASE_URL}/chat/completions/legacy", json=CHAT_COMPLETION_JSON)
 
-        async with GigaChatAsyncClient(base_url=BASE_URL, access_token=ACCESS_TOKEN) as client:
+        async with GigaChatAsyncClient(base_url=BASE_URL, access_token=ACCESS_TOKEN, model="model") as client:
             with warnings.catch_warnings(record=True) as caught:
                 warnings.simplefilter("always", DeprecationWarning)
                 completion, parsed = await client.achat_parse("Solve 8x+7=-23", response_format=MathResult)
@@ -282,7 +282,7 @@ async def test_achat_parse_root_shim_uses_legacy_route_when_primary_route_differ
 async def test_achat_legacy_parse_happy_without_warning(httpx_mock: HTTPXMock) -> None:
     httpx_mock.add_response(url=CHAT_URL, json=CHAT_COMPLETION_JSON)
 
-    async with GigaChatAsyncClient(base_url=BASE_URL, access_token=ACCESS_TOKEN) as client:
+    async with GigaChatAsyncClient(base_url=BASE_URL, access_token=ACCESS_TOKEN, model="model") as client:
         with warnings.catch_warnings(record=True) as caught:
             warnings.simplefilter("always", DeprecationWarning)
             completion, parsed = await client.achat_parse("Solve 8x+7=-23", response_format=MathResult)

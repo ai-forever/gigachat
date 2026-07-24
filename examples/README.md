@@ -2,8 +2,12 @@
 
 Python examples show both supported request styles: SDK models and plain dictionaries.
 
-The examples call `load_dotenv()` on startup, so credentials can be configured either through the environment or an
-`.env` file, for example `GIGACHAT_CREDENTIALS` or `GIGACHAT_ACCESS_TOKEN`.
+The examples call `load_dotenv()` on startup, so configuration can be provided either through the environment or an
+`.env` file (see `.env.example` in the repository root). Two settings are required:
+
+* credentials, for example `GIGACHAT_CREDENTIALS` or `GIGACHAT_ACCESS_TOKEN`
+* `GIGACHAT_MODEL` - the SDK has no default model; examples that do not set a model explicitly rely on this
+  variable and raise `ModelNotSpecifiedError` without it (use `client.get_models()` to list available models)
 
 Run Python examples as modules from the repository root:
 

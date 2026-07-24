@@ -148,7 +148,7 @@ Notes:
 
 - A plain string payload still works: `client.chat.create("Hello!")`.
 - Primary message `content` accepts a string, a single object, or a list. The SDK normalizes it to a list of content parts.
-- When you call through the client, `model` defaults to `GigaChat` unless you use `assistant_id` or an existing `storage.thread_id`.
+- When you call through the client, `model` is resolved from the request payload, `GigaChat(model=...)`, or the `GIGACHAT_MODEL` environment variable. There is no built-in default: if none is set, the SDK raises `ModelNotSpecifiedError` (not required when you use `assistant_id` or an existing `storage.thread_id`).
 - The SDK accepts top-level `response_format` and `reasoning` as convenience inputs on `ChatCompletionRequest`, but serializes them under `model_options`.
 - `tools` accepts full tool objects and supported shorthand strings such as `"code_interpreter"`, `"image_generate"`, `"web_search"`, `"url_content_extraction"`, and `"model_3d_generate"`.
 

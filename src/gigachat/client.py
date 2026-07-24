@@ -29,7 +29,7 @@ from gigachat.api import auth, chat, chat_completions, embeddings, files, models
 from gigachat.assistants import AssistantsAsyncClient, AssistantsSyncClient
 from gigachat.authentication import _awith_auth, _awith_auth_stream, _with_auth, _with_auth_stream
 from gigachat.context import authorization_cvar
-from gigachat.exceptions import LengthFinishReasonError
+from gigachat.exceptions import LengthFinishReasonError, ModelNotSpecifiedError
 from gigachat.models.auth import AccessToken, Token
 from gigachat.models.chat import (
     Chat,
@@ -62,7 +62,16 @@ ModelT = TypeVar("ModelT", bound=pydantic.BaseModel)
 
 logger = logging.getLogger(__name__)
 
-GIGACHAT_MODEL = "GigaChat"
+
+def _resolve_model(model: Optional[str], settings: Settings) -> str:
+    """Return the request or configured model, or raise if neither is set."""
+    if model is not None and model.strip():
+        return model
+
+    if settings.model is not None and settings.model.strip():
+        return settings.model
+
+    raise ModelNotSpecifiedError()
 
 
 def _get_kwargs(settings: Settings) -> Dict[str, Any]:
@@ -126,8 +135,8 @@ def _parse_chat(payload: Union[Chat, Dict[str, Any], str], settings: Settings) -
     else:
         chat = Chat.model_validate(payload)
     using_assistant = chat.storage is not None and (chat.storage.assistant_id or chat.storage.thread_id)
-    if not using_assistant and chat.model is None:
-        chat.model = settings.model or GIGACHAT_MODEL
+    if not using_assistant:
+        chat.model = _resolve_model(chat.model, settings)
     if chat.profanity_check is None:
         chat.profanity_check = settings.profanity_check
     if chat.flags is None:
@@ -171,8 +180,8 @@ def _parse_chat_completion(
     using_assistant = chat.assistant_id is not None or (
         isinstance(chat.storage, ChatStorage) and chat.storage.thread_id is not None
     )
-    if not using_assistant and chat.model is None:
-        chat.model = settings.model or GIGACHAT_MODEL
+    if not using_assistant:
+        chat.model = _resolve_model(chat.model, settings)
     if chat.disable_filter is None and settings.profanity_check is not None:
         chat.disable_filter = not settings.profanity_check
     if chat.flags is None:
@@ -493,8 +502,7 @@ class GigaChatSyncClient(_BaseClient):
     @_with_auth
     def tokens_count(self, input_: List[str], model: Optional[str] = None) -> List[TokensCount]:
         """Return the number of tokens in a string."""
-        if not model:
-            model = self._settings.model or GIGACHAT_MODEL
+        model = _resolve_model(model, self._settings)
         return tools.tokens_count_sync(self._client, input_=input_, model=model, access_token=self.token)
 
     @_with_retry
@@ -820,8 +828,7 @@ class GigaChatAsyncClient(_BaseClient):
     @_awith_auth
     async def atokens_count(self, input_: List[str], model: Optional[str] = None) -> List[TokensCount]:
         """Return the number of tokens in a string."""
-        if not model:
-            model = self._settings.model or GIGACHAT_MODEL
+        model = _resolve_model(model, self._settings)
 
         return await tools.tokens_count_async(self._aclient, input_=input_, model=model, access_token=self.token)
 
