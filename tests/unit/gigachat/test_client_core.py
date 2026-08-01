@@ -29,8 +29,25 @@ def _make_ssl_context() -> ssl.SSLContext:
 
 
 def test__get_kwargs() -> None:
-    settings = Settings(ca_bundle_file="ca.pem", cert_file="tls.pem", key_file="tls.key")
-    assert _get_kwargs(settings)
+    context = mock.Mock(spec=ssl.SSLContext)
+    settings = Settings(
+        ca_bundle_file="ca.pem",
+        cert_file="tls.pem",
+        key_file="tls.key",
+        key_file_password="secret",
+    )
+
+    with mock.patch("gigachat.client.ssl.create_default_context", return_value=context) as create_context:
+        kwargs = _get_kwargs(settings)
+
+    create_context.assert_called_once_with(cafile="ca.pem")
+    context.load_cert_chain.assert_called_once_with(
+        certfile="tls.pem",
+        keyfile="tls.key",
+        password="secret",
+    )
+    assert kwargs["verify"] is context
+    assert "cert" not in kwargs
 
 
 def test__get_kwargs_ssl() -> None:
@@ -40,8 +57,15 @@ def test__get_kwargs_ssl() -> None:
 
 
 def test__get_auth_kwargs() -> None:
+    context = mock.Mock(spec=ssl.SSLContext)
     settings = Settings(ca_bundle_file="ca.pem", cert_file="tls.pem", key_file="tls.key")
-    assert _get_auth_kwargs(settings)
+
+    with mock.patch("gigachat.client.ssl.create_default_context", return_value=context) as create_context:
+        kwargs = _get_auth_kwargs(settings)
+
+    create_context.assert_called_once_with(cafile="ca.pem")
+    context.load_cert_chain.assert_not_called()
+    assert kwargs["verify"] is context
 
 
 def test__get_auth_kwargs_ssl() -> None:
