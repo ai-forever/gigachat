@@ -26,9 +26,9 @@ session_id_cvar: ContextVar[Optional[str]] = ContextVar("session_id_cvar", defau
 service_id_cvar: ContextVar[Optional[str]] = ContextVar("service_id_cvar", default=None)
 """Unique service ID."""
 operation_id_cvar: ContextVar[Optional[str]] = ContextVar("operation_id_cvar", default=None)
-"""Unique operation ID."""
+"""Value forwarded in the ``X-Operation-ID`` request header."""
 trace_id_cvar: ContextVar[Optional[str]] = ContextVar("trace_id_cvar", default=None)
-"""Unique process instance ID (main operation)."""
+"""Value forwarded in the ``X-Trace-ID`` request header."""
 agent_id_cvar: ContextVar[Optional[str]] = ContextVar("agent_id_cvar", default=None)
 """Unique agent ID."""
 custom_headers_cvar: ContextVar[Optional[Dict[str, str]]] = ContextVar("custom_headers_cvar", default=None)
