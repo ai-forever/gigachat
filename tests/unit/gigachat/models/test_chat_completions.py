@@ -4,7 +4,7 @@ import pytest
 from pydantic import BaseModel, ValidationError
 
 from gigachat.models import ChatCompletionRequest, ChatCompletionResponse, ChatMessage
-from gigachat.models.chat_completions import ChatCompletionChunk, ChatResponseFormat, ChatStorage
+from gigachat.models.chat_completions import ChatAdditionalData, ChatCompletionChunk, ChatResponseFormat, ChatStorage
 
 
 class WeatherAnswer(BaseModel):
@@ -283,12 +283,12 @@ def test_chat_completion_response_parses_primary_contract() -> None:
     assert response.usage.input_tokens_details is not None
     assert response.usage.input_tokens_details.cached_tokens == 2
     assert response.finish_reason == "stop"
-    assert response.additional_data is not None
-    assert response.additional_data.execution_steps is not None
-    assert response.additional_data.execution_steps[0].model_dump(exclude_none=True) == {
-        "type": "tool_call",
-        "name": "image_generation",
-    }
+    assert isinstance(response.additional_data, list)
+    assert response.additional_data == [{"type": "tool_call", "name": "image_generation"}]
+    assert response.additional_data[0]["name"] == "image_generation"
+    assert response.model_dump(exclude_none=True)["additional_data"] == [
+        {"type": "tool_call", "name": "image_generation"}
+    ]
 
 
 def test_chat_completion_response_parses_documented_additional_data_object() -> None:
@@ -314,7 +314,7 @@ def test_chat_completion_response_parses_documented_additional_data_object() -> 
         }
     )
 
-    assert response.additional_data is not None
+    assert isinstance(response.additional_data, ChatAdditionalData)
     assert response.additional_data.execution_steps is not None
     execution_step = response.additional_data.execution_steps[0]
     assert execution_step.event_type == "function_calling"
@@ -509,7 +509,7 @@ def test_chat_completion_chunk_parses_documented_additional_data_object() -> Non
         }
     )
 
-    assert chunk.additional_data is not None
+    assert isinstance(chunk.additional_data, ChatAdditionalData)
     assert chunk.additional_data.execution_steps is not None
     assert chunk.additional_data.execution_steps[0].step is not None
     assert chunk.additional_data.execution_steps[0].step.function_executed == "image_generate"

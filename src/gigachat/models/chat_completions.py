@@ -62,12 +62,6 @@ def _normalize_tools_state_id(values: Dict[str, Any]) -> None:
     values.pop("functions_state_id", None)
 
 
-def _normalize_additional_data(values: Dict[str, Any]) -> None:
-    """Normalize the historical execution-step list to the documented object shape."""
-    if isinstance(values.get("additional_data"), list):
-        values["additional_data"] = {"execution_steps": values["additional_data"]}
-
-
 class _ChatCompletionsModel(BaseModel):
     model_config = ConfigDict(extra="allow", populate_by_name=True)
 
@@ -542,7 +536,9 @@ class ChatCompletionResponse(_ChatCompletionsAPIResponse):
     usage: Optional[ChatUsage] = Field(default=None, description="Usage information.")
     tool_execution: Optional[ChatToolExecution] = Field(default=None, description="Top-level tool execution state.")
     logprobs: Optional[List[ChatLogprob]] = Field(default=None, description="Top-level logprob metadata.")
-    additional_data: Optional[ChatAdditionalData] = Field(default=None, description="Additional response metadata.")
+    additional_data: Optional[Union[ChatAdditionalData, List[Dict[str, Any]]]] = Field(
+        default=None, description="Additional response metadata."
+    )
 
     @model_validator(mode="before")
     @classmethod
@@ -555,7 +551,6 @@ class ChatCompletionResponse(_ChatCompletionsAPIResponse):
         if values.get("created_at") is None and values.get("created") is not None:
             values["created_at"] = values.pop("created")
         _normalize_tools_state_id(values)
-        _normalize_additional_data(values)
 
         return values
 
@@ -574,7 +569,9 @@ class ChatCompletionChunk(_ChatCompletionsAPIResponse):
     usage: Optional[ChatUsage] = Field(default=None, description="Usage information.")
     tool_execution: Optional[ChatToolExecution] = Field(default=None, description="Top-level tool execution state.")
     logprobs: Optional[List[ChatLogprob]] = Field(default=None, description="Top-level logprob metadata.")
-    additional_data: Optional[ChatAdditionalData] = Field(default=None, description="Additional response metadata.")
+    additional_data: Optional[Union[ChatAdditionalData, List[Dict[str, Any]]]] = Field(
+        default=None, description="Additional response metadata."
+    )
 
     @model_validator(mode="before")
     @classmethod
@@ -587,7 +584,6 @@ class ChatCompletionChunk(_ChatCompletionsAPIResponse):
         if values.get("created_at") is None and values.get("created") is not None:
             values["created_at"] = values.pop("created")
         _normalize_tools_state_id(values)
-        _normalize_additional_data(values)
 
         return values
 
