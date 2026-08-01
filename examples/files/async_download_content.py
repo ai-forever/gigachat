@@ -17,12 +17,11 @@ async def main() -> None:
     args = parser.parse_args()
     load_dotenv()
 
-    async with GigaChatAsyncClient() as client:
-        downloaded = await client.aget_file_content(args.file_id)
-
     output = Path(args.output)
-    output.write_bytes(downloaded.content)
-    print(f"Saved {len(downloaded.content)} bytes ({downloaded.content_type}) to {output}")
+    async with GigaChatAsyncClient() as client:
+        await client.adownload_file(args.file_id, output)
+
+    print(f"Saved file to {output}")
 
 
 if __name__ == "__main__":

@@ -24,7 +24,7 @@ def main() -> None:
         if batch.output_file_id is not None:
             result = client.get_file_content(batch.output_file_id)
             output = Path("batch-results.jsonl")
-            output.write_bytes(result.content)
+            result.save(output)
             print(f"Saved {len(result.content)} bytes to {output}")
 
 

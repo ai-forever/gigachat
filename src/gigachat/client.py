@@ -6,6 +6,7 @@ import ssl
 import threading
 import time
 from functools import cached_property
+from pathlib import Path
 from typing import (
     Any,
     AsyncIterator,
@@ -562,6 +563,10 @@ class GigaChatSyncClient(_BaseClient):
         """Return raw file content and response metadata."""
         return files.get_file_content_sync(self._client, file_id=file_id, access_token=self.token)
 
+    def download_file(self, file_id: str, path: Union[str, Path]) -> Path:
+        """Download a file and save its raw content."""
+        return self.get_file_content(file_id).save(path)
+
     @_with_retry
     @_with_auth
     def upload_file(
@@ -918,6 +923,12 @@ class GigaChatAsyncClient(_BaseClient):
         """Return raw file content and response metadata."""
 
         return await files.get_file_content_async(self._aclient, file_id=file_id, access_token=self.token)
+
+    async def adownload_file(self, file_id: str, path: Union[str, Path]) -> Path:
+        """Download a file asynchronously and save its raw content."""
+        downloaded = await self.aget_file_content(file_id)
+        loop = asyncio.get_running_loop()
+        return await loop.run_in_executor(None, downloaded.save, path)
 
     @_awith_retry
     @_awith_auth

@@ -1,4 +1,6 @@
-from typing import List, Optional
+import base64
+from pathlib import Path
+from typing import List, Optional, Union
 
 from pydantic import Field
 
@@ -42,6 +44,16 @@ class Image(APIResponse):
 
     content: str = Field(description="Base64 encoded image data.")
 
+    def to_bytes(self) -> bytes:
+        """Decode and return the image content."""
+        return base64.b64decode(self.content, validate=True)
+
+    def save(self, path: Union[str, Path]) -> Path:
+        """Decode and save the image content."""
+        output_path = Path(path)
+        output_path.write_bytes(self.to_bytes())
+        return output_path
+
 
 class DownloadedFile(APIResponse):
     """Raw content downloaded from an uploaded file."""
@@ -49,3 +61,9 @@ class DownloadedFile(APIResponse):
     content: bytes = Field(description="Raw file content.")
     content_type: Optional[str] = Field(default=None, description="Response media type.")
     content_disposition: Optional[str] = Field(default=None, description="Response content disposition.")
+
+    def save(self, path: Union[str, Path]) -> Path:
+        """Save the raw file content."""
+        output_path = Path(path)
+        output_path.write_bytes(self.content)
+        return output_path

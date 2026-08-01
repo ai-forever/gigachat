@@ -333,8 +333,10 @@ asyncio.run(validate_async())
 
 ### File Content
 
-`get_file_content()` returns raw bytes for any supported file type together with the response media type and service
-headers. `get_image()` remains available as a compatibility helper that returns base64 text.
+`get_file()` returns file metadata. `get_file_content()` returns raw bytes for any supported file type together with
+the response media type and service headers. Use `download_file()` to download and save in one call. `get_image()`
+remains available as a compatibility helper that returns base64 text; its result provides `to_bytes()` and `save()`
+helpers.
 
 ```python
 import asyncio
@@ -344,12 +346,19 @@ from gigachat import GigaChat, GigaChatAsyncClient
 with GigaChat() as client:
     downloaded = client.get_file_content("file-id")
     print(downloaded.content_type, len(downloaded.content))
+    downloaded.save("downloaded-file.bin")
+
+    output = client.download_file("another-file-id", "another-file.bin")
+    print(f"Saved to {output}")
+
+    image = client.get_image("generated-image-id")
+    image.save("generated-image.jpg")
 
 
 async def download_async() -> None:
     async with GigaChatAsyncClient() as client:
-        downloaded = await client.aget_file_content("file-id")
-        print(downloaded.content_type, len(downloaded.content))
+        output = await client.adownload_file("file-id", "downloaded-file.bin")
+        print(f"Saved to {output}")
 
 
 asyncio.run(download_async())
@@ -779,9 +788,7 @@ with GigaChat() as client:
         print(f"{file.id}: {file.filename}")
 
     # Download arbitrary binary content without assuming an image format
-    downloaded = client.get_file_content(uploaded.id)
-    with open("downloaded-file.bin", "wb") as output:
-        output.write(downloaded.content)
+    client.download_file(uploaded.id, "downloaded-file.bin")
 
     # Delete a file
     client.delete_file(uploaded.id)

@@ -46,8 +46,8 @@ uv run python -m examples.chat_completions.sync_chat
 ## Files and assistants
 
 * [File input](./files/file_input.py) - upload a file and reference it from message content
-* [File download](./files/download_content.py) - download arbitrary file content as raw bytes
-* [Async file download](./files/async_download_content.py) - async raw file download
+* [File download](./files/download_content.py) - save any file with `client.download_file(...)`
+* [Async file download](./files/async_download_content.py) - async save with `client.adownload_file(...)`
 * [Assistant lifecycle](./assistants/basic.py) - create, use, and delete an assistant
 
 ## Batch processing

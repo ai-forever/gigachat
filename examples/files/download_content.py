@@ -16,12 +16,11 @@ def main() -> None:
     args = parser.parse_args()
     load_dotenv()
 
-    with GigaChat() as client:
-        downloaded = client.get_file_content(args.file_id)
-
     output = Path(args.output)
-    output.write_bytes(downloaded.content)
-    print(f"Saved {len(downloaded.content)} bytes ({downloaded.content_type}) to {output}")
+    with GigaChat() as client:
+        client.download_file(args.file_id, output)
+
+    print(f"Saved file to {output}")
 
 
 if __name__ == "__main__":
