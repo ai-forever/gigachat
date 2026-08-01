@@ -30,13 +30,14 @@ from gigachat.models.chat import (
     Usage,
 )
 from gigachat.models.chat_completions import (
-    ChatCompletionChunk as PrimaryChatCompletionChunk,
-)
-from gigachat.models.chat_completions import (
+    ChatAdditionalData,
     ChatCompletionRequest,
     ChatCompletionResponse,
     ChatContentFile,
     ChatContentPart,
+    ChatExecutionFunctionCall,
+    ChatExecutionStep,
+    ChatExecutionStepDetails,
     ChatFilterConfig,
     ChatFilterContentConfig,
     ChatFilterResponseContentConfig,
@@ -59,6 +60,9 @@ from gigachat.models.chat_completions import (
     ChatUsageInputTokensDetails,
     ChatUserInfo,
     ChatWebSearchTool,
+)
+from gigachat.models.chat_completions import (
+    ChatCompletionChunk as PrimaryChatCompletionChunk,
 )
 from gigachat.models.chat_completions import (
     ChatFunctionCall as PrimaryChatFunctionCall,
@@ -107,6 +111,7 @@ __all__ = (
     "BatchMethod",
     "BatchRequestCounts",
     "BatchStatus",
+    "ChatAdditionalData",
     "Chat",
     "ChatCompletion",
     "ChatCompletionChunk",
@@ -114,6 +119,9 @@ __all__ = (
     "ChatCompletionResponse",
     "ChatContentFile",
     "ChatContentPart",
+    "ChatExecutionFunctionCall",
+    "ChatExecutionStep",
+    "ChatExecutionStepDetails",
     "ChatFilterConfig",
     "ChatFilterContentConfig",
     "ChatFilterResponseContentConfig",

@@ -15,6 +15,12 @@ class UploadedFile(APIResponse):
     filename: str = Field(description="Name of the file.")
     purpose: str = Field(description="Intended purpose of the file.")
     access_policy: Optional[str] = Field(default=None, description="Access policy.")
+    modalities: Optional[List[str]] = Field(default=None, description="Automatically detected file modalities.")
+
+    @property
+    def id(self) -> str:
+        """Return the file identifier using the documented attribute name."""
+        return self.id_
 
 
 class UploadedFiles(APIResponse):
@@ -28,6 +34,7 @@ class DeletedFile(APIResponse):
 
     id_: str = Field(alias="id", description="File identifier.")
     deleted: bool = Field(description="Deletion status. True if deleted.")
+    access_policy: Optional[str] = Field(default=None, description="Access policy.")
 
 
 class Image(APIResponse):

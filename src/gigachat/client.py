@@ -517,7 +517,7 @@ class GigaChatSyncClient(_BaseClient):
 
     @_with_retry
     @_with_auth
-    def embeddings(self, texts: List[str], model: str = "Embeddings") -> Embeddings:
+    def embeddings(self, texts: Union[str, List[str]], model: str = "Embeddings") -> Embeddings:
         """Return embeddings."""
         return embeddings.embeddings_sync(self._client, access_token=self.token, input_=texts, model=model)
 
@@ -870,7 +870,7 @@ class GigaChatAsyncClient(_BaseClient):
 
     @_awith_retry
     @_awith_auth
-    async def aembeddings(self, texts: List[str], model: str = "Embeddings") -> Embeddings:
+    async def aembeddings(self, texts: Union[str, List[str]], model: str = "Embeddings") -> Embeddings:
         """Return embeddings."""
 
         return await embeddings.embeddings_async(self._aclient, access_token=self.token, input_=texts, model=model)

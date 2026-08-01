@@ -283,7 +283,73 @@ def test_chat_completion_response_parses_primary_contract() -> None:
     assert response.usage.input_tokens_details is not None
     assert response.usage.input_tokens_details.cached_tokens == 2
     assert response.finish_reason == "stop"
-    assert response.additional_data == [{"type": "tool_call", "name": "image_generation"}]
+    assert response.additional_data is not None
+    assert response.additional_data.execution_steps is not None
+    assert response.additional_data.execution_steps[0].model_dump(exclude_none=True) == {
+        "type": "tool_call",
+        "name": "image_generation",
+    }
+
+
+def test_chat_completion_response_parses_documented_additional_data_object() -> None:
+    response = ChatCompletionResponse.model_validate(
+        {
+            "messages": [],
+            "additional_data": {
+                "execution_steps": [
+                    {
+                        "ts_start": 10,
+                        "ts_end": 20,
+                        "event_type": "function_calling",
+                        "step": {
+                            "function_call": {"name": "get_weather", "arguments": {"city": "Moscow"}},
+                            "functions_in": ["get_weather", "get_news"],
+                            "functions_out": ["get_weather"],
+                            "function_executed": "get_weather",
+                            "function_result": "success",
+                        },
+                    }
+                ]
+            },
+        }
+    )
+
+    assert response.additional_data is not None
+    assert response.additional_data.execution_steps is not None
+    execution_step = response.additional_data.execution_steps[0]
+    assert execution_step.event_type == "function_calling"
+    assert execution_step.step is not None
+    assert execution_step.step.function_call is not None
+    assert execution_step.step.function_call.arguments == {"city": "Moscow"}
+    assert execution_step.step.function_result == "success"
+
+
+def test_chat_completion_response_types_content_part_logprobs() -> None:
+    response = ChatCompletionResponse.model_validate(
+        {
+            "messages": [
+                {
+                    "role": "assistant",
+                    "content": [
+                        {
+                            "text": "Привет",
+                            "logprobs": [
+                                {
+                                    "chosen": {"token": "Привет", "token_id": 1, "logprob": -0.1},
+                                    "top": [{"token": "Здравствуйте", "token_id": 2, "logprob": -0.4}],
+                                }
+                            ],
+                        }
+                    ],
+                }
+            ]
+        }
+    )
+
+    assert response.messages[0].content is not None
+    assert response.messages[0].content[0].logprobs is not None
+    assert response.messages[0].content[0].logprobs[0].chosen is not None
+    assert response.messages[0].content[0].logprobs[0].chosen.token == "Привет"
 
 
 def test_chat_completion_response_parses_content_function_call() -> None:
@@ -426,6 +492,27 @@ def test_chat_completion_chunk_accepts_partial_messages() -> None:
     assert chunk.messages[0].content[0].text == "Частичный ответ"
     assert chunk.messages[0].tool_execution is not None
     assert chunk.messages[0].tool_execution.seconds_left == 5
+
+
+def test_chat_completion_chunk_parses_documented_additional_data_object() -> None:
+    chunk = ChatCompletionChunk.model_validate(
+        {
+            "event": "response.message.done",
+            "additional_data": {
+                "execution_steps": [
+                    {
+                        "event_type": "tool_execution",
+                        "step": {"function_executed": "image_generate", "function_result": "success"},
+                    }
+                ]
+            },
+        }
+    )
+
+    assert chunk.additional_data is not None
+    assert chunk.additional_data.execution_steps is not None
+    assert chunk.additional_data.execution_steps[0].step is not None
+    assert chunk.additional_data.execution_steps[0].step.function_executed == "image_generate"
 
 
 def test_chat_completion_chunk_normalizes_singular_tool_state_id() -> None:

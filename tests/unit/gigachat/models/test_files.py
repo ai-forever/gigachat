@@ -12,12 +12,16 @@ def test_uploaded_file_creation() -> None:
         "created_at": 1234567890,
         "filename": "test.txt",
         "purpose": "general",
+        "access_policy": "private",
+        "modalities": ["text"],
     }
     file_ = UploadedFile.model_validate(data)
     assert file_.id_ == "file-123"
+    assert file_.id == "file-123"
     assert file_.object_ == "file"
     assert file_.bytes_ == 1024
     assert file_.filename == "test.txt"
+    assert file_.modalities == ["text"]
 
 
 def test_uploaded_files_creation() -> None:
@@ -39,10 +43,11 @@ def test_uploaded_files_creation() -> None:
 
 
 def test_deleted_file_creation() -> None:
-    data = {"id": "file-1", "deleted": True}
+    data = {"id": "file-1", "deleted": True, "access_policy": "private"}
     deleted = DeletedFile.model_validate(data)
     assert deleted.id_ == "file-1"
     assert deleted.deleted is True
+    assert deleted.access_policy == "private"
 
 
 def test_image_creation() -> None:

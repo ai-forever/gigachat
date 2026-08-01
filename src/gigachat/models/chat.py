@@ -76,10 +76,12 @@ class FunctionParametersProperty(BaseModel):
     type_: str = Field(default="object", alias="type", description="Type of the argument.")
     description: str = Field(default="", description="Description of the argument.")
     items: Optional[Dict[str, Any]] = Field(default=None, description="Items schema for array types.")
-    enum: Optional[List[str]] = Field(default=None, description="List of possible values for enum types.")
+    enum: Optional[List[Any]] = Field(default=None, description="List of possible values for enum types.")
     properties: Optional[Dict[Any, "FunctionParametersProperty"]] = Field(
         default=None, description="Nested properties for object types."
     )
+
+    model_config = ConfigDict(extra="allow", populate_by_name=True)
 
 
 class FunctionParameters(BaseModel):
@@ -90,6 +92,8 @@ class FunctionParameters(BaseModel):
         default=None, description="Dictionary of parameter properties."
     )
     required: Optional[List[str]] = Field(default=None, description="List of required parameter names.")
+
+    model_config = ConfigDict(extra="allow", populate_by_name=True)
 
 
 class Function(BaseModel):
@@ -148,6 +152,7 @@ class Messages(BaseModel):
         default=None, description="ID of the function state generating images/video."
     )
     reasoning_content: Optional[str] = Field(default=None, description="Reasoning content from the model.")
+    created: Optional[int] = Field(default=None, description="Message creation timestamp (Unix time).")
     id_: Optional[Any] = Field(alias="id", default=None, description="Message ID.")
 
     model_config = ConfigDict(use_enum_values=True)
@@ -161,6 +166,7 @@ class MessagesChunk(BaseModel):
     reasoning_content: Optional[str] = Field(default=None, description="Reasoning content chunk.")
     function_call: Optional[FunctionCall] = Field(default=None, description="Function call chunk.")
     functions_state_id: Optional[str] = Field(default=None, description="Function state ID.")
+    created: Optional[int] = Field(default=None, description="Message creation timestamp (Unix time).")
 
 
 class Choices(BaseModel):

@@ -140,12 +140,14 @@ async def test_functions_validate_async_accepts_typed_schema(httpx_mock: HTTPXMo
 
 
 def test_ai_check_sync(httpx_mock: HTTPXMock) -> None:
-    httpx_mock.add_response(url=AI_CHECK_URL, json=AI_CHECK)
+    httpx_mock.add_response(url=AI_CHECK_URL, json=AI_CHECK, headers={"x-request-id": "request-1"})
 
     with httpx.Client(base_url=BASE_URL) as client:
         response = ai_check_sync(client, input_="text", model="model")
 
     assert isinstance(response, AICheckResult)
+    assert response.x_headers is not None
+    assert response.x_headers["x-request-id"] == "request-1"
 
 
 async def test_ai_check_async(httpx_mock: HTTPXMock) -> None:

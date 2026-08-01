@@ -6,7 +6,7 @@ from gigachat.models.base import APIResponse
 from gigachat.models.chat import Function
 
 
-class AICheckResult(BaseModel):
+class AICheckResult(APIResponse):
     """AI content check result."""
 
     category: Literal["ai", "human", "mixed"] = Field(description="Classification category: 'ai', 'human', or 'mixed'.")

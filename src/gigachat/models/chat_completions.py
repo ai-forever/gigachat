@@ -1,5 +1,5 @@
 import inspect
-from typing import Any, Dict, List, Optional, Union
+from typing import Any, Dict, List, Literal, Optional, Union
 
 import pydantic
 from pydantic import BaseModel, ConfigDict, Field, model_validator
@@ -62,6 +62,12 @@ def _normalize_tools_state_id(values: Dict[str, Any]) -> None:
     values.pop("functions_state_id", None)
 
 
+def _normalize_additional_data(values: Dict[str, Any]) -> None:
+    """Normalize the historical execution-step list to the documented object shape."""
+    if isinstance(values.get("additional_data"), list):
+        values["additional_data"] = {"execution_steps": values["additional_data"]}
+
+
 class _ChatCompletionsModel(BaseModel):
     model_config = ConfigDict(extra="allow", populate_by_name=True)
 
@@ -109,6 +115,7 @@ class ChatContentPart(_ChatCompletionsModel):
     function_result: Optional[ChatFunctionResult] = Field(default=None, description="Tool result payload.")
     tool_execution: Optional["ChatToolExecution"] = Field(default=None, description="Tool execution state.")
     inline_data: Optional[ChatInlineData] = Field(default=None, description="Inline metadata.")
+    logprobs: Optional[List["ChatLogprob"]] = Field(default=None, description="Token log probability metadata.")
 
 
 class ChatFunctionCall(_ChatCompletionsModel):
@@ -140,6 +147,40 @@ class ChatLogprob(_ChatCompletionsModel):
 
     chosen: Optional[ChatLogprobToken] = Field(default=None, description="Chosen token.")
     top: Optional[List[ChatLogprobToken]] = Field(default=None, description="Top candidate tokens.")
+
+
+class ChatExecutionFunctionCall(_ChatCompletionsModel):
+    """Function call recorded in a response execution step."""
+
+    name: Optional[str] = Field(default=None, description="Function name.")
+    arguments: Optional[Dict[str, Any]] = Field(default=None, description="Generated function arguments.")
+
+
+class ChatExecutionStepDetails(_ChatCompletionsModel):
+    """Details recorded for a response execution step."""
+
+    function_call: Optional[ChatExecutionFunctionCall] = Field(default=None, description="Generated function call.")
+    functions_in: Optional[List[str]] = Field(default=None, description="Functions supplied to the model or ranker.")
+    functions_out: Optional[List[str]] = Field(default=None, description="Functions selected by the ranker.")
+    function_executed: Optional[str] = Field(default=None, description="Executed function name.")
+    function_result: Optional[Literal["success", "fail"]] = Field(
+        default=None, description="Function execution result."
+    )
+
+
+class ChatExecutionStep(_ChatCompletionsModel):
+    """One response execution step."""
+
+    ts_start: Optional[int] = Field(default=None, description="Step start timestamp.")
+    ts_end: Optional[int] = Field(default=None, description="Step end timestamp.")
+    event_type: Optional[str] = Field(default=None, description="System that handled the request.")
+    step: Optional[ChatExecutionStepDetails] = Field(default=None, description="Execution step details.")
+
+
+class ChatAdditionalData(_ChatCompletionsModel):
+    """Additional response metadata."""
+
+    execution_steps: Optional[List[ChatExecutionStep]] = Field(default=None, description="Response execution steps.")
 
 
 class ChatUsageInputTokensDetails(_ChatCompletionsModel):
@@ -501,7 +542,7 @@ class ChatCompletionResponse(_ChatCompletionsAPIResponse):
     usage: Optional[ChatUsage] = Field(default=None, description="Usage information.")
     tool_execution: Optional[ChatToolExecution] = Field(default=None, description="Top-level tool execution state.")
     logprobs: Optional[List[ChatLogprob]] = Field(default=None, description="Top-level logprob metadata.")
-    additional_data: Optional[List[Dict[str, Any]]] = Field(default=None, description="Additional response metadata.")
+    additional_data: Optional[ChatAdditionalData] = Field(default=None, description="Additional response metadata.")
 
     @model_validator(mode="before")
     @classmethod
@@ -514,6 +555,7 @@ class ChatCompletionResponse(_ChatCompletionsAPIResponse):
         if values.get("created_at") is None and values.get("created") is not None:
             values["created_at"] = values.pop("created")
         _normalize_tools_state_id(values)
+        _normalize_additional_data(values)
 
         return values
 
@@ -532,7 +574,7 @@ class ChatCompletionChunk(_ChatCompletionsAPIResponse):
     usage: Optional[ChatUsage] = Field(default=None, description="Usage information.")
     tool_execution: Optional[ChatToolExecution] = Field(default=None, description="Top-level tool execution state.")
     logprobs: Optional[List[ChatLogprob]] = Field(default=None, description="Top-level logprob metadata.")
-    additional_data: Optional[List[Dict[str, Any]]] = Field(default=None, description="Additional response metadata.")
+    additional_data: Optional[ChatAdditionalData] = Field(default=None, description="Additional response metadata.")
 
     @model_validator(mode="before")
     @classmethod
@@ -545,16 +587,21 @@ class ChatCompletionChunk(_ChatCompletionsAPIResponse):
         if values.get("created_at") is None and values.get("created") is not None:
             values["created_at"] = values.pop("created")
         _normalize_tools_state_id(values)
+        _normalize_additional_data(values)
 
         return values
 
 
 __all__ = (
+    "ChatAdditionalData",
     "ChatCompletionChunk",
     "ChatCompletionRequest",
     "ChatCompletionResponse",
     "ChatContentFile",
     "ChatContentPart",
+    "ChatExecutionFunctionCall",
+    "ChatExecutionStep",
+    "ChatExecutionStepDetails",
     "ChatFilterConfig",
     "ChatFilterContentConfig",
     "ChatFilterResponseContentConfig",

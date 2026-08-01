@@ -1,3 +1,5 @@
+import json
+
 import httpx
 from pytest_httpx import HTTPXMock
 
@@ -10,9 +12,12 @@ def test_embeddings_sync(httpx_mock: HTTPXMock) -> None:
     httpx_mock.add_response(url=EMBEDDINGS_URL, json=EMBEDDINGS)
 
     with httpx.Client(base_url=BASE_URL) as client:
-        response = embeddings_sync(client, input_=["text"], model="model")
+        response = embeddings_sync(client, input_="text", model="model")
 
     assert isinstance(response, Embeddings)
+    request = httpx_mock.get_request()
+    assert request is not None
+    assert json.loads(request.content) == {"input": "text", "model": "model"}
 
 
 async def test_embeddings_async(httpx_mock: HTTPXMock) -> None:
@@ -22,3 +27,6 @@ async def test_embeddings_async(httpx_mock: HTTPXMock) -> None:
         response = await embeddings_async(client, input_=["text"], model="model")
 
     assert isinstance(response, Embeddings)
+    request = httpx_mock.get_request()
+    assert request is not None
+    assert json.loads(request.content) == {"input": ["text"], "model": "model"}

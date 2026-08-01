@@ -1,5 +1,5 @@
 import json
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Union
 
 import httpx
 
@@ -9,7 +9,7 @@ from gigachat.models.embeddings import Embeddings
 
 def _get_embeddings_kwargs(
     *,
-    input_: List[str],
+    input_: Union[str, List[str]],
     model: str,
     access_token: Optional[str] = None,
 ) -> Dict[str, Any]:
@@ -27,7 +27,7 @@ def _get_embeddings_kwargs(
 def embeddings_sync(
     client: httpx.Client,
     *,
-    input_: List[str],
+    input_: Union[str, List[str]],
     model: str,
     access_token: Optional[str] = None,
 ) -> Embeddings:
@@ -39,7 +39,7 @@ def embeddings_sync(
 async def embeddings_async(
     client: httpx.AsyncClient,
     *,
-    input_: List[str],
+    input_: Union[str, List[str]],
     model: str,
     access_token: Optional[str] = None,
 ) -> Embeddings:

@@ -48,10 +48,11 @@ def test_messages_role_enum() -> None:
 
 
 def test_messages_creation() -> None:
-    msg = Messages(role=MessagesRole.USER, content="hello")
+    msg = Messages(role=MessagesRole.USER, content="hello", created=1625284800)
     assert msg.role == "user"
     assert msg.content == "hello"
     assert msg.function_call is None
+    assert msg.created == 1625284800
 
 
 def test_messages_function_call() -> None:
@@ -82,6 +83,30 @@ def test_function_model_validator() -> None:
     assert func.parameters is not None
     assert func.parameters.properties is not None
     assert "prop" in func.parameters.properties
+
+
+def test_function_parameters_preserve_json_schema_keywords() -> None:
+    function = Function.model_validate(
+        {
+            "name": "send_sms",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "text": {"type": "string", "minLength": 1, "pattern": "^.+$"},
+                    "contactId": {"type": "integer", "format": "int32", "minimum": 1},
+                },
+                "required": ["text", "contactId"],
+                "additionalProperties": False,
+            },
+        }
+    )
+
+    dumped = function.model_dump(by_alias=True, exclude_none=True)
+    assert dumped["parameters"]["properties"]["text"]["minLength"] == 1
+    assert dumped["parameters"]["properties"]["text"]["pattern"] == "^.+$"
+    assert dumped["parameters"]["properties"]["contactId"]["format"] == "int32"
+    assert dumped["parameters"]["properties"]["contactId"]["minimum"] == 1
+    assert dumped["parameters"]["additionalProperties"] is False
 
 
 def test_usage_validation() -> None:
