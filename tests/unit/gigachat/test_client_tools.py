@@ -1,7 +1,16 @@
 from pytest_httpx import HTTPXMock
 
 from gigachat.client import GigaChatAsyncClient, GigaChatSyncClient
-from gigachat.models import AICheckResult, Balance, Function, OpenApiFunctions
+from gigachat.models import (
+    AICheckResult,
+    Balance,
+    FilterCheckRequest,
+    FilterCheckResult,
+    Function,
+    Messages,
+    MessagesRole,
+    OpenApiFunctions,
+)
 from gigachat.models.tools import BalanceValue
 from tests.constants import (
     AI_CHECK,
@@ -11,6 +20,8 @@ from tests.constants import (
     BASE_URL,
     CONVERT_FUNCTIONS,
     CONVERT_FUNCTIONS_URL,
+    FILTER_CHECK,
+    FILTER_CHECK_URL,
 )
 
 
@@ -68,3 +79,23 @@ async def test_acheck_ai(httpx_mock: HTTPXMock) -> None:
     async with GigaChatAsyncClient(base_url=BASE_URL) as client:
         response = await client.acheck_ai(text="", model="")
     assert isinstance(response, AICheckResult)
+
+
+def test_filter_check(httpx_mock: HTTPXMock) -> None:
+    httpx_mock.add_response(url=FILTER_CHECK_URL, json=FILTER_CHECK)
+    payload = FilterCheckRequest(messages=[Messages(role=MessagesRole.USER, content="text")])
+
+    with GigaChatSyncClient(base_url=BASE_URL) as client:
+        response = client.filter_check(payload)
+
+    assert isinstance(response, FilterCheckResult)
+
+
+async def test_afilter_check(httpx_mock: HTTPXMock) -> None:
+    httpx_mock.add_response(url=FILTER_CHECK_URL, json=FILTER_CHECK)
+    payload = FilterCheckRequest(messages=[Messages(role=MessagesRole.USER, content="text")])
+
+    async with GigaChatAsyncClient(base_url=BASE_URL) as client:
+        response = await client.afilter_check(payload)
+
+    assert isinstance(response, FilterCheckResult)

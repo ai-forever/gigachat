@@ -81,7 +81,16 @@ from gigachat.models.threads import (
     Threads,
     ThreadStatus,
 )
-from gigachat.models.tools import AICheckResult, Balance, OpenApiFunctions, TokensCount
+from gigachat.models.tools import (
+    AICheckResult,
+    Balance,
+    FilterCheckRequest,
+    FilterCheckResult,
+    FilterCheckSettings,
+    FilterCheckUsage,
+    OpenApiFunctions,
+    TokensCount,
+)
 
 __all__ = (
     "AccessToken",
@@ -129,6 +138,10 @@ __all__ = (
     "Embedding",
     "Embeddings",
     "EmbeddingsUsage",
+    "FilterCheckRequest",
+    "FilterCheckResult",
+    "FilterCheckSettings",
+    "FilterCheckUsage",
     "FewShotExample",
     "Function",
     "FunctionCall",

@@ -675,6 +675,23 @@ with GigaChat() as client:
     client.delete_file(uploaded.id)
 ```
 
+### Content Filtering
+
+Check messages against thematic restrictions before sending them to a chat model:
+
+```python
+from gigachat import GigaChat
+from gigachat.models import FilterCheckRequest, Messages, MessagesRole
+
+payload = FilterCheckRequest(
+    messages=[Messages(role=MessagesRole.USER, content="Message to check")],
+)
+
+with GigaChat() as client:
+    result = client.filter_check(payload)
+    print(result.is_profane, result.usage.filter_tokens)
+```
+
 
 ### Balance Check
 
