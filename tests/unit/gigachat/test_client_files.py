@@ -1,7 +1,9 @@
+from unittest.mock import patch
+
 from pytest_httpx import HTTPXMock
 
 from gigachat.client import GigaChatAsyncClient, GigaChatSyncClient
-from gigachat.models import DeletedFile, Image, UploadedFile, UploadedFiles
+from gigachat.models import DeletedFile, DownloadedFile, Image, UploadedFile, UploadedFiles
 from tests.constants import (
     BASE_URL,
     FILE,
@@ -16,6 +18,8 @@ from tests.constants import (
     IMAGE,
     IMAGE_URL,
 )
+
+FILE_CONTENT = b"Kaydara FBX Binary  \x00\x1a\x00"
 
 
 def test_upload_file(httpx_mock: HTTPXMock) -> None:
@@ -60,6 +64,30 @@ def test_get_image(httpx_mock: HTTPXMock) -> None:
     assert isinstance(response, Image)
 
 
+def test_get_file_content(httpx_mock: HTTPXMock) -> None:
+    httpx_mock.add_response(url=IMAGE_URL, content=FILE_CONTENT, headers={"content-type": "model/fbx"})
+
+    with GigaChatSyncClient(base_url=BASE_URL) as client:
+        response = client.get_file_content(file_id="img_file")
+
+    assert isinstance(response, DownloadedFile)
+    assert response.content == FILE_CONTENT
+    assert response.content_type == "model/fbx"
+
+
+@patch("gigachat.retry.time.sleep")
+def test_get_file_content_retries_server_error(mock_sleep: object, httpx_mock: HTTPXMock) -> None:
+    httpx_mock.add_response(url=IMAGE_URL, status_code=500)
+    httpx_mock.add_response(url=IMAGE_URL, content=FILE_CONTENT, headers={"content-type": "model/fbx"})
+
+    with GigaChatSyncClient(base_url=BASE_URL, max_retries=1, retry_backoff_factor=0) as client:
+        response = client.get_file_content(file_id="img_file")
+
+    assert isinstance(response, DownloadedFile)
+    assert response.content == FILE_CONTENT
+    assert len(httpx_mock.get_requests()) == 2
+
+
 async def test_aupload_file(httpx_mock: HTTPXMock) -> None:
     httpx_mock.add_response(url=FILES_URL, json=FILES)
 
@@ -100,3 +128,14 @@ async def test_aget_image(httpx_mock: HTTPXMock) -> None:
         response = await client.aget_image(file_id="img_file")
 
     assert isinstance(response, Image)
+
+
+async def test_aget_file_content(httpx_mock: HTTPXMock) -> None:
+    httpx_mock.add_response(url=IMAGE_URL, content=FILE_CONTENT, headers={"content-type": "model/fbx"})
+
+    async with GigaChatAsyncClient(base_url=BASE_URL) as client:
+        response = await client.aget_file_content(file_id="img_file")
+
+    assert isinstance(response, DownloadedFile)
+    assert response.content == FILE_CONTENT
+    assert response.content_type == "model/fbx"

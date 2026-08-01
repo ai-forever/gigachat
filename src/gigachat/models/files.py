@@ -41,3 +41,11 @@ class Image(APIResponse):
     """Image content."""
 
     content: str = Field(description="Base64 encoded image data.")
+
+
+class DownloadedFile(APIResponse):
+    """Raw content downloaded from an uploaded file."""
+
+    content: bytes = Field(description="Raw file content.")
+    content_type: Optional[str] = Field(default=None, description="Response media type.")
+    content_disposition: Optional[str] = Field(default=None, description="Response content disposition.")

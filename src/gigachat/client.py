@@ -52,7 +52,7 @@ from gigachat.models.chat_completions import (
     ChatStorage,
 )
 from gigachat.models.embeddings import Embeddings
-from gigachat.models.files import DeletedFile, Image, UploadedFile, UploadedFiles
+from gigachat.models.files import DeletedFile, DownloadedFile, Image, UploadedFile, UploadedFiles
 from gigachat.models.models import Model, Models
 from gigachat.models.response_format import JsonSchemaResponseFormat
 from gigachat.models.tools import (
@@ -558,6 +558,12 @@ class GigaChatSyncClient(_BaseClient):
 
     @_with_retry
     @_with_auth
+    def get_file_content(self, file_id: str) -> DownloadedFile:
+        """Return raw file content and response metadata."""
+        return files.get_file_content_sync(self._client, file_id=file_id, access_token=self.token)
+
+    @_with_retry
+    @_with_auth
     def upload_file(
         self,
         file: FileTypes,
@@ -905,6 +911,13 @@ class GigaChatAsyncClient(_BaseClient):
         """Return an image in base64 encoding."""
 
         return await files.get_image_async(self._aclient, file_id=file_id, access_token=self.token)
+
+    @_awith_retry
+    @_awith_auth
+    async def aget_file_content(self, file_id: str) -> DownloadedFile:
+        """Return raw file content and response metadata."""
+
+        return await files.get_file_content_async(self._aclient, file_id=file_id, access_token=self.token)
 
     @_awith_retry
     @_awith_auth
