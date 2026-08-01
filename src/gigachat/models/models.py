@@ -1,4 +1,4 @@
-from typing import List, Literal, Optional
+from typing import List, Optional
 
 from pydantic import Field
 
@@ -11,7 +11,7 @@ class Model(APIResponse):
     id_: str = Field(alias="id", description="Model identifier (name).")
     object_: str = Field(alias="object", description="Object type.")
     owned_by: str = Field(description="Owner of the model.")
-    type: Optional[Literal["chat", "aicheck", "embedder"]] = Field(default=None, description="Model capability type.")
+    type: Optional[str] = Field(default=None, description="Model capability type.")
 
 
 class Models(APIResponse):
