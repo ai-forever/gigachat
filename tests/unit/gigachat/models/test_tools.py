@@ -1,6 +1,8 @@
 from gigachat.models.tools import (
     AICheckResult,
     Balance,
+    CustomFunction,
+    FunctionValidationResult,
     OpenApiFunctions,
     TokensCount,
 )
@@ -44,3 +46,32 @@ def test_openapi_functions_creation() -> None:
     funcs = OpenApiFunctions.model_validate(data)
     assert len(funcs.functions) == 1
     assert funcs.functions[0].name == "func1"
+
+
+def test_custom_function_keeps_arbitrary_json_schema_keywords() -> None:
+    function = CustomFunction.model_validate(
+        {
+            "name": "send_sms",
+            "parameters": {
+                "type": "object",
+                "properties": {"text": {"type": "string", "minLength": 1, "pattern": "^.+$"}},
+                "additionalProperties": False,
+            },
+        }
+    )
+
+    assert function.parameters["properties"]["text"]["minLength"] == 1
+    assert function.parameters["additionalProperties"] is False
+
+
+def test_function_validation_result_allows_errors_and_optional_fields() -> None:
+    result = FunctionValidationResult.model_validate(
+        {
+            "message": "Incorrect function syntax",
+            "errors": [{"description": "name is required", "schema_location": "(root)"}],
+        }
+    )
+
+    assert result.status is None
+    assert result.errors is not None
+    assert result.errors[0].description == "name is required"

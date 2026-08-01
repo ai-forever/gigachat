@@ -1,4 +1,4 @@
-from typing import List, Literal, Optional
+from typing import Any, Dict, List, Literal, Optional
 
 from pydantic import BaseModel, Field
 
@@ -42,3 +42,41 @@ class OpenApiFunctions(APIResponse):
     """Functions converted from OpenAPI."""
 
     functions: List[Function] = Field(description="List of converted functions.")
+
+
+class FunctionValidationIssue(BaseModel):
+    """Validation issue details for a function schema."""
+
+    description: Optional[str] = Field(default=None, description="Issue description.")
+    schema_location: Optional[str] = Field(default=None, description="Location in the schema that should be fixed.")
+
+
+class FunctionValidationResult(APIResponse):
+    """Result of validating a GigaChat function schema."""
+
+    status: Optional[int] = Field(default=None, description="HTTP status code.")
+    message: Optional[Literal["Function is valid", "Incorrect function syntax"]] = Field(
+        default=None, description="Validation result message."
+    )
+    json_ai_rules_version: Optional[str] = Field(default=None, description="Version of validation rules.")
+    errors: Optional[List[FunctionValidationIssue]] = Field(default=None, description="Validation errors.")
+    warnings: Optional[List[FunctionValidationIssue]] = Field(default=None, description="Validation warnings.")
+
+
+class CustomFunctionExample(BaseModel):
+    """Few-shot example for a custom function."""
+
+    request: str = Field(description="User request example.")
+    params: Dict[str, Any] = Field(description="Function parameters example.")
+
+
+class CustomFunction(BaseModel):
+    """Custom function schema accepted by the validation endpoint."""
+
+    name: str = Field(description="Function name.")
+    parameters: Dict[str, Any] = Field(description="JSON Schema for function arguments.")
+    description: Optional[str] = Field(default=None, description="Function description.")
+    few_shot_examples: Optional[List[CustomFunctionExample]] = Field(
+        default=None, description="Examples of expected argument generation."
+    )
+    return_parameters: Optional[Dict[str, Any]] = Field(default=None, description="JSON Schema for return values.")
