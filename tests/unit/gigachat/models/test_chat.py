@@ -63,6 +63,44 @@ def test_messages_function_call() -> None:
     assert msg.function_call.arguments == {"arg": "val"}
 
 
+def test_chat_request_preserves_documented_function_call_arguments_string() -> None:
+    chat = Chat(
+        messages=[
+            Messages(
+                role=MessagesRole.ASSISTANT,
+                function_call=FunctionCall(name="get_weather", arguments='{"location":"Moscow"}'),
+            )
+        ]
+    )
+
+    dumped = chat.model_dump(exclude_none=True)
+    assert dumped["messages"][0]["function_call"]["arguments"] == '{"location":"Moscow"}'
+
+
+def test_chat_response_preserves_documented_function_call_arguments_string() -> None:
+    completion = ChatCompletion.model_validate(
+        {
+            "choices": [
+                {
+                    "message": {
+                        "role": "assistant",
+                        "function_call": {"name": "get_weather", "arguments": '{"location":"Moscow"}'},
+                    },
+                    "index": 0,
+                    "finish_reason": "function_call",
+                }
+            ],
+            "created": 1726478395,
+            "model": "GigaChat-2",
+            "usage": {"prompt_tokens": 10, "completion_tokens": 5, "total_tokens": 15},
+            "object": "chat.completion",
+        }
+    )
+
+    assert completion.choices[0].message.function_call is not None
+    assert completion.choices[0].message.function_call.arguments == '{"location":"Moscow"}'
+
+
 def test_function_model_validator() -> None:
     # Test title -> name alias
     data: Dict[str, Any] = {

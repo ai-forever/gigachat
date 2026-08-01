@@ -22,7 +22,7 @@ class FunctionCall(BaseModel):
     """Model function call."""
 
     name: str = Field(description="Name of the function to call.")
-    arguments: Optional[Dict[Any, Any]] = Field(default=None, description="Function call arguments.")
+    arguments: Optional[Union[Dict[Any, Any], str]] = Field(default=None, description="Function call arguments.")
 
 
 class FewShotExample(BaseModel):
