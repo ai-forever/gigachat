@@ -24,13 +24,14 @@ import httpx
 import pydantic
 from typing_extensions import Self
 
-from gigachat._types import FileTypes
-from gigachat.api import auth, chat, chat_completions, embeddings, files, models, tools
+from gigachat._types import FileContent, FileTypes
+from gigachat.api import auth, batches, chat, chat_completions, embeddings, files, models, tools
 from gigachat.assistants import AssistantsAsyncClient, AssistantsSyncClient
 from gigachat.authentication import _awith_auth, _awith_auth_stream, _with_auth, _with_auth_stream
 from gigachat.context import authorization_cvar
 from gigachat.exceptions import LengthFinishReasonError, ModelNotSpecifiedError
 from gigachat.models.auth import AccessToken, Token
+from gigachat.models.batches import Batch, Batches
 from gigachat.models.chat import (
     Chat,
     ChatCompletion,
@@ -511,6 +512,23 @@ class GigaChatSyncClient(_BaseClient):
         """Return embeddings."""
         return embeddings.embeddings_sync(self._client, access_token=self.token, input_=texts, model=model)
 
+    def create_batch(self, file: FileContent, method: Literal["chat_completions", "embedder"]) -> Batch:
+        """Create a batch task for asynchronous processing."""
+        content = batches.get_batch_content(file)
+        return self._create_batch(content, method)
+
+    @_with_retry
+    @_with_auth
+    def _create_batch(self, content: bytes, method: Literal["chat_completions", "embedder"]) -> Batch:
+        """Create a batch task from a retry-safe content snapshot."""
+        return batches.create_batch_sync(self._client, file=content, method=method, access_token=self.token)
+
+    @_with_retry
+    @_with_auth
+    def get_batches(self, batch_id: Optional[str] = None) -> Batches:
+        """Return batch tasks or a specific batch task."""
+        return batches.get_batches_sync(self._client, batch_id=batch_id, access_token=self.token)
+
     @_with_retry
     @_with_auth
     def get_models(self) -> Models:
@@ -838,6 +856,23 @@ class GigaChatAsyncClient(_BaseClient):
         """Return embeddings."""
 
         return await embeddings.embeddings_async(self._aclient, access_token=self.token, input_=texts, model=model)
+
+    async def acreate_batch(self, file: FileContent, method: Literal["chat_completions", "embedder"]) -> Batch:
+        """Create a batch task for asynchronous processing."""
+        content = batches.get_batch_content(file)
+        return await self._acreate_batch(content, method)
+
+    @_awith_retry
+    @_awith_auth
+    async def _acreate_batch(self, content: bytes, method: Literal["chat_completions", "embedder"]) -> Batch:
+        """Create a batch task from a retry-safe content snapshot."""
+        return await batches.create_batch_async(self._aclient, file=content, method=method, access_token=self.token)
+
+    @_awith_retry
+    @_awith_auth
+    async def aget_batches(self, batch_id: Optional[str] = None) -> Batches:
+        """Return batch tasks or a specific batch task."""
+        return await batches.get_batches_async(self._aclient, batch_id=batch_id, access_token=self.token)
 
     @_awith_retry
     @_awith_auth

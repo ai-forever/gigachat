@@ -16,6 +16,11 @@ from gigachat.exceptions import (
     ServerError,
 )
 from gigachat.models import (
+    Batch,
+    Batches,
+    BatchMethod,
+    BatchRequestCounts,
+    BatchStatus,
     Chat,
     ChatCompletion,
     ChatCompletionChunk,
@@ -47,6 +52,11 @@ __all__ = [
     "NotFoundError",
     "RequestEntityTooLargeError",
     "ServerError",
+    "Batch",
+    "Batches",
+    "BatchMethod",
+    "BatchRequestCounts",
+    "BatchStatus",
     "Chat",
     "ChatCompletion",
     "ChatCompletionChunk",
