@@ -20,7 +20,10 @@ This library is part of [GigaChain](https://github.com/ai-forever/gigachain) and
   - [Streaming](#streaming)
   - [Async](#async)
   - [Embeddings](#embeddings)
+  - [Batch Processing](#batch-processing)
   - [Function Calling](#function-calling)
+  - [Function Schema Validation](#function-schema-validation)
+  - [File Content](#file-content)
   - [More Examples](#more-examples)
 - [Configuration](#configuration)
   - [Constructor Parameters](#constructor-parameters)
@@ -39,9 +42,11 @@ This library is part of [GigaChain](https://github.com/ai-forever/gigachain) and
 - ✅ **Chat completions** — synchronous and asynchronous
 - ✅ **Streaming responses** — real-time token generation
 - ✅ **Embeddings** — text vectorization
+- ✅ **Batch processing** — asynchronous chat and embedding workloads from JSONL
 - ✅ **Function calling** — tool use for building agents
+- ✅ **Function schema validation** — validate custom functions before chat requests
 - ✅ **Vision** — image understanding (multimodal)
-- ✅ **File operations** — upload, retrieve, and delete files
+- ✅ **File operations** — upload, inspect, download raw content, and delete files
 - ✅ **Token counting** — estimate token usage before requests
 - ✅ **Multiple auth methods** — OAuth credentials, password, TLS certificates, access tokens
 - ✅ **Automatic retry** — configurable exponential backoff for transient errors
@@ -172,6 +177,49 @@ with GigaChat() as client:
 > **Note:** The `model` parameter must be passed directly to the `embeddings()` method (default: `"Embeddings"`).
 > The `model` set in the `GigaChat()` constructor does not affect embeddings.
 
+The `texts` argument accepts either one string or a list of strings.
+
+### Batch Processing
+
+Submit JSONL for asynchronous chat-completions or embeddings processing, inspect the task, and download results when
+the task is complete:
+
+```python
+import asyncio
+
+from gigachat import GigaChat, GigaChatAsyncClient
+
+BATCH_JSONL = (
+    b'{"id":"request-1","request":{"model":"GigaChat-2",'
+    b'"messages":[{"role":"user","content":"Summarize the SDK in one sentence."}]}}\n'
+)
+
+
+def run_sync() -> None:
+    with GigaChat() as client:
+        created = client.create_batch(BATCH_JSONL, method="chat_completions")
+        batch = client.get_batches(created.id_).batches[0]
+        if batch.output_file_id is not None:
+            result = client.get_file_content(batch.output_file_id)
+            print(result.content.decode("utf-8"))
+
+
+async def run_async() -> None:
+    async with GigaChatAsyncClient() as client:
+        created = await client.acreate_batch(BATCH_JSONL, method="chat_completions")
+        batch = (await client.aget_batches(created.id_)).batches[0]
+        if batch.output_file_id is not None:
+            result = await client.aget_file_content(batch.output_file_id)
+            print(result.content.decode("utf-8"))
+
+
+run_sync()
+asyncio.run(run_async())
+```
+
+Batch processing is available for pay-as-you-go API accounts. A newly created task may still be `created` or
+`in_progress`; query it again later before expecting `output_file_id`.
+
 ### Function Calling
 
 Enable the model to call functions (tools):
@@ -246,6 +294,65 @@ chat = ChatCompletionRequest(
     tools=[ChatTool(functions={"specifications": [weather_function]})],
     ranker_options=ChatRankerOptions(enabled=True, top_n=3),
 )
+```
+
+### Function Schema Validation
+
+Validate a custom function independently before adding it to a chat request. The method accepts
+`CustomFunction`, legacy `Function`, `ChatFunctionSpecification`, or a raw dictionary:
+
+```python
+import asyncio
+
+from gigachat import CustomFunction, GigaChat, GigaChatAsyncClient
+
+weather = CustomFunction(
+    name="get_weather",
+    description="Get weather for a city",
+    parameters={
+        "type": "object",
+        "properties": {"city": {"type": "string", "minLength": 1}},
+        "required": ["city"],
+        "additionalProperties": False,
+    },
+)
+
+with GigaChat() as client:
+    validation = client.validate_function(weather)
+    print(validation.message, validation.errors, validation.warnings)
+
+
+async def validate_async() -> None:
+    async with GigaChatAsyncClient() as client:
+        validation = await client.avalidate_function(weather)
+        print(validation.message, validation.errors, validation.warnings)
+
+
+asyncio.run(validate_async())
+```
+
+### File Content
+
+`get_file_content()` returns raw bytes for any supported file type together with the response media type and service
+headers. `get_image()` remains available as a compatibility helper that returns base64 text.
+
+```python
+import asyncio
+
+from gigachat import GigaChat, GigaChatAsyncClient
+
+with GigaChat() as client:
+    downloaded = client.get_file_content("file-id")
+    print(downloaded.content_type, len(downloaded.content))
+
+
+async def download_async() -> None:
+    async with GigaChatAsyncClient() as client:
+        downloaded = await client.aget_file_content("file-id")
+        print(downloaded.content_type, len(downloaded.content))
+
+
+asyncio.run(download_async())
 ```
 
 ### Structured Output (JSON Schema) — Beta
@@ -670,6 +777,11 @@ with GigaChat() as client:
     files = client.get_files()
     for file in files.data:
         print(f"{file.id}: {file.filename}")
+
+    # Download arbitrary binary content without assuming an image format
+    downloaded = client.get_file_content(uploaded.id)
+    with open("downloaded-file.bin", "wb") as output:
+        output.write(downloaded.content)
 
     # Delete a file
     client.delete_file(uploaded.id)
