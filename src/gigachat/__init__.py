@@ -1,7 +1,7 @@
 import logging
 
 from gigachat.client import GigaChat, GigaChatAsyncClient, GigaChatSyncClient
-from gigachat.context import custom_headers_cvar, request_id_cvar, session_id_cvar
+from gigachat.context import authorization_cvar, client_id_cvar, custom_headers_cvar, request_id_cvar, session_id_cvar
 from gigachat.exceptions import (
     AuthenticationError,
     BadRequestError,
@@ -14,8 +14,12 @@ from gigachat.exceptions import (
     RequestEntityTooLargeError,
     ResponseError,
     ServerError,
+    UnprocessableEntityError,
 )
 from gigachat.models import (
+    AICheckResult,
+    Balance,
+    BalanceValue,
     Batch,
     Batches,
     BatchMethod,
@@ -27,6 +31,8 @@ from gigachat.models import (
     Choices,
     CustomFunction,
     CustomFunctionExample,
+    DeletedFile,
+    DownloadedFile,
     Embeddings,
     Function,
     FunctionCall,
@@ -38,6 +44,10 @@ from gigachat.models import (
     MessagesRole,
     Model,
     Models,
+    OpenApiFunctions,
+    TokensCount,
+    UploadedFile,
+    UploadedFiles,
     Usage,
 )
 
@@ -56,6 +66,10 @@ __all__ = [
     "NotFoundError",
     "RequestEntityTooLargeError",
     "ServerError",
+    "UnprocessableEntityError",
+    "AICheckResult",
+    "Balance",
+    "BalanceValue",
     "Batch",
     "Batches",
     "BatchMethod",
@@ -66,6 +80,8 @@ __all__ = [
     "ChatCompletionChunk",
     "CustomFunction",
     "CustomFunctionExample",
+    "DeletedFile",
+    "DownloadedFile",
     "Messages",
     "MessagesRole",
     "Function",
@@ -79,6 +95,12 @@ __all__ = [
     "Image",
     "Model",
     "Models",
+    "OpenApiFunctions",
+    "TokensCount",
+    "UploadedFile",
+    "UploadedFiles",
+    "authorization_cvar",
+    "client_id_cvar",
     "session_id_cvar",
     "request_id_cvar",
     "custom_headers_cvar",
