@@ -5,6 +5,9 @@ import pytest
 from pytest_httpx import HTTPXMock
 
 from gigachat.api.files import (
+    _delete_file_kwargs,
+    _get_file_content_kwargs,
+    _get_file_kwargs,
     delete_file_async,
     delete_file_sync,
     get_file_async,
@@ -36,6 +39,15 @@ from tests.constants import (
 )
 
 FILE_CONTENT = b"Kaydara FBX Binary  \x00\x1a\x00"
+
+
+def test_file_path_parameters_are_percent_encoded() -> None:
+    value = "a/b?x=1#frag"
+    encoded = "a%2Fb%3Fx%3D1%23frag"
+
+    assert _get_file_kwargs(file=value)["url"] == f"/files/{encoded}"
+    assert _delete_file_kwargs(file=value)["url"] == f"/files/{encoded}/delete"
+    assert _get_file_content_kwargs(file_id=value)["url"] == f"/files/{encoded}/content"
 
 
 def test_get_file_sync(httpx_mock: HTTPXMock) -> None:

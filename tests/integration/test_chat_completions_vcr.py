@@ -15,6 +15,7 @@ from gigachat.models import (
     ChatMessage,
     ChatModelOptions,
     ChatResponseFormat,
+    ChatResponseMessage,
     ChatTool,
     ChatToolConfig,
     ChatWebSearchTool,
@@ -54,7 +55,7 @@ ORDER_STATUS_FUNCTION = {
 }
 
 
-def _first_message(result: ChatCompletionResponse) -> ChatMessage:
+def _first_message(result: ChatCompletionResponse) -> ChatResponseMessage:
     """Return the first response message."""
     assert result.messages
     return result.messages[0]
@@ -73,7 +74,7 @@ def _extract_assistant_text(result: ChatCompletionResponse) -> str:
     raise AssertionError("Response has no assistant text content")
 
 
-def _message_sources(message: ChatMessage) -> List[Tuple[str, str]]:
+def _message_sources(message: ChatResponseMessage) -> List[Tuple[str, str]]:
     """Return unique sources from message inline data."""
     sources: List[Tuple[str, str]] = []
     seen = set()
@@ -90,11 +91,11 @@ def _message_sources(message: ChatMessage) -> List[Tuple[str, str]]:
     return sources
 
 
-def _message_file_ids(message: ChatMessage) -> List[str]:
+def _message_file_ids(message: ChatResponseMessage) -> List[str]:
     """Return file IDs from message content."""
     file_ids: List[str] = []
     for part in message.content or []:
-        file_ids.extend(file_.id_ for file_ in part.files or [])
+        file_ids.extend(file_.id_ for file_ in part.files or [] if file_.id_ is not None)
     return file_ids
 
 

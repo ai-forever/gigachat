@@ -1,5 +1,6 @@
 import base64
 from pathlib import Path
+from typing import Dict
 
 import pytest
 from pydantic import ValidationError
@@ -43,6 +44,7 @@ def test_uploaded_files_creation() -> None:
     files = UploadedFiles.model_validate(data)
     assert len(files.data) == 1
     assert files.data[0].id_ == "file-1"
+    assert files.data[0].access_policy == "private"
 
 
 def test_deleted_file_creation() -> None:
@@ -81,3 +83,25 @@ def test_downloaded_file_saves_raw_content(tmp_path: Path) -> None:
 def test_uploaded_file_validation() -> None:
     with pytest.raises(ValidationError):
         UploadedFile.model_validate({"id": "1"})  # Missing fields
+
+
+@pytest.mark.parametrize(
+    "field",
+    [
+        {"purpose": "invalid"},
+        {"access_policy": "invalid"},
+    ],
+)
+def test_uploaded_file_rejects_undocumented_enum_values(field: Dict[str, str]) -> None:
+    payload = {
+        "id": "file-123",
+        "object": "file",
+        "bytes": 1024,
+        "created_at": 1234567890,
+        "filename": "test.txt",
+        "purpose": "general",
+    }
+    payload.update(field)
+
+    with pytest.raises(ValidationError):
+        UploadedFile.model_validate(payload)

@@ -10,6 +10,7 @@ from gigachat.exceptions import AuthenticationError, ResponseError
 from gigachat.models.chat import Function
 from gigachat.models.chat_completions import ChatFunctionSpecification
 from gigachat.models.tools import (
+    AICheckModel,
     AICheckResult,
     Balance,
     CustomFunction,
@@ -156,7 +157,7 @@ async def functions_validate_async(
 def _get_ai_check_kwargs(
     *,
     input_: str,
-    model: str,
+    model: AICheckModel,
     access_token: Optional[str] = None,
 ) -> Dict[str, Any]:
     headers = build_headers(access_token)
@@ -173,7 +174,7 @@ def ai_check_sync(
     client: httpx.Client,
     *,
     input_: str,
-    model: str,
+    model: AICheckModel,
     access_token: Optional[str] = None,
 ) -> AICheckResult:
     """Check text for AI-generated content."""
@@ -185,7 +186,7 @@ async def ai_check_async(
     client: httpx.AsyncClient,
     *,
     input_: str,
-    model: str,
+    model: AICheckModel,
     access_token: Optional[str] = None,
 ) -> AICheckResult:
     """Check text for AI-generated content."""

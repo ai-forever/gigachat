@@ -25,8 +25,8 @@ class BatchRequestCounts(BaseModel):
     """Batch request counters."""
 
     total: int = Field(default=0, description="Total number of requests in the batch.")
-    completed: Optional[int] = Field(default=None, description="Number of completed requests.")
-    failed: Optional[int] = Field(default=None, description="Number of failed requests.")
+    completed: int = Field(default=0, description="Number of completed requests.")
+    failed: int = Field(default=0, description="Number of failed requests.")
 
 
 class Batch(APIResponse):

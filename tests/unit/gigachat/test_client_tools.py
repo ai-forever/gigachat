@@ -54,7 +54,7 @@ def test_check_ai(httpx_mock: HTTPXMock) -> None:
     httpx_mock.add_response(url=AI_CHECK_URL, json=AI_CHECK)
 
     with GigaChatSyncClient(base_url=BASE_URL) as client:
-        response = client.check_ai(text="", model="")
+        response = client.check_ai(text="", model="GigaCheckClassification")
     assert isinstance(response, AICheckResult)
 
 
@@ -91,5 +91,5 @@ async def test_acheck_ai(httpx_mock: HTTPXMock) -> None:
     httpx_mock.add_response(url=AI_CHECK_URL, json=AI_CHECK)
 
     async with GigaChatAsyncClient(base_url=BASE_URL) as client:
-        response = await client.acheck_ai(text="", model="")
+        response = await client.acheck_ai(text="", model="GigaCheckClassification")
     assert isinstance(response, AICheckResult)

@@ -2,7 +2,15 @@ import inspect
 from typing import Any, Dict, Literal, Optional, Union
 
 import pydantic
-from pydantic import BaseModel, Field, model_validator
+from pydantic import BaseModel, ConfigDict, Field, model_validator
+
+
+class TextResponseFormat(BaseModel):
+    """Request a plain-text model response."""
+
+    type: Literal["text"] = Field(default="text", description="Response format type.")
+
+    model_config = ConfigDict(extra="forbid")
 
 
 class JsonSchemaResponseFormat(BaseModel):
@@ -44,9 +52,10 @@ class JsonSchemaResponseFormat(BaseModel):
         raise ValueError(f"'schema' must be a dict or a pydantic.BaseModel subclass; got {type(schema).__name__}")
 
 
-ResponseFormat = Union[JsonSchemaResponseFormat, Dict[str, Any]]
+ResponseFormat = Union[TextResponseFormat, JsonSchemaResponseFormat, Dict[str, Any]]
 """Accepted types for ``Chat.response_format``:
 
-* ``JsonSchemaResponseFormat`` — fully typed object.
+* ``TextResponseFormat`` — fully typed plain-text request.
+* ``JsonSchemaResponseFormat`` — fully typed JSON Schema request.
 * ``dict`` — raw JSON passed through as-is.
 """

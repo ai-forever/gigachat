@@ -3,7 +3,7 @@ from typing import List
 import pytest
 from pydantic import BaseModel, ValidationError
 
-from gigachat.models import ChatCompletionRequest, ChatCompletionResponse, ChatMessage
+from gigachat.models import ChatCompletionRequest, ChatCompletionResponse, ChatMessage, ChatResponseMessage
 from gigachat.models.chat_completions import ChatAdditionalData, ChatCompletionChunk, ChatResponseFormat, ChatStorage
 
 
@@ -117,10 +117,130 @@ def test_chat_completion_request_round_trip() -> None:
     assert request.tools[1].functions.specifications[0].parameters["type"] == "object"
     assert request.tools[1].functions.specifications[0].parameters["required"] == ["location"]
     assert dumped["messages"][0]["content"] == [{"text": "Верни JSON-ответ"}]
+    assert dumped["messages"][2]["content"][0]["function_result"]["result"] == {"status": "success"}
     assert dumped["model_options"]["response_format"]["schema"]["properties"]["answer"]["title"] == "Answer"
     assert dumped["tools"][1]["functions"]["specifications"][0]["name"] == "gismeteo-get_n_day_weather_forecast"
     assert dumped["tools"][1]["functions"]["specifications"][0]["parameters"]["required"] == ["location"]
     assert "required" not in dumped["tools"][1]["functions"]["specifications"][0]
+
+
+@pytest.mark.parametrize(
+    "message",
+    [
+        {"role": "user"},
+        {"role": "invalid", "content": "Привет"},
+    ],
+)
+def test_chat_completion_request_requires_documented_message_fields(message: object) -> None:
+    with pytest.raises(ValidationError):
+        ChatCompletionRequest.model_validate({"messages": [message]})
+
+
+@pytest.mark.parametrize(
+    ("field_name", "value"),
+    [
+        ("temperature", 0),
+        ("top_p", -0.1),
+        ("top_p", 1.1),
+        ("max_tokens", 0),
+        ("top_logprobs", 0),
+        ("top_logprobs", 6),
+    ],
+)
+def test_chat_completion_request_enforces_model_option_ranges(field_name: str, value: object) -> None:
+    with pytest.raises(ValidationError):
+        ChatCompletionRequest.model_validate(
+            {
+                "messages": [{"role": "user", "content": "Привет"}],
+                "model_options": {field_name: value},
+            }
+        )
+
+
+@pytest.mark.parametrize("reasoning", [{}, {"effort": "high"}])
+def test_chat_completion_request_requires_documented_reasoning_effort(reasoning: object) -> None:
+    with pytest.raises(ValidationError):
+        ChatCompletionRequest.model_validate(
+            {
+                "messages": [{"role": "user", "content": "Рассуждай"}],
+                "model_options": {"reasoning": reasoning},
+            }
+        )
+
+
+@pytest.mark.parametrize("tool_config", [{}, {"mode": "invalid"}])
+def test_chat_completion_request_requires_documented_tool_mode(tool_config: object) -> None:
+    with pytest.raises(ValidationError):
+        ChatCompletionRequest.model_validate(
+            {
+                "messages": [{"role": "user", "content": "Используй инструмент"}],
+                "tool_config": tool_config,
+            }
+        )
+
+
+def test_chat_completion_request_preserves_function_payload_objects() -> None:
+    request = ChatCompletionRequest.model_validate(
+        {
+            "messages": [
+                {
+                    "role": "assistant",
+                    "content": [{"function_call": {"name": "get_weather", "arguments": {"location": "Moscow"}}}],
+                },
+                {
+                    "role": "tool",
+                    "content": [{"function_result": {"name": "get_weather", "result": {"temperature": 18}}}],
+                },
+            ]
+        }
+    )
+
+    dumped = request.model_dump(exclude_none=True, by_alias=True)
+
+    assert request.messages[0].content[0].function_call is not None
+    assert request.messages[0].content[0].function_call.arguments == {"location": "Moscow"}
+    assert request.messages[1].content[0].function_result is not None
+    assert request.messages[1].content[0].function_result.result == {"temperature": 18}
+    assert dumped["messages"][0]["content"][0]["function_call"]["arguments"] == {"location": "Moscow"}
+    assert dumped["messages"][1]["content"][0]["function_result"]["result"] == {"temperature": 18}
+
+
+def test_chat_completion_request_preserves_documented_function_payload_strings() -> None:
+    request = ChatCompletionRequest.model_validate(
+        {
+            "messages": [
+                {
+                    "role": "assistant",
+                    "content": [{"function_call": {"name": "get_weather", "arguments": '{"location":"Moscow"}'}}],
+                },
+                {
+                    "role": "tool",
+                    "content": [{"function_result": {"name": "get_weather", "result": '{"temperature":18}'}}],
+                },
+            ]
+        }
+    )
+
+    dumped = request.model_dump(exclude_none=True, by_alias=True)
+
+    assert dumped["messages"][0]["content"][0]["function_call"]["arguments"] == '{"location":"Moscow"}'
+    assert dumped["messages"][1]["content"][0]["function_result"]["result"] == '{"temperature":18}'
+
+
+@pytest.mark.parametrize(
+    "content",
+    [
+        {"function_call": {"name": "get_weather", "arguments": None}},
+        {"function_result": {"name": "get_weather", "result": None}},
+    ],
+)
+def test_chat_completion_request_rejects_null_function_payloads(content: object) -> None:
+    with pytest.raises(ValidationError):
+        ChatCompletionRequest.model_validate(
+            {
+                "messages": [{"role": "tool", "content": [content]}],
+            }
+        )
 
 
 def test_chat_completion_request_moves_legacy_root_options_to_model_options() -> None:
@@ -289,6 +409,47 @@ def test_chat_completion_response_parses_primary_contract() -> None:
     assert response.model_dump(exclude_none=True)["additional_data"] == [
         {"type": "tool_call", "name": "image_generation"}
     ]
+
+
+def test_chat_completion_response_accepts_documented_optional_message_fields() -> None:
+    response = ChatCompletionResponse.model_validate(
+        {
+            "messages": [
+                {},
+                {
+                    "content": [
+                        {
+                            "files": [{"target": "image", "mime": "image/png"}],
+                            "function_call": {
+                                "name": "get_weather",
+                                "arguments": {"location": "Moscow"},
+                            },
+                            "logprobs": [{"chosen": {}}],
+                        }
+                    ]
+                },
+            ]
+        }
+    )
+
+    assert isinstance(response.messages[0], ChatResponseMessage)
+    assert response.messages[0].role is None
+    assert response.messages[0].content is None
+    assert response.messages[1].content is not None
+    content = response.messages[1].content[0]
+    assert content.files is not None
+    assert content.files[0].id_ is None
+    assert content.function_call is not None
+    assert content.function_call.arguments == {"location": "Moscow"}
+    assert content.logprobs is not None
+    assert content.logprobs[0].chosen is not None
+    assert content.logprobs[0].chosen.token is None
+
+
+def test_chat_completion_response_defaults_omitted_messages_to_empty_list() -> None:
+    response = ChatCompletionResponse.model_validate({})
+
+    assert response.messages == []
 
 
 def test_chat_completion_response_parses_documented_additional_data_object() -> None:

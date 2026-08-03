@@ -41,6 +41,7 @@ from gigachat.models.chat_completions import (
     ChatFilterConfig,
     ChatFilterContentConfig,
     ChatFilterResponseContentConfig,
+    ChatFinishReason,
     ChatFunctionExample,
     ChatFunctionResult,
     ChatFunctionSpecification,
@@ -50,10 +51,16 @@ from gigachat.models.chat_completions import (
     ChatLogprobToken,
     ChatMessage,
     ChatMessageChunk,
+    ChatMessageRole,
     ChatModelOptions,
     ChatRankerOptions,
     ChatReasoning,
+    ChatResponseContentFile,
+    ChatResponseContentPart,
     ChatResponseFormat,
+    ChatResponseLogprob,
+    ChatResponseLogprobToken,
+    ChatResponseMessage,
     ChatSource,
     ChatStorage,
     ChatTool,
@@ -73,7 +80,7 @@ from gigachat.models.chat_completions import (
 from gigachat.models.embeddings import Embedding, Embeddings, EmbeddingsUsage
 from gigachat.models.files import DeletedFile, DownloadedFile, Image, UploadedFile, UploadedFiles
 from gigachat.models.models import Model, Models
-from gigachat.models.response_format import JsonSchemaResponseFormat, ResponseFormat
+from gigachat.models.response_format import JsonSchemaResponseFormat, ResponseFormat, TextResponseFormat
 from gigachat.models.threads import (
     Thread,
     ThreadCompletion,
@@ -90,6 +97,7 @@ from gigachat.models.threads import (
     ThreadStatus,
 )
 from gigachat.models.tools import (
+    AICheckModel,
     AICheckResult,
     Balance,
     BalanceValue,
@@ -103,6 +111,7 @@ from gigachat.models.tools import (
 
 __all__ = (
     "AccessToken",
+    "AICheckModel",
     "AICheckResult",
     "Assistant",
     "AssistantAttachment",
@@ -130,6 +139,7 @@ __all__ = (
     "ChatFilterConfig",
     "ChatFilterContentConfig",
     "ChatFilterResponseContentConfig",
+    "ChatFinishReason",
     "ChatFunctionCall",
     "ChatFunctionExample",
     "ChatFunctionResult",
@@ -140,9 +150,15 @@ __all__ = (
     "ChatLogprobToken",
     "ChatMessage",
     "ChatMessageChunk",
+    "ChatMessageRole",
     "ChatModelOptions",
     "ChatReasoning",
+    "ChatResponseContentFile",
+    "ChatResponseContentPart",
     "ChatResponseFormat",
+    "ChatResponseLogprob",
+    "ChatResponseLogprobToken",
+    "ChatResponseMessage",
     "ChatSource",
     "ChatRankerOptions",
     "ChatStorage",
@@ -196,6 +212,7 @@ __all__ = (
     "ThreadRunResult",
     "Threads",
     "ThreadStatus",
+    "TextResponseFormat",
     "Token",
     "TokensCount",
     "UploadedFile",

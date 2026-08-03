@@ -39,5 +39,6 @@ def test_batch_create_response_allows_pending_counts() -> None:
     )
 
     assert batch.method is BatchMethod.EMBEDDER
-    assert batch.request_counts.completed is None
+    assert batch.request_counts.completed == 0
+    assert batch.request_counts.failed == 0
     assert batch.output_file_id is None

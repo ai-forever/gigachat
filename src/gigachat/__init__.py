@@ -17,6 +17,7 @@ from gigachat.exceptions import (
     UnprocessableEntityError,
 )
 from gigachat.models import (
+    AICheckModel,
     AICheckResult,
     Balance,
     BalanceValue,
@@ -45,6 +46,7 @@ from gigachat.models import (
     Model,
     Models,
     OpenApiFunctions,
+    TextResponseFormat,
     TokensCount,
     UploadedFile,
     UploadedFiles,
@@ -68,6 +70,7 @@ __all__ = [
     "ServerError",
     "UnprocessableEntityError",
     "AICheckResult",
+    "AICheckModel",
     "Balance",
     "BalanceValue",
     "Batch",
@@ -97,6 +100,7 @@ __all__ = [
     "Models",
     "OpenApiFunctions",
     "TokensCount",
+    "TextResponseFormat",
     "UploadedFile",
     "UploadedFiles",
     "authorization_cvar",

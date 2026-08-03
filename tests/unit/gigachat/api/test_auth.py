@@ -1,8 +1,11 @@
+from uuid import UUID
+
 import httpx
 import pytest
 from pytest_httpx import HTTPXMock
 
 from gigachat.api import auth
+from gigachat.api.utils import USER_AGENT
 from gigachat.context import (
     agent_id_cvar,
     custom_headers_cvar,
@@ -71,6 +74,32 @@ def test_auth_sync_headers(httpx_mock: HTTPXMock) -> None:
         )
 
     assert isinstance(response, AccessToken)
+    request = httpx_mock.get_request()
+    assert request is not None
+    assert request.method == "POST"
+    assert request.headers["Authorization"] == "Basic credentials"
+    assert UUID(request.headers["RqUID"]).version == 4
+    assert request.headers["User-Agent"] == USER_AGENT
+    assert request.headers["Content-Type"] == "application/x-www-form-urlencoded"
+    assert request.content == b"scope=scope"
+
+
+def test_auth_sync_preserves_caller_rq_uid(httpx_mock: HTTPXMock) -> None:
+    rq_uid = "6f0b1291-c7f3-43c6-bb2e-9f3efb2dc98e"
+    httpx_mock.add_response(url=AUTH_URL, json=OAUTH_TOKEN_VALID)
+
+    with httpx.Client() as client:
+        auth.auth_sync(
+            client,
+            url=AUTH_URL,
+            credentials="credentials",
+            scope="scope",
+            rq_uid=rq_uid,
+        )
+
+    request = httpx_mock.get_request()
+    assert request is not None
+    assert request.headers["RqUID"] == rq_uid
 
 
 async def test_auth_async(httpx_mock: HTTPXMock) -> None:
@@ -80,6 +109,14 @@ async def test_auth_async(httpx_mock: HTTPXMock) -> None:
         response = await auth.auth_async(client, url=AUTH_URL, credentials="credentials", scope="scope")
 
     assert isinstance(response, AccessToken)
+    request = httpx_mock.get_request()
+    assert request is not None
+    assert request.method == "POST"
+    assert request.headers["Authorization"] == "Basic credentials"
+    assert UUID(request.headers["RqUID"]).version == 4
+    assert request.headers["User-Agent"] == USER_AGENT
+    assert request.headers["Content-Type"] == "application/x-www-form-urlencoded"
+    assert request.content == b"scope=scope"
 
 
 def test_token_kwargs_context_vars() -> None:

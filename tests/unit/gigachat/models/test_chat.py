@@ -77,6 +77,31 @@ def test_chat_request_preserves_documented_function_call_arguments_string() -> N
     assert dumped["messages"][0]["function_call"]["arguments"] == '{"location":"Moscow"}'
 
 
+def test_chat_request_preserves_function_call_arguments_dict() -> None:
+    function_call = FunctionCall(name="get_weather", arguments={"location": "Moscow"})
+    chat = Chat(messages=[Messages(role=MessagesRole.ASSISTANT, function_call=function_call)])
+
+    dumped = chat.model_dump(exclude_none=True)
+
+    assert function_call.arguments == {"location": "Moscow"}
+    assert dumped["messages"][0]["function_call"]["arguments"] == {"location": "Moscow"}
+
+
+@pytest.mark.parametrize(
+    ("field_name", "value"),
+    [
+        ("temperature", 0),
+        ("top_p", -0.1),
+        ("top_p", 1.1),
+        ("max_tokens", 0),
+        ("reasoning_effort", "high"),
+    ],
+)
+def test_chat_request_enforces_documented_generation_constraints(field_name: str, value: object) -> None:
+    with pytest.raises(ValidationError):
+        Chat.model_validate({"messages": [], field_name: value})
+
+
 def test_chat_response_preserves_documented_function_call_arguments_string() -> None:
     completion = ChatCompletion.model_validate(
         {

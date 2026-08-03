@@ -10,7 +10,7 @@ from gigachat.api.utils import (
     execute_request_sync,
     execute_stream_async,
     execute_stream_sync,
-    resolve_request_url,
+    resolve_legacy_chat_url,
 )
 from gigachat.context import chat_url_cvar
 from gigachat.models.chat import Chat, ChatCompletion, ChatCompletionChunk
@@ -38,7 +38,7 @@ def _get_chat_kwargs(
 
     return {
         "method": "POST",
-        "url": resolve_request_url(client, chat_url_cvar.get()),
+        "url": resolve_legacy_chat_url(client, chat_url_cvar.get()),
         "content": json.dumps(json_data, ensure_ascii=False),
         "headers": headers,
     }
@@ -80,7 +80,7 @@ def _get_stream_kwargs(
 
     return {
         "method": "POST",
-        "url": resolve_request_url(client, chat_url_cvar.get()),
+        "url": resolve_legacy_chat_url(client, chat_url_cvar.get()),
         "content": json.dumps({**json_data, **{"stream": True}}, ensure_ascii=False),
         "headers": headers,
     }

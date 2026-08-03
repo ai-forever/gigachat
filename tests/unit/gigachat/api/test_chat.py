@@ -104,6 +104,16 @@ def test_chat_sync(httpx_mock: HTTPXMock) -> None:
     assert isinstance(response, ChatCompletion)
 
 
+def test_chat_sync_uses_v1_route_for_official_unversioned_base(httpx_mock: HTTPXMock) -> None:
+    httpx_mock.add_response(url="https://api.giga.chat/v1/chat/completions", json=CHAT_COMPLETION)
+
+    with httpx.Client(base_url="https://api.giga.chat") as client:
+        response = chat.chat_sync(client, chat=CHAT)
+
+    assert isinstance(response, ChatCompletion)
+    assert str(httpx_mock.get_requests()[0].url) == "https://api.giga.chat/v1/chat/completions"
+
+
 def test_chat_sync_additional_fields(httpx_mock: HTTPXMock) -> None:
     httpx_mock.add_response(url=MOCK_URL, json=CHAT_COMPLETION)
 
@@ -246,6 +256,16 @@ async def test_chat_async(httpx_mock: HTTPXMock) -> None:
         response = await chat.chat_async(client, chat=CHAT)
 
     assert isinstance(response, ChatCompletion)
+
+
+async def test_chat_async_uses_v1_route_for_official_unversioned_base(httpx_mock: HTTPXMock) -> None:
+    httpx_mock.add_response(url="https://api.giga.chat/v1/chat/completions", json=CHAT_COMPLETION)
+
+    async with httpx.AsyncClient(base_url="https://api.giga.chat") as client:
+        response = await chat.chat_async(client, chat=CHAT)
+
+    assert isinstance(response, ChatCompletion)
+    assert str(httpx_mock.get_requests()[0].url) == "https://api.giga.chat/v1/chat/completions"
 
 
 async def test_chat_async_additional_fields(httpx_mock: HTTPXMock) -> None:

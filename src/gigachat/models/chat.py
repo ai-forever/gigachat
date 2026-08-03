@@ -174,7 +174,9 @@ class Choices(BaseModel):
 
     message: Messages = Field(description="Generated message.")
     index: int = Field(description="Index of the choice in the list.")
-    finish_reason: Optional[str] = Field(default=None, description="Reason why the generation finished.")
+    finish_reason: Optional[Literal["stop", "length", "function_call", "blacklist", "error"]] = Field(
+        default=None, description="Reason why the generation finished."
+    )
 
 
 class ChoicesChunk(BaseModel):
@@ -182,7 +184,9 @@ class ChoicesChunk(BaseModel):
 
     delta: MessagesChunk = Field(description="Message delta.")
     index: int = Field(description="Index of the choice in the list.")
-    finish_reason: Optional[str] = Field(default=None, description="Reason why the generation finished.")
+    finish_reason: Optional[Literal["stop", "length", "function_call", "blacklist", "error"]] = Field(
+        default=None, description="Reason why the generation finished."
+    )
 
 
 class Chat(BaseModel):
@@ -190,11 +194,13 @@ class Chat(BaseModel):
 
     model: Optional[str] = Field(default=None, description="Name of the model to use.")
     messages: List[Messages] = Field(description="List of messages in the conversation.")
-    temperature: Optional[float] = Field(default=None, description="Sampling temperature.")
-    top_p: Optional[float] = Field(default=None, description="Nucleus sampling parameter (alternative to temperature).")
+    temperature: Optional[float] = Field(default=None, gt=0, description="Sampling temperature.")
+    top_p: Optional[float] = Field(
+        default=None, ge=0, le=1, description="Nucleus sampling parameter (alternative to temperature)."
+    )
     n: Optional[int] = Field(default=None, description="Number of completion choices to generate.")
     stream: Optional[bool] = Field(default=None, description="If True, stream partial progress.")
-    max_tokens: Optional[int] = Field(default=None, description="Maximum number of tokens to generate.")
+    max_tokens: Optional[int] = Field(default=None, gt=0, description="Maximum number of tokens to generate.")
     repetition_penalty: Optional[float] = Field(default=None, description="Repetition penalty factor.")
     update_interval: Optional[float] = Field(default=None, description="Interval in seconds between stream updates.")
     profanity_check: Optional[bool] = Field(default=None, description="Enable profanity filtering.")
@@ -209,9 +215,7 @@ class Chat(BaseModel):
     additional_fields: Optional[Dict[str, Any]] = Field(
         default=None, description="Additional fields to pass to the API."
     )
-    reasoning_effort: Optional[Literal["low", "medium", "high"]] = Field(
-        default=None, description="Reasoning effort level."
-    )
+    reasoning_effort: Optional[Literal["medium"]] = Field(default=None, description="Reasoning effort level.")
 
 
 class ChatCompletion(APIResponse):

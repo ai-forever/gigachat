@@ -1,6 +1,7 @@
 import base64
 from http import HTTPStatus
 from typing import Any, Dict, Literal, Optional
+from urllib.parse import quote
 
 import httpx
 
@@ -23,7 +24,7 @@ def _get_file_kwargs(
     headers = build_headers(access_token)
     return {
         "method": "GET",
-        "url": f"/files/{file}",
+        "url": f"/files/{quote(file, safe='')}",
         "headers": headers,
     }
 
@@ -129,7 +130,7 @@ def _delete_file_kwargs(
 ) -> Dict[str, Any]:
     return {
         "method": "POST",
-        "url": f"/files/{file}/delete",
+        "url": f"/files/{quote(file, safe='')}/delete",
         "headers": build_headers(access_token),
     }
 
@@ -167,7 +168,7 @@ def _get_file_content_kwargs(
         headers["Accept"] = accept
     return {
         "method": "GET",
-        "url": f"/files/{file_id}/content",
+        "url": f"/files/{quote(file_id, safe='')}/content",
         "headers": headers,
     }
 

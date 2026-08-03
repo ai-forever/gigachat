@@ -229,3 +229,23 @@ async def test_chat_async_uses_v2_primary_route_for_legacy_v1_base_url(httpx_moc
 
     request = httpx_mock.get_requests()[0]
     assert str(request.url) == "https://host/api/v2/chat/completions"
+
+
+def test_chat_sync_uses_v2_route_for_official_unversioned_base(httpx_mock: HTTPXMock) -> None:
+    chat_data = ChatCompletionRequest(messages=[ChatMessage(role="user", content="solve 2+2")])
+    httpx_mock.add_response(url="https://api.giga.chat/v2/chat/completions", json={"messages": []})
+
+    with httpx.Client(base_url="https://api.giga.chat") as client:
+        chat_completions.chat_sync(client, chat=chat_data)
+
+    assert str(httpx_mock.get_requests()[0].url) == "https://api.giga.chat/v2/chat/completions"
+
+
+async def test_chat_async_uses_v2_route_for_official_unversioned_base(httpx_mock: HTTPXMock) -> None:
+    chat_data = ChatCompletionRequest(messages=[ChatMessage(role="user", content="solve 2+2")])
+    httpx_mock.add_response(url="https://api.giga.chat/v2/chat/completions", json={"messages": []})
+
+    async with httpx.AsyncClient(base_url="https://api.giga.chat") as client:
+        await chat_completions.chat_async(client, chat=chat_data)
+
+    assert str(httpx_mock.get_requests()[0].url) == "https://api.giga.chat/v2/chat/completions"

@@ -1,6 +1,6 @@
 import base64
 from pathlib import Path
-from typing import List, Optional, Union
+from typing import List, Literal, Optional, Union
 
 from pydantic import Field
 
@@ -15,8 +15,8 @@ class UploadedFile(APIResponse):
     bytes_: int = Field(alias="bytes", description="File size in bytes.")
     created_at: int = Field(description="Creation timestamp (Unix time).")
     filename: str = Field(description="Name of the file.")
-    purpose: str = Field(description="Intended purpose of the file.")
-    access_policy: Optional[str] = Field(default=None, description="Access policy.")
+    purpose: Literal["general", "assistant"] = Field(description="Intended purpose of the file.")
+    access_policy: Literal["public", "private"] = Field(default="private", description="Access policy.")
     modalities: Optional[List[str]] = Field(default=None, description="Automatically detected file modalities.")
 
     @property
