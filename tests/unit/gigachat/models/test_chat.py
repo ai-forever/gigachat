@@ -94,12 +94,19 @@ def test_chat_request_preserves_function_call_arguments_dict() -> None:
         ("top_p", -0.1),
         ("top_p", 1.1),
         ("max_tokens", 0),
-        ("reasoning_effort", "high"),
+        ("reasoning_effort", "xhigh"),
     ],
 )
 def test_chat_request_enforces_documented_generation_constraints(field_name: str, value: object) -> None:
     with pytest.raises(ValidationError):
         Chat.model_validate({"messages": [], field_name: value})
+
+
+@pytest.mark.parametrize("effort", ["low", "medium", "high"])
+def test_chat_request_accepts_standard_reasoning_effort(effort: str) -> None:
+    chat = Chat.model_validate({"messages": [], "reasoning_effort": effort})
+
+    assert chat.reasoning_effort == effort
 
 
 def test_chat_response_preserves_documented_function_call_arguments_string() -> None:

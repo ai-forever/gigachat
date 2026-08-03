@@ -215,7 +215,9 @@ class Chat(BaseModel):
     additional_fields: Optional[Dict[str, Any]] = Field(
         default=None, description="Additional fields to pass to the API."
     )
-    reasoning_effort: Optional[Literal["medium"]] = Field(default=None, description="Reasoning effort level.")
+    reasoning_effort: Optional[Literal["low", "medium", "high"]] = Field(
+        default=None, description="Reasoning effort level."
+    )
 
 
 class ChatCompletion(APIResponse):

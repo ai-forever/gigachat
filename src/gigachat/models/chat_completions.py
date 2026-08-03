@@ -261,7 +261,7 @@ class ChatUsage(_ChatCompletionsModel):
 class ChatReasoning(_ChatCompletionsModel):
     """Reasoning controls."""
 
-    effort: Literal["medium"] = Field(description="Reasoning effort.")
+    effort: Literal["low", "medium", "high"] = Field(description="Reasoning effort.")
 
 
 class ChatModelOptions(_ChatCompletionsModel):

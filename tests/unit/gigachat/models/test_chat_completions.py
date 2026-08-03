@@ -157,8 +157,8 @@ def test_chat_completion_request_enforces_model_option_ranges(field_name: str, v
         )
 
 
-@pytest.mark.parametrize("reasoning", [{}, {"effort": "high"}])
-def test_chat_completion_request_requires_documented_reasoning_effort(reasoning: object) -> None:
+@pytest.mark.parametrize("reasoning", [{}, {"effort": "xhigh"}])
+def test_chat_completion_request_requires_supported_reasoning_effort(reasoning: object) -> None:
     with pytest.raises(ValidationError):
         ChatCompletionRequest.model_validate(
             {
@@ -166,6 +166,19 @@ def test_chat_completion_request_requires_documented_reasoning_effort(reasoning:
                 "model_options": {"reasoning": reasoning},
             }
         )
+
+
+@pytest.mark.parametrize("effort", ["low", "medium", "high"])
+def test_chat_completion_request_accepts_standard_reasoning_effort(effort: str) -> None:
+    request = ChatCompletionRequest.model_validate(
+        {
+            "messages": [{"role": "user", "content": "Рассуждай"}],
+            "model_options": {"reasoning": {"effort": effort}},
+        }
+    )
+
+    assert request.reasoning is not None
+    assert request.reasoning.effort == effort
 
 
 @pytest.mark.parametrize("tool_config", [{}, {"mode": "invalid"}])

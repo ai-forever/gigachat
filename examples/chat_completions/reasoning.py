@@ -32,7 +32,7 @@ def request_with_models() -> ChatCompletionRequest:
             )
         ],
         model="GigaChat-2-Reasoning",
-        reasoning=ChatReasoning(effort="medium"),
+        reasoning=ChatReasoning(effort="high"),
     )
 
 
@@ -49,7 +49,7 @@ def request_with_dict() -> Dict[str, Any]:
                 ],
             }
         ],
-        "reasoning": {"effort": "medium"},
+        "reasoning": {"effort": "high"},
     }
 
 
