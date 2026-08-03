@@ -41,7 +41,7 @@ uv run python -m examples.chat_completions.sync_chat
 * [Forced web search](./tools/forced_web_search.py) - force `web_search` through `tool_config.tool_name`
 * [Code interpreter](./tools/code_interpreter.py) - built-in `code_interpreter` tool
 * [URL content extraction](./tools/url_content_extraction.py) - built-in `url_content_extraction` tool
-* [Image generation](./tools/image_generation.py) - built-in `image_generate` tool and generated file IDs
+* [Image generation](./tools/image_generation.py) - generate an image and save it with `Image.save(...)`
 
 ## Files and assistants
 
