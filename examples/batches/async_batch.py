@@ -1,6 +1,7 @@
 """Create and inspect a batch task asynchronously."""
 
 import asyncio
+import time
 from pathlib import Path
 
 from dotenv import load_dotenv
@@ -21,7 +22,8 @@ async def main() -> None:
         created = await client.acreate_batch(BATCH_JSONL, method="chat_completions")
         batch = (await client.aget_batches(created.id_)).batches[0]
         print(f"Batch {batch.id_}: {batch.status.value}")
-
+        time.sleep(10)
+        batch = (await client.aget_batches(created.id_)).batches[0]
         if batch.output_file_id is not None:
             result = await client.aget_file_content(batch.output_file_id)
             output = Path("batch-results.jsonl")

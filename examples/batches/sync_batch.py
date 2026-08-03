@@ -1,5 +1,5 @@
 """Create and inspect a batch task synchronously."""
-
+import time
 from pathlib import Path
 
 from dotenv import load_dotenv
@@ -20,7 +20,8 @@ def main() -> None:
         created = client.create_batch(BATCH_JSONL, method="chat_completions")
         batch = client.get_batches(created.id_).batches[0]
         print(f"Batch {batch.id_}: {batch.status.value}")
-
+        time.sleep(10)
+        batch = client.get_batches(created.id_).batches[0]
         if batch.output_file_id is not None:
             result = client.get_file_content(batch.output_file_id)
             output = Path("batch-results.jsonl")
