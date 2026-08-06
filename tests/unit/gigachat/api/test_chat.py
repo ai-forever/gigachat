@@ -22,7 +22,7 @@ from gigachat.context import (
 )
 from gigachat.exceptions import AuthenticationError, BadRequestError
 from gigachat.models import Chat, ChatCompletion, ChatCompletionChunk
-from gigachat.models.chat import Messages, MessagesRole
+from gigachat.models.chat import Function, Messages, MessagesRole
 from gigachat.models.response_format import JsonSchemaResponseFormat
 from tests.constants import (
     BASE_URL,
@@ -137,6 +137,31 @@ def test_chat_sync_additional_fields_passthrough_preset(httpx_mock: HTTPXMock) -
     assert request_content["response_format"]["type"] == "json_schema"
     assert request_content["response_format"]["schema"] == SAMPLE_SCHEMA
     assert request_content["response_format"]["strict"] is True
+
+
+def test_chat_sync_preserves_function_json_schema(httpx_mock: HTTPXMock) -> None:
+    httpx_mock.add_response(url=MOCK_URL, json=CHAT_COMPLETION)
+    parameters = {
+        "$defs": {"value": {"type": ["string", "null"]}},
+        "type": "object",
+        "properties": {
+            "value": {"$ref": "#/$defs/value"},
+            "choice": {"anyOf": [{"const": "automatic"}, {"enum": [1, True, None]}]},
+            "anything": True,
+            "forbidden": False,
+        },
+        "unevaluatedProperties": False,
+    }
+    chat_data = Chat(
+        messages=[Messages(role=MessagesRole.USER, content="choose a value")],
+        functions=[Function(name="choose", parameters=parameters)],
+    )
+
+    with httpx.Client(base_url=BASE_URL) as client:
+        chat.chat_sync(client, chat=chat_data)
+
+    request_content = json.loads(httpx_mock.get_requests()[0].content.decode("utf-8"))
+    assert request_content["functions"][0]["parameters"] == parameters
 
 
 def test_chat_sync_response_format_json_schema(httpx_mock: HTTPXMock) -> None:
