@@ -73,23 +73,23 @@ class Usage(BaseModel):
 class FunctionParametersProperty(BaseModel):
     """Property of a function parameter."""
 
-    type_: str = Field(default="object", alias="type", description="Type of the argument.")
-    description: str = Field(default="", description="Description of the argument.")
-    items: Optional[Dict[str, Any]] = Field(default=None, description="Items schema for array types.")
-    enum: Optional[List[str]] = Field(default=None, description="List of possible values for enum types.")
-    properties: Optional[Dict[Any, "FunctionParametersProperty"]] = Field(
-        default=None, description="Nested properties for object types."
-    )
+    type_: Optional[Union[str, List[str]]] = Field(default=None, alias="type", description="JSON Schema type.")
+    description: Optional[str] = Field(default=None, description="Description of the argument.")
+    items: Any = Field(default=None, description="Items schema for array types.")
+    enum: Optional[List[Any]] = Field(default=None, description="List of possible values for enum types.")
+    properties: Optional[Dict[Any, Any]] = Field(default=None, description="Nested properties for object types.")
+
+    model_config = ConfigDict(extra="allow", populate_by_name=True)
 
 
 class FunctionParameters(BaseModel):
     """Parameters definition for a function."""
 
-    type_: str = Field(default="object", alias="type", description="Type of the parameters object (usually 'object').")
-    properties: Optional[Dict[Any, FunctionParametersProperty]] = Field(
-        default=None, description="Dictionary of parameter properties."
-    )
+    type_: Optional[Union[str, List[str]]] = Field(default=None, alias="type", description="JSON Schema type.")
+    properties: Optional[Dict[Any, Any]] = Field(default=None, description="Dictionary of parameter properties.")
     required: Optional[List[str]] = Field(default=None, description="List of required parameter names.")
+
+    model_config = ConfigDict(extra="allow", populate_by_name=True)
 
 
 class Function(BaseModel):
