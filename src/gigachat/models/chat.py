@@ -1,7 +1,7 @@
 from enum import Enum
 from typing import Any, Dict, List, Literal, Optional, Union
 
-from pydantic import BaseModel, ConfigDict, Field, model_validator
+from pydantic import BaseModel, ConfigDict, Field, SerializerFunctionWrapHandler, model_serializer, model_validator
 
 from gigachat.models.base import APIResponse
 from gigachat.models.response_format import ResponseFormat
@@ -90,6 +90,19 @@ class FunctionParameters(BaseModel):
     required: Optional[List[str]] = Field(default=None, description="List of required parameter names.")
 
     model_config = ConfigDict(extra="allow", populate_by_name=True)
+
+    @model_serializer(mode="wrap")
+    def _keep_null_schema_keywords(self, handler: SerializerFunctionWrapHandler) -> Dict[str, Any]:
+        """Keep schema keywords whose value is explicitly null.
+
+        Requests are built with ``exclude_none=True``, but ``{"default": null}`` is a
+        valid JSON Schema and dropping it would alter the schema supplied by the user.
+        """
+        data: Dict[str, Any] = handler(self)
+        for key, value in (self.__pydantic_extra__ or {}).items():
+            if value is None:
+                data.setdefault(key, None)
+        return data
 
 
 class Function(BaseModel):
@@ -230,7 +243,6 @@ class ChatCompletionChunk(APIResponse):
     usage: Optional[Usage] = Field(default=None, description="Usage statistics.")
 
 
-FunctionParametersProperty.model_rebuild()
 Messages.model_rebuild()
 
 

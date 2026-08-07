@@ -132,6 +132,20 @@ def test_function_parameters_preserve_json_schema_without_defaults() -> None:
     assert function.model_dump(exclude_none=True, by_alias=True)["parameters"] == parameters
 
 
+def test_function_parameters_preserve_null_valued_keywords() -> None:
+    """`exclude_none=True` must not drop schema keywords that are legitimately null."""
+    parameters = {
+        "type": "object",
+        "properties": {"units": {"type": "string", "default": None}},
+        "default": None,
+        "const": None,
+    }
+
+    function = Function(name="route", parameters=parameters)
+
+    assert function.model_dump(exclude_none=True, by_alias=True)["parameters"] == parameters
+
+
 def test_function_parameter_property_preserves_extensions_and_union_type() -> None:
     schema = {
         "type": ["string", "null"],
