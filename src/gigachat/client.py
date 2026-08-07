@@ -245,10 +245,7 @@ def _parse_primary_completion(
 
 
 def _build_access_token(token: Token) -> AccessToken:
-    expires_at = token.exp
-    if expires_at < 10_000_000_000:
-        expires_at *= 1000
-    return AccessToken(access_token=token.tok, expires_at=expires_at, x_headers=token.x_headers)
+    return AccessToken(access_token=token.tok, expires_at=token.exp, x_headers=token.x_headers)
 
 
 class _BaseClient:

@@ -18,7 +18,8 @@ EXPIRES_AT_EXPIRED = 946684800000
 # 2100-01-01 00:00:00 UTC - always valid
 EXPIRES_AT_VALID = 4102444800000
 
-# Password auth /token returns expiration timestamps in seconds
+# The tok/exp response shape carries the expiration in seconds on some backends and
+# already in milliseconds on others, so both variants have to stay covered.
 PASSWORD_EXPIRES_AT_EXPIRED = EXPIRES_AT_EXPIRED // 1000
 PASSWORD_EXPIRES_AT_VALID = EXPIRES_AT_VALID // 1000
 
@@ -73,6 +74,7 @@ OAUTH_TOKEN_EXPIRED = {"access_token": MOCK_TOKEN_STRING, "expires_at": EXPIRES_
 # Test Data - Password auth token variants (/token endpoint, tok/exp format)
 PASSWORD_TOKEN_VALID = {"tok": MOCK_TOKEN_STRING, "exp": PASSWORD_EXPIRES_AT_VALID}
 PASSWORD_TOKEN_EXPIRED = {"tok": MOCK_TOKEN_STRING, "exp": PASSWORD_EXPIRES_AT_EXPIRED}
+PASSWORD_TOKEN_VALID_MS = {"tok": MOCK_TOKEN_STRING, "exp": EXPIRES_AT_VALID}
 CHAT = Chat.model_validate(get_json("chat.json"))
 CHAT_FUNCTION = Chat.model_validate(get_json("chat_function.json"))
 CHAT_COMPLETION = get_json("chat_completion.json")
