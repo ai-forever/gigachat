@@ -10,6 +10,7 @@ from gigachat.models.chat_completions import (
     ChatCompletionRequest,
     ChatFunctionSpecification,
     ChatMessage,
+    ChatModelOptions,
     ChatStorage,
     ChatTool,
 )
@@ -100,6 +101,18 @@ def test_build_request_json_keeps_storage_object() -> None:
     request_content = chat_completions._build_request_json(chat_data)
 
     assert request_content["storage"] == {"thread_id": "thread-1", "limit": 10}
+
+
+def test_build_request_json_keeps_parallel_tool_calls_in_model_options() -> None:
+    chat_data = ChatCompletionRequest(
+        messages=[ChatMessage(role="user", content="call both functions")],
+        model_options=ChatModelOptions(parallel_tool_calls=True),
+    )
+
+    request_content = chat_completions._build_request_json(chat_data)
+
+    assert request_content["model_options"] == {"parallel_tool_calls": True}
+    assert "parallel_tool_calls" not in request_content
 
 
 def test_build_request_json_preserves_function_json_schema() -> None:

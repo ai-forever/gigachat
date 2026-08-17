@@ -168,6 +168,22 @@ def test_chat_completion_request_accepts_regex_response_format() -> None:
     }
 
 
+@pytest.mark.parametrize("enabled", [True, False])
+def test_chat_completion_request_serializes_parallel_tool_calls(enabled: bool) -> None:
+    request = ChatCompletionRequest.model_validate(
+        {
+            "messages": [{"role": "user", "content": "Вызови обе функции"}],
+            "model_options": {"parallel_tool_calls": enabled},
+        }
+    )
+
+    dumped = request.model_dump(exclude_none=True, by_alias=True)
+
+    assert request.model_options is not None
+    assert request.model_options.parallel_tool_calls is enabled
+    assert dumped["model_options"]["parallel_tool_calls"] is enabled
+
+
 def test_chat_completion_request_normalizes_storage_true_to_object() -> None:
     request = ChatCompletionRequest.model_validate(
         {
@@ -314,6 +330,65 @@ def test_chat_completion_response_parses_content_function_call() -> None:
     assert response.messages[0].content[0].function_call is not None
     assert response.messages[0].content[0].function_call.name == "get_weather"
     assert response.messages[0].content[0].function_call.arguments == {"location": "Moscow"}
+
+
+def test_chat_completion_response_parses_parallel_function_calls() -> None:
+    response = ChatCompletionResponse.model_validate(
+        {
+            "model": "GigaChat-2-Max:32.9.23.6",
+            "created_at": 1786954612,
+            "messages": [
+                {
+                    "role": "assistant",
+                    "tool_state_id": "tool-state-1",
+                    "content": [
+                        {
+                            "function_call": {
+                                "id": "weather-call-1",
+                                "name": "get_weather",
+                                "arguments": {"city": "Москва"},
+                            }
+                        },
+                        {
+                            "function_call": {
+                                "id": "rate-call-1",
+                                "name": "get_rate",
+                                "arguments": {"currency": "USD"},
+                            }
+                        },
+                    ],
+                }
+            ],
+            "finish_reason": "function_call",
+        }
+    )
+
+    content = response.messages[0].content
+
+    assert content is not None
+    assert len(content) == 2
+    assert content[0].function_call is not None
+    assert content[0].function_call.id_ == "weather-call-1"
+    assert content[0].function_call.name == "get_weather"
+    assert content[1].function_call is not None
+    assert content[1].function_call.id_ == "rate-call-1"
+    assert content[1].function_call.name == "get_rate"
+    assert response.model_dump(exclude_none=True, by_alias=True)["messages"][0]["content"] == [
+        {
+            "function_call": {
+                "id": "weather-call-1",
+                "name": "get_weather",
+                "arguments": {"city": "Москва"},
+            }
+        },
+        {
+            "function_call": {
+                "id": "rate-call-1",
+                "name": "get_rate",
+                "arguments": {"currency": "USD"},
+            }
+        },
+    ]
 
 
 def test_chat_completion_request_normalizes_singular_tool_state_id() -> None:
