@@ -5,7 +5,15 @@ from pytest_httpx import HTTPXMock
 
 from gigachat.api import chat_completions
 from gigachat.context import chat_completions_url_cvar
-from gigachat.models.chat_completions import ChatCompletionChunk, ChatCompletionRequest, ChatMessage, ChatStorage
+from gigachat.models.chat_completions import (
+    ChatCompletionChunk,
+    ChatCompletionRequest,
+    ChatFunctionSpecification,
+    ChatMessage,
+    ChatModelOptions,
+    ChatStorage,
+    ChatTool,
+)
 from tests.constants import BASE_URL, HEADERS_STREAM, MOCK_URL
 
 PRIMARY_CHAT_COMPLETION_STREAM = (
@@ -93,6 +101,47 @@ def test_build_request_json_keeps_storage_object() -> None:
     request_content = chat_completions._build_request_json(chat_data)
 
     assert request_content["storage"] == {"thread_id": "thread-1", "limit": 10}
+
+
+def test_build_request_json_keeps_parallel_tool_calls_in_model_options() -> None:
+    chat_data = ChatCompletionRequest(
+        messages=[ChatMessage(role="user", content="call both functions")],
+        model_options=ChatModelOptions(parallel_tool_calls=True),
+    )
+
+    request_content = chat_completions._build_request_json(chat_data)
+
+    assert request_content["model_options"] == {"parallel_tool_calls": True}
+    assert "parallel_tool_calls" not in request_content
+
+
+def test_build_request_json_preserves_function_json_schema() -> None:
+    parameters = {
+        "$defs": {"value": {"type": ["string", "null"]}},
+        "type": "object",
+        "properties": {
+            "value": {"$ref": "#/$defs/value"},
+            "choice": {"anyOf": [{"const": "automatic"}, {"enum": [1, True, None]}]},
+            "anything": True,
+            "forbidden": False,
+        },
+        "unevaluatedProperties": False,
+    }
+    chat_data = ChatCompletionRequest(
+        messages=[ChatMessage(role="user", content="choose a value")],
+        tools=[
+            ChatTool(
+                functions={
+                    "specifications": [ChatFunctionSpecification(name="choose", parameters=parameters)],
+                }
+            )
+        ],
+    )
+
+    request_content = chat_completions._build_request_json(chat_data)
+    functions = request_content["tools"][0]["functions"]
+
+    assert functions["specifications"][0]["parameters"] == parameters
 
 
 def test_stream_sync_parses_primary_chunk(httpx_mock: HTTPXMock) -> None:

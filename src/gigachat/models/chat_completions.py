@@ -114,6 +114,7 @@ class ChatContentPart(_ChatCompletionsModel):
 class ChatFunctionCall(_ChatCompletionsModel):
     """Requested or emitted function call."""
 
+    id_: Optional[str] = Field(alias="id", default=None, description="Function call identifier.")
     name: str = Field(description="Function name.")
     arguments: Any = Field(description="Function arguments.")
 
@@ -170,6 +171,7 @@ class ChatModelOptions(_ChatCompletionsModel):
     """Model generation options."""
 
     preset: Optional[str] = Field(default=None, description="Model preset.")
+    parallel_tool_calls: Optional[bool] = Field(default=None, description="Allow parallel function calls.")
     temperature: Optional[float] = Field(default=None, description="Sampling temperature.")
     top_p: Optional[float] = Field(default=None, description="Nucleus sampling parameter.")
     max_tokens: Optional[int] = Field(default=None, description="Maximum completion tokens.")

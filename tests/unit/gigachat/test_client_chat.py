@@ -629,7 +629,7 @@ def test_chat_credentials_expired_token_refresh(httpx_mock: HTTPXMock) -> None:
 
 
 def test_chat_user_password_token_reuse(httpx_mock: HTTPXMock) -> None:
-    """Verify that valid token is reused with user/password auth."""
+    """Verify that a seconds-based token expiration is normalized and reused."""
     httpx_mock.add_response(url=TOKEN_URL, json=PASSWORD_TOKEN_VALID)
     httpx_mock.add_response(url=CHAT_URL, json=CHAT_COMPLETION)
     httpx_mock.add_response(url=CHAT_URL, json=CHAT_COMPLETION)
@@ -640,6 +640,7 @@ def test_chat_user_password_token_reuse(httpx_mock: HTTPXMock) -> None:
 
     assert isinstance(response1, ChatCompletion)
     assert isinstance(response2, ChatCompletion)
+    assert sum(str(request.url) == TOKEN_URL for request in httpx_mock.get_requests()) == 1
 
 
 def test_chat_user_password_expired_token_refresh(httpx_mock: HTTPXMock) -> None:
@@ -1314,7 +1315,7 @@ async def test_achat_credentials_expired_token_refresh(httpx_mock: HTTPXMock) ->
 
 
 async def test_achat_user_password_token_reuse(httpx_mock: HTTPXMock) -> None:
-    """Verify that valid token is reused with async user/password auth."""
+    """Verify that a seconds-based token expiration is normalized and reused."""
     httpx_mock.add_response(url=TOKEN_URL, json=PASSWORD_TOKEN_VALID)
     httpx_mock.add_response(url=CHAT_URL, json=CHAT_COMPLETION)
     httpx_mock.add_response(url=CHAT_URL, json=CHAT_COMPLETION)
@@ -1325,6 +1326,7 @@ async def test_achat_user_password_token_reuse(httpx_mock: HTTPXMock) -> None:
 
     assert isinstance(response1, ChatCompletion)
     assert isinstance(response2, ChatCompletion)
+    assert sum(str(request.url) == TOKEN_URL for request in httpx_mock.get_requests()) == 1
 
 
 async def test_achat_user_password_expired_token_refresh(httpx_mock: HTTPXMock) -> None:
