@@ -9,6 +9,7 @@ from gigachat.models.assistants import (
 )
 from gigachat.models.auth import AccessToken, Token
 from gigachat.models.base import APIResponse
+from gigachat.models.batches import Batch, Batches, BatchMethod, BatchRequestCounts, BatchStatus
 from gigachat.models.chat import (
     Chat,
     ChatCompletion,
@@ -29,16 +30,20 @@ from gigachat.models.chat import (
     Usage,
 )
 from gigachat.models.chat_completions import (
-    ChatCompletionChunk as PrimaryChatCompletionChunk,
-)
-from gigachat.models.chat_completions import (
+    ChatAdditionalData,
     ChatCompletionRequest,
     ChatCompletionResponse,
     ChatContentFile,
     ChatContentPart,
+    ChatExecutionFunctionCall,
+    ChatExecutionStep,
+    ChatExecutionStepDetails,
     ChatFilterConfig,
     ChatFilterContentConfig,
     ChatFilterResponseContentConfig,
+    ChatFinishReason,
+    ChatFunctionExample,
+    ChatFunctionResult,
     ChatFunctionSpecification,
     ChatFunctionsTool,
     ChatInlineData,
@@ -46,10 +51,17 @@ from gigachat.models.chat_completions import (
     ChatLogprobToken,
     ChatMessage,
     ChatMessageChunk,
+    ChatMessageRole,
     ChatModelOptions,
     ChatRankerOptions,
     ChatReasoning,
+    ChatResponseContentFile,
+    ChatResponseContentPart,
     ChatResponseFormat,
+    ChatResponseLogprob,
+    ChatResponseLogprobToken,
+    ChatResponseMessage,
+    ChatSource,
     ChatStorage,
     ChatTool,
     ChatToolConfig,
@@ -60,12 +72,15 @@ from gigachat.models.chat_completions import (
     ChatWebSearchTool,
 )
 from gigachat.models.chat_completions import (
+    ChatCompletionChunk as PrimaryChatCompletionChunk,
+)
+from gigachat.models.chat_completions import (
     ChatFunctionCall as PrimaryChatFunctionCall,
 )
 from gigachat.models.embeddings import Embedding, Embeddings, EmbeddingsUsage
-from gigachat.models.files import DeletedFile, Image, UploadedFile, UploadedFiles
+from gigachat.models.files import DeletedFile, DownloadedFile, Image, UploadedFile, UploadedFiles
 from gigachat.models.models import Model, Models
-from gigachat.models.response_format import JsonSchemaResponseFormat, ResponseFormat
+from gigachat.models.response_format import JsonSchemaResponseFormat, ResponseFormat, TextResponseFormat
 from gigachat.models.threads import (
     Thread,
     ThreadCompletion,
@@ -81,10 +96,22 @@ from gigachat.models.threads import (
     Threads,
     ThreadStatus,
 )
-from gigachat.models.tools import AICheckResult, Balance, OpenApiFunctions, TokensCount
+from gigachat.models.tools import (
+    AICheckModel,
+    AICheckResult,
+    Balance,
+    BalanceValue,
+    CustomFunction,
+    CustomFunctionExample,
+    FunctionValidationIssue,
+    FunctionValidationResult,
+    OpenApiFunctions,
+    TokensCount,
+)
 
 __all__ = (
     "AccessToken",
+    "AICheckModel",
     "AICheckResult",
     "Assistant",
     "AssistantAttachment",
@@ -92,6 +119,13 @@ __all__ = (
     "AssistantFileDelete",
     "Assistants",
     "Balance",
+    "BalanceValue",
+    "Batch",
+    "Batches",
+    "BatchMethod",
+    "BatchRequestCounts",
+    "BatchStatus",
+    "ChatAdditionalData",
     "Chat",
     "ChatCompletion",
     "ChatCompletionChunk",
@@ -99,10 +133,16 @@ __all__ = (
     "ChatCompletionResponse",
     "ChatContentFile",
     "ChatContentPart",
+    "ChatExecutionFunctionCall",
+    "ChatExecutionStep",
+    "ChatExecutionStepDetails",
     "ChatFilterConfig",
     "ChatFilterContentConfig",
     "ChatFilterResponseContentConfig",
+    "ChatFinishReason",
     "ChatFunctionCall",
+    "ChatFunctionExample",
+    "ChatFunctionResult",
     "ChatFunctionSpecification",
     "ChatFunctionsTool",
     "ChatInlineData",
@@ -110,9 +150,16 @@ __all__ = (
     "ChatLogprobToken",
     "ChatMessage",
     "ChatMessageChunk",
+    "ChatMessageRole",
     "ChatModelOptions",
     "ChatReasoning",
+    "ChatResponseContentFile",
+    "ChatResponseContentPart",
     "ChatResponseFormat",
+    "ChatResponseLogprob",
+    "ChatResponseLogprobToken",
+    "ChatResponseMessage",
+    "ChatSource",
     "ChatRankerOptions",
     "ChatStorage",
     "ChatTool",
@@ -125,7 +172,10 @@ __all__ = (
     "Choices",
     "ChoicesChunk",
     "CreateAssistant",
+    "CustomFunction",
+    "CustomFunctionExample",
     "DeletedFile",
+    "DownloadedFile",
     "Embedding",
     "Embeddings",
     "EmbeddingsUsage",
@@ -135,6 +185,8 @@ __all__ = (
     "FunctionParameters",
     "FunctionParametersProperty",
     "FunctionRanker",
+    "FunctionValidationIssue",
+    "FunctionValidationResult",
     "Image",
     "JsonSchemaResponseFormat",
     "Messages",
@@ -160,6 +212,7 @@ __all__ = (
     "ThreadRunResult",
     "Threads",
     "ThreadStatus",
+    "TextResponseFormat",
     "Token",
     "TokensCount",
     "UploadedFile",

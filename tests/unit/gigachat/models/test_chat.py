@@ -48,10 +48,11 @@ def test_messages_role_enum() -> None:
 
 
 def test_messages_creation() -> None:
-    msg = Messages(role=MessagesRole.USER, content="hello")
+    msg = Messages(role=MessagesRole.USER, content="hello", created=1625284800)
     assert msg.role == "user"
     assert msg.content == "hello"
     assert msg.function_call is None
+    assert msg.created == 1625284800
 
 
 def test_messages_function_call() -> None:
@@ -60,6 +61,76 @@ def test_messages_function_call() -> None:
     assert msg.function_call is not None
     assert msg.function_call.name == "func"
     assert msg.function_call.arguments == {"arg": "val"}
+
+
+def test_chat_request_preserves_documented_function_call_arguments_string() -> None:
+    chat = Chat(
+        messages=[
+            Messages(
+                role=MessagesRole.ASSISTANT,
+                function_call=FunctionCall(name="get_weather", arguments='{"location":"Moscow"}'),
+            )
+        ]
+    )
+
+    dumped = chat.model_dump(exclude_none=True)
+    assert dumped["messages"][0]["function_call"]["arguments"] == '{"location":"Moscow"}'
+
+
+def test_chat_request_preserves_function_call_arguments_dict() -> None:
+    function_call = FunctionCall(name="get_weather", arguments={"location": "Moscow"})
+    chat = Chat(messages=[Messages(role=MessagesRole.ASSISTANT, function_call=function_call)])
+
+    dumped = chat.model_dump(exclude_none=True)
+
+    assert function_call.arguments == {"location": "Moscow"}
+    assert dumped["messages"][0]["function_call"]["arguments"] == {"location": "Moscow"}
+
+
+@pytest.mark.parametrize(
+    ("field_name", "value"),
+    [
+        ("temperature", 0),
+        ("top_p", -0.1),
+        ("top_p", 1.1),
+        ("max_tokens", 0),
+        ("reasoning_effort", "xhigh"),
+    ],
+)
+def test_chat_request_enforces_documented_generation_constraints(field_name: str, value: object) -> None:
+    with pytest.raises(ValidationError):
+        Chat.model_validate({"messages": [], field_name: value})
+
+
+@pytest.mark.parametrize("effort", ["low", "medium", "high"])
+def test_chat_request_accepts_standard_reasoning_effort(effort: str) -> None:
+    chat = Chat.model_validate({"messages": [], "reasoning_effort": effort})
+
+    assert chat.reasoning_effort == effort
+
+
+def test_chat_response_preserves_documented_function_call_arguments_string() -> None:
+    completion = ChatCompletion.model_validate(
+        {
+            "choices": [
+                {
+                    "message": {
+                        "role": "assistant",
+                        "function_call": {"name": "get_weather", "arguments": '{"location":"Moscow"}'},
+                    },
+                    "index": 0,
+                    "finish_reason": "function_call",
+                }
+            ],
+            "created": 1726478395,
+            "model": "GigaChat-2",
+            "usage": {"prompt_tokens": 10, "completion_tokens": 5, "total_tokens": 15},
+            "object": "chat.completion",
+        }
+    )
+
+    assert completion.choices[0].message.function_call is not None
+    assert completion.choices[0].message.function_call.arguments == '{"location":"Moscow"}'
 
 
 def test_function_model_validator() -> None:
@@ -82,6 +153,30 @@ def test_function_model_validator() -> None:
     assert func.parameters is not None
     assert func.parameters.properties is not None
     assert "prop" in func.parameters.properties
+
+
+def test_function_parameters_preserve_json_schema_keywords() -> None:
+    function = Function.model_validate(
+        {
+            "name": "send_sms",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "text": {"type": "string", "minLength": 1, "pattern": "^.+$"},
+                    "contactId": {"type": "integer", "format": "int32", "minimum": 1},
+                },
+                "required": ["text", "contactId"],
+                "additionalProperties": False,
+            },
+        }
+    )
+
+    dumped = function.model_dump(by_alias=True, exclude_none=True)
+    assert dumped["parameters"]["properties"]["text"]["minLength"] == 1
+    assert dumped["parameters"]["properties"]["text"]["pattern"] == "^.+$"
+    assert dumped["parameters"]["properties"]["contactId"]["format"] == "int32"
+    assert dumped["parameters"]["properties"]["contactId"]["minimum"] == 1
+    assert dumped["parameters"]["additionalProperties"] is False
 
 
 def test_usage_validation() -> None:

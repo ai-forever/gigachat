@@ -1,7 +1,7 @@
 from pytest_httpx import HTTPXMock
 
 from gigachat.client import GigaChatAsyncClient, GigaChatSyncClient
-from gigachat.models import AICheckResult, Balance, Function, OpenApiFunctions
+from gigachat.models import AICheckResult, Balance, Function, FunctionValidationResult, OpenApiFunctions
 from gigachat.models.tools import BalanceValue
 from tests.constants import (
     AI_CHECK,
@@ -12,6 +12,13 @@ from tests.constants import (
     CONVERT_FUNCTIONS,
     CONVERT_FUNCTIONS_URL,
 )
+
+FUNCTIONS_VALIDATE_URL = f"{BASE_URL}/functions/validate"
+FUNCTION_SCHEMA = {
+    "name": "weather_forecast",
+    "parameters": {"type": "object", "properties": {"days": {"type": "integer", "minimum": 1}}},
+}
+VALIDATION_RESULT = {"status": 200, "message": "Function is valid", "json_ai_rules_version": "1.0.5"}
 
 
 def test_get_balance(httpx_mock: HTTPXMock) -> None:
@@ -34,11 +41,20 @@ def test_openapi_function_convert(httpx_mock: HTTPXMock) -> None:
         assert isinstance(row, Function)
 
 
+def test_validate_function(httpx_mock: HTTPXMock) -> None:
+    httpx_mock.add_response(url=FUNCTIONS_VALIDATE_URL, json=VALIDATION_RESULT)
+
+    with GigaChatSyncClient(base_url=BASE_URL) as client:
+        response = client.validate_function(FUNCTION_SCHEMA)
+
+    assert isinstance(response, FunctionValidationResult)
+
+
 def test_check_ai(httpx_mock: HTTPXMock) -> None:
     httpx_mock.add_response(url=AI_CHECK_URL, json=AI_CHECK)
 
     with GigaChatSyncClient(base_url=BASE_URL) as client:
-        response = client.check_ai(text="", model="")
+        response = client.check_ai(text="", model="GigaCheckClassification")
     assert isinstance(response, AICheckResult)
 
 
@@ -62,9 +78,18 @@ async def test_aopenapi_function_convert(httpx_mock: HTTPXMock) -> None:
         assert isinstance(row, Function)
 
 
+async def test_avalidate_function(httpx_mock: HTTPXMock) -> None:
+    httpx_mock.add_response(url=FUNCTIONS_VALIDATE_URL, json=VALIDATION_RESULT)
+
+    async with GigaChatAsyncClient(base_url=BASE_URL) as client:
+        response = await client.avalidate_function(FUNCTION_SCHEMA)
+
+    assert isinstance(response, FunctionValidationResult)
+
+
 async def test_acheck_ai(httpx_mock: HTTPXMock) -> None:
     httpx_mock.add_response(url=AI_CHECK_URL, json=AI_CHECK)
 
     async with GigaChatAsyncClient(base_url=BASE_URL) as client:
-        response = await client.acheck_ai(text="", model="")
+        response = await client.acheck_ai(text="", model="GigaCheckClassification")
     assert isinstance(response, AICheckResult)

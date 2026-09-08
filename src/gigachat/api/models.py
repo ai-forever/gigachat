@@ -1,4 +1,5 @@
 from typing import Any, Dict, Optional
+from urllib.parse import quote
 
 import httpx
 
@@ -48,7 +49,7 @@ def _get_model_kwargs(
 
     return {
         "method": "GET",
-        "url": f"/models/{model}",
+        "url": f"/models/{quote(model, safe='')}",
         "headers": headers,
     }
 

@@ -49,6 +49,12 @@ def test_get_model_kwargs_context_vars() -> None:
     chat_url_cvar.reset(token_chat_url_cvar)
 
 
+def test_get_model_path_parameter_is_percent_encoded() -> None:
+    kwargs = models._get_model_kwargs(model="a/b?x=1#frag")
+
+    assert kwargs["url"] == "/models/a%2Fb%3Fx%3D1%23frag"
+
+
 def test_get_model_sync(httpx_mock: HTTPXMock) -> None:
     httpx_mock.add_response(url=MODEL_URL, json=MODEL)
 

@@ -53,6 +53,7 @@ EVENT_STREAM = "text/event-stream"
 
 _VERSIONED_PATH = re.compile(r"^/(api/)?v\d+(/|$)")
 _VERSION_SUFFIX = re.compile(r"/v\d+$")
+_OFFICIAL_API_HOSTS = {"api.giga.chat", "api.gigachat.ru"}
 
 
 def _at_origin(client: Union[httpx.Client, httpx.AsyncClient], path: str) -> str:
@@ -70,12 +71,22 @@ def resolve_request_url(client: Union[httpx.Client, httpx.AsyncClient], url: str
     return url
 
 
+def resolve_legacy_chat_url(client: Union[httpx.Client, httpx.AsyncClient], override: str) -> str:
+    """Resolve the legacy chat URL against the documented ``/v1`` endpoint."""
+    base = urlsplit(str(client.base_url))
+    if override == "/chat/completions" and base.hostname in _OFFICIAL_API_HOSTS and not base.path.rstrip("/"):
+        return _at_origin(client, "/v1/chat/completions")
+    return resolve_request_url(client, override)
+
+
 def resolve_primary_chat_url(client: Union[httpx.Client, httpx.AsyncClient], override: Optional[str]) -> str:
     """Resolve the primary chat URL, rewriting any ``/vN`` suffix in ``base_url`` to ``/v2``."""
     if override is not None:
         return resolve_request_url(client, override)
     base_path = urlsplit(str(client.base_url)).path.rstrip("/")
     if not _VERSION_SUFFIX.search(base_path):
+        if urlsplit(str(client.base_url)).hostname in _OFFICIAL_API_HOSTS and not base_path:
+            return _at_origin(client, "/v2/chat/completions")
         return "/chat/completions"
     return _at_origin(client, _VERSION_SUFFIX.sub("/v2/chat/completions", base_path))
 

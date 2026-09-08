@@ -1,10 +1,24 @@
 import inspect
-from typing import Any, Dict, List, Optional, Union
+from typing import Any, Dict, List, Literal, Optional, Union
 
 import pydantic
-from pydantic import BaseModel, ConfigDict, Field, model_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
 from gigachat.models.base import APIResponse
+
+ChatMessageRole = Literal["user", "system", "assistant", "tool", "reasoning"]
+ChatFinishReason = Literal[
+    "stop",
+    "length",
+    "function_call",
+    "function_call_error",
+    "blacklist",
+    "request_blacklist",
+    "request_whitelist",
+    "request_filter",
+    "response_blacklist",
+    "error",
+]
 
 
 def _normalize_content_parts(value: Any) -> Any:
@@ -89,7 +103,15 @@ class ChatContentFile(_ChatCompletionsModel):
     """File reference passed in request content or returned in response content."""
 
     id_: str = Field(alias="id", description="File identifier.")
-    target: Optional[str] = Field(default=None, description="Generated file target.")
+    target: Optional[Literal["image", "audio", "3dmodel"]] = Field(default=None, description="Generated file target.")
+    mime: Optional[str] = Field(default=None, description="File MIME type.")
+
+
+class ChatResponseContentFile(_ChatCompletionsModel):
+    """File metadata returned in response content."""
+
+    id_: Optional[str] = Field(alias="id", default=None, description="File identifier.")
+    target: Optional[Literal["image", "audio", "3dmodel"]] = Field(default=None, description="Generated file target.")
     mime: Optional[str] = Field(default=None, description="File MIME type.")
 
 
@@ -98,6 +120,13 @@ class ChatFunctionResult(_ChatCompletionsModel):
 
     name: str = Field(description="Tool or function name.")
     result: Any = Field(description="Tool result payload.")
+
+    @field_validator("result")
+    @classmethod
+    def _validate_result(cls, value: Any) -> Any:
+        if value is None:
+            raise ValueError("'result' must not be None")
+        return value
 
 
 class ChatContentPart(_ChatCompletionsModel):
@@ -109,6 +138,19 @@ class ChatContentPart(_ChatCompletionsModel):
     function_result: Optional[ChatFunctionResult] = Field(default=None, description="Tool result payload.")
     tool_execution: Optional["ChatToolExecution"] = Field(default=None, description="Tool execution state.")
     inline_data: Optional[ChatInlineData] = Field(default=None, description="Inline metadata.")
+    logprobs: Optional[List["ChatLogprob"]] = Field(default=None, description="Token log probability metadata.")
+
+
+class ChatResponseContentPart(_ChatCompletionsModel):
+    """Structured content part returned in a response message."""
+
+    text: Optional[str] = Field(default=None, description="Text content.")
+    files: Optional[List[ChatResponseContentFile]] = Field(default=None, description="Generated files.")
+    function_call: Optional["ChatFunctionCall"] = Field(default=None, description="Tool call payload.")
+    function_result: Optional[ChatFunctionResult] = Field(default=None, description="Tool result payload.")
+    tool_execution: Optional["ChatToolExecution"] = Field(default=None, description="Tool execution state.")
+    inline_data: Optional[ChatInlineData] = Field(default=None, description="Inline metadata.")
+    logprobs: Optional[List["ChatResponseLogprob"]] = Field(default=None, description="Token log probability metadata.")
 
 
 class ChatFunctionCall(_ChatCompletionsModel):
@@ -117,12 +159,19 @@ class ChatFunctionCall(_ChatCompletionsModel):
     name: str = Field(description="Function name.")
     arguments: Any = Field(description="Function arguments.")
 
+    @field_validator("arguments")
+    @classmethod
+    def _validate_arguments(cls, value: Any) -> Any:
+        if value is None:
+            raise ValueError("'arguments' must not be None")
+        return value
+
 
 class ChatToolExecution(_ChatCompletionsModel):
     """Execution state for built-in or platform tool invocation."""
 
     name: Optional[str] = Field(default=None, description="Tool name.")
-    status: Optional[str] = Field(default=None, description="Execution status.")
+    status: Optional[Literal["success", "fail", "running"]] = Field(default=None, description="Execution status.")
     seconds_left: Optional[int] = Field(default=None, description="Seconds until completion.")
     censored: Optional[bool] = Field(default=None, description="Whether execution was censored.")
 
@@ -140,6 +189,55 @@ class ChatLogprob(_ChatCompletionsModel):
 
     chosen: Optional[ChatLogprobToken] = Field(default=None, description="Chosen token.")
     top: Optional[List[ChatLogprobToken]] = Field(default=None, description="Top candidate tokens.")
+
+
+class ChatResponseLogprobToken(_ChatCompletionsModel):
+    """Token logprob entry returned by the API."""
+
+    token: Optional[str] = Field(default=None, description="Token text.")
+    token_id: Optional[int] = Field(default=None, description="Token identifier.")
+    logprob: Optional[float] = Field(default=None, description="Token log probability.")
+
+
+class ChatResponseLogprob(_ChatCompletionsModel):
+    """Per-position logprob information returned by the API."""
+
+    chosen: Optional[ChatResponseLogprobToken] = Field(default=None, description="Chosen token.")
+    top: Optional[List[ChatResponseLogprobToken]] = Field(default=None, description="Top candidate tokens.")
+
+
+class ChatExecutionFunctionCall(_ChatCompletionsModel):
+    """Function call recorded in a response execution step."""
+
+    name: Optional[str] = Field(default=None, description="Function name.")
+    arguments: Optional[Dict[str, Any]] = Field(default=None, description="Generated function arguments.")
+
+
+class ChatExecutionStepDetails(_ChatCompletionsModel):
+    """Details recorded for a response execution step."""
+
+    function_call: Optional[ChatExecutionFunctionCall] = Field(default=None, description="Generated function call.")
+    functions_in: Optional[List[str]] = Field(default=None, description="Functions supplied to the model or ranker.")
+    functions_out: Optional[List[str]] = Field(default=None, description="Functions selected by the ranker.")
+    function_executed: Optional[str] = Field(default=None, description="Executed function name.")
+    function_result: Optional[Literal["success", "fail"]] = Field(
+        default=None, description="Function execution result."
+    )
+
+
+class ChatExecutionStep(_ChatCompletionsModel):
+    """One response execution step."""
+
+    ts_start: Optional[int] = Field(default=None, description="Step start timestamp.")
+    ts_end: Optional[int] = Field(default=None, description="Step end timestamp.")
+    event_type: Optional[str] = Field(default=None, description="System that handled the request.")
+    step: Optional[ChatExecutionStepDetails] = Field(default=None, description="Execution step details.")
+
+
+class ChatAdditionalData(_ChatCompletionsModel):
+    """Additional response metadata."""
+
+    execution_steps: Optional[List[ChatExecutionStep]] = Field(default=None, description="Response execution steps.")
 
 
 class ChatUsageInputTokensDetails(_ChatCompletionsModel):
@@ -163,20 +261,20 @@ class ChatUsage(_ChatCompletionsModel):
 class ChatReasoning(_ChatCompletionsModel):
     """Reasoning controls."""
 
-    effort: Optional[str] = Field(default=None, description="Reasoning effort.")
+    effort: Literal["low", "medium", "high"] = Field(description="Reasoning effort.")
 
 
 class ChatModelOptions(_ChatCompletionsModel):
     """Model generation options."""
 
     preset: Optional[str] = Field(default=None, description="Model preset.")
-    temperature: Optional[float] = Field(default=None, description="Sampling temperature.")
-    top_p: Optional[float] = Field(default=None, description="Nucleus sampling parameter.")
-    max_tokens: Optional[int] = Field(default=None, description="Maximum completion tokens.")
+    temperature: Optional[float] = Field(default=None, gt=0, description="Sampling temperature.")
+    top_p: Optional[float] = Field(default=None, ge=0, le=1, description="Nucleus sampling parameter.")
+    max_tokens: Optional[int] = Field(default=None, gt=0, description="Maximum completion tokens.")
     repetition_penalty: Optional[float] = Field(default=None, description="Repetition penalty.")
     update_interval: Optional[float] = Field(default=None, description="Streaming update interval.")
     unnormalized_history: Optional[bool] = Field(default=None, description="Disable history normalization.")
-    top_logprobs: Optional[int] = Field(default=None, description="Top logprobs count.")
+    top_logprobs: Optional[int] = Field(default=None, ge=1, le=5, description="Top logprobs count.")
     reasoning: Optional[ChatReasoning] = Field(default=None, description="Reasoning settings.")
     response_format: Optional["ChatResponseFormat"] = Field(default=None, description="Response format settings.")
 
@@ -184,7 +282,7 @@ class ChatModelOptions(_ChatCompletionsModel):
 class ChatResponseFormat(_ChatCompletionsModel):
     """Response format request for the primary chat completions contract."""
 
-    type: str = Field(default="text", description="Requested response format.")
+    type: Literal["text", "json_schema", "regex"] = Field(default="text", description="Requested response format.")
     schema_: Optional[Union[Dict[str, Any], str]] = Field(
         alias="schema", default=None, description="JSON Schema or raw schema payload."
     )
@@ -268,7 +366,7 @@ class ChatUserInfo(_ChatCompletionsModel):
 class ChatToolConfig(_ChatCompletionsModel):
     """Tool-calling policy."""
 
-    mode: Optional[str] = Field(default=None, description="Tool calling mode.")
+    mode: Literal["auto", "none", "forced"] = Field(description="Tool calling mode.")
     tool_name: Optional[str] = Field(default=None, description="Forced built-in tool name.")
     function_name: Optional[str] = Field(default=None, description="Forced client function name.")
 
@@ -359,13 +457,12 @@ class ChatTool(_ChatCompletionsModel):
 
 class _ChatMessageBase(_ChatCompletionsModel):
     message_id: Optional[str] = Field(default=None, description="Message identifier.")
-    content: Optional[List[ChatContentPart]] = Field(default=None, description="Structured message content.")
     tools_state_id: Optional[str] = Field(default=None, description="Tool execution state identifier.")
     inline_data: Optional[ChatInlineData] = Field(default=None, description="Message-level inline data.")
     function_call: Optional[ChatFunctionCall] = Field(default=None, description="Function call payload.")
     tool_execution: Optional[ChatToolExecution] = Field(default=None, description="Tool execution state.")
     logprobs: Optional[List[ChatLogprob]] = Field(default=None, description="Logprob metadata.")
-    finish_reason: Optional[str] = Field(default=None, description="Generation finish reason.")
+    finish_reason: Optional[ChatFinishReason] = Field(default=None, description="Generation finish reason.")
 
     @model_validator(mode="before")
     @classmethod
@@ -386,13 +483,19 @@ class _ChatMessageBase(_ChatCompletionsModel):
 class ChatMessage(_ChatMessageBase):
     """Message for the primary chat completions contract."""
 
-    role: str = Field(description="Message author role.")
+    role: ChatMessageRole = Field(description="Message author role.")
+    content: List[ChatContentPart] = Field(description="Structured message content.")
 
 
-class ChatMessageChunk(_ChatMessageBase):
+class ChatResponseMessage(_ChatMessageBase):
+    """Message returned by the primary chat completions contract."""
+
+    role: Optional[ChatMessageRole] = Field(default=None, description="Message author role.")
+    content: Optional[List[ChatResponseContentPart]] = Field(default=None, description="Structured message content.")
+
+
+class ChatMessageChunk(ChatResponseMessage):
     """Streaming message fragment for the primary chat completions contract."""
-
-    role: Optional[str] = Field(default=None, description="Message author role.")
 
 
 class ChatCompletionRequest(_ChatCompletionsModel):
@@ -494,14 +597,16 @@ class ChatCompletionResponse(_ChatCompletionsAPIResponse):
 
     model: Optional[str] = Field(default=None, description="Resolved model identifier.")
     created_at: Optional[int] = Field(default=None, description="Response creation timestamp.")
-    messages: List[ChatMessage] = Field(description="Returned chat messages.")
+    messages: List[ChatResponseMessage] = Field(default_factory=list, description="Returned chat messages.")
     message_id: Optional[str] = Field(default=None, description="Message identifier.")
     thread_id: Optional[str] = Field(default=None, description="Thread identifier.")
-    finish_reason: Optional[str] = Field(default=None, description="Generation finish reason.")
+    finish_reason: Optional[ChatFinishReason] = Field(default=None, description="Generation finish reason.")
     usage: Optional[ChatUsage] = Field(default=None, description="Usage information.")
     tool_execution: Optional[ChatToolExecution] = Field(default=None, description="Top-level tool execution state.")
     logprobs: Optional[List[ChatLogprob]] = Field(default=None, description="Top-level logprob metadata.")
-    additional_data: Optional[List[Dict[str, Any]]] = Field(default=None, description="Additional response metadata.")
+    additional_data: Optional[Union[ChatAdditionalData, List[Dict[str, Any]]]] = Field(
+        default=None, description="Additional response metadata."
+    )
 
     @model_validator(mode="before")
     @classmethod
@@ -528,11 +633,13 @@ class ChatCompletionChunk(_ChatCompletionsAPIResponse):
     message_id: Optional[str] = Field(default=None, description="Message identifier.")
     thread_id: Optional[str] = Field(default=None, description="Thread identifier.")
     tools_state_id: Optional[str] = Field(default=None, description="Tool execution state identifier.")
-    finish_reason: Optional[str] = Field(default=None, description="Generation finish reason.")
+    finish_reason: Optional[ChatFinishReason] = Field(default=None, description="Generation finish reason.")
     usage: Optional[ChatUsage] = Field(default=None, description="Usage information.")
     tool_execution: Optional[ChatToolExecution] = Field(default=None, description="Top-level tool execution state.")
     logprobs: Optional[List[ChatLogprob]] = Field(default=None, description="Top-level logprob metadata.")
-    additional_data: Optional[List[Dict[str, Any]]] = Field(default=None, description="Additional response metadata.")
+    additional_data: Optional[Union[ChatAdditionalData, List[Dict[str, Any]]]] = Field(
+        default=None, description="Additional response metadata."
+    )
 
     @model_validator(mode="before")
     @classmethod
@@ -550,11 +657,17 @@ class ChatCompletionChunk(_ChatCompletionsAPIResponse):
 
 
 __all__ = (
+    "ChatFinishReason",
+    "ChatAdditionalData",
     "ChatCompletionChunk",
     "ChatCompletionRequest",
     "ChatCompletionResponse",
     "ChatContentFile",
     "ChatContentPart",
+    "ChatMessageRole",
+    "ChatExecutionFunctionCall",
+    "ChatExecutionStep",
+    "ChatExecutionStepDetails",
     "ChatFilterConfig",
     "ChatFilterContentConfig",
     "ChatFilterResponseContentConfig",
@@ -571,7 +684,12 @@ __all__ = (
     "ChatModelOptions",
     "ChatRankerOptions",
     "ChatReasoning",
+    "ChatResponseContentFile",
+    "ChatResponseContentPart",
     "ChatResponseFormat",
+    "ChatResponseLogprob",
+    "ChatResponseLogprobToken",
+    "ChatResponseMessage",
     "ChatSource",
     "ChatStorage",
     "ChatTool",

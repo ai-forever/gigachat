@@ -1,4 +1,6 @@
-"""Generate an image with the built-in image tool."""
+"""Generate and save an image with the built-in image tool."""
+
+from pathlib import Path
 
 from dotenv import load_dotenv
 
@@ -8,7 +10,7 @@ from gigachat.models import ChatCompletionRequest, ChatMessage, ChatTool, ChatTo
 
 
 def main() -> None:
-    """Run an image generation request."""
+    """Run an image generation request and save returned files."""
     load_dotenv()
 
     request = ChatCompletionRequest(
@@ -24,10 +26,11 @@ def main() -> None:
 
     with GigaChat() as client:
         response = client.chat.create(request)
-
-    print(first_message_text(response))
-    for file_id in message_file_ids(response.messages[0]):
-        print(f"Generated file: {file_id}")
+        print(first_message_text(response))
+        for index, file_id in enumerate(message_file_ids(response.messages[0]), start=1):
+            image = client.get_image(file_id)
+            output = image.save(Path(f"generated-image-{index}.jpg"))
+            print(f"Saved generated file {file_id} to {output}")
 
 
 if __name__ == "__main__":

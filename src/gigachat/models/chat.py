@@ -22,7 +22,7 @@ class FunctionCall(BaseModel):
     """Model function call."""
 
     name: str = Field(description="Name of the function to call.")
-    arguments: Optional[Dict[Any, Any]] = Field(default=None, description="Function call arguments.")
+    arguments: Optional[Union[Dict[Any, Any], str]] = Field(default=None, description="Function call arguments.")
 
 
 class FewShotExample(BaseModel):
@@ -76,10 +76,12 @@ class FunctionParametersProperty(BaseModel):
     type_: str = Field(default="object", alias="type", description="Type of the argument.")
     description: str = Field(default="", description="Description of the argument.")
     items: Optional[Dict[str, Any]] = Field(default=None, description="Items schema for array types.")
-    enum: Optional[List[str]] = Field(default=None, description="List of possible values for enum types.")
+    enum: Optional[List[Any]] = Field(default=None, description="List of possible values for enum types.")
     properties: Optional[Dict[Any, "FunctionParametersProperty"]] = Field(
         default=None, description="Nested properties for object types."
     )
+
+    model_config = ConfigDict(extra="allow", populate_by_name=True)
 
 
 class FunctionParameters(BaseModel):
@@ -90,6 +92,8 @@ class FunctionParameters(BaseModel):
         default=None, description="Dictionary of parameter properties."
     )
     required: Optional[List[str]] = Field(default=None, description="List of required parameter names.")
+
+    model_config = ConfigDict(extra="allow", populate_by_name=True)
 
 
 class Function(BaseModel):
@@ -148,6 +152,7 @@ class Messages(BaseModel):
         default=None, description="ID of the function state generating images/video."
     )
     reasoning_content: Optional[str] = Field(default=None, description="Reasoning content from the model.")
+    created: Optional[int] = Field(default=None, description="Message creation timestamp (Unix time).")
     id_: Optional[Any] = Field(alias="id", default=None, description="Message ID.")
 
     model_config = ConfigDict(use_enum_values=True)
@@ -161,6 +166,7 @@ class MessagesChunk(BaseModel):
     reasoning_content: Optional[str] = Field(default=None, description="Reasoning content chunk.")
     function_call: Optional[FunctionCall] = Field(default=None, description="Function call chunk.")
     functions_state_id: Optional[str] = Field(default=None, description="Function state ID.")
+    created: Optional[int] = Field(default=None, description="Message creation timestamp (Unix time).")
 
 
 class Choices(BaseModel):
@@ -168,7 +174,9 @@ class Choices(BaseModel):
 
     message: Messages = Field(description="Generated message.")
     index: int = Field(description="Index of the choice in the list.")
-    finish_reason: Optional[str] = Field(default=None, description="Reason why the generation finished.")
+    finish_reason: Optional[Literal["stop", "length", "function_call", "blacklist", "error"]] = Field(
+        default=None, description="Reason why the generation finished."
+    )
 
 
 class ChoicesChunk(BaseModel):
@@ -176,7 +184,9 @@ class ChoicesChunk(BaseModel):
 
     delta: MessagesChunk = Field(description="Message delta.")
     index: int = Field(description="Index of the choice in the list.")
-    finish_reason: Optional[str] = Field(default=None, description="Reason why the generation finished.")
+    finish_reason: Optional[Literal["stop", "length", "function_call", "blacklist", "error"]] = Field(
+        default=None, description="Reason why the generation finished."
+    )
 
 
 class Chat(BaseModel):
@@ -184,11 +194,13 @@ class Chat(BaseModel):
 
     model: Optional[str] = Field(default=None, description="Name of the model to use.")
     messages: List[Messages] = Field(description="List of messages in the conversation.")
-    temperature: Optional[float] = Field(default=None, description="Sampling temperature.")
-    top_p: Optional[float] = Field(default=None, description="Nucleus sampling parameter (alternative to temperature).")
+    temperature: Optional[float] = Field(default=None, gt=0, description="Sampling temperature.")
+    top_p: Optional[float] = Field(
+        default=None, ge=0, le=1, description="Nucleus sampling parameter (alternative to temperature)."
+    )
     n: Optional[int] = Field(default=None, description="Number of completion choices to generate.")
     stream: Optional[bool] = Field(default=None, description="If True, stream partial progress.")
-    max_tokens: Optional[int] = Field(default=None, description="Maximum number of tokens to generate.")
+    max_tokens: Optional[int] = Field(default=None, gt=0, description="Maximum number of tokens to generate.")
     repetition_penalty: Optional[float] = Field(default=None, description="Repetition penalty factor.")
     update_interval: Optional[float] = Field(default=None, description="Interval in seconds between stream updates.")
     profanity_check: Optional[bool] = Field(default=None, description="Enable profanity filtering.")

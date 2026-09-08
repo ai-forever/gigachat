@@ -3,6 +3,8 @@ from typing import Any, Dict, List
 import pytest
 from pydantic import BaseModel, Field, ValidationError
 
+from gigachat import TextResponseFormat as PublicTextResponseFormat
+from gigachat.models import TextResponseFormat
 from gigachat.models.chat import Chat, Messages, MessagesRole
 from gigachat.models.response_format import JsonSchemaResponseFormat
 
@@ -14,6 +16,19 @@ SAMPLE_SCHEMA: Dict[str, Any] = {
     },
     "required": ["steps", "final_answer"],
 }
+
+
+def test_text_response_format_is_typed_and_public() -> None:
+    response_format = TextResponseFormat()
+
+    assert response_format.type == "text"
+    assert response_format.model_dump() == {"type": "text"}
+    assert PublicTextResponseFormat is TextResponseFormat
+
+
+def test_text_response_format_rejects_json_schema_fields() -> None:
+    with pytest.raises(ValidationError):
+        TextResponseFormat.model_validate({"type": "text", "schema": SAMPLE_SCHEMA})
 
 
 def test_json_schema_response_format_creation() -> None:

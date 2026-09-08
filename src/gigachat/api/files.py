@@ -1,13 +1,19 @@
 import base64
 from http import HTTPStatus
 from typing import Any, Dict, Literal, Optional
+from urllib.parse import quote
 
 import httpx
 
 from gigachat._types import FileTypes
-from gigachat.api.utils import build_headers, build_x_headers, execute_request_async, execute_request_sync
-from gigachat.exceptions import AuthenticationError, ResponseError
-from gigachat.models.files import DeletedFile, Image, UploadedFile, UploadedFiles
+from gigachat.api.utils import (
+    _raise_for_status,
+    build_headers,
+    build_x_headers,
+    execute_request_async,
+    execute_request_sync,
+)
+from gigachat.models.files import DeletedFile, DownloadedFile, Image, UploadedFile, UploadedFiles
 
 
 def _get_file_kwargs(
@@ -18,7 +24,7 @@ def _get_file_kwargs(
     headers = build_headers(access_token)
     return {
         "method": "GET",
-        "url": f"/files/{file}",
+        "url": f"/files/{quote(file, safe='')}",
         "headers": headers,
     }
 
@@ -124,9 +130,7 @@ def _delete_file_kwargs(
 ) -> Dict[str, Any]:
     return {
         "method": "POST",
-        "url": f"/files/{file}/delete",
-        "files": {"file": file},
-        "data": {},
+        "url": f"/files/{quote(file, safe='')}/delete",
         "headers": build_headers(access_token),
     }
 
@@ -153,28 +157,61 @@ async def delete_file_async(
     return await execute_request_async(client, kwargs, DeletedFile)
 
 
-def _get_image_kwargs(
+def _get_file_content_kwargs(
     *,
     file_id: str,
     access_token: Optional[str] = None,
+    accept: Optional[str] = None,
 ) -> Dict[str, Any]:
     headers = build_headers(access_token)
-    headers["Accept"] = "application/jpg"
+    if accept is not None:
+        headers["Accept"] = accept
     return {
         "method": "GET",
-        "url": f"/files/{file_id}/content",
+        "url": f"/files/{quote(file_id, safe='')}/content",
         "headers": headers,
     }
 
 
+def _build_file_content_response(response: httpx.Response) -> DownloadedFile:
+    if response.status_code != HTTPStatus.OK:
+        _raise_for_status(response.url, response.status_code, response.content, response.headers)
+
+    return DownloadedFile(
+        x_headers=build_x_headers(response),
+        content=response.content,
+        content_type=response.headers.get("content-type"),
+        content_disposition=response.headers.get("content-disposition"),
+    )
+
+
+def get_file_content_sync(
+    client: httpx.Client,
+    *,
+    file_id: str,
+    access_token: Optional[str] = None,
+) -> DownloadedFile:
+    """Return raw file content and response metadata."""
+    kwargs = _get_file_content_kwargs(access_token=access_token, file_id=file_id)
+    response = client.request(**kwargs)
+    return _build_file_content_response(response)
+
+
+async def get_file_content_async(
+    client: httpx.AsyncClient,
+    *,
+    file_id: str,
+    access_token: Optional[str] = None,
+) -> DownloadedFile:
+    """Return raw file content and response metadata."""
+    kwargs = _get_file_content_kwargs(access_token=access_token, file_id=file_id)
+    response = await client.request(**kwargs)
+    return _build_file_content_response(response)
+
+
 def _build_image_response(response: httpx.Response) -> Image:
-    if response.status_code == HTTPStatus.OK:
-        x_headers = build_x_headers(response)
-        return Image(x_headers=x_headers, content=base64.b64encode(response.content).decode())
-    elif response.status_code == HTTPStatus.UNAUTHORIZED:
-        raise AuthenticationError(response.url, response.status_code, response.content, response.headers)
-    else:
-        raise ResponseError(response.url, response.status_code, response.content, response.headers)
+    downloaded = _build_file_content_response(response)
+    return Image(x_headers=downloaded.x_headers, content=base64.b64encode(downloaded.content).decode())
 
 
 def get_image_sync(
@@ -184,7 +221,7 @@ def get_image_sync(
     access_token: Optional[str] = None,
 ) -> Image:
     """Return an image in base64 encoding."""
-    kwargs = _get_image_kwargs(access_token=access_token, file_id=file_id)
+    kwargs = _get_file_content_kwargs(access_token=access_token, file_id=file_id, accept="application/jpg")
     response = client.request(**kwargs)
     return _build_image_response(response)
 
@@ -196,6 +233,6 @@ async def get_image_async(
     access_token: Optional[str] = None,
 ) -> Image:
     """Return an image in base64 encoding."""
-    kwargs = _get_image_kwargs(access_token=access_token, file_id=file_id)
+    kwargs = _get_file_content_kwargs(access_token=access_token, file_id=file_id, accept="application/jpg")
     response = await client.request(**kwargs)
     return _build_image_response(response)

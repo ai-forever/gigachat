@@ -3,7 +3,7 @@ import binascii
 import logging
 import uuid
 from http import HTTPStatus
-from typing import Any, Dict
+from typing import Any, Dict, Optional
 
 import httpx
 
@@ -20,10 +20,10 @@ from gigachat.models.auth import AccessToken, Token
 logger = logging.getLogger(__name__)
 
 
-def _get_auth_kwargs(*, url: str, credentials: str, scope: str) -> Dict[str, Any]:
+def _get_auth_kwargs(*, url: str, credentials: str, scope: str, rq_uid: Optional[str] = None) -> Dict[str, Any]:
     headers = {
         "Authorization": f"Basic {credentials}",
-        "RqUID": str(uuid.uuid4()),
+        "RqUID": rq_uid or str(uuid.uuid4()),
         "User-Agent": USER_AGENT,
     }
     return {
@@ -56,18 +56,32 @@ def _build_auth_response(response: httpx.Response) -> AccessToken:
         _raise_for_status(response.url, response.status_code, response.content, response.headers)
 
 
-def auth_sync(client: httpx.Client, *, url: str, credentials: str, scope: str) -> AccessToken:
+def auth_sync(
+    client: httpx.Client,
+    *,
+    url: str,
+    credentials: str,
+    scope: str,
+    rq_uid: Optional[str] = None,
+) -> AccessToken:
     """Return an access token."""
     _validate_credentials(credentials)
-    kwargs = _get_auth_kwargs(url=url, credentials=credentials, scope=scope)
+    kwargs = _get_auth_kwargs(url=url, credentials=credentials, scope=scope, rq_uid=rq_uid)
     response = client.request(**kwargs)
     return _build_auth_response(response)
 
 
-async def auth_async(client: httpx.AsyncClient, *, url: str, credentials: str, scope: str) -> AccessToken:
+async def auth_async(
+    client: httpx.AsyncClient,
+    *,
+    url: str,
+    credentials: str,
+    scope: str,
+    rq_uid: Optional[str] = None,
+) -> AccessToken:
     """Return an access token."""
     _validate_credentials(credentials)
-    kwargs = _get_auth_kwargs(url=url, credentials=credentials, scope=scope)
+    kwargs = _get_auth_kwargs(url=url, credentials=credentials, scope=scope, rq_uid=rq_uid)
     response = await client.request(**kwargs)
     return _build_auth_response(response)
 
