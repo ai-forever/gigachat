@@ -591,6 +591,10 @@ Available context variables:
 | `session_id_cvar` | `X-Session-ID` | Session identifier for grouping requests |
 | `request_id_cvar` | `X-Request-ID` | Unique request identifier |
 | `client_id_cvar` | `X-Client-ID` | Client identifier |
+| `service_id_cvar` | `X-Service-ID` | Service identifier |
+| `operation_id_cvar` | `X-Operation-ID` | Operation identifier |
+| `trace_id_cvar` | `X-Trace-ID` | Process instance identifier (main operation) |
+| `agent_id_cvar` | `X-Agent-ID` | Agent identifier |
 | `custom_headers_cvar` | (various) | Dictionary of additional headers |
 
 **Header precedence (when multiple sources set the same header):**
