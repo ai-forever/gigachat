@@ -27,6 +27,7 @@ from gigachat.models.chat import (
     Function,
     FunctionCall,
     FunctionParameters,
+    FunctionParametersProperty,
     FunctionRanker,
     Messages,
     MessagesRole,
@@ -91,7 +92,57 @@ def test_usage_validation() -> None:
 
 def test_function_parameters_default() -> None:
     params = FunctionParameters()
-    assert params.type_ == "object"
+    assert params.type_ is None
+    assert params.model_dump(exclude_none=True, by_alias=True) == {}
+
+
+def test_function_parameters_preserve_json_schema_without_defaults() -> None:
+    parameters = {
+        "$defs": {
+            "coordinate": {
+                "type": "number",
+                "minimum": -180,
+            }
+        },
+        "type": "object",
+        "properties": {
+            "location": {
+                "anyOf": [
+                    {"type": "string"},
+                    {
+                        "type": "array",
+                        "prefixItems": [
+                            {"$ref": "#/$defs/coordinate"},
+                            {"$ref": "#/$defs/coordinate"},
+                        ],
+                        "items": False,
+                    },
+                ]
+            },
+            "priority": {"enum": ["normal", 1, None]},
+            "anything": True,
+            "forbidden": False,
+        },
+        "required": ["location"],
+        "additionalProperties": False,
+    }
+
+    function = Function(name="route", parameters=parameters)
+
+    assert function.model_dump(exclude_none=True, by_alias=True)["parameters"] == parameters
+
+
+def test_function_parameter_property_preserves_extensions_and_union_type() -> None:
+    schema = {
+        "type": ["string", "null"],
+        "enum": ["automatic", 1, None],
+        "const": "automatic",
+        "nullable": True,
+    }
+
+    property_schema = FunctionParametersProperty.model_validate(schema)
+
+    assert property_schema.model_dump(exclude_none=True, by_alias=True) == schema
 
 
 def test_chat_function_ranker_from_dict() -> None:
