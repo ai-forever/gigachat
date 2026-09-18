@@ -14,4 +14,4 @@ class Token(APIResponse):
     """Raw token response."""
 
     tok: str = Field(description="Generated Access Token.")
-    exp: int = Field(description="Unix timestamp (in milliseconds) when the Access Token expires.")
+    exp: int = Field(description="Unix timestamp (in seconds or milliseconds) when the Access Token expires.")

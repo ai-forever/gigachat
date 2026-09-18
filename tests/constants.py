@@ -18,6 +18,10 @@ EXPIRES_AT_EXPIRED = 946684800000
 # 2100-01-01 00:00:00 UTC - always valid
 EXPIRES_AT_VALID = 4102444800000
 
+# Password auth /token returns expiration timestamps in seconds
+PASSWORD_EXPIRES_AT_EXPIRED = EXPIRES_AT_EXPIRED // 1000
+PASSWORD_EXPIRES_AT_VALID = EXPIRES_AT_VALID // 1000
+
 # Mock token string (same for all variants)
 MOCK_TOKEN_STRING = (
     "eyJlbmMiOiJBMjU2Q0JDLUhTNTEyIiwiYWxnIjoiUlNBLU9BRVAtMjU2In0."
@@ -67,8 +71,8 @@ OAUTH_TOKEN_VALID = {"access_token": MOCK_TOKEN_STRING, "expires_at": EXPIRES_AT
 OAUTH_TOKEN_EXPIRED = {"access_token": MOCK_TOKEN_STRING, "expires_at": EXPIRES_AT_EXPIRED}
 
 # Test Data - Password auth token variants (/token endpoint, tok/exp format)
-PASSWORD_TOKEN_VALID = {"tok": MOCK_TOKEN_STRING, "exp": EXPIRES_AT_VALID}
-PASSWORD_TOKEN_EXPIRED = {"tok": MOCK_TOKEN_STRING, "exp": EXPIRES_AT_EXPIRED}
+PASSWORD_TOKEN_VALID = {"tok": MOCK_TOKEN_STRING, "exp": PASSWORD_EXPIRES_AT_VALID}
+PASSWORD_TOKEN_EXPIRED = {"tok": MOCK_TOKEN_STRING, "exp": PASSWORD_EXPIRES_AT_EXPIRED}
 CHAT = Chat.model_validate(get_json("chat.json"))
 CHAT_FUNCTION = Chat.model_validate(get_json("chat_function.json"))
 CHAT_COMPLETION = get_json("chat_completion.json")
