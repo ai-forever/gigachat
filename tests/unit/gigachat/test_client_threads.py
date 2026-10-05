@@ -1,3 +1,6 @@
+from copy import deepcopy
+
+import pytest
 from pytest_httpx import HTTPXMock
 
 from gigachat.client import GigaChatAsyncClient, GigaChatSyncClient
@@ -37,22 +40,32 @@ from tests.constants import (
 )
 
 
-def test_get_threads(httpx_mock: HTTPXMock) -> None:
-    httpx_mock.add_response(url=GET_THREADS_URL, json=GET_THREADS)
+@pytest.mark.parametrize("identifier_key", ["id", "thread_id"])
+def test_get_threads(httpx_mock: HTTPXMock, identifier_key: str) -> None:
+    payload = deepcopy(GET_THREADS)
+    for thread in payload["threads"]:
+        thread[identifier_key] = thread.pop("id")
+    httpx_mock.add_response(url=GET_THREADS_URL, json=payload)
     with GigaChatSyncClient(base_url=BASE_URL) as client:
         response = client.threads.list()
 
     assert isinstance(response, Threads)
     assert len(response.threads) == 3
+    assert response.threads[0].id_ == payload["threads"][0][identifier_key]
 
 
-async def test_aget_threads(httpx_mock: HTTPXMock) -> None:
-    httpx_mock.add_response(url=GET_THREADS_URL, json=GET_THREADS)
+@pytest.mark.parametrize("identifier_key", ["id", "thread_id"])
+async def test_aget_threads(httpx_mock: HTTPXMock, identifier_key: str) -> None:
+    payload = deepcopy(GET_THREADS)
+    for thread in payload["threads"]:
+        thread[identifier_key] = thread.pop("id")
+    httpx_mock.add_response(url=GET_THREADS_URL, json=payload)
     async with GigaChatAsyncClient(base_url=BASE_URL) as client:
         response = await client.a_threads.list()
 
     assert isinstance(response, Threads)
     assert len(response.threads) == 3
+    assert response.threads[0].id_ == payload["threads"][0][identifier_key]
 
 
 def test_post_threads_retrieve(httpx_mock: HTTPXMock) -> None:

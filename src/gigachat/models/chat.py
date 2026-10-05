@@ -21,8 +21,11 @@ class MessagesRole(str, Enum):
 class FunctionCall(BaseModel):
     """Model function call."""
 
+    id_: Optional[str] = Field(alias="id", default=None, description="Function call identifier.")
     name: str = Field(description="Name of the function to call.")
     arguments: Optional[Dict[Any, Any]] = Field(default=None, description="Function call arguments.")
+
+    model_config = ConfigDict(populate_by_name=True)
 
 
 class FewShotExample(BaseModel):
@@ -161,6 +164,8 @@ class Messages(BaseModel):
         default=None, description="ID of the function state generating images/video."
     )
     reasoning_content: Optional[str] = Field(default=None, description="Reasoning content from the model.")
+    inline_data: Optional[Dict[str, Any]] = Field(default=None, description="Inline sources, widgets, and metadata.")
+    logprobs: Optional[List[Dict[str, Any]]] = Field(default=None, description="Generated token probabilities.")
     id_: Optional[Any] = Field(alias="id", default=None, description="Message ID.")
 
     model_config = ConfigDict(use_enum_values=True)
@@ -174,6 +179,8 @@ class MessagesChunk(BaseModel):
     reasoning_content: Optional[str] = Field(default=None, description="Reasoning content chunk.")
     function_call: Optional[FunctionCall] = Field(default=None, description="Function call chunk.")
     functions_state_id: Optional[str] = Field(default=None, description="Function state ID.")
+    inline_data: Optional[Dict[str, Any]] = Field(default=None, description="Inline sources, widgets, and metadata.")
+    logprobs: Optional[List[Dict[str, Any]]] = Field(default=None, description="Generated token probabilities.")
 
 
 class Choices(BaseModel):
@@ -196,12 +203,14 @@ class Chat(BaseModel):
     """Chat completion request parameters."""
 
     model: Optional[str] = Field(default=None, description="Name of the model to use.")
+    assistant_id: Optional[str] = Field(default=None, description="Assistant identifier, used instead of a model.")
     messages: List[Messages] = Field(description="List of messages in the conversation.")
     temperature: Optional[float] = Field(default=None, description="Sampling temperature.")
     top_p: Optional[float] = Field(default=None, description="Nucleus sampling parameter (alternative to temperature).")
     n: Optional[int] = Field(default=None, description="Number of completion choices to generate.")
     stream: Optional[bool] = Field(default=None, description="If True, stream partial progress.")
     max_tokens: Optional[int] = Field(default=None, description="Maximum number of tokens to generate.")
+    reasoning_max_tokens: Optional[int] = Field(default=None, description="Maximum number of reasoning tokens.")
     repetition_penalty: Optional[float] = Field(default=None, description="Repetition penalty factor.")
     update_interval: Optional[float] = Field(default=None, description="Interval in seconds between stream updates.")
     profanity_check: Optional[bool] = Field(default=None, description="Enable profanity filtering.")
@@ -216,9 +225,7 @@ class Chat(BaseModel):
     additional_fields: Optional[Dict[str, Any]] = Field(
         default=None, description="Additional fields to pass to the API."
     )
-    reasoning_effort: Optional[Literal["low", "medium", "high"]] = Field(
-        default=None, description="Reasoning effort level."
-    )
+    reasoning_effort: Optional[str] = Field(default=None, description="Reasoning effort level.")
 
 
 class ChatCompletion(APIResponse):
@@ -229,6 +236,8 @@ class ChatCompletion(APIResponse):
     model: str = Field(description="Model name used for generation.")
     thread_id: Optional[str] = Field(default=None, description="Thread ID.")
     message_id: Optional[str] = Field(default=None, description="Message ID. Present if storage mode is used.")
+    additional_data: Optional[Dict[str, Any]] = Field(default=None, description="Sources and execution metadata.")
+    error_details: Optional[Dict[str, Any]] = Field(default=None, description="Structured error details.")
     usage: Usage = Field(description="Usage statistics.")
     object_: str = Field(alias="object", description="Object type (e.g. 'chat.completion').")
 
@@ -239,6 +248,10 @@ class ChatCompletionChunk(APIResponse):
     choices: List[ChoicesChunk] = Field(description="List of completion choice chunks.")
     created: int = Field(description="Creation timestamp (Unix time).")
     model: str = Field(description="Model name used for generation.")
+    thread_id: Optional[str] = Field(default=None, description="Thread ID.")
+    message_id: Optional[str] = Field(default=None, description="Message ID. Present if storage mode is used.")
+    additional_data: Optional[Dict[str, Any]] = Field(default=None, description="Sources and execution metadata.")
+    error_details: Optional[Dict[str, Any]] = Field(default=None, description="Structured error details.")
     object_: str = Field(alias="object", description="Object type (e.g. 'chat.completion.chunk').")
     usage: Optional[Usage] = Field(default=None, description="Usage statistics.")
 
@@ -258,6 +271,7 @@ __all__ = (
     "FunctionCall",
     "FunctionParameters",
     "FunctionParametersProperty",
+    "FunctionRanker",
     "Messages",
     "MessagesChunk",
     "MessagesRole",

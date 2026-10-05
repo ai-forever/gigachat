@@ -232,6 +232,38 @@ def test__parse_chat_completion_normalizes_storage_bool() -> None:
     assert actual.model == "setting_model"
 
 
+@pytest.mark.parametrize("primary", [False, True])
+@pytest.mark.parametrize("use_thread", [False, True])
+async def test_stored_chat_does_not_inject_configured_model(
+    httpx_mock: HTTPXMock, primary: bool, use_thread: bool
+) -> None:
+    payload: Dict[str, Any] = {"messages": [{"role": "user", "content": "continue"}]}
+    if use_thread:
+        payload["storage"] = {"thread_id": "thread-1"}
+        if not primary:
+            payload["storage"]["is_stateful"] = True
+    else:
+        payload["assistant_id"] = "assistant-1"
+    response = PRIMARY_CHAT_COMPLETION if primary else CHAT_COMPLETION
+    for _ in range(2):
+        httpx_mock.add_response(url=CHAT_URL, json=response)
+    with GigaChatSyncClient(base_url=BASE_URL, model="configured-model") as client:
+        if primary:
+            client.chat.create(payload)
+        else:
+            client.chat(payload)
+    async with GigaChatAsyncClient(base_url=BASE_URL, model="configured-model") as async_client:
+        if primary:
+            await async_client.achat.create(payload)
+        else:
+            await async_client.achat(payload)
+    for request in httpx_mock.get_requests():
+        body = json.loads(request.content)
+        assert "model" not in body
+        assert body.get("storage") == payload.get("storage")
+        assert body.get("assistant_id") == payload.get("assistant_id")
+
+
 def test_chat(httpx_mock: HTTPXMock) -> None:
     httpx_mock.add_response(url=CHAT_URL, json=CHAT_COMPLETION)
 

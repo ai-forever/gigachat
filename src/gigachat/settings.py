@@ -36,6 +36,10 @@ class Settings(BaseSettings):
         default=None,
         description="Name of the model to receive a response from.",
     )
+    session_id: Optional[str] = Field(
+        default=None,
+        description="Default X-Session-ID header for API requests.",
+    )
     profanity_check: Optional[bool] = Field(
         default=None,
         description="Censorship parameter.",

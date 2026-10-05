@@ -1,3 +1,5 @@
+import pytest
+
 from gigachat.models.chat import MessagesRole
 from gigachat.models.threads import (
     Thread,
@@ -14,9 +16,10 @@ from gigachat.models.threads import (
 )
 
 
-def test_thread_creation() -> None:
+@pytest.mark.parametrize("identifier_key", ["id", "thread_id"])
+def test_thread_creation(identifier_key: str) -> None:
     data = {
-        "id": "thread-1",
+        identifier_key: "thread-1",
         "model": "GigaChat",
         "created_at": 1,
         "updated_at": 2,
@@ -26,13 +29,16 @@ def test_thread_creation() -> None:
     thread = Thread.model_validate(data)
     assert thread.id_ == "thread-1"
     assert thread.status == ThreadStatus.READY
+    assert thread.model_dump()["id_"] == "thread-1"
+    assert thread.model_dump(by_alias=True)["id"] == "thread-1"
 
 
-def test_threads_creation() -> None:
+@pytest.mark.parametrize("identifier_key", ["id", "thread_id"])
+def test_threads_creation(identifier_key: str) -> None:
     data = {
         "threads": [
             {
-                "id": "thread-1",
+                identifier_key: "thread-1",
                 "model": "GigaChat",
                 "created_at": 1,
                 "updated_at": 2,

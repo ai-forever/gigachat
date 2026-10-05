@@ -1,7 +1,7 @@
 import asyncio
 import json
 import logging
-from typing import Dict
+from typing import Any, Dict
 
 import httpx
 import pytest
@@ -434,3 +434,128 @@ async def test_stream_async_additional_fields(httpx_mock: HTTPXMock) -> None:
     requests = httpx_mock.get_requests()
     request_content = json.loads(requests[0].content.decode("utf-8"))
     assert request_content["additional_field"] == "val"
+
+
+@pytest.mark.parametrize("streaming", [False, True])
+@pytest.mark.parametrize("asynchronous", [False, True])
+async def test_chat_contract_fields_cross_http_boundary(
+    httpx_mock: HTTPXMock, streaming: bool, asynchronous: bool
+) -> None:
+    request_data: Dict[str, Any] = {
+        "assistant_id": "assistant-1",
+        "messages": [
+            {
+                "role": "assistant",
+                "content": "",
+                "function_call": {"id": "call-1", "name": "lookup", "arguments": {"value": None}},
+                "inline_data": {"sources": [{"source-1": {"url": "https://example.com"}}]},
+            }
+        ],
+        "preset": "example-preset",
+        "filters_settings": {
+            "default": {
+                "request_content": {"neuro": False, "blacklist": True, "whitelist": False},
+                "response_content": {"blacklist": True},
+                "components": {"rephraser": False, "screpish": True, "whitelist_rag": False},
+            }
+        },
+        "reasoning_max_tokens": 32,
+        "unnormalized_history": False,
+        "top_logprobs": 1,
+        "additional_data": {
+            "giga_rag": {"site_id": "example"},
+            "features": {
+                "embedder_model": "example-embedder",
+                "sp_indexes": ["index"],
+                "sp_flags": [],
+                "ignored_functions": ["skip"],
+            },
+            "user_info": {"current_time": 1},
+        },
+        "function_registry": {},
+        "storage": {"is_stateful": True, "metadata": {}},
+    }
+    message_data = {
+        "role": "assistant",
+        "content": "ok",
+        "inline_data": {"widgets": [{"kind": "example", "payload": {"value": None}}]},
+        "logprobs": [
+            {
+                "chosen": {"token": "ok", "token_id": 1, "logprob": -0.2},
+                "top": [{"token": "ok", "token_id": 1, "logprob": -0.2}],
+            }
+        ],
+    }
+    response_data = {
+        "choices": [{"index": 0, "delta" if streaming else "message": message_data, "finish_reason": "stop"}],
+        "created": 1,
+        "model": "example-model",
+        "object": "chat.completion.chunk" if streaming else "chat.completion",
+        "thread_id": "thread-1",
+        "message_id": "message-1",
+        "usage": {"prompt_tokens": 1, "completion_tokens": 1, "total_tokens": 2, "precached_prompt_tokens": 0},
+        "additional_data": {
+            "sources": {"source-1": {"title": "Example", "url": "https://example.com"}},
+            "execution_steps": [{"step": "example"}],
+        },
+    }
+    if streaming:
+        httpx_mock.add_response(
+            url=MOCK_URL,
+            content=("data: " + json.dumps(response_data) + "\n\ndata: [DONE]\n\n").encode(),
+            headers=HEADERS_STREAM,
+        )
+    else:
+        httpx_mock.add_response(url=MOCK_URL, json=response_data)
+    advanced_names = {
+        "preset",
+        "filters_settings",
+        "unnormalized_history",
+        "top_logprobs",
+        "additional_data",
+        "function_registry",
+    }
+    chat_data = Chat.model_validate(
+        {
+            **{key: value for key, value in request_data.items() if key not in advanced_names},
+            "additional_fields": {key: value for key, value in request_data.items() if key in advanced_names},
+        }
+    )
+    assert chat_data.additional_fields is not None
+    chat_data.additional_fields["stream"] = not streaming
+    if asynchronous:
+        async with httpx.AsyncClient(base_url=BASE_URL) as client:
+            if streaming:
+                responses = [chunk async for chunk in chat.stream_async(client, chat=chat_data)]
+                response_dump = responses[0].model_dump(exclude_none=True, by_alias=True, exclude={"x_headers"})
+            else:
+                response = await chat.chat_async(client, chat=chat_data)
+                response_dump = response.model_dump(exclude_none=True, by_alias=True, exclude={"x_headers"})
+    else:
+        with httpx.Client(base_url=BASE_URL) as sync_client:
+            if streaming:
+                responses = list(chat.stream_sync(sync_client, chat=chat_data))
+                response_dump = responses[0].model_dump(exclude_none=True, by_alias=True, exclude={"x_headers"})
+            else:
+                response = chat.chat_sync(sync_client, chat=chat_data)
+                response_dump = response.model_dump(exclude_none=True, by_alias=True, exclude={"x_headers"})
+
+    expected_request = {**request_data, "stream": True} if streaming else request_data
+    assert json.loads(httpx_mock.get_requests()[0].content) == expected_request
+    assert response_dump == response_data
+
+
+@pytest.mark.parametrize("registry", [None, {}, {"profile": "example", "labels": [], "ab_flags": {}}])
+def test_function_registry_preserves_disabled_and_default_selection(registry: Any) -> None:
+    request = chat._build_request_json(Chat(messages=[], additional_fields={"function_registry": registry}))
+
+    assert request["function_registry"] == registry
+
+
+def test_explicit_chat_fields_override_additional_fields() -> None:
+    request = chat._build_request_json(
+        Chat(messages=[], max_tokens=10, additional_fields={"max_tokens": 50, "custom_option": True})
+    )
+
+    assert request["max_tokens"] == 10
+    assert request["custom_option"] is True
