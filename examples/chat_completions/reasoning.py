@@ -1,70 +1,66 @@
-"""Use reasoning with models or plain dictionaries."""
+"""Bound reasoning and final-answer generation in v1 and v2 requests."""
 
-from typing import Any, Dict, List
+from typing import Any, Dict
 
 from dotenv import load_dotenv
 
+from examples._utils import message_text
 from gigachat import GigaChat
-from gigachat.models import ChatCompletionRequest, ChatMessage, ChatReasoning
+from gigachat.models import (
+    Chat,
+    ChatCompletionRequest,
+    ChatMessage,
+    ChatModelOptions,
+    ChatReasoning,
+    Messages,
+    MessagesRole,
+)
 
-
-def message_text(message: Any) -> str:
-    """Return combined text from a chat message."""
-    content = message.get("content") if isinstance(message, dict) else message.content
-    if content is None:
-        return ""
-
-    parts: List[str] = []
-    for part in content:
-        text = part.get("text") if isinstance(part, dict) else part.text
-        if text:
-            parts.append(text)
-    return "".join(parts)
+PROMPT = "A train travels 120 km in 2 hours. What is its average speed?"
 
 
 def request_with_models() -> ChatCompletionRequest:
-    """Build a reasoning request with SDK models."""
+    """Build a v2 request with separate reasoning and overall token limits."""
     return ChatCompletionRequest(
-        messages=[
-            ChatMessage(
-                role="user",
-                content="Solve: a train travels 120 km in 2 hours. What is its average speed?",
-            )
-        ],
-        model="GigaChat-2-Reasoning",
-        reasoning=ChatReasoning(effort="high"),
+        messages=[ChatMessage(role="user", content=PROMPT)],
+        model_options=ChatModelOptions(
+            max_tokens=512,
+            reasoning=ChatReasoning(effort="medium", max_tokens=128),
+        ),
     )
 
 
 def request_with_dict() -> Dict[str, Any]:
-    """Build a reasoning request with a plain dict."""
+    """Build the same v2 request as a plain dictionary."""
     return {
-        "messages": [
-            {
-                "role": "user",
-                "content": [
-                    {
-                        "text": "Solve: a train travels 120 km in 2 hours. What is its average speed?",
-                    }
-                ],
-            }
-        ],
-        "reasoning": {"effort": "high"},
+        "messages": [{"role": "user", "content": [{"text": PROMPT}]}],
+        "model_options": {"max_tokens": 512, "reasoning": {"effort": "medium", "max_tokens": 128}},
     }
 
 
-def main() -> None:
-    """Run both request styles."""
-    load_dotenv()
+def request_v1() -> Chat:
+    """Build the corresponding v1 request for client.chat(request_v1())."""
+    return Chat(
+        messages=[Messages(role=MessagesRole.USER, content=PROMPT)],
+        max_tokens=512,
+        reasoning_effort="medium",
+        reasoning_max_tokens=128,
+    )
 
+
+def main() -> None:
+    """Run one v2 request using the configured model's reasoning capability."""
+    load_dotenv()
     with GigaChat() as client:
-        for title, request in (
-            ("Models", request_with_models()),
-            ("Dict", request_with_dict()),
-        ):
-            response = client.chat.create(request)
-            print(f"\n{title}:")
-            print(message_text(response.messages[0]))
+        response = client.chat.create(request_with_models())
+    for message in response.messages:
+        print(f"{message.role}: {message_text(message)}")
+        if message.finish_reason is not None:
+            print("Message finish reason:", message.finish_reason)
+    if response.finish_reason is not None:
+        print("Finish reason:", response.finish_reason)
+    if response.usage is not None:
+        print("Usage:", response.usage.model_dump_json(exclude_none=True))
 
 
 if __name__ == "__main__":

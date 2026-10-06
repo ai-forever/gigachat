@@ -2,6 +2,8 @@ from typing import Any, Dict
 
 from examples.tools.function_calling import add_function_result, extract_call
 
+from gigachat.models import ChatCompletionResponse
+
 
 class Response:
     def __init__(self, payload: Dict[str, Any]) -> None:
@@ -62,3 +64,29 @@ def test_add_function_result_preserves_state_field_name() -> None:
 
     assert payload["messages"][2]["tools_state_id"] == "tool-state-1"
     assert "tool_config" not in payload
+
+
+def test_single_function_example_preserves_wire_id() -> None:
+    response = ChatCompletionResponse.model_validate(
+        {
+            "messages": [
+                {
+                    "role": "assistant",
+                    "tools_state_id": "state-1",
+                    "content": [
+                        {
+                            "function_call": {
+                                "id": "call-1",
+                                "name": "get_weather",
+                                "arguments": {"location": "Moscow"},
+                            }
+                        }
+                    ],
+                }
+            ]
+        }
+    )
+    call = extract_call(response)
+    payload = add_function_result({"messages": []}, call, {"temperature": 18})
+    assert payload["messages"][0]["content"][0]["function_call"]["id"] == "call-1"
+    assert payload["messages"][1]["content"][0]["function_result"]["id"] == "call-1"

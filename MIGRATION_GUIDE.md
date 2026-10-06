@@ -424,6 +424,10 @@ inline metadata, token probabilities, additional data, and error details.
 Service-specific response data stays in dictionaries rather than specialized
 public models. v2 `additional_data` accepts both objects and legacy lists.
 
+Runnable examples are indexed in [examples/README.md](examples/README.md#try-the-contract-changes).
+Run them as modules from the repository root; authentication and model settings
+come from environment variables or `.env`.
+
 ### Generation Parameters in v2
 
 Prefer the explicit wire layout:
@@ -440,6 +444,11 @@ v2 request and moves them into `model_options`. Explicit nested values take
 precedence, including an explicit `None`. This prevents misplaced `max_tokens`
 from being sent to a location the server can ignore. To change an existing
 request model, update its `model_options` fields directly.
+
+See [model options](examples/chat_completions/model_options.py) for nested and
+top-level convenience inputs, and [reasoning](examples/chat_completions/reasoning.py)
+for separate reasoning and total token limits. The latter includes a v1 builder
+using `reasoning_max_tokens` as well as the v2 nested form.
 
 ### Additional Request Fields
 
@@ -470,6 +479,10 @@ existing advanced helper imports remain available for compatibility. Empty
 objects, false values, and explicit nulls in `additional_fields` are preserved.
 The selected client method controls streaming regardless of extra fields.
 
+The [additional-fields example](examples/chat_completions/additional_fields.py)
+sends one request through each API version using supported options to demonstrate
+the merge without requiring access to internal features.
+
 ### Function Results and Tool Selection
 
 When returning parallel function results, copy each call's `id` to its matching
@@ -481,6 +494,24 @@ in Python and serialize it as `id`.
 `ChatToolConfig.mode` accepts `auto`, `none`, `forced`, and `any`; other values
 raise a validation error. The `any` mode can select from `functions_names_any`.
 This is a v2 control; it does not add a `required` mode to v1 `function_call`.
+
+The [parallel roundtrip](examples/tools/parallel_function_calling_roundtrip.py)
+shows the complete loop:
+
+```text
+user message
+  -> assistant content: function_call(id="call-1"), function_call(id="call-2")
+  -> run local functions concurrently
+  -> tool content: function_result(id="call-1"), function_result(id="call-2")
+  -> next model request with the complete conversation
+  -> assistant answer, or another tool round
+```
+
+The flag permits multiple calls; it does not execute them or guarantee a count.
+Results keep the state identifier of their originating assistant message.
+The example uses local demonstration results and bounds the number of rounds.
+The [any-function example](examples/tools/any_function_call.py) applies `any` to
+the initial selection and allows a normal answer after the result.
 
 ### Stored Conversations and Session Headers
 
@@ -496,6 +527,27 @@ guarantee a cache hit or deterministic generation.
 Thread listings accept both the server's `thread_id` and the legacy `id` field;
 existing Python code continues to access `thread.id_`.
 
+See [session headers](examples/chat_completions/session_headers.py) for a temporary
+context override with cleanup, and [thread storage](examples/chat_completions/thread_storage.py)
+for a two-request conversation. A session header groups requests; it does not
+replace `storage.thread_id` or automatically store conversation history.
+
+To inspect existing thread identifiers:
+
+```python
+for thread in client.threads.list().threads:
+    print(thread.id_)
+```
+
+For v1 assistant selection, use the top-level field:
+
+```python
+response = client.chat({
+    "assistant_id": "YOUR_ASSISTANT_ID",
+    "messages": [{"role": "user", "content": "Hello!"}],
+})
+```
+
 ### Responses and Errors
 
 Both streaming and complete responses preserve supported metadata. v1 stream
@@ -507,6 +559,10 @@ events and unnamed `data:` events, including multiline data and an optional
 bytes for application handling. `model_dump()` remains a Python model view,
 including SDK metadata. Use `model_dump(by_alias=True, exclude={"x_headers"},
 exclude_none=True)` for an alias-based view; it is not a byte-for-byte raw HTTP response.
+
+The [response-metadata example](examples/chat_completions/response_metadata.py)
+reads ordinary and streamed responses, including terminal events without text,
+and prints readable HTTP errors while leaving the original bytes available.
 
 Contract tests verify serialization and parsing with synthetic HTTP responses.
 They do not establish live model behavior, cache savings, feature permissions,

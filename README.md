@@ -286,7 +286,16 @@ The old-contract helpers remain available at `client.chat_parse()` / `client.ach
 See [examples/example_structured_output.ipynb](examples/example_structured_output.ipynb) for more approaches (raw dict schema, Pydantic model schema, and the old-contract parse helper).
 
 ### More examples
-See the [examples/](https://github.com/ai-forever/gigachat/tree/main/examples/) folder for complete working examples including the primary chat surface, functions, context variables, AI detection, vision, and structured output.
+
+See the [example index](examples/README.md) for runnable modules and configuration.
+Examples for the updated contracts include:
+
+- [Parallel function roundtrip](examples/tools/parallel_function_calling_roundtrip.py): execute calls concurrently and return results with matching IDs.
+- [Any function selection](examples/tools/any_function_call.py): `tool_config.mode="any"` and a normal follow-up answer.
+- [Reasoning budgets](examples/chat_completions/reasoning.py): reasoning and total generation limits for v1/v2.
+- [Additional request fields](examples/chat_completions/additional_fields.py): extra options at their API wire locations.
+- [Session headers](examples/chat_completions/session_headers.py) and [thread storage](examples/chat_completions/thread_storage.py): request sessions and server-side conversation history.
+- [Response metadata](examples/chat_completions/response_metadata.py): stream metadata and readable error handling.
 
 ## Configuration
 
