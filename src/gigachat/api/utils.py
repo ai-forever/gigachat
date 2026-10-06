@@ -134,11 +134,11 @@ def parse_chunk(line: str, model_class: Type[T]) -> Optional[T]:
     return parse_data_chunk(line, model_class)
 
 
-def parse_event_chunk(event: str, data: str, model_class: Type[T]) -> T:
-    """Parse an SSE named event."""
+def parse_event_chunk(event: Optional[str], data: str, model_class: Type[T]) -> T:
+    """Parse an SSE event with an optional event name."""
     try:
         payload = json.loads(data)
-        if isinstance(payload, dict):
+        if event and isinstance(payload, dict):
             payload.setdefault("event", event)
         return model_class.model_validate(payload)
     except Exception as e:
@@ -162,15 +162,16 @@ def _parse_sse_line(line: str) -> Optional[Tuple[str, str]]:
 
 
 def _iter_event_chunks(lines: Iterable[str], model_class: Type[T]) -> Iterator[T]:
-    """Yield parsed SSE named events."""
+    """Yield parsed SSE events, including unnamed data events."""
     event: Optional[str] = None
     data_lines: List[str] = []
 
     def flush() -> Iterator[T]:
         nonlocal event, data_lines
 
-        if event and data_lines:
-            yield parse_event_chunk(event, "\n".join(data_lines), model_class)
+        data = "\n".join(data_lines)
+        if data_lines and data.strip() != "[DONE]":
+            yield parse_event_chunk(event, data, model_class)
 
         event = None
         data_lines = []
@@ -194,15 +195,16 @@ def _iter_event_chunks(lines: Iterable[str], model_class: Type[T]) -> Iterator[T
 
 
 async def _aiter_event_chunks(lines: AsyncIterable[str], model_class: Type[T]) -> AsyncIterator[T]:
-    """Yield parsed async SSE named events."""
+    """Yield parsed async SSE events, including unnamed data events."""
     event: Optional[str] = None
     data_lines: List[str] = []
 
     async def flush() -> AsyncIterator[T]:
         nonlocal event, data_lines
 
-        if event and data_lines:
-            yield parse_event_chunk(event, "\n".join(data_lines), model_class)
+        data = "\n".join(data_lines)
+        if data_lines and data.strip() != "[DONE]":
+            yield parse_event_chunk(event, data, model_class)
 
         event = None
         data_lines = []
@@ -331,7 +333,7 @@ async def execute_stream_async(
 
 
 def execute_event_stream_sync(client: httpx.Client, kwargs: Dict[str, Any], model_class: Type[T]) -> Iterator[T]:
-    """Execute sync named-event streaming request and yield parsed events."""
+    """Execute an SSE request and yield parsed events."""
     with client.stream(**kwargs) as response:
         _check_response(response)
         x_headers = build_x_headers(response)
@@ -344,7 +346,7 @@ def execute_event_stream_sync(client: httpx.Client, kwargs: Dict[str, Any], mode
 async def execute_event_stream_async(
     client: httpx.AsyncClient, kwargs: Dict[str, Any], model_class: Type[T]
 ) -> AsyncIterator[T]:
-    """Execute async named-event streaming request and yield parsed events."""
+    """Execute an async SSE request and yield parsed events."""
     async with client.stream(**kwargs) as response:
         await _acheck_response(response)
         x_headers = build_x_headers(response)

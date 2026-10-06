@@ -1,5 +1,5 @@
 import inspect
-from typing import Any, Dict, List, Optional, Union
+from typing import Any, Dict, List, Literal, Optional, Union
 
 import pydantic
 from pydantic import BaseModel, ConfigDict, Field, model_validator
@@ -96,6 +96,7 @@ class ChatContentFile(_ChatCompletionsModel):
 class ChatFunctionResult(_ChatCompletionsModel):
     """Tool result returned back to the model in message content."""
 
+    id_: Optional[str] = Field(alias="id", default=None, description="Matching function call identifier.")
     name: str = Field(description="Tool or function name.")
     result: Any = Field(description="Tool result payload.")
 
@@ -109,6 +110,7 @@ class ChatContentPart(_ChatCompletionsModel):
     function_result: Optional[ChatFunctionResult] = Field(default=None, description="Tool result payload.")
     tool_execution: Optional["ChatToolExecution"] = Field(default=None, description="Tool execution state.")
     inline_data: Optional[ChatInlineData] = Field(default=None, description="Inline metadata.")
+    logprobs: Optional[List["ChatLogprob"]] = Field(default=None, description="Per-token log probabilities.")
 
 
 class ChatFunctionCall(_ChatCompletionsModel):
@@ -165,20 +167,18 @@ class ChatReasoning(_ChatCompletionsModel):
     """Reasoning controls."""
 
     effort: Optional[str] = Field(default=None, description="Reasoning effort.")
+    max_tokens: Optional[int] = Field(default=None, description="Maximum reasoning tokens before the final answer.")
 
 
 class ChatModelOptions(_ChatCompletionsModel):
     """Model generation options."""
 
-    preset: Optional[str] = Field(default=None, description="Model preset.")
     parallel_tool_calls: Optional[bool] = Field(default=None, description="Allow parallel function calls.")
     temperature: Optional[float] = Field(default=None, description="Sampling temperature.")
     top_p: Optional[float] = Field(default=None, description="Nucleus sampling parameter.")
     max_tokens: Optional[int] = Field(default=None, description="Maximum completion tokens.")
     repetition_penalty: Optional[float] = Field(default=None, description="Repetition penalty.")
     update_interval: Optional[float] = Field(default=None, description="Streaming update interval.")
-    unnormalized_history: Optional[bool] = Field(default=None, description="Disable history normalization.")
-    top_logprobs: Optional[int] = Field(default=None, description="Top logprobs count.")
     reasoning: Optional[ChatReasoning] = Field(default=None, description="Reasoning settings.")
     response_format: Optional["ChatResponseFormat"] = Field(default=None, description="Response format settings.")
 
@@ -270,9 +270,10 @@ class ChatUserInfo(_ChatCompletionsModel):
 class ChatToolConfig(_ChatCompletionsModel):
     """Tool-calling policy."""
 
-    mode: Optional[str] = Field(default=None, description="Tool calling mode.")
+    mode: Optional[Literal["auto", "none", "forced", "any"]] = Field(default=None, description="Tool calling mode.")
     tool_name: Optional[str] = Field(default=None, description="Forced built-in tool name.")
     function_name: Optional[str] = Field(default=None, description="Forced client function name.")
+    functions_names_any: Optional[List[str]] = Field(default=None, description="Eligible function names for any mode.")
 
 
 class ChatFunctionExample(_ChatCompletionsModel):
@@ -348,7 +349,6 @@ class ChatTool(_ChatCompletionsModel):
 
     code_interpreter: Optional[Dict[str, Any]] = Field(default=None, description="Code interpreter config.")
     image_generate: Optional[Dict[str, Any]] = Field(default=None, description="Image generation config.")
-    web_search: Optional[ChatWebSearchTool] = Field(default=None, description="Web search config.")
     url_content_extraction: Optional[Dict[str, Any]] = Field(default=None, description="URL extraction config.")
     model_3d_generate: Optional[Dict[str, Any]] = Field(default=None, description="3D generation config.")
     functions: Optional[ChatFunctionsTool] = Field(default=None, description="Client function tool config.")
@@ -405,12 +405,13 @@ class ChatCompletionRequest(_ChatCompletionsModel):
     assistant_id: Optional[str] = Field(default=None, description="Assistant identifier.")
     tools_state_id: Optional[str] = Field(default=None, description="Tool execution state identifier.")
     model_options: Optional[ChatModelOptions] = Field(default=None, description="Model generation options.")
-    filter_config: Optional[ChatFilterConfig] = Field(default=None, description="Filtering configuration.")
+    additional_fields: Optional[Dict[str, Any]] = Field(
+        default=None, description="Additional fields to merge into the API request body."
+    )
     storage: Optional[Union[ChatStorage, bool]] = Field(
         default=None,
         description="Thread storage settings. `True` enables storage with defaults; `False` disables it.",
     )
-    ranker_options: Optional[ChatRankerOptions] = Field(default=None, description="Tool ranking settings.")
     tool_config: Optional[ChatToolConfig] = Field(default=None, description="Tool calling configuration.")
     tools: Optional[List[ChatTool]] = Field(default=None, description="Available tools.")
     user_info: Optional[ChatUserInfo] = Field(default=None, description="End-user metadata.")
@@ -443,13 +444,13 @@ class ChatCompletionRequest(_ChatCompletionsModel):
         if model_options is None:
             model_options = {}
         elif isinstance(model_options, BaseModel):
-            model_options = model_options.model_dump(exclude_none=True, by_alias=True)
+            model_options = model_options.model_dump(exclude_unset=True, by_alias=True)
         elif not isinstance(model_options, dict):
             return values
         else:
             model_options = dict(model_options)
 
-        for field_name in ("reasoning", "response_format"):
+        for field_name in (*ChatModelOptions.model_fields, "preset", "unnormalized_history", "top_logprobs"):
             if field_name in values:
                 model_options.setdefault(field_name, values.pop(field_name))
 
@@ -503,7 +504,10 @@ class ChatCompletionResponse(_ChatCompletionsAPIResponse):
     usage: Optional[ChatUsage] = Field(default=None, description="Usage information.")
     tool_execution: Optional[ChatToolExecution] = Field(default=None, description="Top-level tool execution state.")
     logprobs: Optional[List[ChatLogprob]] = Field(default=None, description="Top-level logprob metadata.")
-    additional_data: Optional[List[Dict[str, Any]]] = Field(default=None, description="Additional response metadata.")
+    additional_data: Optional[Union[Dict[str, Any], List[Dict[str, Any]]]] = Field(
+        default=None, description="Additional response metadata; legacy lists remain supported."
+    )
+    error_details: Optional[Dict[str, Any]] = Field(default=None, description="Completion error details.")
 
     @model_validator(mode="before")
     @classmethod
@@ -534,7 +538,10 @@ class ChatCompletionChunk(_ChatCompletionsAPIResponse):
     usage: Optional[ChatUsage] = Field(default=None, description="Usage information.")
     tool_execution: Optional[ChatToolExecution] = Field(default=None, description="Top-level tool execution state.")
     logprobs: Optional[List[ChatLogprob]] = Field(default=None, description="Top-level logprob metadata.")
-    additional_data: Optional[List[Dict[str, Any]]] = Field(default=None, description="Additional response metadata.")
+    additional_data: Optional[Union[Dict[str, Any], List[Dict[str, Any]]]] = Field(
+        default=None, description="Additional response metadata; legacy lists remain supported."
+    )
+    error_details: Optional[Dict[str, Any]] = Field(default=None, description="Completion error details.")
 
     @model_validator(mode="before")
     @classmethod

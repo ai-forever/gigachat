@@ -100,9 +100,7 @@ Primary-only request capabilities include:
 - `model_options`
 - `model_options.reasoning`
 - `model_options.response_format`
-- `filter_config`
 - `storage.thread_id`
-- `ranker_options`
 - `tool_config`
 - `tools`
 - `user_info`
@@ -272,11 +270,11 @@ for chunk in client.chat.stream("Write a poem"):
 Why this changed:
 
 - primary streaming emits message-based chunks
-- primary streaming is parsed as named SSE events, so `chunk.event` can be values such as `response.message.delta`, `response.tool.completed`, or `response.message.done`
+- primary streaming accepts named SSE events and unnamed `data:` events; `chunk.event` can be values such as `response.message.delta`, `response.tool.completed`, or `response.message.done`, and is `None` for unnamed events
 - final or tool-related chunks can contain only `finish_reason`, `usage`, `tools_state_id`, `tool_execution`, or metadata without text
 - tool execution and additional metadata may appear alongside text
 
-Root streaming methods still use the old `data:` line parser and previous chunk model. Primary streaming uses the event-aware parser and does not require a `[DONE]` marker. If your streaming consumer merges partial text, revisit that logic carefully. Previous `delta`-style assumptions do not always map one-to-one to primary `messages`.
+Root streaming methods still use the old `data:` line parser and previous chunk model. Primary streaming uses the event-aware parser, accepts ordinary `data:` events, and ignores an optional `[DONE]` marker. If your streaming consumer merges partial text, revisit that logic carefully. Previous `delta`-style assumptions do not always map one-to-one to primary `messages`.
 
 ## Structured Output Migration
 
@@ -333,7 +331,6 @@ For example, v2 introduces explicit request fields such as:
 - `tool_config`
 - `assistant_id`
 - `storage`
-- `ranker_options`
 - `user_info`
 
 If your application roadmap includes any of those, migrating only the surface method names and staying on previous-contract payloads is usually a short-lived compromise rather than a final state.
@@ -417,3 +414,156 @@ If you see one of those patterns in a code review, the migration is only partial
 - `tool_state_id` and `functions_state_id` are accepted as aliases for `tools_state_id`.
 - `created` is accepted as an alias for `created_at` in primary responses and chunks.
 - Existing top-level imports remain available during migration, but new code should prefer primary names.
+
+## Additional Contract Support
+
+The SDK supports reasoning token budgets (`reasoning_max_tokens` in v1 and
+`model_options.reasoning.max_tokens` in v2), top-level v1 `assistant_id`, and
+function-result IDs for parallel v2 calls. Both response versions preserve
+inline metadata, token probabilities, additional data, and error details.
+Service-specific response data stays in dictionaries rather than specialized
+public models. v2 `additional_data` accepts both objects and legacy lists.
+
+Runnable examples are indexed in [examples/README.md](examples/README.md#try-the-contract-changes).
+Run them as modules from the repository root; authentication and model settings
+come from environment variables or `.env`.
+
+### Generation Parameters in v2
+
+Prefer the explicit wire layout:
+
+```python
+response = client.chat.create({
+    "messages": [{"role": "user", "content": "Give a short answer."}],
+    "model_options": {"max_tokens": 64, "temperature": 0.2},
+})
+```
+
+For convenience, the SDK also accepts generation options at the top level of a
+v2 request and moves them into `model_options`. Explicit nested values take
+precedence, including an explicit `None`. This prevents misplaced `max_tokens`
+from being sent to a location the server can ignore. To change an existing
+request model, update its `model_options` fields directly.
+
+See [model options](examples/chat_completions/model_options.py) for nested and
+top-level convenience inputs, and [reasoning](examples/chat_completions/reasoning.py)
+for separate reasoning and total token limits. The latter includes a v1 builder
+using `reasoning_max_tokens` as well as the v2 nested form.
+
+### Additional Request Fields
+
+Use `additional_fields` in either `Chat` (v1) or `ChatCompletionRequest` (v2)
+for service-specific or permission-dependent options. These are merged into
+the HTTP request body; the SDK does not send an `additional_fields` wrapper.
+
+```python
+from gigachat.models import ChatCompletionRequest, ChatMessage
+
+request = ChatCompletionRequest(
+    messages=[ChatMessage(role="user", content="Hello!")],
+    additional_fields={"vendor_option": {"enabled": True}},
+)
+response = client.chat.create(request)
+```
+
+The example key is a placeholder: use only options supported by your server.
+Presets, internal filtering/ranking, registry selection, and memory controls
+belong in this escape hatch rather than the ordinary typed request interface.
+It does not grant access to restricted features.
+
+The merge is shallow: serialized non-null public fields take precedence over
+same-named entries in `additional_fields`, replacing the entire value. To mix
+standard and advanced options within `model_options` or `tools`, put them in
+the same dictionary at that wire location. Nested v2 models retain extra keys;
+existing advanced helper imports remain available for compatibility. Empty
+objects, false values, and explicit nulls in `additional_fields` are preserved.
+The selected client method controls streaming regardless of extra fields.
+
+The [additional-fields example](examples/chat_completions/additional_fields.py)
+sends one request through each API version using supported options to demonstrate
+the merge without requiring access to internal features.
+
+### Function Results and Tool Selection
+
+When returning parallel function results, copy each call's `id` to its matching
+`function_result.id`, including when several calls share the same function name.
+Retain the assistant message and its `tools_state_id` in the conversation.
+`ChatFunctionResult` and `PrimaryChatFunctionCall` expose the identifier as `id_`
+in Python and serialize it as `id`.
+
+`ChatToolConfig.mode` accepts `auto`, `none`, `forced`, and `any`; other values
+raise a validation error. The `any` mode can select from `functions_names_any`.
+This is a v2 control; it does not add a `required` mode to v1 `function_call`.
+
+The [parallel roundtrip](examples/tools/parallel_function_calling_roundtrip.py)
+shows the complete loop:
+
+```text
+user message
+  -> assistant content: function_call(id="call-1"), function_call(id="call-2")
+  -> run local functions concurrently
+  -> tool content: function_result(id="call-1"), function_result(id="call-2")
+  -> next model request with the complete conversation
+  -> assistant answer, or another tool round
+```
+
+The flag permits multiple calls; it does not execute them or guarantee a count.
+Results keep the state identifier of their originating assistant message.
+The example uses local demonstration results and bounds the number of rounds.
+The [any-function example](examples/tools/any_function_call.py) applies `any` to
+the initial selection and allows a normal answer after the result.
+
+### Stored Conversations and Session Headers
+
+For an existing thread, send the new message with `storage.thread_id` and omit
+`model`. The SDK does not inject a configured default model when a thread or
+assistant selects it. v1 storage also requires `is_stateful=True`.
+
+`GigaChat(session_id="conversation-123")` or `GIGACHAT_SESSION_ID` sets the
+default `X-Session-ID` API header. A context-level `session_id_cvar` overrides
+that default; `custom_headers_cvar` can override both. Session headers do not
+guarantee a cache hit or deterministic generation.
+
+Thread listings accept both the server's `thread_id` and the legacy `id` field;
+existing Python code continues to access `thread.id_`.
+
+See [session headers](examples/chat_completions/session_headers.py) for a temporary
+context override with cleanup, and [thread storage](examples/chat_completions/thread_storage.py)
+for a two-request conversation. A session header groups requests; it does not
+replace `storage.thread_id` or automatically store conversation history.
+
+To inspect existing thread identifiers:
+
+```python
+for thread in client.threads.list().threads:
+    print(thread.id_)
+```
+
+For v1 assistant selection, use the top-level field:
+
+```python
+response = client.chat({
+    "assistant_id": "YOUR_ASSISTANT_ID",
+    "messages": [{"role": "user", "content": "Hello!"}],
+})
+```
+
+### Responses and Errors
+
+Both streaming and complete responses preserve supported metadata. v1 stream
+chunks also retain thread and message IDs. v2 streaming accepts named SSE
+events and unnamed `data:` events, including multiline data and an optional
+`[DONE]` marker.
+
+`str(ResponseError)` displays decoded UTF-8; `error.content` retains the original
+bytes for application handling. `model_dump()` remains a Python model view,
+including SDK metadata. Use `model_dump(by_alias=True, exclude={"x_headers"},
+exclude_none=True)` for an alias-based view; it is not a byte-for-byte raw HTTP response.
+
+The [response-metadata example](examples/chat_completions/response_metadata.py)
+reads ordinary and streamed responses, including terminal events without text,
+and prints readable HTTP errors while leaving the original bytes available.
+
+Contract tests verify serialization and parsing with synthetic HTTP responses.
+They do not establish live model behavior, cache savings, feature permissions,
+or fixes in separate adapters such as LangChain and gpt2giga.

@@ -296,3 +296,62 @@ def test_execute_stream_sync_error(httpx_mock: HTTPXMock) -> None:
                     MockModel,
                 )
             )
+
+
+@pytest.mark.parametrize(
+    ("stream", "expected_event"),
+    [
+        (b'data: {"value": "done"}\n\ndata: [DONE]\n\n', None),
+        (b'event: response.message.done\ndata: {"value": "done"}\n\ndata: [DONE]\n\n', "response.message.done"),
+        (b': keepalive\nid: 1\ndata: {\ndata: "value": "done"\ndata: }', None),
+        (b'event: response.message.done\ndata: {"value": "done"}', "response.message.done"),
+        (b'event: unused\n\ndata: {"value": "done"}\n\nevent: done\ndata: [DONE]', None),
+    ],
+)
+def test_execute_event_stream_sync_accepts_sse_variants(
+    httpx_mock: HTTPXMock, stream: bytes, expected_event: Optional[str]
+) -> None:
+    httpx_mock.add_response(
+        url=f"{BASE_URL}/stream",
+        content=stream,
+        headers={"content-type": "text/event-stream", "x-request-id": "req-1"},
+    )
+    with httpx.Client(base_url=BASE_URL) as client:
+        chunks = list(execute_event_stream_sync(client, {"method": "GET", "url": "/stream"}, EventMockModel))
+
+    assert len(chunks) == 1
+    assert chunks[0].value == "done"
+    assert chunks[0].event == expected_event
+    assert chunks[0].x_headers is not None
+    assert chunks[0].x_headers["x-request-id"] == "req-1"
+
+
+@pytest.mark.parametrize(
+    ("stream", "expected_event"),
+    [
+        (b'data: {"value": "done"}\n\ndata: [DONE]\n\n', None),
+        (b'event: response.message.done\ndata: {"value": "done"}\n\ndata: [DONE]\n\n', "response.message.done"),
+        (b': keepalive\nid: 1\ndata: {\ndata: "value": "done"\ndata: }', None),
+        (b'event: response.message.done\ndata: {"value": "done"}', "response.message.done"),
+        (b'event: unused\n\ndata: {"value": "done"}\n\nevent: done\ndata: [DONE]', None),
+    ],
+)
+async def test_execute_event_stream_async_accepts_sse_variants(
+    httpx_mock: HTTPXMock, stream: bytes, expected_event: Optional[str]
+) -> None:
+    httpx_mock.add_response(
+        url=f"{BASE_URL}/stream",
+        content=stream,
+        headers={"content-type": "text/event-stream", "x-request-id": "req-1"},
+    )
+    async with httpx.AsyncClient(base_url=BASE_URL) as client:
+        chunks = [
+            chunk
+            async for chunk in execute_event_stream_async(client, {"method": "GET", "url": "/stream"}, EventMockModel)
+        ]
+
+    assert len(chunks) == 1
+    assert chunks[0].value == "done"
+    assert chunks[0].event == expected_event
+    assert chunks[0].x_headers is not None
+    assert chunks[0].x_headers["x-request-id"] == "req-1"

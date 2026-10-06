@@ -91,6 +91,8 @@ def _get_kwargs(settings: Settings) -> Dict[str, Any]:
             settings.key_file,
             settings.key_file_password,
         )
+    if settings.session_id is not None:
+        kwargs["headers"] = {"X-Session-ID": settings.session_id}
     if settings.max_connections is not None:
         kwargs["limits"] = httpx.Limits(max_connections=settings.max_connections)
     return kwargs
@@ -134,7 +136,9 @@ def _parse_chat(payload: Union[Chat, Dict[str, Any], str], settings: Settings) -
         chat = Chat(messages=[Messages(role=MessagesRole.USER, content=payload)])
     else:
         chat = Chat.model_validate(payload)
-    using_assistant = chat.storage is not None and (chat.storage.assistant_id or chat.storage.thread_id)
+    using_assistant = chat.assistant_id is not None or (
+        chat.storage is not None and (chat.storage.assistant_id or chat.storage.thread_id)
+    )
     if not using_assistant:
         chat.model = _resolve_model(chat.model, settings)
     if chat.profanity_check is None:
@@ -260,6 +264,7 @@ class _BaseClient:
         scope: Optional[str] = None,
         access_token: Optional[str] = None,
         model: Optional[str] = None,
+        session_id: Optional[str] = None,
         profanity_check: Optional[bool] = None,
         user: Optional[str] = None,
         password: Optional[str] = None,
@@ -287,6 +292,7 @@ class _BaseClient:
             "scope": scope,
             "access_token": access_token,
             "model": model,
+            "session_id": session_id,
             "profanity_check": profanity_check,
             "user": user,
             "password": password,
@@ -344,6 +350,7 @@ class GigaChatSyncClient(_BaseClient):
         scope: API version to which access is provided.
         access_token: JWE token.
         model: Name of the model to receive a response from.
+        session_id: Default X-Session-ID header for API requests.
         profanity_check: Censorship parameter.
         user: User name for authorization.
         password: Password for authorization.
@@ -371,6 +378,7 @@ class GigaChatSyncClient(_BaseClient):
         scope: Optional[str] = None,
         access_token: Optional[str] = None,
         model: Optional[str] = None,
+        session_id: Optional[str] = None,
         profanity_check: Optional[bool] = None,
         user: Optional[str] = None,
         password: Optional[str] = None,
@@ -395,6 +403,7 @@ class GigaChatSyncClient(_BaseClient):
             scope=scope,
             access_token=access_token,
             model=model,
+            session_id=session_id,
             profanity_check=profanity_check,
             user=user,
             password=password,
@@ -676,6 +685,7 @@ class GigaChatAsyncClient(_BaseClient):
         scope: API version to which access is provided.
         access_token: JWE token.
         model: Name of the model to receive a response from.
+        session_id: Default X-Session-ID header for API requests.
         profanity_check: Censorship parameter.
         user: User name for authorization.
         password: Password for authorization.
@@ -703,6 +713,7 @@ class GigaChatAsyncClient(_BaseClient):
         scope: Optional[str] = None,
         access_token: Optional[str] = None,
         model: Optional[str] = None,
+        session_id: Optional[str] = None,
         profanity_check: Optional[bool] = None,
         user: Optional[str] = None,
         password: Optional[str] = None,
@@ -727,6 +738,7 @@ class GigaChatAsyncClient(_BaseClient):
             scope=scope,
             access_token=access_token,
             model=model,
+            session_id=session_id,
             profanity_check=profanity_check,
             user=user,
             password=password,
@@ -1014,6 +1026,7 @@ class GigaChat(GigaChatSyncClient, GigaChatAsyncClient):
         scope: API version to which access is provided.
         access_token: JWE token.
         model: Name of the model to receive a response from.
+        session_id: Default X-Session-ID header for API requests.
         profanity_check: Censorship parameter.
         user: User name for authorization.
         password: Password for authorization.
@@ -1041,6 +1054,7 @@ class GigaChat(GigaChatSyncClient, GigaChatAsyncClient):
         scope: Optional[str] = None,
         access_token: Optional[str] = None,
         model: Optional[str] = None,
+        session_id: Optional[str] = None,
         profanity_check: Optional[bool] = None,
         user: Optional[str] = None,
         password: Optional[str] = None,
@@ -1065,6 +1079,7 @@ class GigaChat(GigaChatSyncClient, GigaChatAsyncClient):
             scope=scope,
             access_token=access_token,
             model=model,
+            session_id=session_id,
             profanity_check=profanity_check,
             user=user,
             password=password,

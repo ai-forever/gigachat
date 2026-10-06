@@ -222,3 +222,36 @@ def test_primary_response_contract_does_not_validate_as_chat_completion() -> Non
     assert response.messages is not None
     with pytest.raises(ValidationError):
         ChatCompletion.model_validate(payload)
+
+
+def test_function_call_identifier_survives_history_roundtrip() -> None:
+    message = {
+        "role": "assistant",
+        "content": "",
+        "function_call": {"id": "call-1", "name": "lookup", "arguments": {"value": None}},
+        "inline_data": {"sources": [{"source-1": {"title": "Example", "url": "https://example.com"}}]},
+    }
+
+    parsed = Messages.model_validate(message)
+
+    assert parsed.function_call is not None
+    assert parsed.function_call.id_ == "call-1"
+    assert parsed.model_dump(exclude_none=True, by_alias=True) == message
+    assert FunctionCall(id_="call-2", name="lookup").model_dump(by_alias=True)["id"] == "call-2"
+
+
+def test_reasoning_effort_accepts_model_specific_values() -> None:
+    request = Chat(messages=[], reasoning_effort="custom-effort", reasoning_max_tokens=32)
+
+    assert request.model_dump(exclude_none=True)["reasoning_effort"] == "custom-effort"
+    assert request.reasoning_max_tokens == 32
+
+
+def test_completion_preserves_error_details() -> None:
+    payload = json.loads((TEST_DATA_DIR / "chat_completion.json").read_text(encoding="utf-8"))
+    payload["error_details"] = {"http_status": 503, "user_message": "Try again", "log_msg": "Example failure"}
+
+    response = ChatCompletion.model_validate(payload)
+
+    assert response.error_details == payload["error_details"]
+    assert response.model_dump(exclude_none=True, by_alias=True) == payload

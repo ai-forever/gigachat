@@ -1,4 +1,4 @@
-from typing import List
+from typing import Any, Dict, List, Type, Union
 
 import pytest
 from pydantic import BaseModel, ValidationError
@@ -432,8 +432,7 @@ def test_chat_completion_request_normalizes_string_tools() -> None:
 
     assert request.tools is not None
     assert request.tools[0].code_interpreter == {}
-    assert request.tools[1].web_search is not None
-    assert request.tools[1].web_search.model_dump(exclude_none=True, by_alias=True) == {}
+    assert request.tools[1].model_extra == {"web_search": {}}
     assert dumped["tools"] == [
         {"code_interpreter": {}},
         {"web_search": {}},
@@ -572,3 +571,116 @@ def test_chat_completion_chunk_parses_tool_execution_content_part() -> None:
     assert chunk.messages[0].content[0].tool_execution.name == "image_generate"
     assert chunk.messages[0].content[0].tool_execution.status == "success"
     assert chunk.messages[0].content[0].tool_execution.censored is True
+
+
+def test_chat_completion_request_exposes_common_contract_fields() -> None:
+    payload = {
+        "messages": [
+            {"role": "tool", "content": [{"function_result": {"id": "call-1", "name": "lookup", "result": "ok"}}]}
+        ],
+        "model_options": {"reasoning": {"effort": "medium", "max_tokens": 64}},
+        "tool_config": {"mode": "any", "functions_names_any": ["lookup"]},
+    }
+    request = ChatCompletionRequest.model_validate(payload)
+    assert request.reasoning is not None
+    assert request.reasoning.max_tokens == 64
+    assert request.tool_config is not None
+    assert request.tool_config.functions_names_any == ["lookup"]
+    assert request.messages[0].content is not None
+    assert request.messages[0].content[0].function_result is not None
+    assert request.messages[0].content[0].function_result.id_ == "call-1"
+    assert request.model_dump(exclude_none=True, by_alias=True) == payload
+
+
+def test_advanced_controls_remain_extra_fields() -> None:
+    from gigachat.models.chat_completions import ChatModelOptions, ChatTool
+
+    advanced = {"memory_id", "function_registry", "filter_config", "ranker_options"}
+    assert advanced.isdisjoint(ChatCompletionRequest.model_fields)
+    assert {"memory", "web_search"}.isdisjoint(ChatTool.model_fields)
+    assert {"preset", "top_logprobs", "unnormalized_history"}.isdisjoint(ChatModelOptions.model_fields)
+    request = ChatCompletionRequest.model_validate(
+        {
+            "messages": [],
+            "function_registry": {},
+            "model_options": {"max_tokens": 16, "preset": "test", "top_logprobs": 1},
+        }
+    )
+    assert request.model_extra == {"function_registry": {}}
+    assert request.model_options is not None
+    assert request.model_options.model_extra == {"preset": "test", "top_logprobs": 1}
+
+
+def test_chat_completion_request_rejects_unknown_tool_mode() -> None:
+    with pytest.raises(ValidationError, match="tool_config.mode"):
+        ChatCompletionRequest.model_validate({"messages": [], "tool_config": {"mode": "xyz"}})
+
+
+def test_chat_completion_request_preserves_empty_registry_and_storage() -> None:
+    empty = ChatCompletionRequest.model_validate({"messages": [], "function_registry": {}, "storage": {}})
+    omitted = ChatCompletionRequest.model_validate({"messages": [], "function_registry": None, "storage": None})
+
+    assert empty.model_dump(exclude_none=True) == {"messages": [], "function_registry": {}, "storage": {}}
+    assert omitted.model_dump(exclude_none=True) == {"messages": []}
+
+
+@pytest.mark.parametrize("typed_options", [False, True])
+def test_chat_completion_request_nested_generation_options_take_precedence(typed_options: bool) -> None:
+    from gigachat.models.chat_completions import ChatModelOptions
+
+    nested = {"max_tokens": 10, "temperature": None, "parallel_tool_calls": False}
+    request = ChatCompletionRequest.model_validate(
+        {
+            "messages": [],
+            "model_options": ChatModelOptions.model_validate(nested) if typed_options else nested,
+            "max_tokens": 100,
+            "temperature": 1.5,
+            "parallel_tool_calls": True,
+            "top_p": 0,
+        }
+    )
+
+    assert request.model_dump(exclude_none=True) == {
+        "messages": [],
+        "model_options": {"max_tokens": 10, "parallel_tool_calls": False, "top_p": 0.0},
+    }
+    assert nested == {"max_tokens": 10, "temperature": None, "parallel_tool_calls": False}
+
+
+@pytest.mark.parametrize("response_type", [ChatCompletionResponse, ChatCompletionChunk])
+def test_chat_completion_parses_content_logprobs_and_object_metadata(
+    response_type: Type[Union[ChatCompletionResponse, ChatCompletionChunk]],
+) -> None:
+    payload: Dict[str, Any] = {
+        "messages": [
+            {
+                "role": "assistant",
+                "content": [
+                    {
+                        "text": "ok",
+                        "logprobs": [
+                            {
+                                "chosen": {"token": "ok", "token_id": 7, "logprob": -0.1},
+                                "top": [{"token": "ok", "token_id": 7, "logprob": -0.1}],
+                            }
+                        ],
+                    }
+                ],
+            }
+        ],
+        "additional_data": {"execution_steps": [{"name": "test", "details": {"count": 1}}]},
+        "error_details": {"http_status": 500, "user_message": "Try again", "log_msg": "Example failure"},
+    }
+    response = response_type.model_validate(payload)
+
+    assert response.messages is not None
+    assert response.messages[0].content is not None
+    part = response.messages[0].content[0]
+    assert part.logprobs is not None
+    assert part.logprobs[0].chosen is not None
+    assert part.logprobs[0].top is not None
+    assert part.logprobs[0].chosen.token_id == 7
+    assert part.logprobs[0].top[0].logprob == -0.1
+    assert response.additional_data == payload["additional_data"]
+    assert response.error_details == payload["error_details"]
+    assert response.model_dump(exclude_none=True, by_alias=True) == payload
