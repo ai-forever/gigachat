@@ -28,15 +28,15 @@ def test_request_enables_parallel_calls_under_model_options() -> None:
 
 def test_zero_and_one_call_are_valid() -> None:
     assert validate_parallel_calls(response_with_calls([])) == []
-    single = response_with_calls([{"name": "get_weather", "arguments": {"city": "Москва"}}])
+    single = response_with_calls([{"name": "get_weather", "arguments": {"city": "Moscow"}}])
     assert len(validate_parallel_calls(single)) == 1
 
 
 def test_same_function_can_have_two_distinct_calls() -> None:
     response = response_with_calls(
         [
-            {"id": "call-1", "name": "get_weather", "arguments": {"city": "Москва"}},
-            {"id": "call-2", "name": "get_weather", "arguments": {"city": "Казань"}},
+            {"id": "call-1", "name": "get_weather", "arguments": {"city": "Moscow"}},
+            {"id": "call-2", "name": "get_weather", "arguments": {"city": "Kazan"}},
         ]
     )
     assert [call.id_ for call in validate_parallel_calls(response)] == ["call-1", "call-2"]

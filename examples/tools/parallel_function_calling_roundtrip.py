@@ -25,7 +25,7 @@ def execute_function(call: ChatFunctionCall) -> Dict[str, Any]:
         city = call.arguments.get("city")
         if not isinstance(city, str):
             raise ValueError("city must be a string")
-        return {"city": city, "temperature_c": 12 if city == "Москва" else 8, "demo": True}
+        return {"city": city, "temperature_c": 12 if city == "Moscow" else 8, "demo": True}
     if call.name == "get_rate":
         currency = call.arguments.get("currency")
         if not isinstance(currency, str):

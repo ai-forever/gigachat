@@ -20,8 +20,8 @@ CALLS: Dict[str, Any] = {
             "role": "assistant",
             "tools_state_id": "state-1",
             "content": [
-                {"function_call": {"id": "call-1", "name": "get_weather", "arguments": {"city": "Москва"}}},
-                {"function_call": {"id": "call-2", "name": "get_weather", "arguments": {"city": "Казань"}}},
+                {"function_call": {"id": "call-1", "name": "get_weather", "arguments": {"city": "Moscow"}}},
+                {"function_call": {"id": "call-2", "name": "get_weather", "arguments": {"city": "Kazan"}}},
             ],
         },
     ]
@@ -63,7 +63,7 @@ def test_full_loop_keeps_calls_results_state_and_reasoning(httpx_mock: HTTPXMock
     assert tool["tools_state_id"] == "state-1"
     results = [part["function_result"] for part in tool["content"]]
     assert [result["id"] for result in results] == ["call-1", "call-2"]
-    assert [result["result"]["city"] for result in results] == ["Москва", "Казань"]
+    assert [result["result"]["city"] for result in results] == ["Moscow", "Kazan"]
     assert third["messages"][:4] == second["messages"]
     assert third["messages"][-1]["tools_state_id"] == "state-2"
     assert third["messages"][-1]["content"][0]["function_result"]["id"] == "call-3"

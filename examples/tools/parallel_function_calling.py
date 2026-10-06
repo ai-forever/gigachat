@@ -25,8 +25,8 @@ def build_request() -> ChatCompletionRequest:
             ChatMessage(
                 role="user",
                 content=(
-                    "Узнай погоду в Москве и Казани, а также курс USD. "
-                    "Вызови независимые функции за один шаг, затем кратко сравни результаты."
+                    "Find the weather in Moscow and Kazan and the USD exchange rate. "
+                    "Call independent functions in one step, then briefly compare the results."
                 ),
             )
         ],
@@ -37,7 +37,7 @@ def build_request() -> ChatCompletionRequest:
                     specifications=[
                         ChatFunctionSpecification(
                             name="get_weather",
-                            description="Возвращает погоду в указанном городе.",
+                            description="Return the weather in the specified city.",
                             parameters={
                                 "type": "object",
                                 "properties": {"city": {"type": "string"}},
@@ -46,7 +46,7 @@ def build_request() -> ChatCompletionRequest:
                         ),
                         ChatFunctionSpecification(
                             name="get_rate",
-                            description="Возвращает курс валюты к рублю.",
+                            description="Return the currency exchange rate against the ruble.",
                             parameters={
                                 "type": "object",
                                 "properties": {"currency": {"type": "string"}},
