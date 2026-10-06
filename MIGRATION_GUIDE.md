@@ -14,6 +14,10 @@ These changes also affect applications that keep using v1:
   and the zero (never expires) sentinel are unchanged. Raw `Token.exp` is unchanged.
 - v1 function schemas retain JSON Schema keywords, including `$defs`, `$ref`,
   boolean subschemas, mixed enums, and explicit `const: null` / `default: null`.
+  This also applies to `Function.model_validate(Model.model_json_schema())`:
+  root schema keywords move into `parameters`, while `title` supplies a missing
+  function name and function metadata stays outside the parameter schema.
+  Non-empty explicit `parameters` take precedence over flattened schema fields.
   The SDK no longer supplies `type: object` or an empty property description.
   Add these explicitly if your application needs them.
 - `FunctionParameters.properties` and `FunctionParametersProperty.properties`

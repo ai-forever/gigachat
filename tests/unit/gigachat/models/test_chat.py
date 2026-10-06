@@ -85,6 +85,55 @@ def test_function_model_validator() -> None:
     assert "prop" in func.parameters.properties
 
 
+@pytest.mark.parametrize("parameters", [None, "", {}])
+def test_function_flat_schema_preserves_keywords_and_metadata(parameters: Any) -> None:
+    schema = {
+        "$defs": {"Place": {"type": "object", "properties": {"city": {"type": "string"}}}},
+        "type": ["object", "null"],
+        "properties": {"place": {"$ref": "#/$defs/Place"}, "anything": True, "forbidden": False},
+        "required": ["place"],
+        "allOf": [{"minProperties": 1}],
+        "unevaluatedProperties": False,
+        "const": None,
+        "default": None,
+        "x-custom-keyword": {"enabled": True},
+    }
+    metadata = {
+        "name": "lookup",
+        "description": "Look up a place.",
+        "few_shot_examples": [{"request": "Find Paris", "params": {"place": {"city": "Paris"}}}],
+        "return_parameters": {"type": "string"},
+    }
+    data = {**schema, **metadata, "title": "IgnoredTitle", "parameters": parameters}
+    original = deepcopy(data)
+
+    function = Function.model_validate(data)
+
+    assert function.model_dump(exclude_none=True, by_alias=True) == {**metadata, "parameters": schema}
+    assert data == original
+
+
+def test_function_explicit_parameters_take_precedence_over_flat_schema() -> None:
+    parameters = {
+        "type": "object",
+        "properties": {"value": {"type": "integer"}},
+        "required": ["value"],
+    }
+    data = {
+        "title": "lookup",
+        "parameters": parameters,
+        "properties": {"ignored": {"type": "string"}},
+        "required": ["ignored"],
+        "$defs": {"Ignored": {"type": "string"}},
+    }
+    original = deepcopy(data)
+
+    function = Function.model_validate(data)
+
+    assert function.model_dump(exclude_none=True, by_alias=True) == {"name": "lookup", "parameters": parameters}
+    assert data == original
+
+
 def test_usage_validation() -> None:
     with pytest.raises(ValidationError):
         Usage(prompt_tokens="invalid", completion_tokens=10, total_tokens=20)

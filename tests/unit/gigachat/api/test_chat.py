@@ -1,10 +1,12 @@
 import asyncio
 import json
 import logging
-from typing import Any, Dict
+from copy import deepcopy
+from typing import Any, Dict, Optional
 
 import httpx
 import pytest
+from pydantic import BaseModel, ConfigDict
 from pytest_httpx import HTTPXMock
 
 from gigachat.api import chat
@@ -162,6 +164,44 @@ def test_chat_sync_preserves_function_json_schema(httpx_mock: HTTPXMock) -> None
 
     request_content = json.loads(httpx_mock.get_requests()[0].content.decode("utf-8"))
     assert request_content["functions"][0]["parameters"] == parameters
+
+
+@pytest.mark.parametrize("async_mode", [False, True])
+async def test_chat_preserves_flat_pydantic_function_schema(httpx_mock: HTTPXMock, async_mode: bool) -> None:
+    class Place(BaseModel):
+        city: str
+
+        model_config = ConfigDict(extra="forbid")
+
+    class Weather(BaseModel):
+        """Look up the weather."""
+
+        place: Place
+        units: Optional[str] = None
+
+        model_config = ConfigDict(extra="forbid")
+
+    httpx_mock.add_response(url=MOCK_URL, json=CHAT_COMPLETION)
+    schema = Weather.model_json_schema()
+    expected_parameters = deepcopy(schema)
+    name = expected_parameters.pop("title")
+    description = expected_parameters.pop("description")
+    chat_data = Chat(
+        messages=[Messages(role=MessagesRole.USER, content="Weather in Paris")],
+        functions=[Function.model_validate(schema)],
+    )
+
+    if async_mode:
+        async with httpx.AsyncClient(base_url=BASE_URL) as async_client:
+            await chat.chat_async(async_client, chat=chat_data)
+    else:
+        with httpx.Client(base_url=BASE_URL) as client:
+            chat.chat_sync(client, chat=chat_data)
+
+    request_content = json.loads(httpx_mock.get_requests()[0].content.decode("utf-8"))
+    assert request_content["functions"] == [
+        {"name": name, "description": description, "parameters": expected_parameters}
+    ]
 
 
 def test_chat_sync_response_format_json_schema(httpx_mock: HTTPXMock) -> None:

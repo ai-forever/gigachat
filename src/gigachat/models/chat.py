@@ -134,7 +134,7 @@ class Function(BaseModel):
     @model_validator(mode="before")
     @classmethod
     def _fix_title_and_parameters(cls, values: Any) -> Any:
-        """Pydantic adapter (title -> name), (parameters -> properties)."""
+        """Adapt a flat Pydantic schema to a function definition."""
         if isinstance(values, dict):
             values = dict(values)
 
@@ -142,9 +142,8 @@ class Function(BaseModel):
                 values["name"] = values.pop("title", None)
 
             if values.get("parameters") in (None, "", {}) and "properties" in values:
-                values["parameters"] = {
-                    "properties": values.pop("properties", {}),
-                }
+                parameter_keys = [key for key in values if key not in cls.model_fields and key != "title"]
+                values["parameters"] = {key: values.pop(key) for key in parameter_keys}
 
         return values
 
