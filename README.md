@@ -102,6 +102,11 @@ During the migration, old `gigachat.models.Chat*`, `Messages*`, `Function*`, and
 
 For a step-by-step checklist and import mapping, see [MIGRATION_GUIDE.md](MIGRATION_GUIDE.md)
 
+Upgrading to `0.2.4a1` also changes v1 function-schema defaults and nested property
+access, and moves several advanced v2 fields to untyped extras. Review the
+[release compatibility notes](MIGRATION_GUIDE.md#upgrading-to-024a1) even if you
+continue using the v1 methods.
+
 ### Basic Chat
 
 ```python

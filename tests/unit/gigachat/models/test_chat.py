@@ -1,7 +1,7 @@
 import json
 from copy import deepcopy
 from pathlib import Path
-from typing import Any, Dict, cast
+from typing import Any, Dict, Type, Union, cast
 
 import pytest
 from pydantic import ValidationError
@@ -157,6 +157,47 @@ def test_function_parameter_property_preserves_extensions_and_union_type() -> No
     property_schema = FunctionParametersProperty.model_validate(schema)
 
     assert property_schema.model_dump(exclude_none=True, by_alias=True) == schema
+
+
+@pytest.mark.parametrize("schema_type", [FunctionParameters, FunctionParametersProperty])
+@pytest.mark.parametrize(
+    ("selection", "expected"),
+    [
+        ({}, {"type": "object", "const": None, "default": None}),
+        ({"exclude": {"const"}}, {"type": "object", "default": None}),
+        ({"exclude": {"const": True}}, {"type": "object", "default": None}),
+        ({"exclude": {"const": ...}}, {"type": "object", "default": None}),
+        ({"include": {"type_"}}, {"type": "object"}),
+        ({"include": {"default": True}}, {"default": None}),
+        ({"include": set()}, {}),
+    ],
+)
+def test_function_schema_null_keywords_respect_serialization_selection(
+    schema_type: Type[Union[FunctionParameters, FunctionParametersProperty]],
+    selection: Dict[str, Any],
+    expected: Dict[str, Any],
+) -> None:
+    schema = schema_type.model_validate({"type": "object", "const": None, "default": None})
+
+    assert schema.model_dump(by_alias=True, exclude_none=True, **selection) == expected
+    assert json.loads(schema.model_dump_json(by_alias=True, exclude_none=True, **selection)) == expected
+
+
+def test_typed_function_property_preserves_null_keywords_in_request() -> None:
+    from gigachat.api.chat import _build_request_json
+
+    schema = {"type": ["string", "null"], "const": None, "default": None}
+    request = Chat(
+        messages=[],
+        functions=[
+            Function(
+                name="lookup",
+                parameters=FunctionParameters(properties={"value": FunctionParametersProperty.model_validate(schema)}),
+            )
+        ],
+    )
+
+    assert _build_request_json(request)["functions"][0]["parameters"] == {"properties": {"value": schema}}
 
 
 def test_chat_function_ranker_from_dict() -> None:

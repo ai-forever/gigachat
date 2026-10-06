@@ -4,6 +4,45 @@ This guide covers migration from the previous chat contract to the primary `v2/c
 
 In the codebase, `v2` is exposed through explicit resource methods. The previous contract is still available through root compatibility methods.
 
+## Upgrading to 0.2.4a1
+
+These changes also affect applications that keep using v1:
+
+- Token expiration is normalized in `AccessToken` for every authentication path,
+  including password and OAuth responses. Positive values below `10_000_000_000`
+  are treated as seconds and converted to milliseconds. Millisecond timestamps
+  and the zero (never expires) sentinel are unchanged. Raw `Token.exp` is unchanged.
+- v1 function schemas retain JSON Schema keywords, including `$defs`, `$ref`,
+  boolean subschemas, mixed enums, and explicit `const: null` / `default: null`.
+  The SDK no longer supplies `type: object` or an empty property description.
+  Add these explicitly if your application needs them.
+- `FunctionParameters.properties` and `FunctionParametersProperty.properties`
+  keep dictionary inputs as dictionaries. Replace
+  `parameters.properties["city"].type_` with
+  `parameters.properties["city"]["type"]`. Explicitly constructed
+  `FunctionParametersProperty` objects are still accepted and preserve null
+  schema keywords on serialization. Explicit `model_dump()` / `model_dump_json()`
+  `include` and `exclude` selections still apply to those keywords.
+
+Some v2 advanced fields are now extra values rather than declared model fields:
+
+| Model | Fields moved to extras |
+| --- | --- |
+| `ChatCompletionRequest` | `filter_config`, `ranker_options` |
+| `ChatModelOptions` | `preset`, `unnormalized_history`, `top_logprobs` |
+| `ChatTool` | `web_search` |
+
+Existing payload dictionaries remain accepted, but their values no longer become
+typed helper models automatically. For example, a dictionary supplied as
+`web_search` remains a dictionary; use `tool.model_extra["web_search"]` and dictionary
+access instead of expecting a `ChatWebSearchTool`. Omitted extra fields do not have
+attributes defaulting to `None`. Existing helper classes remain importable and
+can still be passed explicitly. See [Additional Request Fields](#additional-request-fields)
+for placement and merge precedence.
+
+`ChatToolConfig.mode` now validates `auto`, `none`, `forced`, and `any`;
+other strings raise a validation error before making an HTTP request.
+
 ## TL;DR
 
 1. Use `client.chat(...)` for the previous contract or `client.chat.create(...)` for v2.
@@ -92,7 +131,7 @@ Why this changed:
 - v2 models messages as content parts so the API can carry text, files, tool results, and inline metadata in one structure.
 - Some advanced capabilities are now represented as explicit top-level fields such as `assistant_id`, `tool_config`, and `storage`.
 
-Primary-only request capabilities include:
+Common v2 request fields include (some also exist in the v1 contract):
 
 - `assistant_id`
 - `tools_state_id`

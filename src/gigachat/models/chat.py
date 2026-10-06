@@ -1,7 +1,15 @@
 from enum import Enum
 from typing import Any, Dict, List, Literal, Optional, Union
 
-from pydantic import BaseModel, ConfigDict, Field, SerializerFunctionWrapHandler, model_serializer, model_validator
+from pydantic import (
+    BaseModel,
+    ConfigDict,
+    Field,
+    SerializationInfo,
+    SerializerFunctionWrapHandler,
+    model_serializer,
+    model_validator,
+)
 
 from gigachat.models.base import APIResponse
 from gigachat.models.response_format import ResponseFormat
@@ -73,7 +81,28 @@ class Usage(BaseModel):
     precached_prompt_tokens: Optional[int] = Field(default=None, description="Number of tokens served from cache.")
 
 
-class FunctionParametersProperty(BaseModel):
+class _FunctionSchema(BaseModel):
+    model_config = ConfigDict(extra="allow", populate_by_name=True)
+
+    @model_serializer(mode="wrap")
+    def _keep_null_schema_keywords(
+        self, handler: SerializerFunctionWrapHandler, info: SerializationInfo
+    ) -> Dict[str, Any]:
+        """Preserve explicit null schema keywords unless the caller excludes them."""
+        data: Dict[str, Any] = handler(self)
+        # Selection dictionaries also accept True and Ellipsis at runtime.
+        excluded: Any = info.exclude
+        for key, value in (self.__pydantic_extra__ or {}).items():
+            if value is not None or (info.include is not None and key not in info.include):
+                continue
+            if excluded is not None and key in excluded:
+                if not isinstance(excluded, dict) or excluded[key] is True or excluded[key] is ...:
+                    continue
+            data.setdefault(key, None)
+        return data
+
+
+class FunctionParametersProperty(_FunctionSchema):
     """Property of a function parameter."""
 
     type_: Optional[Union[str, List[str]]] = Field(default=None, alias="type", description="JSON Schema type.")
@@ -82,30 +111,13 @@ class FunctionParametersProperty(BaseModel):
     enum: Optional[List[Any]] = Field(default=None, description="List of possible values for enum types.")
     properties: Optional[Dict[Any, Any]] = Field(default=None, description="Nested properties for object types.")
 
-    model_config = ConfigDict(extra="allow", populate_by_name=True)
 
-
-class FunctionParameters(BaseModel):
+class FunctionParameters(_FunctionSchema):
     """Parameters definition for a function."""
 
     type_: Optional[Union[str, List[str]]] = Field(default=None, alias="type", description="JSON Schema type.")
     properties: Optional[Dict[Any, Any]] = Field(default=None, description="Dictionary of parameter properties.")
     required: Optional[List[str]] = Field(default=None, description="List of required parameter names.")
-
-    model_config = ConfigDict(extra="allow", populate_by_name=True)
-
-    @model_serializer(mode="wrap")
-    def _keep_null_schema_keywords(self, handler: SerializerFunctionWrapHandler) -> Dict[str, Any]:
-        """Keep schema keywords whose value is explicitly null.
-
-        Requests are built with ``exclude_none=True``, but ``{"default": null}`` is a
-        valid JSON Schema and dropping it would alter the schema supplied by the user.
-        """
-        data: Dict[str, Any] = handler(self)
-        for key, value in (self.__pydantic_extra__ or {}).items():
-            if value is None:
-                data.setdefault(key, None)
-        return data
 
 
 class Function(BaseModel):
