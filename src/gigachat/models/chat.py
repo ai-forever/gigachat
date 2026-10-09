@@ -1,7 +1,15 @@
 from enum import Enum
 from typing import Any, Dict, List, Literal, Optional, Union
 
-from pydantic import BaseModel, ConfigDict, Field, model_validator
+from pydantic import (
+    BaseModel,
+    ConfigDict,
+    Field,
+    SerializationInfo,
+    SerializerFunctionWrapHandler,
+    model_serializer,
+    model_validator,
+)
 
 from gigachat.models.base import APIResponse
 from gigachat.models.response_format import ResponseFormat
@@ -21,8 +29,11 @@ class MessagesRole(str, Enum):
 class FunctionCall(BaseModel):
     """Model function call."""
 
+    id_: Optional[str] = Field(alias="id", default=None, description="Function call identifier.")
     name: str = Field(description="Name of the function to call.")
     arguments: Optional[Dict[Any, Any]] = Field(default=None, description="Function call arguments.")
+
+    model_config = ConfigDict(populate_by_name=True)
 
 
 class FewShotExample(BaseModel):
@@ -70,25 +81,42 @@ class Usage(BaseModel):
     precached_prompt_tokens: Optional[int] = Field(default=None, description="Number of tokens served from cache.")
 
 
-class FunctionParametersProperty(BaseModel):
+class _FunctionSchema(BaseModel):
+    model_config = ConfigDict(extra="allow", populate_by_name=True)
+
+    @model_serializer(mode="wrap")
+    def _keep_null_schema_keywords(
+        self, handler: SerializerFunctionWrapHandler, info: SerializationInfo
+    ) -> Dict[str, Any]:
+        """Preserve explicit null schema keywords unless the caller excludes them."""
+        data: Dict[str, Any] = handler(self)
+        # Selection dictionaries also accept True and Ellipsis at runtime.
+        excluded: Any = info.exclude
+        for key, value in (self.__pydantic_extra__ or {}).items():
+            if value is not None or (info.include is not None and key not in info.include):
+                continue
+            if excluded is not None and key in excluded:
+                if not isinstance(excluded, dict) or excluded[key] is True or excluded[key] is ...:
+                    continue
+            data.setdefault(key, None)
+        return data
+
+
+class FunctionParametersProperty(_FunctionSchema):
     """Property of a function parameter."""
 
-    type_: str = Field(default="object", alias="type", description="Type of the argument.")
-    description: str = Field(default="", description="Description of the argument.")
-    items: Optional[Dict[str, Any]] = Field(default=None, description="Items schema for array types.")
-    enum: Optional[List[str]] = Field(default=None, description="List of possible values for enum types.")
-    properties: Optional[Dict[Any, "FunctionParametersProperty"]] = Field(
-        default=None, description="Nested properties for object types."
-    )
+    type_: Optional[Union[str, List[str]]] = Field(default=None, alias="type", description="JSON Schema type.")
+    description: Optional[str] = Field(default=None, description="Description of the argument.")
+    items: Any = Field(default=None, description="Items schema for array types.")
+    enum: Optional[List[Any]] = Field(default=None, description="List of possible values for enum types.")
+    properties: Optional[Dict[Any, Any]] = Field(default=None, description="Nested properties for object types.")
 
 
-class FunctionParameters(BaseModel):
+class FunctionParameters(_FunctionSchema):
     """Parameters definition for a function."""
 
-    type_: str = Field(default="object", alias="type", description="Type of the parameters object (usually 'object').")
-    properties: Optional[Dict[Any, FunctionParametersProperty]] = Field(
-        default=None, description="Dictionary of parameter properties."
-    )
+    type_: Optional[Union[str, List[str]]] = Field(default=None, alias="type", description="JSON Schema type.")
+    properties: Optional[Dict[Any, Any]] = Field(default=None, description="Dictionary of parameter properties.")
     required: Optional[List[str]] = Field(default=None, description="List of required parameter names.")
 
 
@@ -106,7 +134,7 @@ class Function(BaseModel):
     @model_validator(mode="before")
     @classmethod
     def _fix_title_and_parameters(cls, values: Any) -> Any:
-        """Pydantic adapter (title -> name), (parameters -> properties)."""
+        """Adapt a flat Pydantic schema to a function definition."""
         if isinstance(values, dict):
             values = dict(values)
 
@@ -114,9 +142,8 @@ class Function(BaseModel):
                 values["name"] = values.pop("title", None)
 
             if values.get("parameters") in (None, "", {}) and "properties" in values:
-                values["parameters"] = {
-                    "properties": values.pop("properties", {}),
-                }
+                parameter_keys = [key for key in values if key not in cls.model_fields and key != "title"]
+                values["parameters"] = {key: values.pop(key) for key in parameter_keys}
 
         return values
 
@@ -148,6 +175,8 @@ class Messages(BaseModel):
         default=None, description="ID of the function state generating images/video."
     )
     reasoning_content: Optional[str] = Field(default=None, description="Reasoning content from the model.")
+    inline_data: Optional[Dict[str, Any]] = Field(default=None, description="Inline sources, widgets, and metadata.")
+    logprobs: Optional[List[Dict[str, Any]]] = Field(default=None, description="Generated token probabilities.")
     id_: Optional[Any] = Field(alias="id", default=None, description="Message ID.")
 
     model_config = ConfigDict(use_enum_values=True)
@@ -161,6 +190,8 @@ class MessagesChunk(BaseModel):
     reasoning_content: Optional[str] = Field(default=None, description="Reasoning content chunk.")
     function_call: Optional[FunctionCall] = Field(default=None, description="Function call chunk.")
     functions_state_id: Optional[str] = Field(default=None, description="Function state ID.")
+    inline_data: Optional[Dict[str, Any]] = Field(default=None, description="Inline sources, widgets, and metadata.")
+    logprobs: Optional[List[Dict[str, Any]]] = Field(default=None, description="Generated token probabilities.")
 
 
 class Choices(BaseModel):
@@ -183,12 +214,14 @@ class Chat(BaseModel):
     """Chat completion request parameters."""
 
     model: Optional[str] = Field(default=None, description="Name of the model to use.")
+    assistant_id: Optional[str] = Field(default=None, description="Assistant identifier, used instead of a model.")
     messages: List[Messages] = Field(description="List of messages in the conversation.")
     temperature: Optional[float] = Field(default=None, description="Sampling temperature.")
     top_p: Optional[float] = Field(default=None, description="Nucleus sampling parameter (alternative to temperature).")
     n: Optional[int] = Field(default=None, description="Number of completion choices to generate.")
     stream: Optional[bool] = Field(default=None, description="If True, stream partial progress.")
     max_tokens: Optional[int] = Field(default=None, description="Maximum number of tokens to generate.")
+    reasoning_max_tokens: Optional[int] = Field(default=None, description="Maximum number of reasoning tokens.")
     repetition_penalty: Optional[float] = Field(default=None, description="Repetition penalty factor.")
     update_interval: Optional[float] = Field(default=None, description="Interval in seconds between stream updates.")
     profanity_check: Optional[bool] = Field(default=None, description="Enable profanity filtering.")
@@ -203,9 +236,7 @@ class Chat(BaseModel):
     additional_fields: Optional[Dict[str, Any]] = Field(
         default=None, description="Additional fields to pass to the API."
     )
-    reasoning_effort: Optional[Literal["low", "medium", "high"]] = Field(
-        default=None, description="Reasoning effort level."
-    )
+    reasoning_effort: Optional[str] = Field(default=None, description="Reasoning effort level.")
 
 
 class ChatCompletion(APIResponse):
@@ -216,6 +247,8 @@ class ChatCompletion(APIResponse):
     model: str = Field(description="Model name used for generation.")
     thread_id: Optional[str] = Field(default=None, description="Thread ID.")
     message_id: Optional[str] = Field(default=None, description="Message ID. Present if storage mode is used.")
+    additional_data: Optional[Dict[str, Any]] = Field(default=None, description="Sources and execution metadata.")
+    error_details: Optional[Dict[str, Any]] = Field(default=None, description="Structured error details.")
     usage: Usage = Field(description="Usage statistics.")
     object_: str = Field(alias="object", description="Object type (e.g. 'chat.completion').")
 
@@ -226,11 +259,14 @@ class ChatCompletionChunk(APIResponse):
     choices: List[ChoicesChunk] = Field(description="List of completion choice chunks.")
     created: int = Field(description="Creation timestamp (Unix time).")
     model: str = Field(description="Model name used for generation.")
+    thread_id: Optional[str] = Field(default=None, description="Thread ID.")
+    message_id: Optional[str] = Field(default=None, description="Message ID. Present if storage mode is used.")
+    additional_data: Optional[Dict[str, Any]] = Field(default=None, description="Sources and execution metadata.")
+    error_details: Optional[Dict[str, Any]] = Field(default=None, description="Structured error details.")
     object_: str = Field(alias="object", description="Object type (e.g. 'chat.completion.chunk').")
     usage: Optional[Usage] = Field(default=None, description="Usage statistics.")
 
 
-FunctionParametersProperty.model_rebuild()
 Messages.model_rebuild()
 
 
@@ -246,6 +282,7 @@ __all__ = (
     "FunctionCall",
     "FunctionParameters",
     "FunctionParametersProperty",
+    "FunctionRanker",
     "Messages",
     "MessagesChunk",
     "MessagesRole",

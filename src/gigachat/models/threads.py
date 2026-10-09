@@ -1,7 +1,7 @@
 from enum import Enum
 from typing import List, Literal, Optional, Union
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import AliasChoices, BaseModel, ConfigDict, Field
 
 from gigachat.models.base import APIResponse
 from gigachat.models.chat import (
@@ -27,7 +27,11 @@ class ThreadStatus(str, Enum):
 class Thread(BaseModel):
     """Thread object."""
 
-    id_: str = Field(alias="id", description="The identifier, which can be referenced in API endpoints.")
+    id_: str = Field(
+        alias="id",
+        validation_alias=AliasChoices("thread_id", "id"),
+        description="The identifier, which can be referenced in API endpoints.",
+    )
     assistant_id: Optional[str] = Field(
         default=None, description="The ID of the assistant. Passed with the first message."
     )

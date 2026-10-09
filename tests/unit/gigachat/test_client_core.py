@@ -17,8 +17,11 @@ from tests.constants import (
     AUTH_URL,
     BASE_URL,
     CREDENTIALS,
+    EXPIRES_AT_VALID,
     OAUTH_TOKEN_VALID,
+    PASSWORD_EXPIRES_AT_VALID,
     PASSWORD_TOKEN_VALID,
+    PASSWORD_TOKEN_VALID_MS,
     TOKEN_URL,
 )
 
@@ -87,10 +90,21 @@ def test_get_token_password(httpx_mock: HTTPXMock) -> None:
 
     assert model._access_token is not None
     assert model._access_token.access_token == PASSWORD_TOKEN_VALID["tok"]
-    assert model._access_token.expires_at == PASSWORD_TOKEN_VALID["exp"]
+    assert model._access_token.expires_at == PASSWORD_EXPIRES_AT_VALID * 1000
     assert access_token is not None
     assert access_token.access_token == PASSWORD_TOKEN_VALID["tok"]
-    assert access_token.expires_at == PASSWORD_TOKEN_VALID["exp"]
+    assert access_token.expires_at == PASSWORD_EXPIRES_AT_VALID * 1000
+
+
+def test_get_token_password_already_in_milliseconds(httpx_mock: HTTPXMock) -> None:
+    """A millisecond-based exp must be passed through untouched."""
+    httpx_mock.add_response(url=TOKEN_URL, json=PASSWORD_TOKEN_VALID_MS)
+
+    model = GigaChat(base_url=BASE_URL, user="user", password="password")
+    access_token = model.get_token()
+
+    assert access_token is not None
+    assert access_token.expires_at == EXPIRES_AT_VALID
 
 
 def test_get_token_manual() -> None:
@@ -162,10 +176,10 @@ async def test_aget_token_password(httpx_mock: HTTPXMock) -> None:
 
     assert model._access_token is not None
     assert model._access_token.access_token == PASSWORD_TOKEN_VALID["tok"]
-    assert model._access_token.expires_at == PASSWORD_TOKEN_VALID["exp"]
+    assert model._access_token.expires_at == PASSWORD_EXPIRES_AT_VALID * 1000
     assert access_token is not None
     assert access_token.access_token == PASSWORD_TOKEN_VALID["tok"]
-    assert access_token.expires_at == PASSWORD_TOKEN_VALID["exp"]
+    assert access_token.expires_at == PASSWORD_EXPIRES_AT_VALID * 1000
 
 
 async def test_aget_token_manual() -> None:

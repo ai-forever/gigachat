@@ -77,7 +77,7 @@ def request_with_dict() -> Dict[str, Any]:
 
 def extract_call(response: Any) -> Dict[str, Any]:
     """Return the first function call from a response."""
-    response_data = response.model_dump(mode="json", exclude_none=True)
+    response_data = response.model_dump(mode="json", exclude_none=True, by_alias=True)
     for message in response_data["messages"]:
         function_call = message.get("function_call")
         if function_call is None:
@@ -102,6 +102,7 @@ def extract_call(response: Any) -> Dict[str, Any]:
             if state_id is not None:
                 assistant_message["tools_state_id"] = state_id
             return {
+                "id": function_call.get("id"),
                 "name": function_call["name"],
                 "arguments": function_call.get("arguments") or {},
                 "state_field": "tools_state_id" if state_id is not None else None,
@@ -119,7 +120,7 @@ def add_function_result(request: Any, call: Dict[str, Any], result: Dict[str, An
     )
     payload = dict(payload)
     payload.pop("tool_config", None)
-    tool_message = {
+    tool_message: Dict[str, Any] = {
         "role": "tool",
         "content": [
             {
@@ -130,6 +131,9 @@ def add_function_result(request: Any, call: Dict[str, Any], result: Dict[str, An
             }
         ],
     }
+
+    if call.get("id") is not None:
+        tool_message["content"][0]["function_result"]["id"] = call["id"]
 
     if call["state_field"] is not None:
         tool_message[call["state_field"]] = call["state_id"]
@@ -150,7 +154,9 @@ def run(client: GigaChat, request: Any) -> str:
 
     result = get_weather(**call["arguments"])
     final_response = client.chat.create(add_function_result(request, call, result))
-    return json.dumps(final_response.model_dump(mode="json", exclude_none=True), ensure_ascii=False, indent=2)
+    return json.dumps(
+        final_response.model_dump(mode="json", exclude_none=True, by_alias=True), ensure_ascii=False, indent=2
+    )
 
 
 def main() -> None:

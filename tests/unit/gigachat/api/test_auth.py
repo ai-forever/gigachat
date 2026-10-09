@@ -17,6 +17,7 @@ from gigachat.models import AccessToken, Token
 from tests.constants import (
     AUTH_URL,
     BASE_URL,
+    EXPIRES_AT_VALID,
     OAUTH_TOKEN_VALID,
     PASSWORD_TOKEN_VALID,
     TOKEN_URL,
@@ -30,6 +31,16 @@ def test_auth_sync(httpx_mock: HTTPXMock) -> None:
         response = auth.auth_sync(client, url=AUTH_URL, credentials="credentials", scope="scope")
 
     assert isinstance(response, AccessToken)
+
+
+def test_auth_sync_normalizes_seconds_in_tok_response(httpx_mock: HTTPXMock) -> None:
+    """The OAuth endpoint may answer in the tok/exp shape with seconds."""
+    httpx_mock.add_response(url=AUTH_URL, json=PASSWORD_TOKEN_VALID)
+
+    with httpx.Client() as client:
+        response = auth.auth_sync(client, url=AUTH_URL, credentials="credentials", scope="scope")
+
+    assert response.expires_at == EXPIRES_AT_VALID
 
 
 def test_auth_sync_value_error(httpx_mock: HTTPXMock) -> None:

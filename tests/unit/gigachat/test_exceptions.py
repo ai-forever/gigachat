@@ -1,4 +1,4 @@
-from typing import Type, cast
+from typing import Optional, Type, cast
 
 import httpx
 import pytest
@@ -31,7 +31,25 @@ def test_response_error_init() -> None:
     assert exc.status_code == status_code
     assert exc.content == content
     assert exc.headers == headers
-    assert str(exc) == "400 http://example.com: b'error', Headers({'x-request-id': '123'})"
+    assert exc.args == ("400 http://example.com",)
+    assert str(exc) == "400 http://example.com: 'error', Headers({'x-request-id': '123'})"
+
+
+@pytest.mark.parametrize(
+    ("content", "expected_text"),
+    [
+        ('{"message":"Неверный параметр"}'.encode(), "Неверный параметр"),
+        (b"invalid byte: \xff", "invalid byte: \ufffd"),
+        (b"", "''"),
+        (None, "None"),
+    ],
+)
+def test_response_error_readable_body(content: Optional[bytes], expected_text: str) -> None:
+    exc = UnprocessableEntityError("https://example.com/chat", 422, content, None)
+    assert expected_text in str(exc)
+    assert exc.content is content
+    assert exc.headers is None
+    assert exc.args == ("422 https://example.com/chat",)
 
 
 def test_rate_limit_retry_after() -> None:

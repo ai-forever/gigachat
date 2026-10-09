@@ -43,7 +43,8 @@ class ResponseError(GigaChatException):
         super().__init__(f"{status_code} {url}")
 
     def __str__(self) -> str:
-        return f"{self.status_code} {self.url}: {self.content!r}, {self.headers!r}"
+        content = self.content.decode("utf-8", errors="replace") if self.content is not None else None
+        return f"{self.status_code} {self.url}: {content!r}, {self.headers!r}"
 
 
 class BadRequestError(ResponseError):

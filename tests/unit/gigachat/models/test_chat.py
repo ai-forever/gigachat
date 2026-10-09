@@ -1,7 +1,7 @@
 import json
 from copy import deepcopy
 from pathlib import Path
-from typing import Any, Dict, cast
+from typing import Any, Dict, Type, Union, cast
 
 import pytest
 from pydantic import ValidationError
@@ -27,6 +27,7 @@ from gigachat.models.chat import (
     Function,
     FunctionCall,
     FunctionParameters,
+    FunctionParametersProperty,
     FunctionRanker,
     Messages,
     MessagesRole,
@@ -84,6 +85,55 @@ def test_function_model_validator() -> None:
     assert "prop" in func.parameters.properties
 
 
+@pytest.mark.parametrize("parameters", [None, "", {}])
+def test_function_flat_schema_preserves_keywords_and_metadata(parameters: Any) -> None:
+    schema = {
+        "$defs": {"Place": {"type": "object", "properties": {"city": {"type": "string"}}}},
+        "type": ["object", "null"],
+        "properties": {"place": {"$ref": "#/$defs/Place"}, "anything": True, "forbidden": False},
+        "required": ["place"],
+        "allOf": [{"minProperties": 1}],
+        "unevaluatedProperties": False,
+        "const": None,
+        "default": None,
+        "x-custom-keyword": {"enabled": True},
+    }
+    metadata = {
+        "name": "lookup",
+        "description": "Look up a place.",
+        "few_shot_examples": [{"request": "Find Paris", "params": {"place": {"city": "Paris"}}}],
+        "return_parameters": {"type": "string"},
+    }
+    data = {**schema, **metadata, "title": "IgnoredTitle", "parameters": parameters}
+    original = deepcopy(data)
+
+    function = Function.model_validate(data)
+
+    assert function.model_dump(exclude_none=True, by_alias=True) == {**metadata, "parameters": schema}
+    assert data == original
+
+
+def test_function_explicit_parameters_take_precedence_over_flat_schema() -> None:
+    parameters = {
+        "type": "object",
+        "properties": {"value": {"type": "integer"}},
+        "required": ["value"],
+    }
+    data = {
+        "title": "lookup",
+        "parameters": parameters,
+        "properties": {"ignored": {"type": "string"}},
+        "required": ["ignored"],
+        "$defs": {"Ignored": {"type": "string"}},
+    }
+    original = deepcopy(data)
+
+    function = Function.model_validate(data)
+
+    assert function.model_dump(exclude_none=True, by_alias=True) == {"name": "lookup", "parameters": parameters}
+    assert data == original
+
+
 def test_usage_validation() -> None:
     with pytest.raises(ValidationError):
         Usage(prompt_tokens="invalid", completion_tokens=10, total_tokens=20)
@@ -91,7 +141,112 @@ def test_usage_validation() -> None:
 
 def test_function_parameters_default() -> None:
     params = FunctionParameters()
-    assert params.type_ == "object"
+    assert params.type_ is None
+    assert params.model_dump(exclude_none=True, by_alias=True) == {}
+
+
+def test_function_parameters_preserve_json_schema_without_defaults() -> None:
+    parameters = {
+        "$defs": {
+            "coordinate": {
+                "type": "number",
+                "minimum": -180,
+            }
+        },
+        "type": "object",
+        "properties": {
+            "location": {
+                "anyOf": [
+                    {"type": "string"},
+                    {
+                        "type": "array",
+                        "prefixItems": [
+                            {"$ref": "#/$defs/coordinate"},
+                            {"$ref": "#/$defs/coordinate"},
+                        ],
+                        "items": False,
+                    },
+                ]
+            },
+            "priority": {"enum": ["normal", 1, None]},
+            "anything": True,
+            "forbidden": False,
+        },
+        "required": ["location"],
+        "additionalProperties": False,
+    }
+
+    function = Function(name="route", parameters=parameters)
+
+    assert function.model_dump(exclude_none=True, by_alias=True)["parameters"] == parameters
+
+
+def test_function_parameters_preserve_null_valued_keywords() -> None:
+    """`exclude_none=True` must not drop schema keywords that are legitimately null."""
+    parameters = {
+        "type": "object",
+        "properties": {"units": {"type": "string", "default": None}},
+        "default": None,
+        "const": None,
+    }
+
+    function = Function(name="route", parameters=parameters)
+
+    assert function.model_dump(exclude_none=True, by_alias=True)["parameters"] == parameters
+
+
+def test_function_parameter_property_preserves_extensions_and_union_type() -> None:
+    schema = {
+        "type": ["string", "null"],
+        "enum": ["automatic", 1, None],
+        "const": "automatic",
+        "nullable": True,
+    }
+
+    property_schema = FunctionParametersProperty.model_validate(schema)
+
+    assert property_schema.model_dump(exclude_none=True, by_alias=True) == schema
+
+
+@pytest.mark.parametrize("schema_type", [FunctionParameters, FunctionParametersProperty])
+@pytest.mark.parametrize(
+    ("selection", "expected"),
+    [
+        ({}, {"type": "object", "const": None, "default": None}),
+        ({"exclude": {"const"}}, {"type": "object", "default": None}),
+        ({"exclude": {"const": True}}, {"type": "object", "default": None}),
+        ({"exclude": {"const": ...}}, {"type": "object", "default": None}),
+        ({"include": {"type_"}}, {"type": "object"}),
+        ({"include": {"default": True}}, {"default": None}),
+        ({"include": set()}, {}),
+    ],
+)
+def test_function_schema_null_keywords_respect_serialization_selection(
+    schema_type: Type[Union[FunctionParameters, FunctionParametersProperty]],
+    selection: Dict[str, Any],
+    expected: Dict[str, Any],
+) -> None:
+    schema = schema_type.model_validate({"type": "object", "const": None, "default": None})
+
+    assert schema.model_dump(by_alias=True, exclude_none=True, **selection) == expected
+    assert json.loads(schema.model_dump_json(by_alias=True, exclude_none=True, **selection)) == expected
+
+
+def test_typed_function_property_preserves_null_keywords_in_request() -> None:
+    from gigachat.api.chat import _build_request_json
+
+    schema = {"type": ["string", "null"], "const": None, "default": None}
+    request = Chat(
+        messages=[],
+        functions=[
+            Function(
+                name="lookup",
+                parameters=FunctionParameters(properties={"value": FunctionParametersProperty.model_validate(schema)}),
+            )
+        ],
+    )
+
+    assert _build_request_json(request)["functions"][0]["parameters"] == {"properties": {"value": schema}}
 
 
 def test_chat_function_ranker_from_dict() -> None:
@@ -157,3 +312,36 @@ def test_primary_response_contract_does_not_validate_as_chat_completion() -> Non
     assert response.messages is not None
     with pytest.raises(ValidationError):
         ChatCompletion.model_validate(payload)
+
+
+def test_function_call_identifier_survives_history_roundtrip() -> None:
+    message = {
+        "role": "assistant",
+        "content": "",
+        "function_call": {"id": "call-1", "name": "lookup", "arguments": {"value": None}},
+        "inline_data": {"sources": [{"source-1": {"title": "Example", "url": "https://example.com"}}]},
+    }
+
+    parsed = Messages.model_validate(message)
+
+    assert parsed.function_call is not None
+    assert parsed.function_call.id_ == "call-1"
+    assert parsed.model_dump(exclude_none=True, by_alias=True) == message
+    assert FunctionCall(id_="call-2", name="lookup").model_dump(by_alias=True)["id"] == "call-2"
+
+
+def test_reasoning_effort_accepts_model_specific_values() -> None:
+    request = Chat(messages=[], reasoning_effort="custom-effort", reasoning_max_tokens=32)
+
+    assert request.model_dump(exclude_none=True)["reasoning_effort"] == "custom-effort"
+    assert request.reasoning_max_tokens == 32
+
+
+def test_completion_preserves_error_details() -> None:
+    payload = json.loads((TEST_DATA_DIR / "chat_completion.json").read_text(encoding="utf-8"))
+    payload["error_details"] = {"http_status": 503, "user_message": "Try again", "log_msg": "Example failure"}
+
+    response = ChatCompletion.model_validate(payload)
+
+    assert response.error_details == payload["error_details"]
+    assert response.model_dump(exclude_none=True, by_alias=True) == payload

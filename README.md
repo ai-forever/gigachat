@@ -102,6 +102,11 @@ During the migration, old `gigachat.models.Chat*`, `Messages*`, `Function*`, and
 
 For a step-by-step checklist and import mapping, see [MIGRATION_GUIDE.md](MIGRATION_GUIDE.md)
 
+Upgrading to `0.2.4a1` also changes v1 function-schema defaults and nested property
+access, and moves several advanced v2 fields to untyped extras. Review the
+[release compatibility notes](MIGRATION_GUIDE.md#upgrading-to-024a1) even if you
+continue using the v1 methods.
+
 ### Basic Chat
 
 ```python
@@ -286,7 +291,16 @@ The old-contract helpers remain available at `client.chat_parse()` / `client.ach
 See [examples/example_structured_output.ipynb](examples/example_structured_output.ipynb) for more approaches (raw dict schema, Pydantic model schema, and the old-contract parse helper).
 
 ### More examples
-See the [examples/](https://github.com/ai-forever/gigachat/tree/main/examples/) folder for complete working examples including the primary chat surface, functions, context variables, AI detection, vision, and structured output.
+
+See the [example index](examples/README.md) for runnable modules and configuration.
+Examples for the updated contracts include:
+
+- [Parallel function roundtrip](examples/tools/parallel_function_calling_roundtrip.py): execute calls concurrently and return results with matching IDs.
+- [Any function selection](examples/tools/any_function_call.py): `tool_config.mode="any"` and a normal follow-up answer.
+- [Reasoning budgets](examples/chat_completions/reasoning.py): reasoning and total generation limits for v1/v2.
+- [Additional request fields](examples/chat_completions/additional_fields.py): extra options at their API wire locations.
+- [Session headers](examples/chat_completions/session_headers.py) and [thread storage](examples/chat_completions/thread_storage.py): request sessions and server-side conversation history.
+- [Response metadata](examples/chat_completions/response_metadata.py): stream metadata and readable error handling.
 
 ## Configuration
 
@@ -297,6 +311,7 @@ See the [examples/](https://github.com/ai-forever/gigachat/tree/main/examples/) 
 | `credentials` | `str` | `None` | Authorization key from GigaChat API |
 | `scope` | `str` | `GIGACHAT_API_PERS` | API scope (see below) |
 | `model` | `str` | `None` | Model for requests. No built-in default: must be set here, via `GIGACHAT_MODEL`, or per request |
+| `session_id` | `str` | `None` | Default `X-Session-ID` header for API requests; context headers can override it |
 | `base_url` | `str` | `https://api.giga.chat/v1` | API base URL |
 | `auth_url` | `str` | `https://ngw.devices.sberbank.ru:9443/api/v2/oauth` | OAuth token endpoint |
 | `access_token` | `str` | `None` | Pre-obtained access token (bypasses OAuth) |
@@ -341,6 +356,9 @@ export GIGACHAT_CA_BUNDLE_FILE="<your_ca_bundle_file>"
 
 # Model (required unless passed per request - the SDK has no default model)
 export GIGACHAT_MODEL="GigaChat-2"
+
+# Optional default session identifier
+export GIGACHAT_SESSION_ID="conversation-123"
 
 # Retry
 export GIGACHAT_MAX_RETRIES="3"
@@ -567,7 +585,12 @@ except GigaChatException as e:
 
 ### Context Variables
 
-Track requests with custom headers for logging and debugging:
+Set a default session identifier on a client with `GigaChat(session_id="conversation-123")`
+or `GIGACHAT_SESSION_ID`. Reuse it for requests belonging to the same conversation.
+The SDK sends it as `X-Session-ID` on API requests; it does not guarantee a cache hit.
+`session_id_cvar` overrides the client default, and `custom_headers_cvar` has the highest priority.
+
+Track individual requests with context headers for logging and debugging:
 
 ```python
 from gigachat import GigaChat, session_id_cvar, request_id_cvar, custom_headers_cvar

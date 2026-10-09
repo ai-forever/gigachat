@@ -406,12 +406,14 @@ from pytest_httpx import HTTPXMock
 from gigachat import GigaChat
 from gigachat.models import ChatCompletion
 
+BASE_URL = "http://base_url"
+
 def test_chat_completion(httpx_mock: HTTPXMock) -> None:
     """Test basic chat completion."""
     # Mock the response
     httpx_mock.add_response(
         method="POST",
-        url="https://gigachat.devices.sberbank.ru/api/v1/chat/completions",
+        url=f"{BASE_URL}/chat/completions",
         json={
             "choices": [
                 {
@@ -420,17 +422,25 @@ def test_chat_completion(httpx_mock: HTTPXMock) -> None:
                     "finish_reason": "stop",
                 }
             ],
+            "created": 1700000000,
             "model": "GigaChat",
+            "object": "chat.completion",
             "usage": {"prompt_tokens": 10, "completion_tokens": 5, "total_tokens": 15},
         },
     )
 
     # Test the method
-    with GigaChat(credentials="test", verify_ssl_certs=False) as client:
+    with GigaChat(base_url=BASE_URL, access_token="token", model="GigaChat") as client:
         result = client.chat("Hello")
         assert isinstance(result, ChatCompletion)
         assert result.choices[0].message.content == "Hello!"
 ```
+
+Pass `access_token` rather than `credentials` so the client skips the OAuth
+call, and set `model` explicitly: the SDK has no default model and raises
+`ModelNotSpecifiedError` otherwise. Mocked payloads must include every
+required field of the response model (`created`, `model`, `object`, `usage`
+for `ChatCompletion`).
 
 **Example: Testing an async method**
 
@@ -439,11 +449,23 @@ async def test_achat_completion(httpx_mock: HTTPXMock) -> None:
     """Test async chat completion."""
     httpx_mock.add_response(
         method="POST",
-        url="https://gigachat.devices.sberbank.ru/api/v1/chat/completions",
-        json={"choices": [{"message": {"role": "assistant", "content": "Hi!"}}]},
+        url=f"{BASE_URL}/chat/completions",
+        json={
+            "choices": [
+                {
+                    "message": {"role": "assistant", "content": "Hi!"},
+                    "index": 0,
+                    "finish_reason": "stop",
+                }
+            ],
+            "created": 1700000000,
+            "model": "GigaChat",
+            "object": "chat.completion",
+            "usage": {"prompt_tokens": 10, "completion_tokens": 5, "total_tokens": 15},
+        },
     )
 
-    async with GigaChat(credentials="test", verify_ssl_certs=False) as client:
+    async with GigaChat(base_url=BASE_URL, access_token="token", model="GigaChat") as client:
         result = await client.achat("Hello")
         assert result.choices[0].message.content == "Hi!"
 ```
@@ -509,12 +531,15 @@ tests/
 
 ### Test Fixtures
 
-Common fixtures are available in `tests/unit/conftest.py`:
+`tests/unit/conftest.py` provides an autouse fixture that clears environment
+variables before each test, so settings never leak between tests. The
+`httpx_mock` fixture for mocking HTTP requests comes from `pytest-httpx`.
 
-- `httpx_mock`: Mock HTTP requests (pytest-httpx)
-- `base_url`: Standard API base URL
-- `auth_url`: OAuth authentication URL
-- `credentials`: Test credentials
+Shared test values live in `tests/constants.py` and are imported directly:
+
+```python
+from tests.constants import ACCESS_TOKEN, AUTH_URL, BASE_URL, CHAT_URL, CREDENTIALS
+```
 
 For integration tests, use fixtures from `tests/integration/conftest.py`:
 

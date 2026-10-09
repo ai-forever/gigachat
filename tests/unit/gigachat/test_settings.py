@@ -15,6 +15,7 @@ def test_defaults() -> None:
     assert settings.credentials is None
     assert settings.access_token is None
     assert settings.model is None
+    assert settings.session_id is None
     assert settings.profanity_check is None
     assert settings.user is None
     assert settings.password is None
@@ -40,6 +41,7 @@ def test_env_override(monkeypatch: pytest.MonkeyPatch) -> None:
         "GIGACHAT_SCOPE": "custom-scope",
         "GIGACHAT_ACCESS_TOKEN": "custom-token",
         "GIGACHAT_MODEL": "custom-model",
+        "GIGACHAT_SESSION_ID": "custom-session",
         "GIGACHAT_PROFANITY_CHECK": "true",
         "GIGACHAT_USER": "custom-user",
         "GIGACHAT_PASSWORD": "custom-password",
@@ -63,6 +65,7 @@ def test_env_override(monkeypatch: pytest.MonkeyPatch) -> None:
     assert settings.scope == "custom-scope"
     assert settings.access_token == "custom-token"
     assert settings.model == "custom-model"
+    assert settings.session_id == "custom-session"
     assert settings.profanity_check is True
     assert settings.user == "custom-user"
     assert settings.password == "custom-password"

@@ -23,6 +23,8 @@ def _build_request_json(chat: Chat, *, exclude_stream: bool = False) -> Dict[str
     fields = json_data.pop("additional_fields", None)
     if fields:
         json_data = {**fields, **json_data}
+    if exclude_stream:
+        json_data.pop("stream", None)
     return json_data
 
 

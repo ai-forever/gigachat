@@ -17,8 +17,13 @@ from gigachat.models.chat_completions import ChatCompletionChunk, ChatCompletion
 
 
 def _build_request_json(chat: ChatCompletionRequest) -> Dict[str, Any]:
-    """Serialize *chat* to a JSON-ready dict."""
-    return chat.model_dump(exclude_none=True, by_alias=True, exclude={"stream"})
+    """Serialize *chat*, merging extra fields below explicit request fields."""
+    json_data = chat.model_dump(exclude_none=True, by_alias=True, exclude={"stream"})
+    fields = json_data.pop("additional_fields", None)
+    if fields:
+        json_data = {**fields, **json_data}
+    json_data.pop("stream", None)
+    return json_data
 
 
 def _get_chat_kwargs(
