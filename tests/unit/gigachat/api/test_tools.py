@@ -1,9 +1,13 @@
+import json
+
 import httpx
 from pytest_httpx import HTTPXMock
 
 from gigachat.api.tools import (
     ai_check_async,
     ai_check_sync,
+    filter_check_async,
+    filter_check_sync,
     functions_convert_async,
     functions_convert_sync,
     get_balance_async,
@@ -11,7 +15,16 @@ from gigachat.api.tools import (
     tokens_count_async,
     tokens_count_sync,
 )
-from gigachat.models.tools import AICheckResult, Balance, OpenApiFunctions, TokensCount
+from gigachat.models.chat import Messages, MessagesRole
+from gigachat.models.tools import (
+    AICheckResult,
+    Balance,
+    FilterCheckRequest,
+    FilterCheckResult,
+    FilterCheckSettings,
+    OpenApiFunctions,
+    TokensCount,
+)
 from tests.constants import (
     AI_CHECK,
     AI_CHECK_URL,
@@ -20,6 +33,8 @@ from tests.constants import (
     BASE_URL,
     CONVERT_FUNCTIONS,
     CONVERT_FUNCTIONS_URL,
+    FILTER_CHECK,
+    FILTER_CHECK_URL,
     TOKENS_COUNT,
     TOKENS_COUNT_URL,
 )
@@ -79,6 +94,36 @@ async def test_ai_check_async(httpx_mock: HTTPXMock) -> None:
         response = await ai_check_async(client, input_="text", model="model")
 
     assert isinstance(response, AICheckResult)
+
+
+def test_filter_check_sync(httpx_mock: HTTPXMock) -> None:
+    httpx_mock.add_response(url=FILTER_CHECK_URL, json=FILTER_CHECK)
+    payload = FilterCheckRequest(
+        messages=[Messages(role=MessagesRole.USER, content="text")],
+        settings=FilterCheckSettings(neuro=False),
+    )
+
+    with httpx.Client(base_url=BASE_URL) as client:
+        response = filter_check_sync(client, payload=payload)
+
+    assert isinstance(response, FilterCheckResult)
+    request = httpx_mock.get_request()
+    assert request is not None
+    assert json.loads(request.read()) == {
+        "model": "GigaFilter",
+        "messages": [{"role": "user", "content": "text"}],
+        "settings": {"neuro": False, "blacklist": True, "whitelist": True},
+    }
+
+
+async def test_filter_check_async(httpx_mock: HTTPXMock) -> None:
+    httpx_mock.add_response(url=FILTER_CHECK_URL, json=FILTER_CHECK)
+    payload = FilterCheckRequest(messages=[Messages(role=MessagesRole.USER, content="text")])
+
+    async with httpx.AsyncClient(base_url=BASE_URL) as client:
+        response = await filter_check_async(client, payload=payload)
+
+    assert isinstance(response, FilterCheckResult)
 
 
 def test_get_balance_sync(httpx_mock: HTTPXMock) -> None:
