@@ -66,3 +66,40 @@ Layered design under `src/gigachat/`:
 ## Dependencies
 
 Runtime: `httpx`, `pydantic` (V2), `pydantic-settings`. Keep minimal — justify any additions.
+
+## Cursor Cloud specific instructions
+
+This repo is a **Python SDK** (no local API server). Development is `uv` + `make` only.
+
+### Toolchain
+
+- Install [uv](https://docs.astral.sh/uv/) if missing, then ensure `$HOME/.local/bin` is on `PATH`.
+- `make install` runs `uv sync --group dev`. If `pre-commit install` fails because `core.hooksPath` is set, hooks are optional; use `uv run pre-commit run --all-files` when needed.
+- All project commands should go through `uv run` or `make` so the `.venv` is used.
+
+### Verification (matches CI)
+
+| Check | Command |
+|-------|---------|
+| Lint + format | `make lint` |
+| Types | `make mypy` |
+| Unit tests | `make test` |
+| Full CI suite | `make all` |
+| Integration (VCR replay) | `CI=true env -u GIGACHAT_BASE_URL -u GIGACHAT_MODEL -u GIGACHAT_PROFANITY_CHECK -u GIGACHAT_VERIFY_SSL_CERTS -u GIGACHAT_USER -u GIGACHAT_PASSWORD make test-integration-ci` |
+
+**VCR replay caveat:** Cassettes target `https://gigachat.devices.sberbank.ru/api/v1`. Injected Cloud secrets such as `GIGACHAT_BASE_URL` (IFT/staging) or `GIGACHAT_MODEL` change request bodies/hosts and break replay unless unset for that command (see `env -u` prefix above). Live calls can still use those variables.
+
+### Live API smoke test (“hello world”)
+
+With `GIGACHAT_USER` / `GIGACHAT_PASSWORD` (or `GIGACHAT_CREDENTIALS`) configured:
+
+```bash
+uv run python -c "
+from gigachat import GigaChat
+import os
+with GigaChat(user=os.environ['GIGACHAT_USER'], password=os.environ['GIGACHAT_PASSWORD'], verify_ssl_certs=False) as c:
+    print(c.chat('Привет! Ответь одним коротким предложением.').choices[0].message.content)
+"
+```
+
+There is no `make run` or dev server; notebooks under `examples/` need Jupyter installed separately.
