@@ -53,7 +53,7 @@ This library is part of [GigaChain](https://github.com/ai-forever/gigachain) and
 pip install gigachat
 ```
 
-**Requirements:** Python 3.8 — 3.13
+**Requirements:** Python 3.8 — 3.14
 
 > **Note:** In production, keep TLS verification enabled (default).
 > See [SSL Certificates](#ssl-certificates) for setup instructions.

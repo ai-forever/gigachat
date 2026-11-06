@@ -4,7 +4,7 @@ Guidance for AI coding agents working with this repository.
 
 ## Project Overview
 
-GigaChat Python SDK — a typed Python client for the GigaChat REST API (Sber's LLM). Supports Python 3.8–3.13. Published on PyPI as `gigachat`.
+GigaChat Python SDK — a typed Python client for the GigaChat REST API (Sber's LLM). Supports Python 3.8–3.14. Published on PyPI as `gigachat`.
 
 ## Common Commands
 
