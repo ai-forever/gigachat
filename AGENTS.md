@@ -33,8 +33,8 @@ Layered design under `src/gigachat/`:
 - **Client layer** (`client.py`): `GigaChat` (hybrid sync+async), `GigaChatSyncClient`, `GigaChatAsyncClient`, all inheriting from `_BaseClient`. HTTP clients are lazily initialized. Also contains `chat_parse()`/`achat_parse()` — structured output helpers that send a request with a JSON Schema `response_format`, then parse and validate the response against a Pydantic model.
 - **API layer** (`api/`): One module per endpoint group (`chat.py`, `embeddings.py`, `files.py`, etc.). Functions take `httpx2.Client`/`AsyncClient` + params, return Pydantic models. Route through the shared `_execution.py` request policy.
 - **Models layer** (`models/`): Pydantic V2 models for all requests/responses. Base class `APIResponse` carries `x_headers` metadata.
-- **Auth/execution** (`_execution.py`): Shared token refresh and bounded request policy; legacy helpers remain in `authentication.py`. Supports OAuth credentials, user/password, mTLS, access token, and external Authorization overrides.
-- **Retry** (`_execution.py`): Disabled by default, bounded by count/time/replayability, with a separate single authorized 401 replay. Never replay a stream after delivery begins. `retry.py` retains compatibility helpers.
+- **Auth/execution** (`_execution.py`): Shared token refresh and bounded request policy; compatibility protocol declarations remain in `authentication.py`. Supports OAuth credentials, user/password, mTLS, access token, and external Authorization overrides.
+- **Retry** (`_execution.py`): Disabled by default, bounded by count/time/replayability, with a separate single authorized 401 replay. Never replay a stream after delivery begins. `retry.py` only classifies retryable failures.
 - **Settings** (`settings.py`): `pydantic-settings` with `GIGACHAT_` env-var prefix.
 - **Context variables** (`context.py`): Thread-safe `contextvars` for `session_id`, `request_id`, `client_id`, `authorization`, `custom_headers`.
 - **Exceptions** (`exceptions.py`): Hierarchy rooted at `GigaChatException` → `ResponseError` → specific HTTP status exceptions.
@@ -70,7 +70,7 @@ Runtime: `httpx2`, `pydantic` (V2), `pydantic-settings`, `typing-extensions`. Op
 ## HTTP lifecycle and migration
 
 - Public RequestOptions must flow through every high-level endpoint; views share the owner's transport and token state.
-- Injected HTTP clients and aiohttp sessions are borrowed. Close responses owned by streams without closing their shared client.
+- Injected HTTP clients are borrowed. The aiohttp adapter owns its lazy session. Close responses owned by streams without closing their shared client.
 - Use Stream/AsyncStream context managers for deterministic early exit. Forward close/aclose through intermediate generators.
 - Preserve constructor None defaults, primary model extras, native JSON Schema, and existing tuple parse returns.
 - Do not log raw chunks, prompts, OAuth bodies, file bytes, or credentials.

@@ -22,9 +22,9 @@ jobs:
       - name: Install dependencies
         run: uv sync --python 3.12 --frozen --all-extras --dev
       - name: Format
-        run: uv run ruff format --check src tests
+        run: uv run ruff format --check src tests examples
       - name: Lint
-        run: uv run ruff check src tests
+        run: uv run ruff check src tests examples
       - name: Type Check
         run: uv run mypy src tests
 
@@ -56,6 +56,9 @@ jobs:
 
       - name: Install dependencies
         run: uv sync --python ${{ matrix.python-version }} --frozen --all-extras --dev
+
+      - name: Verify stable interpreter
+        run: uv run python -c "import sys; print(sys.version); assert sys.version_info.releaselevel == 'final'"
 
       - name: Test
         run: uv run pytest --cov=src --cov-report=term-missing --cov-report=xml
@@ -93,19 +96,23 @@ jobs:
       - run: uv run --no-sync pytest -m integration --record-mode=none tests/integration
 
   package:
-    name: Build wheel and source distribution
+    name: Build and install on Python ${{ matrix.python-version }}
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.10", "3.15"]
     steps:
       - uses: actions/checkout@v4
       - uses: astral-sh/setup-uv@v5
-      - run: uv python install 3.12
-      - run: uv sync --python 3.12 --frozen --dev
+      - run: uv python install ${{ matrix.python-version }}
+      - run: uv sync --python ${{ matrix.python-version }} --frozen --dev
       - run: uv build
       - name: Build wheel from source distribution
-        run: uv build dist/*.tar.gz --out-dir dist/from-sdist
+        run: uv build --wheel dist/*.tar.gz --out-dir dist/from-sdist
       - name: Import base wheel without optional or legacy transports
         run: >-
-          uv run --isolated --no-project --python 3.12 --with dist/*.whl python -c
+          uv run --isolated --no-project --python ${{ matrix.python-version }} --with dist/*.whl python -c
           "import importlib.util; import gigachat;
           assert importlib.util.find_spec('httpx') is None;
           assert importlib.util.find_spec('aiohttp') is None"

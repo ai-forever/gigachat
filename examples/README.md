@@ -106,4 +106,30 @@ uv run pytest -q tests/unit/examples
 
 These checks cover SDK serialization and example control flow; they do not certify
 a live model's tool selection or feature availability. See the
-[migration guide](../MIGRATION_GUIDE.md#additional-contract-support) for field mappings.
+[migration guide](../MIGRATION.md#chat-contract-migration) for field mappings.
+
+
+## Function validation and batches
+
+Validate a JSON function object without executing it:
+
+```bash
+uv run python -m examples.tools.validate_function
+```
+
+HTTP 200 can contain validation errors and warnings; the example prints them.
+To validate YAML instead, pass its raw text or bytes to `functions_validate`.
+
+List batches, retrieve one by query identifier, or explicitly submit existing
+JSONL in bounded chunks (requires postpaid service and model access):
+
+```bash
+uv run python -m examples.batches
+uv run python -m examples.batches --batch-id BATCH_ID
+uv run python -m examples.batches --submit requests.jsonl --method chat_completions
+```
+
+The submit command creates a server-side task. The example does not poll or
+cancel it. Fetch an eventual `output_file_id` with `download_file`. Async clients
+provide `acreate_batch` and `aget_batches`; pass bytes or an async iterable of
+bytes, rather than a synchronous file iterator, to `acreate_batch`.

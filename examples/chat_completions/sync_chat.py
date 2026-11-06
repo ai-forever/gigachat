@@ -1,6 +1,6 @@
 """Send chat requests with models or plain dictionaries."""
 
-from typing import Any, Dict, Optional
+from typing import Any
 
 from dotenv import load_dotenv
 
@@ -8,7 +8,7 @@ from gigachat import GigaChat
 from gigachat.models import ChatCompletionRequest, ChatMessage
 
 
-def message_text(message: Any) -> Optional[str]:
+def message_text(message: Any) -> str | None:
     """Return the first text part from a chat message."""
     content = message.get("content") if isinstance(message, dict) else message.content
     if content is None:
@@ -34,7 +34,7 @@ def request_with_models() -> ChatCompletionRequest:
     )
 
 
-def request_with_dict() -> Dict[str, Any]:
+def request_with_dict() -> dict[str, Any]:
     """Build the same request with a plain dict."""
     return {
         "messages": [

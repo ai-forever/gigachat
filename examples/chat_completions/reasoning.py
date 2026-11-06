@@ -1,6 +1,6 @@
 """Bound reasoning and final-answer generation in v1 and v2 requests."""
 
-from typing import Any, Dict
+from typing import Any
 
 from dotenv import load_dotenv
 
@@ -30,7 +30,7 @@ def request_with_models() -> ChatCompletionRequest:
     )
 
 
-def request_with_dict() -> Dict[str, Any]:
+def request_with_dict() -> dict[str, Any]:
     """Build the same v2 request as a plain dictionary."""
     return {
         "messages": [{"role": "user", "content": [{"text": PROMPT}]}],

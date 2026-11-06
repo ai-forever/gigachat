@@ -1,7 +1,7 @@
 """Run parallel local functions and return correlated results until the final answer."""
 
 from concurrent.futures import ThreadPoolExecutor
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 from dotenv import load_dotenv
 
@@ -17,7 +17,7 @@ from gigachat.models import (
 from gigachat.models.chat_completions import ChatFunctionCall
 
 
-def execute_function(call: ChatFunctionCall) -> Dict[str, Any]:
+def execute_function(call: ChatFunctionCall) -> dict[str, Any]:
     """Return demonstration data, not live weather or exchange rates."""
     if not isinstance(call.arguments, dict):
         raise ValueError("Function arguments must be an object")
@@ -51,7 +51,7 @@ def build_follow_up_request(request: ChatCompletionRequest, response: ChatComple
                 ChatContentPart(
                     function_result=ChatFunctionResult(id_=call.id_, name=call.name, result=future.result())
                 )
-                for call, future in zip(calls, futures)
+                for call, future in zip(calls, futures, strict=True)
             ]
             messages.append(ChatMessage(role="tool", tools_state_id=message.tools_state_id, content=results))
     payload = request.model_dump(mode="json", by_alias=True, exclude_none=True)
@@ -76,12 +76,12 @@ def extract_final_text(response: ChatCompletionResponse) -> str:
     return text
 
 
-def run(client: GigaChat, request: Optional[ChatCompletionRequest] = None, max_steps: int = 8) -> str:
+def run(client: GigaChat, request: ChatCompletionRequest | None = None, max_steps: int = 8) -> str:
     """Run a bounded tool loop; parallel calls are permitted, not guaranteed."""
     current = request if request is not None else build_request()
     for _ in range(max_steps):
         response = client.chat.create(current)
-        reasons: List[Optional[str]] = [
+        reasons: list[str | None] = [
             response.finish_reason,
             *(message.finish_reason for message in response.messages),
         ]

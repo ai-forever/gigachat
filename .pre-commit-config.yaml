@@ -16,8 +16,10 @@ repos:
     rev: v0.17.4
     hooks:
       - id: ruff-check
+        files: ^(src|tests|examples)/.*\.py$
         args: [--fix, --exit-non-zero-on-fix]
       - id: ruff-format
+        files: ^(src|tests|examples)/.*\.py$
 
   - repo: local
     hooks:

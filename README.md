@@ -53,7 +53,7 @@ This library is part of [GigaChain](https://github.com/ai-forever/gigachain) and
 pip install gigachat
 ```
 
-This branch prepares **0.3.0a1**, an alpha prerelease with substantial transport and lifecycle changes. APIs may change before stable 0.3.0. The alpha is not published yet; after publication, opt in explicitly with `pip install "gigachat==0.3.0a1"`. The unqualified installation command above selects a stable release by default.
+This branch prepares **0.3.0a1**, an alpha prerelease. APIs and behavior may change before stable 0.3.0. After publication, opt in explicitly with `pip install "gigachat==0.3.0a1"`; stable dependency bounds starting at `>=0.3.0` do not select this alpha. See the [migration guide](MIGRATION.md) before upgrading.
 
 **Requirements:** Python 3.10+; native HTTPX2 transport. Python 3.8/3.9 applications should remain on a compatible 0.2.x release.
 
@@ -79,7 +79,7 @@ Use stream context managers or explicit close/aclose for early exits. Async stre
 
 `client.chat.with_raw_response.create(...)` returns a fully read RawResponse with headers, status, request ID, URL, and synchronous `parse()`. The same parse method stays synchronous after an async request. For binary files, use `get_file_content` / `aget_file_content`, or bounded-memory `download_file` / `adownload_file`; `get_image` retains base64 output.
 
-Optional extras are `pip install 'gigachat[aiohttp]'`, `gigachat[http2]`, and `gigachat[socks]`. Select aiohttp explicitly with `async_backend="aiohttp"`; it supports asyncio and HTTP/1.1 and has documented timeout/pool limits. Installing an extra does not change the default backend. Borrowed HTTP clients and aiohttp sessions remain caller-owned. Hybrid `GigaChat.close()` closes its sync side; use `await client.aclose()` to close both sync and async resources. Async clients and views cannot be reused across event loops. See the migration guide's ownership rules and capability table before supplying advanced transport options.
+Optional extras are `pip install 'gigachat[aiohttp]'`, `gigachat[http2]`, and `gigachat[socks]`. Select aiohttp explicitly with `async_backend="aiohttp"`; it supports asyncio and HTTP/1.1 and has documented timeout/pool limits. Installing an extra does not change the default backend. Borrowed HTTPX2-compatible clients remain caller-owned; the aiohttp adapter owns its lazy session. Hybrid `GigaChat.close()` closes its sync side; use `await client.aclose()` to close both sync and async resources. Async clients and views cannot be reused across event loops. See the migration guide's ownership rules and capability table before supplying advanced transport options.
 
 ## Quick Start
 
@@ -123,12 +123,10 @@ Root compatibility shims such as `client.chat(...)`, `client.stream(...)`, `clie
 
 During the migration, old `gigachat.models.Chat*`, `Messages*`, `Function*`, and `Usage` imports still resolve to legacy compatibility aliases. Use `ChatCompletionRequest`, `ChatCompletionResponse`, `ChatMessage`, and related `Chat*` primary models for the new contract.
 
-For a step-by-step checklist and import mapping, see [MIGRATION_GUIDE.md](MIGRATION_GUIDE.md)
+For a step-by-step checklist and import mapping, see [MIGRATION.md](MIGRATION.md#chat-contract-migration)
 
-Upgrading to `0.2.4a1` also changes v1 function-schema defaults and nested property
-access, and moves several advanced v2 fields to untyped extras. Review the
-[release compatibility notes](MIGRATION_GUIDE.md#upgrading-to-024a1) even if you
-continue using the v1 methods.
+The [existing schema and authentication compatibility notes](MIGRATION.md#existing-024-schema-and-authentication-changes)
+also apply when upgrading older applications that continue using v1 methods.
 
 ### Basic Chat
 

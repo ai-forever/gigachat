@@ -1,6 +1,6 @@
 """Force a client-defined function call."""
 
-from typing import Any, Dict
+from typing import Any
 
 from dotenv import load_dotenv
 
@@ -10,7 +10,7 @@ from gigachat import GigaChat
 from gigachat.models import ChatCompletionRequest, ChatFunctionSpecification, ChatMessage, ChatTool, ChatToolConfig
 
 
-def get_order_status(order_id: str) -> Dict[str, Any]:
+def get_order_status(order_id: str) -> dict[str, Any]:
     """Return mock order status."""
     return {
         "order_id": order_id,

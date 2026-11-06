@@ -1,7 +1,6 @@
 """Request multiple client function calls in one model response."""
 
 import json
-from typing import List
 
 from dotenv import load_dotenv
 
@@ -60,7 +59,7 @@ def build_request() -> ChatCompletionRequest:
     )
 
 
-def validate_parallel_calls(response: ChatCompletionResponse) -> List[ChatFunctionCall]:
+def validate_parallel_calls(response: ChatCompletionResponse) -> list[ChatFunctionCall]:
     """Collect zero or more assistant calls and check multi-call correlation IDs."""
     calls = [
         part.function_call
