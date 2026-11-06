@@ -37,7 +37,7 @@ Whether you're fixing a typo or implementing a major feature, all contributions 
 
 Before you begin, ensure you have the following installed:
 
-- **Python**: Version 3.8 through 3.13 are supported
+- **Python**: Version 3.8 through 3.14 are supported
 - **uv**: Modern Python package manager ([installation guide](https://docs.astral.sh/uv/getting-started/installation/))
 - **Git**: For version control
 
@@ -335,7 +335,7 @@ These checks also run automatically via pre-commit hooks and in CI.
 
 ### Python Version Compatibility
 
-- **Supported Versions**: Python 3.8 through 3.13
+- **Supported Versions**: Python 3.8 through 3.14
 - **Compatibility Notes**:
   - Use `Type[X]` not `type[X]` (Python 3.8 doesn't support lowercase)
   - Use `Dict`, `List`, `Optional` from `typing` (not builtin types as generics)
@@ -550,7 +550,7 @@ For integration tests, use fixtures from `tests/integration/conftest.py`:
 
 Tests run automatically in CI on:
 
-- All Python versions (3.8-3.13) for unit tests
+- All Python versions (3.8-3.14) for unit tests
 - Python 3.12 only for integration tests (cassettes are Python-agnostic)
 
 Ensure all tests pass locally before submitting your PR:
@@ -778,7 +778,7 @@ Your PR must pass all CI checks:
 
 - ✅ **Linting**: Code follows style guidelines
 - ✅ **Type Checking**: mypy passes in strict mode
-- ✅ **Tests**: All tests pass on Python 3.8-3.13
+- ✅ **Tests**: All tests pass on Python 3.8-3.14
 - ✅ **Integration Tests**: VCR cassette tests pass
 
 If CI fails:
