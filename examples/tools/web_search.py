@@ -1,6 +1,6 @@
 """Use web search with models or plain dictionaries."""
 
-from typing import Any, Dict, List, Set, Tuple
+from typing import Any
 
 from dotenv import load_dotenv
 
@@ -14,7 +14,7 @@ def message_text(message: Any) -> str:
     if content is None:
         return ""
 
-    parts: List[str] = []
+    parts: list[str] = []
     for part in content:
         text = part.get("text") if isinstance(part, dict) else part.text
         if text:
@@ -22,14 +22,14 @@ def message_text(message: Any) -> str:
     return "".join(parts)
 
 
-def message_sources(message: Any) -> List[Tuple[str, str]]:
+def message_sources(message: Any) -> list[tuple[str, str]]:
     """Return unique sources from a chat message."""
     content = message.get("content") if isinstance(message, dict) else message.content
     if content is None:
         return []
 
-    seen: Set[Tuple[str, str]] = set()
-    sources: List[Tuple[str, str]] = []
+    seen: set[tuple[str, str]] = set()
+    sources: list[tuple[str, str]] = []
     for part in content:
         inline_data = part.get("inline_data") if isinstance(part, dict) else part.inline_data
         inline_sources = None
@@ -63,7 +63,7 @@ def request_with_models() -> ChatCompletionRequest:
     )
 
 
-def request_with_dict() -> Dict[str, Any]:
+def request_with_dict() -> dict[str, Any]:
     """Build a web-search request with a plain dict."""
     return {
         "messages": [

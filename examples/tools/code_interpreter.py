@@ -1,6 +1,6 @@
 """Use code interpreter with models or plain dictionaries."""
 
-from typing import Any, Dict, List
+from typing import Any
 
 from dotenv import load_dotenv
 
@@ -14,7 +14,7 @@ def message_text(message: Any) -> str:
     if content is None:
         return ""
 
-    parts: List[str] = []
+    parts: list[str] = []
     for part in content:
         text = part.get("text") if isinstance(part, dict) else part.text
         if text:
@@ -36,7 +36,7 @@ def request_with_models() -> ChatCompletionRequest:
     )
 
 
-def request_with_dict() -> Dict[str, Any]:
+def request_with_dict() -> dict[str, Any]:
     """Build a code-interpreter request with a plain dict."""
     return {
         "messages": [

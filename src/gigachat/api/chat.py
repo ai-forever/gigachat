@@ -1,7 +1,8 @@
 import json
-from typing import Any, AsyncIterator, Dict, Iterator, Optional, Union
+from collections.abc import AsyncIterator, Iterator
+from typing import Any
 
-import httpx
+import httpx2 as httpx
 
 from gigachat.api.utils import (
     EVENT_STREAM,
@@ -16,7 +17,7 @@ from gigachat.context import chat_url_cvar
 from gigachat.models.chat import Chat, ChatCompletion, ChatCompletionChunk
 
 
-def _build_request_json(chat: Chat, *, exclude_stream: bool = False) -> Dict[str, Any]:
+def _build_request_json(chat: Chat, *, exclude_stream: bool = False) -> dict[str, Any]:
     """Serialize *chat* to a JSON-ready dict, merging additional_fields."""
     exclude = {"stream"} if exclude_stream else set()
     json_data = chat.model_dump(exclude_none=True, by_alias=True, exclude=exclude)
@@ -29,11 +30,11 @@ def _build_request_json(chat: Chat, *, exclude_stream: bool = False) -> Dict[str
 
 
 def _get_chat_kwargs(
-    client: Union[httpx.Client, httpx.AsyncClient],
+    client: httpx.Client | httpx.AsyncClient,
     *,
     chat: Chat,
-    access_token: Optional[str] = None,
-) -> Dict[str, Any]:
+    access_token: str | None = None,
+) -> dict[str, Any]:
     headers = build_headers(access_token)
     headers["Content-Type"] = "application/json"
     json_data = _build_request_json(chat=chat, exclude_stream=True)
@@ -50,7 +51,7 @@ def chat_sync(
     client: httpx.Client,
     *,
     chat: Chat,
-    access_token: Optional[str] = None,
+    access_token: str | None = None,
 ) -> ChatCompletion:
     """Return a model response based on the provided messages."""
     kwargs = _get_chat_kwargs(client, chat=chat, access_token=access_token)
@@ -61,7 +62,7 @@ async def chat_async(
     client: httpx.AsyncClient,
     *,
     chat: Chat,
-    access_token: Optional[str] = None,
+    access_token: str | None = None,
 ) -> ChatCompletion:
     """Return a model response based on the provided messages."""
     kwargs = _get_chat_kwargs(client, chat=chat, access_token=access_token)
@@ -69,11 +70,11 @@ async def chat_async(
 
 
 def _get_stream_kwargs(
-    client: Union[httpx.Client, httpx.AsyncClient],
+    client: httpx.Client | httpx.AsyncClient,
     *,
     chat: Chat,
-    access_token: Optional[str] = None,
-) -> Dict[str, Any]:
+    access_token: str | None = None,
+) -> dict[str, Any]:
     headers = build_headers(access_token)
     headers["Accept"] = EVENT_STREAM
     headers["Cache-Control"] = "no-store"
@@ -92,7 +93,7 @@ def stream_sync(
     client: httpx.Client,
     *,
     chat: Chat,
-    access_token: Optional[str] = None,
+    access_token: str | None = None,
 ) -> Iterator[ChatCompletionChunk]:
     """Return a model response based on the provided messages (streaming)."""
     kwargs = _get_stream_kwargs(client, chat=chat, access_token=access_token)
@@ -103,7 +104,7 @@ def stream_async(
     client: httpx.AsyncClient,
     *,
     chat: Chat,
-    access_token: Optional[str] = None,
+    access_token: str | None = None,
 ) -> AsyncIterator[ChatCompletionChunk]:
     """Return a model response based on the provided messages (streaming)."""
     kwargs = _get_stream_kwargs(client, chat=chat, access_token=access_token)

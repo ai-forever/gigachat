@@ -1,5 +1,4 @@
-import httpx
-from pytest_httpx import HTTPXMock
+import httpx2 as httpx
 
 from gigachat.api.threads import (
     add_thread_messages_async,
@@ -65,6 +64,7 @@ from tests.constants import (
     POST_THREADS_RUN_URL,
     THREAD,
 )
+from tests.httpx_mock import HTTPXMock
 
 
 def test_get_threads_sync(httpx_mock: HTTPXMock) -> None:

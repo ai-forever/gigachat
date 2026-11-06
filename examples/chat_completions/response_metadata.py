@@ -1,7 +1,6 @@
 """Read assistant text, optional metadata, and readable API errors."""
 
 import json
-from typing import Union
 
 from dotenv import load_dotenv
 
@@ -10,7 +9,7 @@ from gigachat.exceptions import ResponseError
 from gigachat.models import ChatCompletionResponse, PrimaryChatCompletionChunk
 
 
-def print_response(response: Union[ChatCompletionResponse, PrimaryChatCompletionChunk]) -> None:
+def print_response(response: ChatCompletionResponse | PrimaryChatCompletionChunk) -> None:
     """Print each message and metadata that is actually present."""
     for message in response.messages or []:
         for part in message.content or []:

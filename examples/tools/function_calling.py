@@ -1,7 +1,7 @@
 """Use function calling with models or plain dictionaries."""
 
 import json
-from typing import Any, Dict
+from typing import Any
 
 from dotenv import load_dotenv
 
@@ -9,7 +9,7 @@ from gigachat import GigaChat
 from gigachat.models import ChatCompletionRequest, ChatFunctionSpecification, ChatMessage, ChatTool, ChatToolConfig
 
 
-def get_weather(location: str) -> Dict[str, Any]:
+def get_weather(location: str) -> dict[str, Any]:
     """Return mock weather data for a city."""
     return {
         "location": location,
@@ -55,7 +55,7 @@ def request_with_models() -> ChatCompletionRequest:
     )
 
 
-def request_with_dict() -> Dict[str, Any]:
+def request_with_dict() -> dict[str, Any]:
     """Build a function-calling request with a plain dict."""
     return {
         "messages": [
@@ -75,7 +75,7 @@ def request_with_dict() -> Dict[str, Any]:
     }
 
 
-def extract_call(response: Any) -> Dict[str, Any]:
+def extract_call(response: Any) -> dict[str, Any]:
     """Return the first function call from a response."""
     response_data = response.model_dump(mode="json", exclude_none=True, by_alias=True)
     for message in response_data["messages"]:
@@ -113,14 +113,14 @@ def extract_call(response: Any) -> Dict[str, Any]:
     raise RuntimeError("The model did not call a function.")
 
 
-def add_function_result(request: Any, call: Dict[str, Any], result: Dict[str, Any]) -> Dict[str, Any]:
+def add_function_result(request: Any, call: dict[str, Any], result: dict[str, Any]) -> dict[str, Any]:
     """Append the function result to the conversation."""
     payload = (
         request.model_dump(mode="json", exclude_none=True, by_alias=True) if hasattr(request, "model_dump") else request
     )
     payload = dict(payload)
     payload.pop("tool_config", None)
-    tool_message: Dict[str, Any] = {
+    tool_message: dict[str, Any] = {
         "role": "tool",
         "content": [
             {

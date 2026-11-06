@@ -1,7 +1,7 @@
 import ssl
 from unittest import mock
 
-from pytest_httpx import HTTPXMock
+import pytest
 
 from gigachat import GigaChat
 from gigachat.client import (
@@ -9,7 +9,6 @@ from gigachat.client import (
     GigaChatSyncClient,
     _get_auth_kwargs,
     _get_kwargs,
-    logger,
 )
 from gigachat.context import authorization_cvar
 from gigachat.settings import Settings
@@ -24,6 +23,7 @@ from tests.constants import (
     PASSWORD_TOKEN_VALID_MS,
     TOKEN_URL,
 )
+from tests.httpx_mock import HTTPXMock
 
 
 def _make_ssl_context() -> ssl.SSLContext:
@@ -33,7 +33,13 @@ def _make_ssl_context() -> ssl.SSLContext:
 
 def test__get_kwargs() -> None:
     settings = Settings(ca_bundle_file="ca.pem", cert_file="tls.pem", key_file="tls.key")
-    assert _get_kwargs(settings)
+    context = _make_ssl_context()
+    with mock.patch("gigachat._core.http_client.build_ssl_context", return_value=context) as build_context:
+        assert _get_kwargs(settings)["verify"] is context
+    assert build_context.call_args.kwargs["ca_bundle_file"] == "ca.pem"
+    assert build_context.call_args.kwargs["cert_file"] == "tls.pem"
+    assert build_context.call_args.kwargs["key_file"] == "tls.key"
+    assert build_context.call_args.kwargs["for_auth"] is False
 
 
 def test__get_kwargs_ssl() -> None:
@@ -44,7 +50,13 @@ def test__get_kwargs_ssl() -> None:
 
 def test__get_auth_kwargs() -> None:
     settings = Settings(ca_bundle_file="ca.pem", cert_file="tls.pem", key_file="tls.key")
-    assert _get_auth_kwargs(settings)
+    context = _make_ssl_context()
+    with mock.patch("gigachat._core.http_client.build_ssl_context", return_value=context) as build_context:
+        assert _get_auth_kwargs(settings)["verify"] is context
+    assert build_context.call_args.kwargs["ca_bundle_file"] == "ca.pem"
+    assert build_context.call_args.kwargs["cert_file"] == "tls.pem"
+    assert build_context.call_args.kwargs["key_file"] == "tls.key"
+    assert build_context.call_args.kwargs["for_auth"] is True
 
 
 def test__get_auth_kwargs_ssl() -> None:
@@ -53,11 +65,10 @@ def test__get_auth_kwargs_ssl() -> None:
     assert _get_kwargs(settings)["verify"] == context
 
 
-def test__unknown_kwargs() -> None:
-    with mock.patch.object(logger, "warning") as spy:
-        GigaChatSyncClient(foo="bar")
-
-        assert spy.call_count == 1
+def test__unknown_kwargs(caplog: pytest.LogCaptureFixture) -> None:
+    GigaChatSyncClient(foo="sensitive-value")
+    assert "unknown kwargs - ['foo']" in caplog.text
+    assert "sensitive-value" not in caplog.text
 
 
 def test_get_token_credentials(httpx_mock: HTTPXMock) -> None:

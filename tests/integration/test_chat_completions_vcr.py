@@ -2,7 +2,7 @@
 
 import os
 import re
-from typing import Any, Dict, List, Tuple
+from typing import Any
 
 import pytest
 from pydantic import BaseModel, Field
@@ -32,7 +32,7 @@ class StructuredAnswer(BaseModel):
 PRIMARY_MODEL = os.getenv("GIGACHAT_PRIMARY_TEST_MODEL", "GigaChat-3-Ultra")
 
 
-ORDER_STATUS_FUNCTION = {
+ORDER_STATUS_FUNCTION: dict[str, Any] = {
     "name": "get_order_status",
     "description": "Get delivery status for an order.",
     "parameters": {
@@ -73,9 +73,9 @@ def _extract_assistant_text(result: ChatCompletionResponse) -> str:
     raise AssertionError("Response has no assistant text content")
 
 
-def _message_sources(message: ChatMessage) -> List[Tuple[str, str]]:
+def _message_sources(message: ChatMessage) -> list[tuple[str, str]]:
     """Return unique sources from message inline data."""
-    sources: List[Tuple[str, str]] = []
+    sources: list[tuple[str, str]] = []
     seen = set()
     for part in message.content or []:
         if part.inline_data is None or part.inline_data.sources is None:
@@ -90,15 +90,15 @@ def _message_sources(message: ChatMessage) -> List[Tuple[str, str]]:
     return sources
 
 
-def _message_file_ids(message: ChatMessage) -> List[str]:
+def _message_file_ids(message: ChatMessage) -> list[str]:
     """Return file IDs from message content."""
-    file_ids: List[str] = []
+    file_ids: list[str] = []
     for part in message.content or []:
         file_ids.extend(file_.id_ for file_ in part.files or [])
     return file_ids
 
 
-def _extract_function_call(response: ChatCompletionResponse) -> Dict[str, Any]:
+def _extract_function_call(response: ChatCompletionResponse) -> dict[str, Any]:
     """Return the first function call from a response."""
     for message in response.messages:
         function_call = message.function_call

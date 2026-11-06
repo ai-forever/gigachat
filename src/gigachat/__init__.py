@@ -1,8 +1,15 @@
 import logging
 
+from gigachat._core.http_client import DefaultAioHttpClient, DefaultAsyncHttpxClient, DefaultHttpxClient
+from gigachat._core.request import RequestOptions
+from gigachat._core.response import AsyncStreamingResponse, RawResponse, StreamingResponse
+from gigachat._core.streaming import AsyncStream, Stream
 from gigachat.client import GigaChat, GigaChatAsyncClient, GigaChatSyncClient
 from gigachat.context import custom_headers_cvar, request_id_cvar, session_id_cvar
 from gigachat.exceptions import (
+    APIConnectionError,
+    APIResponseValidationError,
+    APITimeoutError,
     AuthenticationError,
     BadRequestError,
     ForbiddenError,
@@ -14,8 +21,12 @@ from gigachat.exceptions import (
     RequestEntityTooLargeError,
     ResponseError,
     ServerError,
+    StreamInterruptedError,
+    UnprocessableEntityError,
 )
 from gigachat.models import (
+    Batch,
+    Batches,
     Chat,
     ChatCompletion,
     ChatCompletionChunk,
@@ -24,15 +35,41 @@ from gigachat.models import (
     Function,
     FunctionCall,
     FunctionParameters,
+    FunctionValidationResult,
+    GeneratedContent,
     Image,
     Messages,
     MessagesRole,
     Model,
     Models,
+    RankedFunctions,
+    RerankResponse,
+    SharedThread,
     Usage,
 )
 
 __all__ = [
+    "Batch",
+    "Batches",
+    "FunctionValidationResult",
+    "GeneratedContent",
+    "RankedFunctions",
+    "RerankResponse",
+    "SharedThread",
+    "RequestOptions",
+    "DefaultHttpxClient",
+    "DefaultAsyncHttpxClient",
+    "DefaultAioHttpClient",
+    "Stream",
+    "AsyncStream",
+    "RawResponse",
+    "StreamingResponse",
+    "AsyncStreamingResponse",
+    "APIConnectionError",
+    "APITimeoutError",
+    "APIResponseValidationError",
+    "StreamInterruptedError",
+    "UnprocessableEntityError",
     "GigaChat",
     "GigaChatSyncClient",
     "GigaChatAsyncClient",

@@ -47,7 +47,7 @@ def test_thread_safety_init() -> None:
     giga = GigaChat()
 
     # We'll track how many times httpx.Client is instantiated
-    with patch("gigachat.client.httpx.Client") as mock_client_cls:
+    with patch("gigachat.client.DefaultHttpxClient") as mock_client_cls:
         mock_client_cls.return_value = MagicMock()
 
         def access_client() -> None:

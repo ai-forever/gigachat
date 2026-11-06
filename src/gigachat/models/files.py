@@ -1,5 +1,3 @@
-from typing import List, Optional
-
 from pydantic import Field
 
 from gigachat.models.base import APIResponse
@@ -14,13 +12,14 @@ class UploadedFile(APIResponse):
     created_at: int = Field(description="Creation timestamp (Unix time).")
     filename: str = Field(description="Name of the file.")
     purpose: str = Field(description="Intended purpose of the file.")
-    access_policy: Optional[str] = Field(default=None, description="Access policy.")
+    modalities: list[str] | None = None
+    access_policy: str | None = Field(default=None, description="Access policy.")
 
 
 class UploadedFiles(APIResponse):
     """List of uploaded files."""
 
-    data: List[UploadedFile] = Field(description="List of file objects.")
+    data: list[UploadedFile] = Field(description="List of file objects.")
 
 
 class DeletedFile(APIResponse):

@@ -1,6 +1,6 @@
-from typing import Any, Dict, List, Optional
+from typing import Any
 
-import httpx
+import httpx2 as httpx
 
 from gigachat.api.utils import build_headers, execute_request_async, execute_request_sync
 from gigachat.models.assistants import (
@@ -15,9 +15,9 @@ from gigachat.models.chat import Function
 
 def _get_assistants_kwargs(
     *,
-    assistant_id: Optional[str] = None,
-    access_token: Optional[str] = None,
-) -> Dict[str, Any]:
+    assistant_id: str | None = None,
+    access_token: str | None = None,
+) -> dict[str, Any]:
     headers = build_headers(access_token)
     params = {
         "method": "GET",
@@ -32,8 +32,8 @@ def _get_assistants_kwargs(
 def get_assistants_sync(
     client: httpx.Client,
     *,
-    assistant_id: Optional[str] = None,
-    access_token: Optional[str] = None,
+    assistant_id: str | None = None,
+    access_token: str | None = None,
 ) -> Assistants:
     """Get list of assistants."""
     kwargs = _get_assistants_kwargs(assistant_id=assistant_id, access_token=access_token)
@@ -43,8 +43,8 @@ def get_assistants_sync(
 async def get_assistants_async(
     client: httpx.AsyncClient,
     *,
-    assistant_id: Optional[str] = None,
-    access_token: Optional[str] = None,
+    assistant_id: str | None = None,
+    access_token: str | None = None,
 ) -> Assistants:
     """Get list of assistants."""
     kwargs = _get_assistants_kwargs(assistant_id=assistant_id, access_token=access_token)
@@ -55,15 +55,15 @@ def _create_assistant_kwargs(
     *,
     model: str,
     name: str,
-    description: Optional[str] = None,
-    instructions: Optional[str] = None,
-    file_ids: Optional[List[str]] = None,
-    functions: Optional[List[Function]] = None,
-    metadata: Optional[Dict[str, Any]] = None,
-    access_token: Optional[str] = None,
-) -> Dict[str, Any]:
+    description: str | None = None,
+    instructions: str | None = None,
+    file_ids: list[str] | None = None,
+    functions: list[Function] | None = None,
+    metadata: dict[str, Any] | None = None,
+    access_token: str | None = None,
+) -> dict[str, Any]:
     headers = build_headers(access_token)
-    data: Dict[str, Any] = {
+    data: dict[str, Any] = {
         "model": model,
         "name": name,
         "description": description,
@@ -87,12 +87,12 @@ def create_assistant_sync(
     *,
     model: str,
     name: str,
-    description: Optional[str] = None,
-    instructions: Optional[str] = None,
-    file_ids: Optional[List[str]] = None,
-    functions: Optional[List[Function]] = None,
-    metadata: Optional[Dict[str, Any]] = None,
-    access_token: Optional[str] = None,
+    description: str | None = None,
+    instructions: str | None = None,
+    file_ids: list[str] | None = None,
+    functions: list[Function] | None = None,
+    metadata: dict[str, Any] | None = None,
+    access_token: str | None = None,
 ) -> CreateAssistant:
     """Create assistant."""
     kwargs = _create_assistant_kwargs(
@@ -113,12 +113,12 @@ async def create_assistant_async(
     *,
     model: str,
     name: str,
-    description: Optional[str] = None,
-    instructions: Optional[str] = None,
-    file_ids: Optional[List[str]] = None,
-    functions: Optional[List[Function]] = None,
-    metadata: Optional[Dict[str, Any]] = None,
-    access_token: Optional[str] = None,
+    description: str | None = None,
+    instructions: str | None = None,
+    file_ids: list[str] | None = None,
+    functions: list[Function] | None = None,
+    metadata: dict[str, Any] | None = None,
+    access_token: str | None = None,
 ) -> CreateAssistant:
     """Create assistant."""
     kwargs = _create_assistant_kwargs(
@@ -137,17 +137,17 @@ async def create_assistant_async(
 def _modify_assistant_kwargs(
     *,
     assistant_id: str,
-    name: Optional[str] = None,
-    description: Optional[str] = None,
-    instructions: Optional[str] = None,
-    file_ids: Optional[List[str]] = None,
-    functions: Optional[List[Function]] = None,
-    metadata: Optional[Dict[str, Any]] = None,
-    access_token: Optional[str] = None,
-) -> Dict[str, Any]:
+    name: str | None = None,
+    description: str | None = None,
+    instructions: str | None = None,
+    file_ids: list[str] | None = None,
+    functions: list[Function] | None = None,
+    metadata: dict[str, Any] | None = None,
+    access_token: str | None = None,
+) -> dict[str, Any]:
     headers = build_headers(access_token)
 
-    data: Dict[str, Any] = {
+    data: dict[str, Any] = {
         "assistant_id": assistant_id,
         "name": name,
         "description": description,
@@ -170,13 +170,13 @@ def modify_assistant_sync(
     client: httpx.Client,
     *,
     assistant_id: str,
-    name: Optional[str] = None,
-    description: Optional[str] = None,
-    instructions: Optional[str] = None,
-    file_ids: Optional[List[str]] = None,
-    functions: Optional[List[Function]] = None,
-    metadata: Optional[Dict[str, Any]] = None,
-    access_token: Optional[str] = None,
+    name: str | None = None,
+    description: str | None = None,
+    instructions: str | None = None,
+    file_ids: list[str] | None = None,
+    functions: list[Function] | None = None,
+    metadata: dict[str, Any] | None = None,
+    access_token: str | None = None,
 ) -> Assistant:
     """Modify assistant."""
     kwargs = _modify_assistant_kwargs(
@@ -196,13 +196,13 @@ async def modify_assistant_async(
     client: httpx.AsyncClient,
     *,
     assistant_id: str,
-    name: Optional[str] = None,
-    description: Optional[str] = None,
-    instructions: Optional[str] = None,
-    file_ids: Optional[List[str]] = None,
-    functions: Optional[List[Function]] = None,
-    metadata: Optional[Dict[str, Any]] = None,
-    access_token: Optional[str] = None,
+    name: str | None = None,
+    description: str | None = None,
+    instructions: str | None = None,
+    file_ids: list[str] | None = None,
+    functions: list[Function] | None = None,
+    metadata: dict[str, Any] | None = None,
+    access_token: str | None = None,
 ) -> Assistant:
     """Modify assistant."""
     kwargs = _modify_assistant_kwargs(
@@ -221,8 +221,8 @@ async def modify_assistant_async(
 def _delete_assistant_kwargs(
     *,
     assistant_id: str,
-    access_token: Optional[str] = None,
-) -> Dict[str, Any]:
+    access_token: str | None = None,
+) -> dict[str, Any]:
     headers = build_headers(access_token)
 
     return {
@@ -239,7 +239,7 @@ def delete_assistant_sync(
     client: httpx.Client,
     *,
     assistant_id: str,
-    access_token: Optional[str] = None,
+    access_token: str | None = None,
 ) -> AssistantDelete:
     """Delete assistant."""
     kwargs = _delete_assistant_kwargs(assistant_id=assistant_id, access_token=access_token)
@@ -250,7 +250,7 @@ async def delete_assistant_async(
     client: httpx.AsyncClient,
     *,
     assistant_id: str,
-    access_token: Optional[str] = None,
+    access_token: str | None = None,
 ) -> AssistantDelete:
     """Delete assistant."""
     kwargs = _delete_assistant_kwargs(assistant_id=assistant_id, access_token=access_token)
@@ -261,8 +261,8 @@ def _delete_assistant_file_kwargs(
     *,
     assistant_id: str,
     file_id: str,
-    access_token: Optional[str] = None,
-) -> Dict[str, Any]:
+    access_token: str | None = None,
+) -> dict[str, Any]:
     headers = build_headers(access_token)
 
     return {
@@ -281,7 +281,7 @@ def delete_assistant_file_sync(
     *,
     assistant_id: str,
     file_id: str,
-    access_token: Optional[str] = None,
+    access_token: str | None = None,
 ) -> AssistantFileDelete:
     """Delete assistant file."""
     kwargs = _delete_assistant_file_kwargs(assistant_id=assistant_id, file_id=file_id, access_token=access_token)
@@ -293,7 +293,7 @@ async def delete_assistant_file_async(
     *,
     assistant_id: str,
     file_id: str,
-    access_token: Optional[str] = None,
+    access_token: str | None = None,
 ) -> AssistantFileDelete:
     """Delete assistant file."""
     kwargs = _delete_assistant_file_kwargs(assistant_id=assistant_id, file_id=file_id, access_token=access_token)

@@ -1,8 +1,7 @@
 import asyncio
 
-import httpx
+import httpx2 as httpx
 import pytest
-from pytest_httpx import HTTPXMock
 
 from gigachat.client import GigaChatAsyncClient, GigaChatSyncClient, _get_kwargs
 from gigachat.models import ChatCompletion
@@ -12,6 +11,7 @@ from tests.constants import (
     CHAT_COMPLETION,
     CHAT_URL,
 )
+from tests.httpx_mock import HTTPXMock
 
 
 def test_get_kwargs_with_max_connections() -> None:

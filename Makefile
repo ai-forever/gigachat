@@ -27,7 +27,6 @@ clean:
 	rm -f `find . -type f -name '*~'`
 	rm -rf .pytest_cache
 	rm -rf .ruff_cache
-	rm -rf .mypy_cache
 	rm -rf htmlcov
 	rm -f .coverage
 	rm -f .coverage.*
@@ -37,17 +36,17 @@ clean:
 
 .PHONY: fmt  ## Auto-format python source files
 fmt:
-	uv run ruff format src tests
-	uv run ruff check --fix src tests
+	uv run ruff format src tests examples
+	uv run ruff check --fix src tests examples
 
 .PHONY: lint  ## Lint python source files
 lint:
-	uv run ruff check src tests
-	uv run ruff format --check src tests
+	uv run ruff check src tests examples
+	uv run ruff format --check src tests examples
 
-.PHONY: mypy  ## Perform type-checking
-mypy:
-	uv run mypy src tests
+.PHONY: ty  ## Perform type-checking
+ty:
+	uv run ty check src tests
 
 .PHONY: test  ## Run tests and generate a coverage report
 test:
@@ -55,18 +54,18 @@ test:
 
 .PHONY: test-integration  ## Run integration tests
 test-integration:
-	uv run pytest -v -m integration tests/integration
+	uv run pytest -v -m integration --record-mode=none tests/integration
 
 .PHONY: test-integration-ci  ## Run integration tests in CI mode (replay only)
 test-integration-ci:
-	uv run pytest -v -m integration --record-mode=none
+	uv run pytest -v -m integration --record-mode=none tests/integration
 
 .PHONY: htmlcov  ## Generate html coverage report
 htmlcov:
 	uv run pytest -v --cov=src --cov-report=html
 
 .PHONY: all  ## Run the standard set of checks performed in CI
-all: lint mypy test
+all: lint ty test
 
 .PHONY: lock  ## Update lockfile
 lock:
@@ -80,3 +79,7 @@ update:
 .PHONY: pre  ## Run pre-commit on all the files in the repo
 pre:
 	pre-commit run --all-files
+
+.PHONY: build  ## Build source distribution and a wheel from that source distribution
+build:
+	uv build

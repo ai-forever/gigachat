@@ -1,6 +1,6 @@
 """Parse structured output with models or plain dictionaries."""
 
-from typing import Any, Dict, List
+from typing import Any
 
 from dotenv import load_dotenv
 from pydantic import BaseModel
@@ -13,7 +13,7 @@ class Plan(BaseModel):
     """Short plan returned by the model."""
 
     title: str
-    steps: List[str]
+    steps: list[str]
 
 
 def request_with_models() -> ChatCompletionRequest:
@@ -28,7 +28,7 @@ def request_with_models() -> ChatCompletionRequest:
     )
 
 
-def request_with_dict() -> Dict[str, Any]:
+def request_with_dict() -> dict[str, Any]:
     """Build a parse request with a plain dict."""
     return {
         "messages": [

@@ -1,19 +1,13 @@
 import copy
 import json
 import warnings
-from typing import Any, Dict, List, Optional, cast
+from typing import Any, cast
 
 import pytest
 from pydantic import BaseModel, ValidationError
-from pytest_httpx import HTTPXMock
 
 from gigachat.api import chat, chat_completions
-from gigachat.client import (
-    GigaChatAsyncClient,
-    GigaChatSyncClient,
-    _parse_chat,
-    _parse_chat_completion,
-)
+from gigachat.client import GigaChatAsyncClient, GigaChatSyncClient
 from gigachat.context import chat_completions_url_cvar, chat_url_cvar
 from gigachat.exceptions import AuthenticationError, LengthFinishReasonError, ModelNotSpecifiedError
 from gigachat.models import (
@@ -28,7 +22,7 @@ from gigachat.models import (
     MessagesRole,
 )
 from gigachat.models.chat_completions import ChatCompletionChunk as PrimaryChatCompletionChunk
-from gigachat.settings import Settings
+from gigachat.resources.chat import _parse_chat, _parse_chat_completion
 from tests.constants import (
     ACCESS_TOKEN,
     AUTH_URL,
@@ -49,8 +43,9 @@ from tests.constants import (
     TOKEN_URL,
     USER,
 )
+from tests.httpx_mock import HTTPXMock
 
-PRIMARY_CHAT_COMPLETION: Dict[str, Any] = {
+PRIMARY_CHAT_COMPLETION: dict[str, Any] = {
     "model": "GigaChat-2-Max",
     "created_at": 1760434636,
     "thread_id": "thread-1",
@@ -78,12 +73,12 @@ PRIMARY_CHAT_COMPLETION_STREAM = (
 )
 
 
-def _assert_no_deprecation_warnings(caught: List[warnings.WarningMessage]) -> None:
+def _assert_no_deprecation_warnings(caught: list[warnings.WarningMessage]) -> None:
     assert not [warning for warning in caught if issubclass(warning.category, DeprecationWarning)]
 
 
 class MathResult(BaseModel):
-    steps: List[str]
+    steps: list[str]
     final_answer: str
 
 
@@ -95,16 +90,16 @@ class MathResult(BaseModel):
         ("payload_model", "setting_model", "payload_model"),
     ],
 )
-def test__parse_chat_model(payload_value: Optional[str], setting_value: Optional[str], expected: str) -> None:
-    actual = _parse_chat(Chat(messages=[], model=payload_value), Settings(model=setting_value))
+def test__parse_chat_model(payload_value: str | None, setting_value: str | None, expected: str) -> None:
+    actual = _parse_chat(Chat(messages=[], model=payload_value), GigaChatSyncClient(model=setting_value))
     assert actual.model is expected
 
 
 @pytest.mark.parametrize("payload_value", [None, "", "  "])
 @pytest.mark.parametrize("setting_value", [None, "", "  "])
-def test__parse_chat_model_not_specified(payload_value: Optional[str], setting_value: Optional[str]) -> None:
+def test__parse_chat_model_not_specified(payload_value: str | None, setting_value: str | None) -> None:
     with pytest.raises(ModelNotSpecifiedError):
-        _parse_chat(Chat(messages=[], model=payload_value), Settings(model=setting_value))
+        _parse_chat(Chat(messages=[], model=payload_value), GigaChatSyncClient(model=setting_value))
 
 
 @pytest.mark.parametrize(
@@ -122,13 +117,13 @@ def test__parse_chat_model_not_specified(payload_value: Optional[str], setting_v
     ],
 )
 def test__parse_chat_profanity_check(
-    payload_value: Optional[bool],
-    setting_value: Optional[bool],
-    expected: Optional[bool],
+    payload_value: bool | None,
+    setting_value: bool | None,
+    expected: bool | None,
 ) -> None:
     actual = _parse_chat(
         Chat(messages=[], model="model", profanity_check=payload_value),
-        Settings(profanity_check=setting_value),
+        GigaChatSyncClient(profanity_check=setting_value),
     )
     assert actual.profanity_check is expected
 
@@ -148,9 +143,9 @@ def test__parse_chat_profanity_check(
     ],
 )
 def test__parse_chat_completion_profanity_check(
-    payload_value: Optional[bool],
-    setting_value: Optional[bool],
-    expected: Optional[bool],
+    payload_value: bool | None,
+    setting_value: bool | None,
+    expected: bool | None,
 ) -> None:
     actual = _parse_chat_completion(
         ChatCompletionRequest(
@@ -158,7 +153,7 @@ def test__parse_chat_completion_profanity_check(
             model="model",
             profanity_check=payload_value,
         ),
-        Settings(profanity_check=setting_value),
+        GigaChatSyncClient(profanity_check=setting_value),
     )
     assert actual.disable_filter is expected
 
@@ -171,7 +166,7 @@ def test__parse_chat_completion_disable_filter_takes_precedence() -> None:
             disable_filter=False,
             profanity_check=False,
         ),
-        Settings(profanity_check=False),
+        GigaChatSyncClient(profanity_check=False),
     )
     assert actual.disable_filter is False
 
@@ -185,24 +180,24 @@ def test__parse_chat_completion_disable_filter_takes_precedence() -> None:
     ],
 )
 def test__parse_chat_completion_model(
-    payload_value: Optional[str],
-    setting_value: Optional[str],
+    payload_value: str | None,
+    setting_value: str | None,
     expected: str,
 ) -> None:
     actual = _parse_chat_completion(
         ChatCompletionRequest(messages=[ChatMessage(role="user", content="text")], model=payload_value),
-        Settings(model=setting_value),
+        GigaChatSyncClient(model=setting_value),
     )
     assert actual.model == expected
 
 
 @pytest.mark.parametrize("payload_value", [None, "", "  "])
 @pytest.mark.parametrize("setting_value", [None, "", "  "])
-def test__parse_chat_completion_model_not_specified(payload_value: Optional[str], setting_value: Optional[str]) -> None:
+def test__parse_chat_completion_model_not_specified(payload_value: str | None, setting_value: str | None) -> None:
     with pytest.raises(ModelNotSpecifiedError):
         _parse_chat_completion(
             ChatCompletionRequest(messages=[ChatMessage(role="user", content="text")], model=payload_value),
-            Settings(model=setting_value),
+            GigaChatSyncClient(model=setting_value),
         )
 
 
@@ -212,7 +207,7 @@ def test__parse_chat_completion_preserves_missing_model_for_assistant() -> None:
             "assistant_id": "assistant-1",
             "messages": [{"role": "user", "content": "text"}],
         },
-        Settings(model="setting_model"),
+        GigaChatSyncClient(model="setting_model"),
     )
 
     assert actual.model is None
@@ -225,7 +220,7 @@ def test__parse_chat_completion_normalizes_storage_bool() -> None:
             "messages": [{"role": "user", "content": "text"}],
             "storage": True,
         },
-        Settings(model="setting_model"),
+        GigaChatSyncClient(model="setting_model"),
     )
 
     assert isinstance(actual.storage, ChatStorage)
@@ -237,11 +232,12 @@ def test__parse_chat_completion_normalizes_storage_bool() -> None:
 async def test_stored_chat_does_not_inject_configured_model(
     httpx_mock: HTTPXMock, primary: bool, use_thread: bool
 ) -> None:
-    payload: Dict[str, Any] = {"messages": [{"role": "user", "content": "continue"}]}
+    payload: dict[str, Any] = {"messages": [{"role": "user", "content": "continue"}]}
     if use_thread:
-        payload["storage"] = {"thread_id": "thread-1"}
+        storage: dict[str, Any] = {"thread_id": "thread-1"}
         if not primary:
-            payload["storage"]["is_stateful"] = True
+            storage["is_stateful"] = True
+        payload["storage"] = storage
     else:
         payload["assistant_id"] = "assistant-1"
     response = PRIMARY_CHAT_COMPLETION if primary else CHAT_COMPLETION
@@ -464,7 +460,7 @@ def test_chat_create_uses_explicit_primary_transport(monkeypatch: pytest.MonkeyP
         client: Any,
         *,
         chat: ChatCompletionRequest,
-        access_token: Optional[str] = None,
+        access_token: str | None = None,
     ) -> ChatCompletionResponse:
         captured["client"] = client
         captured["chat"] = chat
@@ -490,7 +486,7 @@ def test_chat_stream_uses_explicit_primary_transport(monkeypatch: pytest.MonkeyP
         client: Any,
         *,
         chat: ChatCompletionRequest,
-        access_token: Optional[str] = None,
+        access_token: str | None = None,
     ) -> Any:
         captured["client"] = client
         captured["chat"] = chat
@@ -703,14 +699,20 @@ def test_chat_user_password(httpx_mock: HTTPXMock) -> None:
 def test_chat_authentication_error(httpx_mock: HTTPXMock) -> None:
     httpx_mock.add_response(url=AUTH_URL, json=OAUTH_TOKEN_VALID)
     httpx_mock.add_response(url=CHAT_URL, status_code=401)
+    httpx_mock.add_response(url=AUTH_URL, json=OAUTH_TOKEN_VALID)
+    httpx_mock.add_response(url=CHAT_URL, status_code=401)
 
     with GigaChatSyncClient(base_url=BASE_URL, auth_url=AUTH_URL, credentials=CREDENTIALS, model="model") as client:
         with pytest.raises(AuthenticationError):
             client.chat(CHAT)
 
+    assert len(httpx_mock.get_requests(url=AUTH_URL)) == 2
+    assert len(httpx_mock.get_requests(url=CHAT_URL)) == 2
+
 
 def test_chat_update_token_credentials(httpx_mock: HTTPXMock) -> None:
     httpx_mock.add_response(url=AUTH_URL, json=OAUTH_TOKEN_VALID)
+    httpx_mock.add_response(url=CHAT_URL, status_code=401)
     httpx_mock.add_response(url=CHAT_URL, status_code=401)
 
     with GigaChatSyncClient(
@@ -722,11 +724,12 @@ def test_chat_update_token_credentials(httpx_mock: HTTPXMock) -> None:
         assert client.token == ACCESS_TOKEN
         with pytest.raises(AuthenticationError):
             client.chat(CHAT)
-        assert client.token
+        assert len(client.token or "") > 0
         assert client.token != ACCESS_TOKEN
 
 
 def test_chat_update_token_user_password(httpx_mock: HTTPXMock) -> None:
+    httpx_mock.add_response(url=CHAT_URL, status_code=401)
     httpx_mock.add_response(url=CHAT_URL, status_code=401)
     httpx_mock.add_response(url=TOKEN_URL, json=PASSWORD_TOKEN_VALID)
 
@@ -736,7 +739,7 @@ def test_chat_update_token_user_password(httpx_mock: HTTPXMock) -> None:
         assert client.token == ACCESS_TOKEN
         with pytest.raises(AuthenticationError):
             client.chat(CHAT)
-        assert client.token
+        assert len(client.token or "") > 0
         assert client.token != ACCESS_TOKEN
 
 
@@ -761,12 +764,13 @@ def test_chat_update_token_success(httpx_mock: HTTPXMock) -> None:
         assert client.token == ACCESS_TOKEN
         response = client.chat(CHAT)
 
-    assert client.token
+    assert len(client.token or "") > 0
     assert client.token != ACCESS_TOKEN
     assert isinstance(response, ChatCompletion)
 
 
 def test_chat_update_token_error(httpx_mock: HTTPXMock) -> None:
+    httpx_mock.add_response(url=CHAT_URL, status_code=401)
     httpx_mock.add_response(url=CHAT_URL, status_code=401)
     httpx_mock.add_response(url=TOKEN_URL, json=PASSWORD_TOKEN_VALID)
 
@@ -777,7 +781,7 @@ def test_chat_update_token_error(httpx_mock: HTTPXMock) -> None:
         with pytest.raises(AuthenticationError):
             client.chat(CHAT)
 
-    assert client.token
+    assert len(client.token or "") > 0
     assert client.token != ACCESS_TOKEN
 
 
@@ -858,7 +862,7 @@ def test_chat_legacy_stream_does_not_warn(httpx_mock: HTTPXMock) -> None:
 def test_chat_legacy_create_uses_explicit_legacy_transport(monkeypatch: pytest.MonkeyPatch) -> None:
     captured = {}
 
-    def fake_chat_sync(client: Any, *, chat: Chat, access_token: Optional[str] = None) -> ChatCompletion:
+    def fake_chat_sync(client: Any, *, chat: Chat, access_token: str | None = None) -> ChatCompletion:
         captured["client"] = client
         captured["chat"] = chat
         captured["access_token"] = access_token
@@ -877,7 +881,7 @@ def test_chat_legacy_create_uses_explicit_legacy_transport(monkeypatch: pytest.M
 def test_chat_legacy_stream_uses_explicit_legacy_transport(monkeypatch: pytest.MonkeyPatch) -> None:
     captured = {}
 
-    def fake_stream_sync(client: Any, *, chat: Chat, access_token: Optional[str] = None) -> Any:
+    def fake_stream_sync(client: Any, *, chat: Chat, access_token: str | None = None) -> Any:
         captured["client"] = client
         captured["chat"] = chat
         captured["access_token"] = access_token
@@ -907,10 +911,15 @@ def test_chat_legacy_stream_uses_explicit_legacy_transport(monkeypatch: pytest.M
 def test_stream_authentication_error(httpx_mock: HTTPXMock) -> None:
     httpx_mock.add_response(url=AUTH_URL, json=OAUTH_TOKEN_VALID)
     httpx_mock.add_response(url=CHAT_URL, status_code=401)
+    httpx_mock.add_response(url=AUTH_URL, json=OAUTH_TOKEN_VALID)
+    httpx_mock.add_response(url=CHAT_URL, status_code=401)
 
     with GigaChatSyncClient(base_url=BASE_URL, auth_url=AUTH_URL, credentials=CREDENTIALS, model="model") as client:
         with pytest.raises(AuthenticationError):
             list(client.stream(CHAT))
+
+    assert len(httpx_mock.get_requests(url=AUTH_URL)) == 2
+    assert len(httpx_mock.get_requests(url=CHAT_URL)) == 2
 
 
 def test_stream_update_token_success(httpx_mock: HTTPXMock) -> None:
@@ -924,7 +933,7 @@ def test_stream_update_token_success(httpx_mock: HTTPXMock) -> None:
         assert client.token == ACCESS_TOKEN
         response = list(client.stream(CHAT))
 
-    assert client.token
+    assert len(client.token or "") > 0
     assert client.token != ACCESS_TOKEN
     assert len(response) == 3
     assert all(isinstance(chunk, ChatCompletionChunk) for chunk in response)
@@ -932,6 +941,7 @@ def test_stream_update_token_success(httpx_mock: HTTPXMock) -> None:
 
 
 def test_stream_update_token_error(httpx_mock: HTTPXMock) -> None:
+    httpx_mock.add_response(url=CHAT_URL, status_code=401)
     httpx_mock.add_response(url=CHAT_URL, status_code=401)
     httpx_mock.add_response(url=TOKEN_URL, json=PASSWORD_TOKEN_VALID)
 
@@ -942,7 +952,7 @@ def test_stream_update_token_error(httpx_mock: HTTPXMock) -> None:
         with pytest.raises(AuthenticationError):
             list(client.stream(CHAT))
 
-    assert client.token
+    assert len(client.token or "") > 0
     assert client.token != ACCESS_TOKEN
 
 
@@ -1072,7 +1082,7 @@ async def test_achat_access_token(httpx_mock: HTTPXMock) -> None:
 async def test_achat_legacy_create_uses_explicit_legacy_transport(monkeypatch: pytest.MonkeyPatch) -> None:
     captured = {}
 
-    async def fake_chat_async(client: Any, *, chat: Chat, access_token: Optional[str] = None) -> ChatCompletion:
+    async def fake_chat_async(client: Any, *, chat: Chat, access_token: str | None = None) -> ChatCompletion:
         captured["client"] = client
         captured["chat"] = chat
         captured["access_token"] = access_token
@@ -1095,7 +1105,7 @@ async def test_achat_create_uses_explicit_primary_transport(monkeypatch: pytest.
         client: Any,
         *,
         chat: ChatCompletionRequest,
-        access_token: Optional[str] = None,
+        access_token: str | None = None,
     ) -> ChatCompletionResponse:
         captured["client"] = client
         captured["chat"] = chat
@@ -1160,7 +1170,7 @@ async def test_achat_stream_uses_explicit_primary_transport(monkeypatch: pytest.
         client: Any,
         *,
         chat: ChatCompletionRequest,
-        access_token: Optional[str] = None,
+        access_token: str | None = None,
     ) -> Any:
         captured["client"] = client
         captured["chat"] = chat
@@ -1285,7 +1295,7 @@ async def test_achat_legacy_stream_uses_explicit_legacy_transport(monkeypatch: p
             }
         )
 
-    def fake_stream_async(client: Any, *, chat: Chat, access_token: Optional[str] = None) -> Any:
+    def fake_stream_async(client: Any, *, chat: Chat, access_token: str | None = None) -> Any:
         captured["client"] = client
         captured["chat"] = chat
         captured["access_token"] = access_token
@@ -1389,12 +1399,17 @@ async def test_achat_user_password(httpx_mock: HTTPXMock) -> None:
 async def test_achat_authentication_error(httpx_mock: HTTPXMock) -> None:
     httpx_mock.add_response(url=AUTH_URL, json=OAUTH_TOKEN_VALID)
     httpx_mock.add_response(url=CHAT_URL, status_code=401)
+    httpx_mock.add_response(url=AUTH_URL, json=OAUTH_TOKEN_VALID)
+    httpx_mock.add_response(url=CHAT_URL, status_code=401)
 
     async with GigaChatAsyncClient(
         base_url=BASE_URL, auth_url=AUTH_URL, credentials=CREDENTIALS, model="model"
     ) as client:
         with pytest.raises(AuthenticationError):
             await client.achat(CHAT)
+
+    assert len(httpx_mock.get_requests(url=AUTH_URL)) == 2
+    assert len(httpx_mock.get_requests(url=CHAT_URL)) == 2
 
 
 async def test_achat_update_token_false(httpx_mock: HTTPXMock) -> None:
@@ -1412,6 +1427,7 @@ async def test_achat_update_token_false(httpx_mock: HTTPXMock) -> None:
 async def test_achat_update_token_credentials(httpx_mock: HTTPXMock) -> None:
     httpx_mock.add_response(url=AUTH_URL, json=OAUTH_TOKEN_VALID)
     httpx_mock.add_response(url=CHAT_URL, status_code=401)
+    httpx_mock.add_response(url=CHAT_URL, status_code=401)
 
     async with GigaChatAsyncClient(
         base_url=BASE_URL,
@@ -1422,11 +1438,12 @@ async def test_achat_update_token_credentials(httpx_mock: HTTPXMock) -> None:
         assert client.token == ACCESS_TOKEN
         with pytest.raises(AuthenticationError):
             await client.achat(CHAT)
-        assert client.token
+        assert len(client.token or "") > 0
         assert client.token != ACCESS_TOKEN
 
 
 async def test_achat_update_token_user_password(httpx_mock: HTTPXMock) -> None:
+    httpx_mock.add_response(url=CHAT_URL, status_code=401)
     httpx_mock.add_response(url=CHAT_URL, status_code=401)
     httpx_mock.add_response(url=TOKEN_URL, json=PASSWORD_TOKEN_VALID)
 
@@ -1436,7 +1453,7 @@ async def test_achat_update_token_user_password(httpx_mock: HTTPXMock) -> None:
         assert client.token == ACCESS_TOKEN
         with pytest.raises(AuthenticationError):
             await client.achat(CHAT)
-        assert client.token
+        assert len(client.token or "") > 0
         assert client.token != ACCESS_TOKEN
 
 
@@ -1500,12 +1517,17 @@ async def test_achat_legacy_stream_does_not_warn(httpx_mock: HTTPXMock) -> None:
 async def test_astream_authentication_error(httpx_mock: HTTPXMock) -> None:
     httpx_mock.add_response(url=AUTH_URL, json=OAUTH_TOKEN_VALID)
     httpx_mock.add_response(url=CHAT_URL, status_code=401)
+    httpx_mock.add_response(url=AUTH_URL, json=OAUTH_TOKEN_VALID)
+    httpx_mock.add_response(url=CHAT_URL, status_code=401)
 
     async with GigaChatAsyncClient(
         base_url=BASE_URL, auth_url=AUTH_URL, credentials=CREDENTIALS, model="model"
     ) as client:
         with pytest.raises(AuthenticationError):
             _ = [chunk async for chunk in client.astream(CHAT)]
+
+    assert len(httpx_mock.get_requests(url=AUTH_URL)) == 2
+    assert len(httpx_mock.get_requests(url=CHAT_URL)) == 2
 
 
 async def test_astream_update_token_success(httpx_mock: HTTPXMock) -> None:
@@ -1519,7 +1541,7 @@ async def test_astream_update_token_success(httpx_mock: HTTPXMock) -> None:
         assert client.token == ACCESS_TOKEN
         response = [chunk async for chunk in client.astream(CHAT)]
 
-    assert client.token
+    assert len(client.token or "") > 0
     assert client.token != ACCESS_TOKEN
     assert len(response) == 3
     assert all(isinstance(chunk, ChatCompletionChunk) for chunk in response)
@@ -1527,6 +1549,7 @@ async def test_astream_update_token_success(httpx_mock: HTTPXMock) -> None:
 
 
 async def test_astream_update_token_error(httpx_mock: HTTPXMock) -> None:
+    httpx_mock.add_response(url=CHAT_URL, status_code=401)
     httpx_mock.add_response(url=CHAT_URL, status_code=401)
     httpx_mock.add_response(url=TOKEN_URL, json=PASSWORD_TOKEN_VALID)
 
@@ -1536,5 +1559,5 @@ async def test_astream_update_token_error(httpx_mock: HTTPXMock) -> None:
         assert client.token == ACCESS_TOKEN
         with pytest.raises(AuthenticationError):
             _ = [chunk async for chunk in client.astream(CHAT)]
-        assert client.token
+        assert len(client.token or "") > 0
         assert client.token != ACCESS_TOKEN

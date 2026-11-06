@@ -59,7 +59,7 @@ make test-integration
 - [ ] I have performed a self-review of my code
 - [ ] I have commented my code, particularly in hard-to-understand areas
 - [ ] My changes generate no new linter warnings (`make lint`)
-- [ ] Type checking passes (`make mypy`)
+- [ ] Type checking passes (`make ty`)
 - [ ] All tests pass (`make test`)
 
 ### Documentation
@@ -77,8 +77,7 @@ make test-integration
 
 ### Compatibility
 
-- [ ] Changes are compatible with Python 3.8-3.13
-- [ ] No use of `type[...]` syntax (use `Type[...]` for Python 3.8)
+- [ ] Changes are compatible with Python 3.10-3.15
 - [ ] Async/sync variants both work correctly (if applicable)
 
 ### Commits

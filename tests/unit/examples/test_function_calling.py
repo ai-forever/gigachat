@@ -1,4 +1,4 @@
-from typing import Any, Dict
+from typing import Any
 
 from examples.tools.function_calling import add_function_result, extract_call
 
@@ -6,10 +6,10 @@ from gigachat.models import ChatCompletionResponse
 
 
 class Response:
-    def __init__(self, payload: Dict[str, Any]) -> None:
+    def __init__(self, payload: dict[str, Any]) -> None:
         self.payload = payload
 
-    def model_dump(self, **kwargs: Any) -> Dict[str, Any]:
+    def model_dump(self, **kwargs: Any) -> dict[str, Any]:
         return self.payload
 
 

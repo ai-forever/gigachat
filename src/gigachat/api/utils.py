@@ -1,66 +1,48 @@
-import json
 import logging
 import re
-from http import HTTPStatus
+from collections.abc import AsyncIterator, Iterator
 from typing import (
     Any,
-    AsyncIterable,
-    AsyncIterator,
-    Dict,
-    Iterable,
-    Iterator,
-    List,
-    NoReturn,
-    Optional,
-    Tuple,
-    Type,
     TypeVar,
-    Union,
 )
 from urllib.parse import urlsplit, urlunsplit
 
-import httpx
+import httpx2 as httpx
 from pydantic import BaseModel
 
-from gigachat.context import (
-    agent_id_cvar,
-    authorization_cvar,
-    client_id_cvar,
-    custom_headers_cvar,
-    operation_id_cvar,
-    request_id_cvar,
-    service_id_cvar,
-    session_id_cvar,
-    trace_id_cvar,
-)
-from gigachat.exceptions import (
-    AuthenticationError,
-    BadRequestError,
-    ForbiddenError,
-    NotFoundError,
-    RateLimitError,
-    RequestEntityTooLargeError,
-    ResponseError,
-    ServerError,
-    UnprocessableEntityError,
-)
+from gigachat._core.request import USER_AGENT as USER_AGENT
+from gigachat._core.request import build_headers as build_headers
+from gigachat._core.response import EVENT_STREAM as EVENT_STREAM
+from gigachat._core.response import _acheck_response as _acheck_response
+from gigachat._core.response import _check_content_type as _check_content_type
+from gigachat._core.response import _check_response as _check_response
+from gigachat._core.response import _raise_for_status as _raise_for_status
+from gigachat._core.response import build_response as build_response
+from gigachat._core.response import build_x_headers as build_x_headers
+from gigachat._core.response import parse_chunk as parse_chunk
+from gigachat._core.response import parse_data_chunk as parse_data_chunk
+from gigachat._core.response import parse_event_chunk as parse_event_chunk
 
 logger = logging.getLogger(__name__)
-
-USER_AGENT = "GigaChat-python-lib"
-EVENT_STREAM = "text/event-stream"
 
 
 _VERSIONED_PATH = re.compile(r"^/(api/)?v\d+(/|$)")
 _VERSION_SUFFIX = re.compile(r"/v\d+$")
 
 
-def _at_origin(client: Union[httpx.Client, httpx.AsyncClient], path: str) -> str:
-    base = urlsplit(str(client.base_url))
+def _base_url(client: httpx.Client | httpx.AsyncClient) -> str:
+    from gigachat._core.execution import current_request
+
+    state = current_request.get()
+    return str(state.owner._settings.base_url if state is not None else client.base_url)
+
+
+def _at_origin(client: httpx.Client | httpx.AsyncClient, path: str) -> str:
+    base = urlsplit(_base_url(client))
     return urlunsplit((base.scheme, base.netloc, path, "", ""))
 
 
-def resolve_request_url(client: Union[httpx.Client, httpx.AsyncClient], url: str) -> str:
+def resolve_request_url(client: httpx.Client | httpx.AsyncClient, url: str) -> str:
     """Anchor versioned absolute paths (e.g. ``/v1/...``, ``/api/v2/...``) at the client's origin."""
     parsed = urlsplit(url)
     if parsed.scheme or parsed.netloc:
@@ -70,287 +52,100 @@ def resolve_request_url(client: Union[httpx.Client, httpx.AsyncClient], url: str
     return url
 
 
-def resolve_primary_chat_url(client: Union[httpx.Client, httpx.AsyncClient], override: Optional[str]) -> str:
+def resolve_primary_chat_url(client: httpx.Client | httpx.AsyncClient, override: str | None) -> str:
     """Resolve the primary chat URL, rewriting any ``/vN`` suffix in ``base_url`` to ``/v2``."""
     if override is not None:
         return resolve_request_url(client, override)
-    base_path = urlsplit(str(client.base_url)).path.rstrip("/")
+    base_path = urlsplit(_base_url(client)).path.rstrip("/")
     if not _VERSION_SUFFIX.search(base_path):
         return "/chat/completions"
     return _at_origin(client, _VERSION_SUFFIX.sub("/v2/chat/completions", base_path))
 
 
-def build_headers(access_token: Optional[str] = None) -> Dict[str, str]:
-    """Build headers for the request."""
-    headers = {}
-
-    if access_token:
-        headers["Authorization"] = f"Bearer {access_token}"
-
-    headers["User-Agent"] = USER_AGENT
-
-    context_vars = {
-        "Authorization": authorization_cvar,
-        "X-Session-ID": session_id_cvar,
-        "X-Request-ID": request_id_cvar,
-        "X-Service-ID": service_id_cvar,
-        "X-Operation-ID": operation_id_cvar,
-        "X-Client-ID": client_id_cvar,
-        "X-Trace-ID": trace_id_cvar,
-        "X-Agent-ID": agent_id_cvar,
-    }
-
-    for header, cvar in context_vars.items():
-        value = cvar.get()
-        if value:
-            headers[header] = value
-
-    custom_headers = custom_headers_cvar.get()
-    if custom_headers:
-        headers.update(custom_headers)
-    return headers
-
-
 T = TypeVar("T", bound=BaseModel)
 
 
-def parse_data_chunk(line: str, model_class: Type[T]) -> Optional[T]:
-    """Parse an SSE data line."""
-    try:
-        name, _, value = line.partition(":")
-        if name == "data":
-            value = value.lstrip()
-            if value == "[DONE]":
-                return None
-            return model_class.model_validate_json(value)
-    except Exception as e:
-        logger.error("Error parsing chunk from server: %s, raw value: %s", e, line)
-        raise
-    return None
-
-
-def parse_chunk(line: str, model_class: Type[T]) -> Optional[T]:
-    """Parse an SSE data line."""
-    return parse_data_chunk(line, model_class)
-
-
-def parse_event_chunk(event: Optional[str], data: str, model_class: Type[T]) -> T:
-    """Parse an SSE event with an optional event name."""
-    try:
-        payload = json.loads(data)
-        if event and isinstance(payload, dict):
-            payload.setdefault("event", event)
-        return model_class.model_validate(payload)
-    except Exception as e:
-        logger.error("Error parsing event chunk from server: %s, event: %s, raw value: %s", e, event, data)
-        raise
-
-
-def _parse_sse_line(line: str) -> Optional[Tuple[str, str]]:
-    """Parse an SSE field line."""
-    if line.startswith(":"):
-        return None
-
-    name, separator, value = line.partition(":")
-    if not separator:
-        return None
-
-    if value.startswith(" "):
-        value = value[1:]
-
-    return name, value
-
-
-def _iter_event_chunks(lines: Iterable[str], model_class: Type[T]) -> Iterator[T]:
-    """Yield parsed SSE events, including unnamed data events."""
-    event: Optional[str] = None
-    data_lines: List[str] = []
-
-    def flush() -> Iterator[T]:
-        nonlocal event, data_lines
-
-        data = "\n".join(data_lines)
-        if data_lines and data.strip() != "[DONE]":
-            yield parse_event_chunk(event, data, model_class)
-
-        event = None
-        data_lines = []
-
-    for line in lines:
-        if not line:
-            yield from flush()
-            continue
-
-        parsed = _parse_sse_line(line)
-        if parsed is None:
-            continue
-
-        name, value = parsed
-        if name == "event":
-            event = value
-        elif name == "data":
-            data_lines.append(value)
-
-    yield from flush()
-
-
-async def _aiter_event_chunks(lines: AsyncIterable[str], model_class: Type[T]) -> AsyncIterator[T]:
-    """Yield parsed async SSE events, including unnamed data events."""
-    event: Optional[str] = None
-    data_lines: List[str] = []
-
-    async def flush() -> AsyncIterator[T]:
-        nonlocal event, data_lines
-
-        data = "\n".join(data_lines)
-        if data_lines and data.strip() != "[DONE]":
-            yield parse_event_chunk(event, data, model_class)
-
-        event = None
-        data_lines = []
-
-    async for line in lines:
-        if not line:
-            async for chunk in flush():
-                yield chunk
-            continue
-
-        parsed = _parse_sse_line(line)
-        if parsed is None:
-            continue
-
-        name, value = parsed
-        if name == "event":
-            event = value
-        elif name == "data":
-            data_lines.append(value)
-
-    async for chunk in flush():
-        yield chunk
-
-
-def build_x_headers(response: httpx.Response) -> Dict[str, Optional[str]]:
-    """Extract X-Headers from response."""
-    return {
-        "x-request-id": response.headers.get("x-request-id"),
-        "x-session-id": response.headers.get("x-session-id"),
-        "x-client-id": response.headers.get("x-client-id"),
-    }
-
-
-def _check_content_type(response: httpx.Response) -> None:
-    content_type, _, _ = response.headers.get("content-type", "").partition(";")
-    if content_type != EVENT_STREAM:
-        raise httpx.TransportError(f"Expected response Content-Type to be '{EVENT_STREAM}', got {content_type!r}")
-
-
-def _raise_for_status(url: Union[httpx.URL, str], status_code: int, content: bytes, headers: httpx.Headers) -> NoReturn:
-    if status_code == HTTPStatus.BAD_REQUEST:
-        raise BadRequestError(url, status_code, content, headers)
-    elif status_code == HTTPStatus.UNAUTHORIZED:
-        raise AuthenticationError(url, status_code, content, headers)
-    elif status_code == HTTPStatus.FORBIDDEN:
-        raise ForbiddenError(url, status_code, content, headers)
-    elif status_code == HTTPStatus.NOT_FOUND:
-        raise NotFoundError(url, status_code, content, headers)
-    elif status_code == HTTPStatus.REQUEST_ENTITY_TOO_LARGE:
-        raise RequestEntityTooLargeError(url, status_code, content, headers)
-    elif status_code == HTTPStatus.UNPROCESSABLE_ENTITY:
-        raise UnprocessableEntityError(url, status_code, content, headers)
-    elif status_code == HTTPStatus.TOO_MANY_REQUESTS:
-        if retry_after := headers.get("retry-after"):
-            logger.warning("Rate limit exceeded (429). Retry-After: %s", retry_after)
-        else:
-            logger.warning("Rate limit exceeded (429)")
-        raise RateLimitError(url, status_code, content, headers)
-    elif 500 <= status_code < 600:
-        logger.warning("Server error (%d) from %s", status_code, url)
-        raise ServerError(url, status_code, content, headers)
-    else:
-        raise ResponseError(url, status_code, content, headers)
-
-
-def _check_response(response: httpx.Response) -> None:
-    if response.status_code == HTTPStatus.OK:
-        _check_content_type(response)
-    else:
-        _raise_for_status(response.url, response.status_code, response.read(), response.headers)
-
-
-async def _acheck_response(response: httpx.Response) -> None:
-    if response.status_code == HTTPStatus.OK:
-        _check_content_type(response)
-    else:
-        _raise_for_status(response.url, response.status_code, await response.aread(), response.headers)
-
-
-def build_response(response: httpx.Response, model_class: Type[T]) -> T:
-    """Parse successful response into Pydantic model or raise error."""
-    if response.status_code == HTTPStatus.OK:
-        return model_class(x_headers=build_x_headers(response), **response.json())
-    else:
-        _raise_for_status(response.url, response.status_code, response.content, response.headers)
-
-
-def execute_request_sync(client: httpx.Client, kwargs: Dict[str, Any], model_class: Type[T]) -> T:
+def execute_request_sync(client: httpx.Client, kwargs: dict[str, Any], model_class: type[T]) -> T:
     """Execute sync request and parse response."""
-    response = client.request(**kwargs)
+    from gigachat._core.execution import request_sync
+
+    response = request_sync(client, **kwargs)
     return build_response(response, model_class)
 
 
-async def execute_request_async(client: httpx.AsyncClient, kwargs: Dict[str, Any], model_class: Type[T]) -> T:
+async def execute_request_async(client: httpx.AsyncClient, kwargs: dict[str, Any], model_class: type[T]) -> T:
     """Execute async request and parse response."""
-    response = await client.request(**kwargs)
+    from gigachat._core.execution import request_async
+
+    response = await request_async(client, **kwargs)
     return build_response(response, model_class)
 
 
-def execute_stream_sync(client: httpx.Client, kwargs: Dict[str, Any], model_class: Type[T]) -> Iterator[T]:
-    """Execute sync data-line streaming request and yield parsed chunks."""
-    with client.stream(**kwargs) as response:
+def _max_event_size() -> int:
+    from gigachat._core.execution import current_request
+    from gigachat._core.request import NotGiven
+    from gigachat._core.streaming import DEFAULT_MAX_EVENT_SIZE
+
+    state = current_request.get()
+    if state is None:
+        return DEFAULT_MAX_EVENT_SIZE
+    configured = state.options.max_sse_event_size
+    if isinstance(configured, NotGiven):
+        return int(state.owner._settings.max_sse_event_size)
+    return configured
+
+
+def execute_stream_sync(client: httpx.Client, kwargs: dict[str, Any], model_class: type[T]) -> Iterator[T]:
+    """Execute a streaming request and close its response on every exit."""
+    from gigachat._core.execution import stream_sync
+    from gigachat._core.streaming import Stream
+
+    with stream_sync(client, **kwargs) as response:
         _check_response(response)
-        x_headers = build_x_headers(response)
-        for line in response.iter_lines():
-            chunk = parse_data_chunk(line, model_class)
-            if chunk:
-                if hasattr(chunk, "x_headers"):
-                    chunk.x_headers = x_headers
-                yield chunk
+        with Stream(response, model_class, max_event_size=_max_event_size()) as stream:
+            yield from stream
 
 
 async def execute_stream_async(
-    client: httpx.AsyncClient, kwargs: Dict[str, Any], model_class: Type[T]
+    client: httpx.AsyncClient, kwargs: dict[str, Any], model_class: type[T]
 ) -> AsyncIterator[T]:
-    """Execute async data-line streaming request and yield parsed chunks."""
-    async with client.stream(**kwargs) as response:
+    """Execute an asynchronous streaming request with explicit response ownership."""
+    from gigachat._core.execution import stream_async
+    from gigachat._core.streaming import AsyncStream
+
+    async with stream_async(client, **kwargs) as response:
         await _acheck_response(response)
-        x_headers = build_x_headers(response)
-        async for line in response.aiter_lines():
-            chunk = parse_data_chunk(line, model_class)
-            if chunk:
-                if hasattr(chunk, "x_headers"):
-                    chunk.x_headers = x_headers
+        async with AsyncStream(response, model_class, max_event_size=_max_event_size()) as stream:
+            async for chunk in stream:
                 yield chunk
 
 
-def execute_event_stream_sync(client: httpx.Client, kwargs: Dict[str, Any], model_class: Type[T]) -> Iterator[T]:
-    """Execute an SSE request and yield parsed events."""
-    with client.stream(**kwargs) as response:
+def execute_event_stream_sync(
+    client: httpx.Client, kwargs: dict[str, Any], model_class: type[T], *, terminal_event: str | None = None
+) -> Iterator[T]:
+    """Execute an SSE request and yield parsed named or unnamed events."""
+    from gigachat._core.execution import stream_sync
+    from gigachat._core.streaming import Stream
+
+    with stream_sync(client, **kwargs) as response:
         _check_response(response)
-        x_headers = build_x_headers(response)
-        for chunk in _iter_event_chunks(response.iter_lines(), model_class):
-            if hasattr(chunk, "x_headers"):
-                chunk.x_headers = x_headers
-            yield chunk
+        with Stream(
+            response, model_class, event_mode=True, terminal_event=terminal_event, max_event_size=_max_event_size()
+        ) as stream:
+            yield from stream
 
 
 async def execute_event_stream_async(
-    client: httpx.AsyncClient, kwargs: Dict[str, Any], model_class: Type[T]
+    client: httpx.AsyncClient, kwargs: dict[str, Any], model_class: type[T], *, terminal_event: str | None = None
 ) -> AsyncIterator[T]:
-    """Execute an async SSE request and yield parsed events."""
-    async with client.stream(**kwargs) as response:
+    """Execute an asynchronous SSE request and yield parsed events."""
+    from gigachat._core.execution import stream_async
+    from gigachat._core.streaming import AsyncStream
+
+    async with stream_async(client, **kwargs) as response:
         await _acheck_response(response)
-        x_headers = build_x_headers(response)
-        async for chunk in _aiter_event_chunks(response.aiter_lines(), model_class):
-            if hasattr(chunk, "x_headers"):
-                chunk.x_headers = x_headers
-            yield chunk
+        async with AsyncStream(
+            response, model_class, event_mode=True, terminal_event=terminal_event, max_event_size=_max_event_size()
+        ) as stream:
+            async for chunk in stream:
+                yield chunk

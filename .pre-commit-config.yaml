@@ -13,17 +13,19 @@ repos:
       - id: check-ast
 
   - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: v0.8.6
+    rev: v0.17.4
     hooks:
-      - id: ruff
+      - id: ruff-check
+        files: ^(src|tests|examples)/.*\.py$
         args: [--fix, --exit-non-zero-on-fix]
       - id: ruff-format
+        files: ^(src|tests|examples)/.*\.py$
 
   - repo: local
     hooks:
-      - id: mypy
-        name: mypy type checking
-        entry: uv run mypy
+      - id: ty
+        name: ty type checking
+        entry: uv run ty check
         args: ["src", "tests"]
         language: system
         types: [python]

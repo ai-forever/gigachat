@@ -2,8 +2,8 @@ import json
 
 import pytest
 from examples.chat_completions import additional_fields, response_metadata, session_headers
-from pytest_httpx import HTTPXMock
 from tests.constants import CHAT_COMPLETION
+from tests.httpx_mock import HTTPXMock
 
 from gigachat import GigaChat, session_id_cvar
 from gigachat.exceptions import BadRequestError

@@ -1,429 +1,74 @@
-import asyncio
-import inspect
-import json
 import logging
-import ssl
-import threading
-import time
+from collections.abc import AsyncIterable, Iterable
 from functools import cached_property
 from typing import (
     Any,
-    AsyncIterator,
-    Dict,
-    Iterator,
-    List,
     Literal,
-    Optional,
-    Tuple,
-    Type,
     TypeVar,
-    Union,
+    cast,
 )
 
-import httpx
+import httpx2 as httpx
 import pydantic
 from typing_extensions import Self
 
-from gigachat._types import FileTypes
-from gigachat.api import auth, chat, chat_completions, embeddings, files, models, tools
-from gigachat.assistants import AssistantsAsyncClient, AssistantsSyncClient
-from gigachat.authentication import _awith_auth, _awith_auth_stream, _with_auth, _with_auth_stream
+from gigachat._core.base_client import _BaseClient
+from gigachat._core.execution import request_scope
+from gigachat._core.http_client import (
+    DefaultAioHttpClient,
+    DefaultAsyncHttpxClient,
+    DefaultHttpxClient,
+    http_client_kwargs,
+)
+from gigachat._core.request import FileTypes, RequestOptions
+from gigachat._core.streaming import AsyncStream, Stream
+from gigachat.api import auth, batches, embeddings, files, models, tools
 from gigachat.context import authorization_cvar
-from gigachat.exceptions import LengthFinishReasonError, ModelNotSpecifiedError
-from gigachat.models.auth import AccessToken, Token
+from gigachat.models.auth import AccessToken
+from gigachat.models.batches import Batch, Batches
 from gigachat.models.chat import (
     Chat,
     ChatCompletion,
     ChatCompletionChunk,
-    Messages,
-    MessagesRole,
-)
-from gigachat.models.chat_completions import (
-    ChatCompletionChunk as PrimaryChatCompletionChunk,
-)
-from gigachat.models.chat_completions import (
-    ChatCompletionRequest,
-    ChatCompletionResponse,
-    ChatMessage,
-    ChatResponseFormat,
-    ChatStorage,
 )
 from gigachat.models.embeddings import Embeddings
 from gigachat.models.files import DeletedFile, Image, UploadedFile, UploadedFiles
 from gigachat.models.models import Model, Models
-from gigachat.models.response_format import JsonSchemaResponseFormat
-from gigachat.models.tools import AICheckResult, Balance, OpenApiFunctions, TokensCount
+from gigachat.models.tools import (
+    AICheckResult,
+    Balance,
+    FunctionValidationResult,
+    GeneratedContent,
+    OpenApiFunctions,
+    RankedFunctions,
+    RerankResponse,
+    TokensCount,
+)
 from gigachat.resources import AsyncChatNamespace, ChatNamespace
-from gigachat.retry import _awith_retry, _awith_retry_stream, _with_retry, _with_retry_stream
+from gigachat.resources.assistants import AssistantsAsyncClient, AssistantsSyncClient
+from gigachat.resources.files import AsyncFilesMixin, SyncFilesMixin
+from gigachat.resources.threads import ThreadsAsyncClient, ThreadsSyncClient
 from gigachat.settings import Settings
-from gigachat.threads import ThreadsAsyncClient, ThreadsSyncClient
 
 ModelT = TypeVar("ModelT", bound=pydantic.BaseModel)
 
 logger = logging.getLogger(__name__)
 
 
-def _resolve_model(model: Optional[str], settings: Settings) -> str:
-    """Return the request or configured model, or raise if neither is set."""
-    if model is not None and model.strip():
-        return model
-
-    if settings.model is not None and settings.model.strip():
-        return settings.model
-
-    raise ModelNotSpecifiedError()
-
-
-def _get_kwargs(settings: Settings) -> Dict[str, Any]:
-    """Return settings for connecting to the GigaChat API."""
-    kwargs = {
-        "base_url": settings.base_url,
-        "verify": settings.verify_ssl_certs,
-        "timeout": httpx.Timeout(settings.timeout),
-    }
-    if settings.ssl_context:
-        kwargs["verify"] = settings.ssl_context
-    if settings.ca_bundle_file:
-        kwargs["verify"] = settings.ca_bundle_file
-    if settings.cert_file:
-        kwargs["cert"] = (
-            settings.cert_file,
-            settings.key_file,
-            settings.key_file_password,
-        )
+def _get_kwargs(settings: Settings) -> dict[str, Any]:
+    kwargs = http_client_kwargs(settings, backend="httpx2")
+    kwargs["base_url"] = settings.base_url
     if settings.session_id is not None:
         kwargs["headers"] = {"X-Session-ID": settings.session_id}
-    if settings.max_connections is not None:
-        kwargs["limits"] = httpx.Limits(max_connections=settings.max_connections)
     return kwargs
 
 
-def _get_auth_kwargs(settings: Settings) -> Dict[str, Any]:
-    """Return settings for connecting to the OAuth 2.0 authorization server."""
-    kwargs = {
-        "verify": settings.verify_ssl_certs,
-        "timeout": httpx.Timeout(settings.timeout),
-    }
-    if settings.ssl_context:
-        kwargs["verify"] = settings.ssl_context
-    if settings.ca_bundle_file:
-        kwargs["verify"] = settings.ca_bundle_file
-    return kwargs
+def _get_auth_kwargs(settings: Settings) -> dict[str, Any]:
+    return http_client_kwargs(settings, for_auth=True, backend="httpx2")
 
 
-def _validate_response_format(payload: Union[Chat, Dict[str, Any], str]) -> None:
-    """Raise TypeError if response_format is a Pydantic model on the root chat path."""
-    if isinstance(payload, dict):
-        response_format = payload.get("response_format")
-    elif isinstance(payload, Chat):
-        response_format = payload.response_format
-    else:
-        return
-    if (
-        response_format is not None
-        and inspect.isclass(response_format)
-        and issubclass(response_format, pydantic.BaseModel)
-    ):
-        raise TypeError(
-            "You tried to pass a Pydantic model to `chat(response_format=...)`; "
-            "use `client.chat_parse(payload, response_format=...)` or "
-            "`client.achat_parse(payload, response_format=...)` instead"
-        )
-
-
-def _parse_chat(payload: Union[Chat, Dict[str, Any], str], settings: Settings) -> Chat:
-    if isinstance(payload, str):
-        chat = Chat(messages=[Messages(role=MessagesRole.USER, content=payload)])
-    else:
-        chat = Chat.model_validate(payload)
-    using_assistant = chat.assistant_id is not None or (
-        chat.storage is not None and (chat.storage.assistant_id or chat.storage.thread_id)
-    )
-    if not using_assistant:
-        chat.model = _resolve_model(chat.model, settings)
-    if chat.profanity_check is None:
-        chat.profanity_check = settings.profanity_check
-    if chat.flags is None:
-        chat.flags = settings.flags
-    return chat
-
-
-def _prepare_chat_for_parse(
-    payload: Union[Chat, Dict[str, Any], str],
-    settings: Settings,
-    response_format: Type[pydantic.BaseModel],
-    strict: bool,
-) -> Chat:
-    """Prepare a Chat object with response_format derived from *response_format*."""
-    chat_data = _parse_chat(payload, settings)
-    chat_data.response_format = JsonSchemaResponseFormat(schema=response_format, strict=strict)
-    return chat_data
-
-
-def _prepare_chat_completion_for_parse(
-    payload: Union[ChatCompletionRequest, Dict[str, Any], str],
-    settings: Settings,
-    response_format: Type[pydantic.BaseModel],
-    strict: bool,
-) -> ChatCompletionRequest:
-    """Prepare a primary chat completion request with a structured response schema."""
-    chat_data = _parse_chat_completion(payload, settings)
-    chat_data.response_format = ChatResponseFormat(type="json_schema", schema=response_format, strict=strict)
-    return chat_data
-
-
-def _parse_chat_completion(
-    payload: Union[ChatCompletionRequest, Dict[str, Any], str],
-    settings: Settings,
-) -> ChatCompletionRequest:
-    if isinstance(payload, str):
-        chat = ChatCompletionRequest(messages=[ChatMessage(role="user", content=payload)])
-    else:
-        chat = ChatCompletionRequest.model_validate(payload)
-
-    using_assistant = chat.assistant_id is not None or (
-        isinstance(chat.storage, ChatStorage) and chat.storage.thread_id is not None
-    )
-    if not using_assistant:
-        chat.model = _resolve_model(chat.model, settings)
-    if chat.disable_filter is None and settings.profanity_check is not None:
-        chat.disable_filter = not settings.profanity_check
-    if chat.flags is None:
-        chat.flags = settings.flags
-    return chat
-
-
-def _parse_completion(
-    completion: ChatCompletion,
-    response_format: Type[ModelT],
-) -> ModelT:
-    """Parse and validate message content from *completion* into *response_format*."""
-    if not completion.choices:
-        raise ValueError("Response has no choices")
-
-    choice = completion.choices[0]
-
-    if choice.finish_reason == "length":
-        raise LengthFinishReasonError(completion)
-
-    data = json.loads(choice.message.content)
-    return response_format.model_validate(data)
-
-
-def _parse_primary_completion(
-    completion: ChatCompletionResponse,
-    response_format: Type[ModelT],
-) -> ModelT:
-    """Parse and validate assistant text content from *completion* into *response_format*."""
-    if not completion.messages:
-        raise ValueError("Response has no messages")
-
-    if completion.finish_reason == "length":
-        raise LengthFinishReasonError(completion)
-
-    found_assistant_message = False
-
-    for message in completion.messages:
-        if message.role != "assistant":
-            continue
-
-        found_assistant_message = True
-
-        if message.finish_reason == "length":
-            raise LengthFinishReasonError(completion)
-
-        if not message.content:
-            continue
-
-        raw_content = "".join(part.text for part in message.content if part.text is not None)
-        if not raw_content:
-            continue
-
-        data = json.loads(raw_content)
-        return response_format.model_validate(data)
-
-    if not found_assistant_message:
-        raise ValueError("Response has no assistant messages")
-
-    raise ValueError("Response has no assistant text content")
-
-
-def _build_access_token(token: Token) -> AccessToken:
-    return AccessToken(access_token=token.tok, expires_at=token.exp, x_headers=token.x_headers)
-
-
-class _BaseClient:
-    _access_token: Optional[AccessToken] = None
-
-    def __init__(
-        self,
-        *,
-        base_url: Optional[str] = None,
-        auth_url: Optional[str] = None,
-        credentials: Optional[str] = None,
-        scope: Optional[str] = None,
-        access_token: Optional[str] = None,
-        model: Optional[str] = None,
-        session_id: Optional[str] = None,
-        profanity_check: Optional[bool] = None,
-        user: Optional[str] = None,
-        password: Optional[str] = None,
-        timeout: Optional[float] = None,
-        verify_ssl_certs: Optional[bool] = None,
-        ca_bundle_file: Optional[str] = None,
-        cert_file: Optional[str] = None,
-        key_file: Optional[str] = None,
-        key_file_password: Optional[str] = None,
-        ssl_context: Optional[ssl.SSLContext] = None,
-        flags: Optional[List[str]] = None,
-        max_connections: Optional[int] = None,
-        max_retries: Optional[int] = None,
-        retry_backoff_factor: Optional[float] = None,
-        retry_on_status_codes: Optional[Tuple[int, ...]] = None,
-        **_unknown_kwargs: Any,
-    ) -> None:
-        if _unknown_kwargs:
-            logger.warning("GigaChat: unknown kwargs - %s", _unknown_kwargs)
-
-        kwargs: Dict[str, Any] = {
-            "base_url": base_url,
-            "auth_url": auth_url,
-            "credentials": credentials,
-            "scope": scope,
-            "access_token": access_token,
-            "model": model,
-            "session_id": session_id,
-            "profanity_check": profanity_check,
-            "user": user,
-            "password": password,
-            "timeout": timeout,
-            "verify_ssl_certs": verify_ssl_certs,
-            "ca_bundle_file": ca_bundle_file,
-            "cert_file": cert_file,
-            "key_file": key_file,
-            "key_file_password": key_file_password,
-            "ssl_context": ssl_context,
-            "flags": flags,
-            "max_connections": max_connections,
-            "max_retries": max_retries,
-            "retry_backoff_factor": retry_backoff_factor,
-            "retry_on_status_codes": retry_on_status_codes,
-        }
-        config = {k: v for k, v in kwargs.items() if v is not None}
-        self._settings = Settings(**config)
-        if self._settings.access_token:
-            self._access_token = AccessToken(access_token=self._settings.access_token, expires_at=0)
-
-    @property
-    def token(self) -> Optional[str]:
-        if self._access_token:
-            return self._access_token.access_token
-        else:
-            return None
-
-    @property
-    def _use_auth(self) -> bool:
-        return bool(self._settings.credentials or (self._settings.user and self._settings.password))
-
-    def _is_token_usable(self) -> bool:
-        """Check if cached token is usable (exists and not expiring within buffer)."""
-        if self._access_token and (
-            self._access_token.expires_at == 0
-            or self._access_token.expires_at > (time.time() * 1000) + self._settings.token_expiry_buffer_ms
-        ):
-            return True
-        return False
-
-    def _reset_token(self) -> None:
-        """Reset the token."""
-        self._access_token = None
-
-
-class GigaChatSyncClient(_BaseClient):
-    """
-    Synchronous GigaChat client.
-
-    Args:
-        base_url: Address against which requests are executed.
-        auth_url: Address for requesting OAuth 2.0 access token.
-        credentials: Authorization data.
-        scope: API version to which access is provided.
-        access_token: JWE token.
-        model: Name of the model to receive a response from.
-        session_id: Default X-Session-ID header for API requests.
-        profanity_check: Censorship parameter.
-        user: User name for authorization.
-        password: Password for authorization.
-        timeout: Timeout for requests.
-        verify_ssl_certs: Check SSL certificates.
-        ca_bundle_file: Path to CA bundle file.
-        cert_file: Path to certificate file.
-        key_file: Path to key file.
-        key_file_password: Password for key file.
-        ssl_context: SSL context.
-        flags: Flags for GigaChat API.
-        max_connections: Maximum number of simultaneous connections to the GigaChat API.
-        max_retries: Maximum number of retries for transient errors.
-        retry_backoff_factor: Backoff factor for retry delays.
-        retry_on_status_codes: HTTP status codes that trigger a retry.
-        **kwargs: Additional keyword arguments passed to parent classes.
-    """
-
-    def __init__(
-        self,
-        *,
-        base_url: Optional[str] = None,
-        auth_url: Optional[str] = None,
-        credentials: Optional[str] = None,
-        scope: Optional[str] = None,
-        access_token: Optional[str] = None,
-        model: Optional[str] = None,
-        session_id: Optional[str] = None,
-        profanity_check: Optional[bool] = None,
-        user: Optional[str] = None,
-        password: Optional[str] = None,
-        timeout: Optional[float] = None,
-        verify_ssl_certs: Optional[bool] = None,
-        ca_bundle_file: Optional[str] = None,
-        cert_file: Optional[str] = None,
-        key_file: Optional[str] = None,
-        key_file_password: Optional[str] = None,
-        ssl_context: Optional[ssl.SSLContext] = None,
-        flags: Optional[List[str]] = None,
-        max_connections: Optional[int] = None,
-        max_retries: Optional[int] = None,
-        retry_backoff_factor: Optional[float] = None,
-        retry_on_status_codes: Optional[Tuple[int, ...]] = None,
-        **kwargs: Any,
-    ) -> None:
-        super().__init__(
-            base_url=base_url,
-            auth_url=auth_url,
-            credentials=credentials,
-            scope=scope,
-            access_token=access_token,
-            model=model,
-            session_id=session_id,
-            profanity_check=profanity_check,
-            user=user,
-            password=password,
-            timeout=timeout,
-            verify_ssl_certs=verify_ssl_certs,
-            ca_bundle_file=ca_bundle_file,
-            cert_file=cert_file,
-            key_file=key_file,
-            key_file_password=key_file_password,
-            ssl_context=ssl_context,
-            flags=flags,
-            max_connections=max_connections,
-            max_retries=max_retries,
-            retry_backoff_factor=retry_backoff_factor,
-            retry_on_status_codes=retry_on_status_codes,
-            **kwargs,
-        )
-        self._sync_token_lock = threading.RLock()
-        self._client_instance: Optional[httpx.Client] = None
-        self._auth_client_instance: Optional[httpx.Client] = None
+class GigaChatSyncClient(SyncFilesMixin, _BaseClient):
+    """Synchronous GigaChat client."""
 
     @cached_property
     def chat(self) -> ChatNamespace:
@@ -442,33 +87,51 @@ class GigaChatSyncClient(_BaseClient):
 
     @property
     def _client(self) -> httpx.Client:
+        self._ensure_open("sync")
+        if self._owner is not self:
+            return cast(GigaChatSyncClient, self._owner)._client
         if self._client_instance is None:
-            with self._sync_token_lock:
+            with self._lifecycle_lock:
+                self._ensure_open("sync")
                 if self._client_instance is None:
-                    self._client_instance = httpx.Client(**_get_kwargs(self._settings))
+                    self._client_instance = DefaultHttpxClient(**_get_kwargs(self._settings))
         return self._client_instance
 
     @property
     def _auth_client(self) -> httpx.Client:
+        self._ensure_open("sync")
+        if self._owner is not self:
+            return cast(GigaChatSyncClient, self._owner)._auth_client
         if self._auth_client_instance is None:
-            with self._sync_token_lock:
+            with self._lifecycle_lock:
+                self._ensure_open("sync")
                 if self._auth_client_instance is None:
-                    self._auth_client_instance = httpx.Client(**_get_auth_kwargs(self._settings))
+                    self._auth_client_instance = DefaultHttpxClient(**_get_auth_kwargs(self._settings))
         return self._auth_client_instance
 
     def close(self) -> None:
-        if self._client_instance:
-            self._client_instance.close()
-        if self._auth_client_instance:
-            self._auth_client_instance.close()
+        if self._owner is not self:
+            self._view_closed = True
+            return
+        with self._lifecycle_lock:
+            self._sync_closed = True
+            self._closed = self._closed or not hasattr(type(self), "_aclient")
+            if self._client_instance and self._injected_http is None:
+                self._client_instance.close()
+            if self._auth_client_instance and self._injected_auth_http is None:
+                self._auth_client_instance.close()
 
     def __enter__(self) -> Self:
+        self._ensure_open("sync")
         return self
 
     def __exit__(self, *exc: Any) -> None:
         self.close()
 
     def _update_token(self) -> None:
+        self._ensure_open("sync")
+        if self._owner is not self:
+            return cast(GigaChatSyncClient, self._owner)._update_token()
         if authorization_cvar.get() is not None:
             return
 
@@ -477,24 +140,29 @@ class GigaChatSyncClient(_BaseClient):
                 return
 
             if self._settings.credentials:
-                self._access_token = auth.auth_sync(
-                    self._auth_client,
-                    url=self._settings.auth_url,
-                    credentials=self._settings.credentials,
-                    scope=self._settings.scope,
+                self._set_token(
+                    auth.auth_sync(
+                        self._auth_client,
+                        url=self._settings.auth_url,
+                        credentials=self._settings.credentials,
+                        scope=self._settings.scope,
+                    )
                 )
                 logger.debug("Token refreshed via OAuth")
             elif self._settings.user and self._settings.password:
-                self._access_token = _build_access_token(
-                    auth.token_sync(
-                        self._client,
-                        user=self._settings.user,
-                        password=self._settings.password,
+                self._set_token(
+                    auth._build_access_token(
+                        auth.token_sync(
+                            self._client,
+                            url=self._settings.base_url.rstrip("/") + "/token",
+                            user=self._settings.user,
+                            password=self._settings.password,
+                        )
                     )
                 )
                 logger.debug("Token refreshed via password auth")
 
-    def get_token(self) -> Optional[AccessToken]:
+    def get_token(self) -> AccessToken | None:
         """
         Return a valid access token, refreshing if necessary.
 
@@ -505,135 +173,85 @@ class GigaChatSyncClient(_BaseClient):
                 2. No authentication credentials are provided.
         """
         self._update_token()
-        return self._access_token
+        return self._owner._access_token
 
-    @_with_retry
-    @_with_auth
-    def tokens_count(self, input_: List[str], model: Optional[str] = None) -> List[TokensCount]:
+    @request_scope
+    def tokens_count(
+        self, input_: str | list[str], model: str | None = None, *, request_options: RequestOptions | None = None
+    ) -> list[TokensCount]:
         """Return the number of tokens in a string."""
-        model = _resolve_model(model, self._settings)
+        model = self._resolve_model(model)
         return tools.tokens_count_sync(self._client, input_=input_, model=model, access_token=self.token)
 
-    @_with_retry
-    @_with_auth
-    def embeddings(self, texts: List[str], model: str = "Embeddings") -> Embeddings:
+    @request_scope
+    def embeddings(
+        self,
+        texts: str | list[str],
+        model: str = "Embeddings",
+        *,
+        encoding_format: str | None = None,
+        truncate: str | None = None,
+        request_options: RequestOptions | None = None,
+    ) -> Embeddings:
         """Return embeddings."""
-        return embeddings.embeddings_sync(self._client, access_token=self.token, input_=texts, model=model)
+        return embeddings.embeddings_sync(
+            self._client,
+            access_token=self.token,
+            input_=texts,
+            model=model,
+            encoding_format=encoding_format,
+            truncate=truncate,
+        )
 
-    @_with_retry
-    @_with_auth
-    def get_models(self) -> Models:
+    @request_scope
+    def get_models(self, *, request_options: RequestOptions | None = None) -> Models:
         """Return a list of available models."""
         return models.get_models_sync(self._client, access_token=self.token)
 
-    @_with_retry
-    @_with_auth
-    def get_model(self, model: str) -> Model:
+    @request_scope
+    def get_model(self, model: str, *, request_options: RequestOptions | None = None) -> Model:
         """Return a description of a specific model."""
         return models.get_model_sync(self._client, model=model, access_token=self.token)
 
-    @_with_retry
-    @_with_auth
-    def get_image(self, file_id: str) -> Image:
+    @request_scope
+    def get_image(self, file_id: str, *, request_options: RequestOptions | None = None) -> Image:
         """Return an image in base64 encoding."""
         return files.get_image_sync(self._client, file_id=file_id, access_token=self.token)
 
-    @_with_retry
-    @_with_auth
+    @request_scope
     def upload_file(
         self,
         file: FileTypes,
         purpose: Literal["general", "assistant"] = "general",
+        *,
+        request_options: RequestOptions | None = None,
     ) -> UploadedFile:
         """Upload a file."""
         return files.upload_file_sync(self._client, file=file, purpose=purpose, access_token=self.token)
 
-    @_with_retry
-    @_with_auth
-    def get_file(self, file: str) -> UploadedFile:
+    @request_scope
+    def get_file(self, file: str, *, request_options: RequestOptions | None = None) -> UploadedFile:
         """Return information about a file."""
         return files.get_file_sync(self._client, file=file, access_token=self.token)
 
-    @_with_retry
-    @_with_auth
-    def get_files(self) -> UploadedFiles:
+    @request_scope
+    def get_files(self, *, request_options: RequestOptions | None = None) -> UploadedFiles:
         """Return a list of uploaded files."""
         return files.get_files_sync(self._client, access_token=self.token)
 
-    @_with_retry
-    @_with_auth
-    def delete_file(
-        self,
-        file: str,
-    ) -> DeletedFile:
+    @request_scope
+    def delete_file(self, file: str, *, request_options: RequestOptions | None = None) -> DeletedFile:
         """Delete a file."""
         return files.delete_file_sync(self._client, file=file, access_token=self.token)
 
-    @_with_retry
-    @_with_auth
-    def _chat_create(self, payload: Union[ChatCompletionRequest, Dict[str, Any], str]) -> ChatCompletionResponse:
-        """Return a primary chat completion based on the provided messages."""
-        chat_data = _parse_chat_completion(payload, self._settings)
-        return chat_completions.chat_sync(self._client, chat=chat_data, access_token=self.token)
-
-    @_with_retry_stream
-    @_with_auth_stream
-    def _chat_stream(
-        self, payload: Union[ChatCompletionRequest, Dict[str, Any], str]
-    ) -> Iterator[PrimaryChatCompletionChunk]:
-        """Return a primary streaming chat completion based on the provided messages."""
-        chat_data = _parse_chat_completion(payload, self._settings)
-        yield from chat_completions.stream_sync(self._client, chat=chat_data, access_token=self.token)
-
-    def _chat_parse(
-        self,
-        payload: Union[ChatCompletionRequest, Dict[str, Any], str],
-        *,
-        response_format: Type[ModelT],
-        strict: bool = True,
-    ) -> Tuple[ChatCompletionResponse, ModelT]:
-        """Send a primary chat request and parse the response into a structured object."""
-        chat_data = _prepare_chat_completion_for_parse(payload, self._settings, response_format, strict)
-        completion = self._chat_create(chat_data)
-        parsed = _parse_primary_completion(completion, response_format)
-        return completion, parsed
-
-    @_with_retry
-    @_with_auth
-    def _chat(self, payload: Union[Chat, Dict[str, Any], str]) -> ChatCompletion:
-        """Return a root chat completion based on the provided messages."""
-        _validate_response_format(payload)
-        chat_data = _parse_chat(payload, self._settings)
-        return chat.chat_sync(self._client, chat=chat_data, access_token=self.token)
-
-    @_with_retry_stream
-    @_with_auth_stream
-    def _stream(self, payload: Union[Chat, Dict[str, Any], str]) -> Iterator[ChatCompletionChunk]:
-        """Return a root streaming chat completion based on the provided messages."""
-        chat_data = _parse_chat(payload, self._settings)
-
-        yield from chat.stream_sync(self._client, chat=chat_data, access_token=self.token)
-
-    def _chat_parse_root(
-        self,
-        payload: Union[Chat, Dict[str, Any], str],
-        *,
-        response_format: Type[ModelT],
-        strict: bool = True,
-    ) -> Tuple[ChatCompletion, ModelT]:
-        """Send a root chat request and parse the response into a structured object."""
-        chat_data = _prepare_chat_for_parse(payload, self._settings, response_format, strict)
-        completion = self._chat(chat_data)
-        parsed = _parse_completion(completion, response_format)
-        return completion, parsed
-
     def chat_parse(
         self,
-        payload: Union[Chat, Dict[str, Any], str],
+        payload: Chat | dict[str, Any] | str,
         *,
-        response_format: Type[ModelT],
+        response_format: type[ModelT],
         strict: bool = True,
-    ) -> Tuple[ChatCompletion, ModelT]:
+        request_options: RequestOptions | None = None,
+    ) -> tuple[ChatCompletion, ModelT]:
         """Parse via the root chat compatibility shim.
 
         .. note:: **Beta.** This feature may not work correctly with all model versions.
@@ -645,11 +263,12 @@ class GigaChatSyncClient(_BaseClient):
         Raise :class:`~gigachat.exceptions.LengthFinishReasonError` if
         ``finish_reason`` is ``"length"`` (truncated response).
         """
-        return self._chat_parse_root(payload, response_format=response_format, strict=strict)
+        return self.chat._legacy_parse(
+            payload, response_format=response_format, strict=strict, request_options=request_options
+        )
 
-    @_with_retry
-    @_with_auth
-    def get_balance(self) -> Balance:
+    @request_scope
+    def get_balance(self, *, request_options: RequestOptions | None = None) -> Balance:
         """
         Return the balance of available tokens.
 
@@ -657,108 +276,121 @@ class GigaChatSyncClient(_BaseClient):
         """
         return tools.get_balance_sync(self._client, access_token=self.token)
 
-    @_with_retry
-    @_with_auth
-    def openapi_function_convert(self, openapi_function: str) -> OpenApiFunctions:
+    @request_scope
+    def openapi_function_convert(
+        self, openapi_function: str, *, request_options: RequestOptions | None = None
+    ) -> OpenApiFunctions:
         """Convert an OpenAPI function description to a GigaChat function."""
         return tools.functions_convert_sync(self._client, openapi_function=openapi_function, access_token=self.token)
 
-    @_with_retry
-    @_with_auth
-    def check_ai(self, text: str, model: str) -> AICheckResult:
+    @request_scope
+    def check_ai(self, text: str, model: str, *, request_options: RequestOptions | None = None) -> AICheckResult:
         """Check the provided text for content generated by AI models."""
         return tools.ai_check_sync(self._client, input_=text, model=model, access_token=self.token)
 
-    def stream(self, payload: Union[Chat, Dict[str, Any], str]) -> Iterator[ChatCompletionChunk]:
+    def stream(
+        self, payload: Chat | dict[str, Any] | str, *, request_options: RequestOptions | None = None
+    ) -> Stream[ChatCompletionChunk]:
         """Stream via the root chat compatibility shim."""
-        yield from self._stream(payload)
+        return self.chat._legacy_stream(payload, request_options=request_options)
 
-
-class GigaChatAsyncClient(_BaseClient):
-    """
-    Asynchronous GigaChat client.
-
-    Args:
-        base_url: Address against which requests are executed.
-        auth_url: Address for requesting OAuth 2.0 access token.
-        credentials: Authorization data.
-        scope: API version to which access is provided.
-        access_token: JWE token.
-        model: Name of the model to receive a response from.
-        session_id: Default X-Session-ID header for API requests.
-        profanity_check: Censorship parameter.
-        user: User name for authorization.
-        password: Password for authorization.
-        timeout: Timeout for requests.
-        verify_ssl_certs: Check SSL certificates.
-        ca_bundle_file: Path to CA bundle file.
-        cert_file: Path to certificate file.
-        key_file: Path to key file.
-        key_file_password: Password for key file.
-        ssl_context: SSL context.
-        flags: Flags for GigaChat API.
-        max_connections: Maximum number of simultaneous connections to the GigaChat API.
-        max_retries: Maximum number of retries for transient errors.
-        retry_backoff_factor: Backoff factor for retry delays.
-        retry_on_status_codes: HTTP status codes that trigger a retry.
-        **kwargs: Additional keyword arguments passed to parent classes.
-    """
-
-    def __init__(
+    @request_scope
+    def rerank(
         self,
+        model: str,
+        input_: list[dict[str, Any]],
         *,
-        base_url: Optional[str] = None,
-        auth_url: Optional[str] = None,
-        credentials: Optional[str] = None,
-        scope: Optional[str] = None,
-        access_token: Optional[str] = None,
-        model: Optional[str] = None,
-        session_id: Optional[str] = None,
-        profanity_check: Optional[bool] = None,
-        user: Optional[str] = None,
-        password: Optional[str] = None,
-        timeout: Optional[float] = None,
-        verify_ssl_certs: Optional[bool] = None,
-        ca_bundle_file: Optional[str] = None,
-        cert_file: Optional[str] = None,
-        key_file: Optional[str] = None,
-        key_file_password: Optional[str] = None,
-        ssl_context: Optional[ssl.SSLContext] = None,
-        flags: Optional[List[str]] = None,
-        max_connections: Optional[int] = None,
-        max_retries: Optional[int] = None,
-        retry_backoff_factor: Optional[float] = None,
-        retry_on_status_codes: Optional[Tuple[int, ...]] = None,
-        **kwargs: Any,
-    ) -> None:
-        super().__init__(
-            base_url=base_url,
-            auth_url=auth_url,
-            credentials=credentials,
-            scope=scope,
-            access_token=access_token,
+        options: dict[str, Any] | None = None,
+        include_documents: bool | None = None,
+        request_options: RequestOptions | None = None,
+    ) -> RerankResponse:
+        """Rank documents for each query."""
+        return tools.rerank_sync(
+            self._client,
             model=model,
-            session_id=session_id,
-            profanity_check=profanity_check,
-            user=user,
-            password=password,
-            timeout=timeout,
-            verify_ssl_certs=verify_ssl_certs,
-            ca_bundle_file=ca_bundle_file,
-            cert_file=cert_file,
-            key_file=key_file,
-            key_file_password=key_file_password,
-            ssl_context=ssl_context,
-            flags=flags,
-            max_connections=max_connections,
-            max_retries=max_retries,
-            retry_backoff_factor=retry_backoff_factor,
-            retry_on_status_codes=retry_on_status_codes,
-            **kwargs,
+            input_=input_,
+            options=options,
+            include_documents=include_documents,
+            access_token=self.token,
         )
-        self._async_token_lock = asyncio.Lock()
-        self._aclient_instance: Optional[httpx.AsyncClient] = None
-        self._auth_aclient_instance: Optional[httpx.AsyncClient] = None
+
+    @request_scope
+    def update_file_access(
+        self,
+        file_ids: list[str],
+        access_policy: Literal["public", "private"],
+        *,
+        request_options: RequestOptions | None = None,
+    ) -> UploadedFiles:
+        """Update file access policies."""
+        return files.update_file_access_sync(
+            self._client, file_ids=file_ids, access_policy=access_policy, access_token=self.token
+        )
+
+    @request_scope
+    def functions_validate(
+        self, function: dict[str, Any] | str | bytes, *, request_options: RequestOptions | None = None
+    ) -> FunctionValidationResult:
+        """Validate a JSON function object or raw OpenAPI YAML."""
+        return tools.functions_validate_sync(self._client, function=function, access_token=self.token)
+
+    @request_scope
+    def functions_generate(
+        self, input_: str, model: str | None = None, *, request_options: RequestOptions | None = None
+    ) -> GeneratedContent:
+        """Generate a function definition as text."""
+        return tools.functions_generate_sync(
+            self._client,
+            input_=input_,
+            model=self._resolve_model(model),
+            access_token=self.token,
+        )
+
+    @request_scope
+    def instructions_generate(
+        self, input_: str, model: str | None = None, *, request_options: RequestOptions | None = None
+    ) -> GeneratedContent:
+        """Generate instructions as text."""
+        return tools.instructions_generate_sync(
+            self._client,
+            input_=input_,
+            model=self._resolve_model(model),
+            access_token=self.token,
+        )
+
+    @request_scope
+    def functions_rank(
+        self,
+        messages: list[dict[str, Any]],
+        functions: list[dict[str, Any]],
+        *,
+        options: dict[str, Any] | None = None,
+        request_options: RequestOptions | None = None,
+    ) -> RankedFunctions:
+        """Rank functions using the embedder."""
+        return tools.functions_rank_sync(
+            self._client, messages=messages, functions=functions, options=options, access_token=self.token
+        )
+
+    @request_scope
+    def create_batch(
+        self,
+        data: bytes | Iterable[bytes],
+        *,
+        method: Literal["chat_completions", "embedder"],
+        request_options: RequestOptions | None = None,
+    ) -> Batch:
+        """Submit raw JSONL without polling or replaying ambiguous failures."""
+        return batches.create_batch_sync(self._client, data=data, method=method, access_token=self.token)
+
+    @request_scope
+    def get_batches(self, batch_id: str | None = None, *, request_options: RequestOptions | None = None) -> Batches:
+        """Query batches using an optional batch identifier."""
+        return batches.get_batches_sync(self._client, batch_id=batch_id, access_token=self.token)
+
+
+class GigaChatAsyncClient(AsyncFilesMixin, _BaseClient):
+    """Asynchronous GigaChat client."""
 
     @cached_property
     def achat(self) -> AsyncChatNamespace:
@@ -777,53 +409,76 @@ class GigaChatAsyncClient(_BaseClient):
 
     @property
     def _aclient(self) -> httpx.AsyncClient:
+        self._ensure_open("async")
+        if self._owner is not self:
+            return cast(GigaChatAsyncClient, self._owner)._aclient
         if self._aclient_instance is None:
-            self._aclient_instance = httpx.AsyncClient(**_get_kwargs(self._settings))
+            factory = DefaultAioHttpClient if self._settings.async_backend == "aiohttp" else DefaultAsyncHttpxClient
+            self._aclient_instance = factory(base_url=self._settings.base_url, **http_client_kwargs(self._settings))
         return self._aclient_instance
 
     @property
     def _auth_aclient(self) -> httpx.AsyncClient:
+        self._ensure_open("async")
+        if self._owner is not self:
+            return cast(GigaChatAsyncClient, self._owner)._auth_aclient
         if self._auth_aclient_instance is None:
-            self._auth_aclient_instance = httpx.AsyncClient(**_get_auth_kwargs(self._settings))
+            factory = DefaultAioHttpClient if self._settings.async_backend == "aiohttp" else DefaultAsyncHttpxClient
+            self._auth_aclient_instance = factory(**http_client_kwargs(self._settings, for_auth=True))
         return self._auth_aclient_instance
 
     async def aclose(self) -> None:
-        if self._aclient_instance:
+        if self._owner is not self:
+            self._view_closed = True
+            return
+        with self._lifecycle_lock:
+            self._async_closed = True
+            self._closed = True
+        if self._aclient_instance and self._injected_async_http is None:
             await self._aclient_instance.aclose()
-        if self._auth_aclient_instance:
+        if self._auth_aclient_instance and self._injected_auth_async_http is None:
             await self._auth_aclient_instance.aclose()
 
     async def __aenter__(self) -> Self:
+        self._ensure_async_loop()
         return self
 
     async def __aexit__(self, *exc: Any) -> None:
         await self.aclose()
 
     async def _aupdate_token(self) -> None:
+        self._ensure_async_loop()
+        if self._owner is not self:
+            return await cast(GigaChatAsyncClient, self._owner)._aupdate_token()
         if authorization_cvar.get() is not None:
             return
         async with self._async_token_lock:
             if self._is_token_usable():
                 return
             if self._settings.credentials:
-                self._access_token = await auth.auth_async(
-                    self._auth_aclient,
-                    url=self._settings.auth_url,
-                    credentials=self._settings.credentials,
-                    scope=self._settings.scope,
+                self._set_token(
+                    await auth.auth_async(
+                        self._auth_aclient,
+                        url=self._settings.auth_url,
+                        credentials=self._settings.credentials,
+                        scope=self._settings.scope,
+                    )
                 )
                 logger.debug("Token refreshed via OAuth")
             elif self._settings.user and self._settings.password:
-                self._access_token = _build_access_token(
-                    await auth.token_async(
-                        self._aclient,
-                        user=self._settings.user,
-                        password=self._settings.password,
+                self._set_token(
+                    auth._build_access_token(
+                        await auth.token_async(
+                            self._aclient,
+                            url=self._settings.base_url.rstrip("/") + "/token",
+                            user=self._settings.user,
+                            password=self._settings.password,
+                        )
                     )
                 )
                 logger.debug("Token refreshed via password auth")
 
-    async def aget_token(self) -> Optional[AccessToken]:
+    async def aget_token(self) -> AccessToken | None:
         """
         Return a valid access token, refreshing if necessary.
 
@@ -834,109 +489,64 @@ class GigaChatAsyncClient(_BaseClient):
                 2. No authentication credentials are provided.
         """
         await self._aupdate_token()
-        return self._access_token
+        return self._owner._access_token
 
-    @_awith_retry
-    @_awith_auth
-    async def atokens_count(self, input_: List[str], model: Optional[str] = None) -> List[TokensCount]:
+    @request_scope
+    async def atokens_count(
+        self, input_: str | list[str], model: str | None = None, *, request_options: RequestOptions | None = None
+    ) -> list[TokensCount]:
         """Return the number of tokens in a string."""
-        model = _resolve_model(model, self._settings)
+        model = self._resolve_model(model)
 
         return await tools.tokens_count_async(self._aclient, input_=input_, model=model, access_token=self.token)
 
-    @_awith_retry
-    @_awith_auth
-    async def aembeddings(self, texts: List[str], model: str = "Embeddings") -> Embeddings:
+    @request_scope
+    async def aembeddings(
+        self,
+        texts: str | list[str],
+        model: str = "Embeddings",
+        *,
+        encoding_format: str | None = None,
+        truncate: str | None = None,
+        request_options: RequestOptions | None = None,
+    ) -> Embeddings:
         """Return embeddings."""
 
-        return await embeddings.embeddings_async(self._aclient, access_token=self.token, input_=texts, model=model)
+        return await embeddings.embeddings_async(
+            self._aclient,
+            access_token=self.token,
+            input_=texts,
+            model=model,
+            encoding_format=encoding_format,
+            truncate=truncate,
+        )
 
-    @_awith_retry
-    @_awith_auth
-    async def aget_models(self) -> Models:
+    @request_scope
+    async def aget_models(self, *, request_options: RequestOptions | None = None) -> Models:
         """Return a list of available models."""
 
         return await models.get_models_async(self._aclient, access_token=self.token)
 
-    @_awith_retry
-    @_awith_auth
-    async def aget_image(self, file_id: str) -> Image:
+    @request_scope
+    async def aget_image(self, file_id: str, *, request_options: RequestOptions | None = None) -> Image:
         """Return an image in base64 encoding."""
 
         return await files.get_image_async(self._aclient, file_id=file_id, access_token=self.token)
 
-    @_awith_retry
-    @_awith_auth
-    async def aget_model(self, model: str) -> Model:
+    @request_scope
+    async def aget_model(self, model: str, *, request_options: RequestOptions | None = None) -> Model:
         """Return a description of a specific model."""
 
         return await models.get_model_async(self._aclient, model=model, access_token=self.token)
 
-    @_awith_retry
-    @_awith_auth
-    async def _achat(self, payload: Union[Chat, Dict[str, Any], str]) -> ChatCompletion:
-        """Return a root chat completion based on the provided messages."""
-        _validate_response_format(payload)
-        chat_data = _parse_chat(payload, self._settings)
-
-        return await chat.chat_async(self._aclient, chat=chat_data, access_token=self.token)
-
-    @_awith_retry
-    @_awith_auth
-    async def _achat_create(self, payload: Union[ChatCompletionRequest, Dict[str, Any], str]) -> ChatCompletionResponse:
-        """Return a primary chat completion based on the provided messages."""
-        chat_data = _parse_chat_completion(payload, self._settings)
-        return await chat_completions.chat_async(self._aclient, chat=chat_data, access_token=self.token)
-
-    @_awith_retry_stream
-    @_awith_auth_stream
-    def _achat_stream(
-        self, payload: Union[ChatCompletionRequest, Dict[str, Any], str]
-    ) -> AsyncIterator[PrimaryChatCompletionChunk]:
-        """Return a primary streaming chat completion based on the provided messages."""
-        chat_data = _parse_chat_completion(payload, self._settings)
-        return chat_completions.stream_async(self._aclient, chat=chat_data, access_token=self.token)
-
-    @_awith_retry_stream
-    @_awith_auth_stream
-    def _astream(self, payload: Union[Chat, Dict[str, Any], str]) -> AsyncIterator[ChatCompletionChunk]:
-        """Return a root streaming chat completion based on the provided messages."""
-        chat_data = _parse_chat(payload, self._settings)
-        return chat.stream_async(self._aclient, chat=chat_data, access_token=self.token)
-
-    async def _achat_parse(
-        self,
-        payload: Union[ChatCompletionRequest, Dict[str, Any], str],
-        *,
-        response_format: Type[ModelT],
-        strict: bool = True,
-    ) -> Tuple[ChatCompletionResponse, ModelT]:
-        """Send a primary chat request and parse the response into a structured object."""
-        chat_data = _prepare_chat_completion_for_parse(payload, self._settings, response_format, strict)
-        completion = await self._achat_create(chat_data)
-        parsed = _parse_primary_completion(completion, response_format)
-        return completion, parsed
-
-    async def _achat_parse_root(
-        self,
-        payload: Union[Chat, Dict[str, Any], str],
-        *,
-        response_format: Type[ModelT],
-        strict: bool = True,
-    ) -> Tuple[ChatCompletion, ModelT]:
-        """Send a root chat request and parse the response into *response_format*."""
-        chat_data = _prepare_chat_for_parse(payload, self._settings, response_format, strict)
-        completion = await self._achat(chat_data)
-        parsed = _parse_completion(completion, response_format)
-        return completion, parsed
-
     async def achat_parse(
         self,
-        payload: Union[Chat, Dict[str, Any], str],
+        payload: Chat | dict[str, Any] | str,
         *,
-        response_format: Type[ModelT],
+        response_format: type[ModelT],
         strict: bool = True,
-    ) -> Tuple[ChatCompletion, ModelT]:
+        request_options: RequestOptions | None = None,
+    ) -> tuple[ChatCompletion, ModelT]:
         """Parse via the root async chat compatibility shim.
 
         .. note:: **Beta.** This feature may not work correctly with all model versions.
@@ -946,46 +556,42 @@ class GigaChatAsyncClient(_BaseClient):
         Raise :class:`~gigachat.exceptions.LengthFinishReasonError` if
         ``finish_reason`` is ``"length"`` (truncated response).
         """
-        return await self._achat_parse_root(payload, response_format=response_format, strict=strict)
+        return await self.achat._legacy_parse(
+            payload, response_format=response_format, strict=strict, request_options=request_options
+        )
 
-    @_awith_retry
-    @_awith_auth
+    @request_scope
     async def aupload_file(
         self,
         file: FileTypes,
         purpose: Literal["general", "assistant"] = "general",
+        *,
+        request_options: RequestOptions | None = None,
     ) -> UploadedFile:
         """Upload a file."""
 
         return await files.upload_file_async(self._aclient, file=file, purpose=purpose, access_token=self.token)
 
-    @_awith_retry
-    @_awith_auth
-    async def aget_file(self, file: str) -> UploadedFile:
+    @request_scope
+    async def aget_file(self, file: str, *, request_options: RequestOptions | None = None) -> UploadedFile:
         """Return information about a file."""
 
         return await files.get_file_async(self._aclient, file=file, access_token=self.token)
 
-    @_awith_retry
-    @_awith_auth
-    async def aget_files(self) -> UploadedFiles:
+    @request_scope
+    async def aget_files(self, *, request_options: RequestOptions | None = None) -> UploadedFiles:
         """Return a list of uploaded files."""
 
         return await files.get_files_async(self._aclient, access_token=self.token)
 
-    @_awith_retry
-    @_awith_auth
-    async def adelete_file(
-        self,
-        file: str,
-    ) -> DeletedFile:
+    @request_scope
+    async def adelete_file(self, file: str, *, request_options: RequestOptions | None = None) -> DeletedFile:
         """Delete a file."""
 
         return await files.delete_file_async(self._aclient, file=file, access_token=self.token)
 
-    @_awith_retry
-    @_awith_auth
-    async def aget_balance(self) -> Balance:
+    @request_scope
+    async def aget_balance(self, *, request_options: RequestOptions | None = None) -> Balance:
         """
         Return the balance of available tokens.
 
@@ -994,109 +600,127 @@ class GigaChatAsyncClient(_BaseClient):
 
         return await tools.get_balance_async(self._aclient, access_token=self.token)
 
-    @_awith_retry
-    @_awith_auth
-    async def aopenapi_function_convert(self, openapi_function: str) -> OpenApiFunctions:
+    @request_scope
+    async def aopenapi_function_convert(
+        self, openapi_function: str, *, request_options: RequestOptions | None = None
+    ) -> OpenApiFunctions:
         """Convert an OpenAPI function description to a GigaChat function."""
 
         return await tools.functions_convert_async(
             self._aclient, openapi_function=openapi_function, access_token=self.token
         )
 
-    @_awith_retry
-    @_awith_auth
-    async def acheck_ai(self, text: str, model: str) -> AICheckResult:
+    @request_scope
+    async def acheck_ai(self, text: str, model: str, *, request_options: RequestOptions | None = None) -> AICheckResult:
         """Check the provided text for content generated by AI models."""
 
         return await tools.ai_check_async(self._aclient, input_=text, model=model, access_token=self.token)
 
-    def astream(self, payload: Union[Chat, Dict[str, Any], str]) -> AsyncIterator[ChatCompletionChunk]:
+    def astream(
+        self, payload: Chat | dict[str, Any] | str, *, request_options: RequestOptions | None = None
+    ) -> AsyncStream[ChatCompletionChunk]:
         """Stream via the root async chat compatibility shim."""
-        return self._astream(payload)
+        return self.achat._legacy_stream(payload, request_options=request_options)
+
+    @request_scope
+    async def arerank(
+        self,
+        model: str,
+        input_: list[dict[str, Any]],
+        *,
+        options: dict[str, Any] | None = None,
+        include_documents: bool | None = None,
+        request_options: RequestOptions | None = None,
+    ) -> RerankResponse:
+        """Rank documents for each query."""
+        return await tools.rerank_async(
+            self._aclient,
+            model=model,
+            input_=input_,
+            options=options,
+            include_documents=include_documents,
+            access_token=self.token,
+        )
+
+    @request_scope
+    async def aupdate_file_access(
+        self,
+        file_ids: list[str],
+        access_policy: Literal["public", "private"],
+        *,
+        request_options: RequestOptions | None = None,
+    ) -> UploadedFiles:
+        """Update file access policies."""
+        return await files.update_file_access_async(
+            self._aclient, file_ids=file_ids, access_policy=access_policy, access_token=self.token
+        )
+
+    @request_scope
+    async def afunctions_validate(
+        self, function: dict[str, Any] | str | bytes, *, request_options: RequestOptions | None = None
+    ) -> FunctionValidationResult:
+        """Validate a JSON function object or raw OpenAPI YAML."""
+        return await tools.functions_validate_async(self._aclient, function=function, access_token=self.token)
+
+    @request_scope
+    async def afunctions_generate(
+        self, input_: str, model: str | None = None, *, request_options: RequestOptions | None = None
+    ) -> GeneratedContent:
+        """Generate a function definition as text."""
+        return await tools.functions_generate_async(
+            self._aclient,
+            input_=input_,
+            model=self._resolve_model(model),
+            access_token=self.token,
+        )
+
+    @request_scope
+    async def ainstructions_generate(
+        self, input_: str, model: str | None = None, *, request_options: RequestOptions | None = None
+    ) -> GeneratedContent:
+        """Generate instructions as text."""
+        return await tools.instructions_generate_async(
+            self._aclient,
+            input_=input_,
+            model=self._resolve_model(model),
+            access_token=self.token,
+        )
+
+    @request_scope
+    async def afunctions_rank(
+        self,
+        messages: list[dict[str, Any]],
+        functions: list[dict[str, Any]],
+        *,
+        options: dict[str, Any] | None = None,
+        request_options: RequestOptions | None = None,
+    ) -> RankedFunctions:
+        """Rank functions using the embedder."""
+        return await tools.functions_rank_async(
+            self._aclient, messages=messages, functions=functions, options=options, access_token=self.token
+        )
+
+    @request_scope
+    async def acreate_batch(
+        self,
+        data: bytes | AsyncIterable[bytes],
+        *,
+        method: Literal["chat_completions", "embedder"],
+        request_options: RequestOptions | None = None,
+    ) -> Batch:
+        """Submit raw JSONL without polling or replaying ambiguous failures."""
+        return await batches.create_batch_async(self._aclient, data=data, method=method, access_token=self.token)
+
+    @request_scope
+    async def aget_batches(
+        self, batch_id: str | None = None, *, request_options: RequestOptions | None = None
+    ) -> Batches:
+        """Query batches using an optional batch identifier."""
+        return await batches.get_batches_async(self._aclient, batch_id=batch_id, access_token=self.token)
 
 
 class GigaChat(GigaChatSyncClient, GigaChatAsyncClient):
-    """
-    GigaChat client.
-
-    Args:
-        base_url: Address against which requests are executed.
-        auth_url: Address for requesting OAuth 2.0 access token.
-        credentials: Authorization data.
-        scope: API version to which access is provided.
-        access_token: JWE token.
-        model: Name of the model to receive a response from.
-        session_id: Default X-Session-ID header for API requests.
-        profanity_check: Censorship parameter.
-        user: User name for authorization.
-        password: Password for authorization.
-        timeout: Timeout for requests.
-        verify_ssl_certs: Check SSL certificates.
-        ca_bundle_file: Path to CA bundle file.
-        cert_file: Path to certificate file.
-        key_file: Path to key file.
-        key_file_password: Password for key file.
-        ssl_context: SSL context.
-        flags: Flags for GigaChat API.
-        max_connections: Maximum number of simultaneous connections to the GigaChat API.
-        max_retries: Maximum number of retries for transient errors.
-        retry_backoff_factor: Backoff factor for retry delays.
-        retry_on_status_codes: HTTP status codes that trigger a retry.
-        **kwargs: Additional keyword arguments passed to parent classes.
-    """
-
-    def __init__(
-        self,
-        *,
-        base_url: Optional[str] = None,
-        auth_url: Optional[str] = None,
-        credentials: Optional[str] = None,
-        scope: Optional[str] = None,
-        access_token: Optional[str] = None,
-        model: Optional[str] = None,
-        session_id: Optional[str] = None,
-        profanity_check: Optional[bool] = None,
-        user: Optional[str] = None,
-        password: Optional[str] = None,
-        timeout: Optional[float] = None,
-        verify_ssl_certs: Optional[bool] = None,
-        ca_bundle_file: Optional[str] = None,
-        cert_file: Optional[str] = None,
-        key_file: Optional[str] = None,
-        key_file_password: Optional[str] = None,
-        ssl_context: Optional[ssl.SSLContext] = None,
-        flags: Optional[List[str]] = None,
-        max_connections: Optional[int] = None,
-        max_retries: Optional[int] = None,
-        retry_backoff_factor: Optional[float] = None,
-        retry_on_status_codes: Optional[Tuple[int, ...]] = None,
-        **kwargs: Any,
-    ) -> None:
-        super().__init__(
-            base_url=base_url,
-            auth_url=auth_url,
-            credentials=credentials,
-            scope=scope,
-            access_token=access_token,
-            model=model,
-            session_id=session_id,
-            profanity_check=profanity_check,
-            user=user,
-            password=password,
-            timeout=timeout,
-            verify_ssl_certs=verify_ssl_certs,
-            ca_bundle_file=ca_bundle_file,
-            cert_file=cert_file,
-            key_file=key_file,
-            key_file_password=key_file_password,
-            ssl_context=ssl_context,
-            flags=flags,
-            max_connections=max_connections,
-            max_retries=max_retries,
-            retry_backoff_factor=retry_backoff_factor,
-            retry_on_status_codes=retry_on_status_codes,
-            **kwargs,
-        )
+    """GigaChat client."""
 
     async def aclose(self) -> None:
         self.close()

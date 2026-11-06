@@ -63,7 +63,8 @@ def test_gigachat_constructor_unknown_kwargs(caplog: pytest.LogCaptureFixture) -
         )
 
     # Verify warning was logged
-    assert "GigaChat: unknown kwargs - {'unknown_param': 'test_value', 'another_unknown': 123}" in caplog.text
+    assert "GigaChat: unknown kwargs - ['another_unknown', 'unknown_param']" in caplog.text
+    assert "test_value" not in caplog.text
 
     # Verify known param was still processed
     assert client._settings.credentials == "test_credentials"

@@ -1,9 +1,9 @@
-import httpx
-from pytest_httpx import HTTPXMock
+import httpx2 as httpx
 
 from gigachat.api.embeddings import embeddings_async, embeddings_sync
 from gigachat.models.embeddings import Embeddings
 from tests.constants import BASE_URL, EMBEDDINGS, EMBEDDINGS_URL
+from tests.httpx_mock import HTTPXMock
 
 
 def test_embeddings_sync(httpx_mock: HTTPXMock) -> None:

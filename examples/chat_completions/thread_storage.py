@@ -1,7 +1,6 @@
 """Reuse stored thread context and one session identifier."""
 
 import os
-from typing import Tuple
 from uuid import uuid4
 
 from dotenv import load_dotenv
@@ -11,7 +10,7 @@ from gigachat import GigaChat
 from gigachat.models import ChatCompletionRequest, ChatCompletionResponse, ChatMessage, ChatModelOptions, ChatStorage
 
 
-def run(client: GigaChat) -> Tuple[ChatCompletionResponse, ChatCompletionResponse]:
+def run(client: GigaChat) -> tuple[ChatCompletionResponse, ChatCompletionResponse]:
     """Create a stored conversation and continue with only the new message."""
     first_response = client.chat.create(
         ChatCompletionRequest(

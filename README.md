@@ -53,10 +53,33 @@ This library is part of [GigaChain](https://github.com/ai-forever/gigachain) and
 pip install gigachat
 ```
 
-**Requirements:** Python 3.8 — 3.13
+This branch prepares **0.3.0a1**, an alpha prerelease. APIs and behavior may change before stable 0.3.0. After publication, opt in explicitly with `pip install "gigachat==0.3.0a1"`; stable dependency bounds starting at `>=0.3.0` do not select this alpha. See the [migration guide](MIGRATION.md) before upgrading.
+
+**Requirements:** Python 3.10+; native HTTPX2 transport. Python 3.8/3.9 applications should remain on a compatible 0.2.x release.
 
 > **Note:** In production, keep TLS verification enabled (default).
 > See [SSL Certificates](#ssl-certificates) for setup instructions.
+
+## HTTPX2, request options, and lifecycle (0.3.0a1)
+
+See the [migration guide](MIGRATION.md) for compatibility changes and [changelog](CHANGELOG.md) for candidate release notes. Import `httpx2` for injected HTTP clients, Timeout, and Limits; legacy HTTPX objects are separate types.
+
+```python
+from gigachat import GigaChat, RequestOptions
+
+with GigaChat(model="GigaChat-2") as client:
+    response = client.chat.create("Hello", request_options=RequestOptions(timeout=60.0))
+    with client.chat.stream("Tell me a story") as stream:
+        for chunk in stream:
+            print(chunk)
+            break
+```
+
+Use stream context managers or explicit close/aclose for early exits. Async streams support `async with client.achat.stream(...)`. The default maximum SSE event is 1 MiB; change `max_sse_event_size` if needed. Network retries remain disabled by default and never replay partial output.
+
+`client.chat.with_raw_response.create(...)` returns a fully read RawResponse with headers, status, request ID, URL, and synchronous `parse()`. The same parse method stays synchronous after an async request. For binary files, use `get_file_content` / `aget_file_content`, or bounded-memory `download_file` / `adownload_file`; `get_image` retains base64 output.
+
+Optional extras are `pip install 'gigachat[aiohttp]'`, `gigachat[http2]`, and `gigachat[socks]`. Select aiohttp explicitly with `async_backend="aiohttp"`; it supports asyncio and HTTP/1.1 and has documented timeout/pool limits. Installing an extra does not change the default backend. Borrowed HTTPX2-compatible clients remain caller-owned; the aiohttp adapter owns its lazy session. Hybrid `GigaChat.close()` closes its sync side; use `await client.aclose()` to close both sync and async resources. Async clients and views cannot be reused across event loops. See the migration guide's ownership rules and capability table before supplying advanced transport options.
 
 ## Quick Start
 
@@ -100,12 +123,10 @@ Root compatibility shims such as `client.chat(...)`, `client.stream(...)`, `clie
 
 During the migration, old `gigachat.models.Chat*`, `Messages*`, `Function*`, and `Usage` imports still resolve to legacy compatibility aliases. Use `ChatCompletionRequest`, `ChatCompletionResponse`, `ChatMessage`, and related `Chat*` primary models for the new contract.
 
-For a step-by-step checklist and import mapping, see [MIGRATION_GUIDE.md](MIGRATION_GUIDE.md)
+For a step-by-step checklist and import mapping, see [MIGRATION.md](MIGRATION.md#chat-contract-migration)
 
-Upgrading to `0.2.4a1` also changes v1 function-schema defaults and nested property
-access, and moves several advanced v2 fields to untyped extras. Review the
-[release compatibility notes](MIGRATION_GUIDE.md#upgrading-to-024a1) even if you
-continue using the v1 methods.
+The [existing schema and authentication compatibility notes](MIGRATION.md#existing-024-schema-and-authentication-changes)
+also apply when upgrading older applications that continue using v1 methods.
 
 ### Basic Chat
 
@@ -322,8 +343,8 @@ Examples for the updated contracts include:
 | `cert_file` | `str` | `None` | Path to client certificate (for mTLS) |
 | `key_file` | `str` | `None` | Path to client private key (for mTLS) |
 | `key_file_password` | `str` | `None` | Password for encrypted private key |
-| `timeout` | `float` | `30.0` | Request timeout in seconds |
-| `max_connections` | `int` | `None` | Maximum concurrent connections |
+| `timeout` | `float` or `httpx2.Timeout` | `30.0` | Network timeouts; constructor None inherits settings |
+| `max_connections` | `int` | `None` | Override the effective bounded transport default; None inherits |
 | `max_retries` | `int` | `0` | Maximum retry attempts for transient errors |
 | `retry_backoff_factor` | `float` | `0.5` | Exponential backoff multiplier |
 | `retry_on_status_codes` | `tuple` | `(429, 500, 502, 503, 504)` | HTTP status codes that trigger retry |
@@ -340,7 +361,7 @@ Examples for the updated contracts include:
 
 ### Environment Variables
 
-All parameters can be configured via environment variables with the `GIGACHAT_` prefix:
+Scalar settings can be configured via environment variables with the `GIGACHAT_` prefix. Pass SSLContext, HTTPX2 Timeout/Limits, and injected clients as Python objects:
 
 ```bash
 # Authentication
@@ -382,15 +403,9 @@ The library supports four authentication methods:
 
 ### Authentication priority (when multiple are configured)
 
-If multiple auth inputs are provided at the same time, the SDK applies this priority:
+Headers merge case-insensitively, from lowest to highest priority: defaults on an injected HTTP client → SDK headers → named ContextVars → `custom_headers_cvar` → `with_options()` view headers → per-call headers. The session default from settings is applied before these overrides.
 
-1. **`custom_headers_cvar["Authorization"]`** (if set) — overrides any other auth source.
-2. **`authorization_cvar`** (if set) — overrides any other auth source and **disables automatic token fetching/refresh** (you manage the header value and its lifecycle).
-3. **Explicit `access_token`** (constructor parameter / `GIGACHAT_ACCESS_TOKEN`) — used as-is. If it fails with 401 and OAuth credentials or user/password are also configured, the SDK will fall back to fetching a new token.
-4. **OAuth `credentials`** (constructor parameter / `GIGACHAT_CREDENTIALS`) — used to obtain/refresh a token.
-5. **Username/password** (`user` + `password`) — used to obtain/refresh a token from the `/token` endpoint.
-
-When both **OAuth `credentials`** and **username/password** are provided, OAuth credentials take precedence for token refresh.
+An external `Authorization` from any of these override sources disables SDK token acquisition and refresh for that request; the application owns that header's lifetime. Without an external override, an explicit `access_token` is used first. An authorized 401 can refresh it when OAuth credentials or username/password are configured. OAuth credentials take precedence over username/password for token acquisition and refresh.
 
 ### 1. Authorization Key (Recommended)
 
@@ -585,46 +600,49 @@ except GigaChatException as e:
 
 ### Context Variables
 
-Set a default session identifier on a client with `GigaChat(session_id="conversation-123")`
-or `GIGACHAT_SESSION_ID`. Reuse it for requests belonging to the same conversation.
-The SDK sends it as `X-Session-ID` on API requests; it does not guarantee a cache hit.
-`session_id_cvar` overrides the client default, and `custom_headers_cvar` has the highest priority.
+Set a default session identifier with `GigaChat(session_id="conversation-123")` or `GIGACHAT_SESSION_ID`. The SDK sends it as `X-Session-ID`; this groups requests but does not store conversation history or guarantee a cache hit.
 
-Track individual requests with context headers for logging and debugging:
+Headers merge **case-insensitively**, from lowest to highest priority:
+
+1. Defaults on an injected HTTP client.
+2. SDK headers.
+3. Named ContextVars.
+4. `custom_headers_cvar`.
+5. Headers on a `with_options()` view.
+6. Per-call `RequestOptions.extra_headers`.
+
+The session ID from settings is a fallback below explicit header sources. An external `Authorization` disables SDK token acquisition and refresh for that request. The SDK forwards request, trace, operation, and session IDs as independent opaque values. It does not create distributed traces, derive IDs from one another, or guarantee that an operation ID is a span ID. Applications may adopt that convention themselves.
+
+Use the token returned by `set()` to restore the prior value, including when a request fails:
 
 ```python
-from gigachat import GigaChat, session_id_cvar, request_id_cvar, custom_headers_cvar
-import uuid
+from gigachat import GigaChat, request_id_cvar
+from uuid import uuid4
 
-# Set session and request identifiers
-session_id_cvar.set("user-session-12345")
-request_id_cvar.set(str(uuid.uuid4()))
-
-# Or add custom headers
-custom_headers_cvar.set({"X-Custom-Header": "custom-value"})
-
-with GigaChat() as client:
-    response = client.chat.create("Hello!")
+# Supply authentication through GIGACHAT_* environment variables.
+with GigaChat(model="GigaChat-2") as client:
+    token = request_id_cvar.set(str(uuid4()))
+    try:
+        response = client.chat.create("Hello!")
+    finally:
+        request_id_cvar.reset(token)
 ```
 
-Available context variables:
+ContextVar values belong to the current execution context. An asyncio task inherits a snapshot of its creator's context when the task is created; subsequent changes do not propagate between those tasks. Arbitrary thread executors do not automatically inherit the calling context. Arrange explicit context propagation when using them.
 
-| Variable | Header | Description |
-|----------|--------|-------------|
-| `session_id_cvar` | `X-Session-ID` | Session identifier for grouping requests |
-| `request_id_cvar` | `X-Request-ID` | Unique request identifier |
-| `client_id_cvar` | `X-Client-ID` | Client identifier |
-| `service_id_cvar` | `X-Service-ID` | Service identifier |
-| `operation_id_cvar` | `X-Operation-ID` | Operation identifier |
-| `trace_id_cvar` | `X-Trace-ID` | Process instance identifier (main operation) |
-| `agent_id_cvar` | `X-Agent-ID` | Agent identifier |
-| `custom_headers_cvar` | (various) | Dictionary of additional headers |
+| Variable | Header | Purpose |
+|----------|--------|---------|
+| `session_id_cvar` | `X-Session-ID` | Group related requests |
+| `request_id_cvar` | `X-Request-ID` | Correlate an individual request |
+| `client_id_cvar` | `X-Client-ID` | Identify the calling client |
+| `service_id_cvar` | `X-Service-ID` | Identify the calling service |
+| `operation_id_cvar` | `X-Operation-ID` | Carry an application operation ID |
+| `trace_id_cvar` | `X-Trace-ID` | Carry an application trace ID |
+| `agent_id_cvar` | `X-Agent-ID` | Identify the calling agent |
+| `authorization_cvar` | `Authorization` | Supply the complete external authorization value |
+| `custom_headers_cvar` | (various) | Supply additional headers or override named ContextVars |
 
-**Header precedence (when multiple sources set the same header):**
-
-- **Explicit `access_token`** passed by the SDK (or your code) sets `Authorization: Bearer ...` first.
-- **`authorization_cvar`** overrides that `Authorization` header if it is set.
-- **`custom_headers_cvar`** is applied last and overrides both (including `Authorization`), as well as any other header.
+`chat_url_cvar` and `chat_completions_url_cvar` are endpoint URL overrides for legacy and primary chat respectively; they are not headers. See [MIGRATION.md](MIGRATION.md) for primary endpoint routing and request options, and [session_headers.py](examples/chat_completions/session_headers.py) for a session reset example.
 
 ### Retry Configuration
 
@@ -739,7 +757,7 @@ This project follows SemVer with additional clarity for pre-`1.0.0` releases:
 
 To ship a release marked **Production/Stable**, the following must be true:
 
-- **CI is green** on `main` (lint, mypy, unit tests, integration replay).
+- **CI is green** on `main` (lint, ty, unit tests, integration replay).
 - **Local checks are green** (`make all`).
 - **Packaging is sane**: sdist+wheel build and install from artifacts works (no missing files).
 - **Integration cassettes are current**: re-recorded with real credentials and reviewed for scrubbing.

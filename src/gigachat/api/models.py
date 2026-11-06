@@ -1,6 +1,6 @@
-from typing import Any, Dict, Optional
+from typing import Any
 
-import httpx
+import httpx2 as httpx
 
 from gigachat.api.utils import build_headers, execute_request_async, execute_request_sync
 from gigachat.models.models import Model, Models
@@ -8,8 +8,8 @@ from gigachat.models.models import Model, Models
 
 def _get_models_kwargs(
     *,
-    access_token: Optional[str] = None,
-) -> Dict[str, Any]:
+    access_token: str | None = None,
+) -> dict[str, Any]:
     headers = build_headers(access_token)
 
     return {
@@ -22,7 +22,7 @@ def _get_models_kwargs(
 def get_models_sync(
     client: httpx.Client,
     *,
-    access_token: Optional[str] = None,
+    access_token: str | None = None,
 ) -> Models:
     """Return a list of available models."""
     kwargs = _get_models_kwargs(access_token=access_token)
@@ -32,7 +32,7 @@ def get_models_sync(
 async def get_models_async(
     client: httpx.AsyncClient,
     *,
-    access_token: Optional[str] = None,
+    access_token: str | None = None,
 ) -> Models:
     """Return a list of available models."""
     kwargs = _get_models_kwargs(access_token=access_token)
@@ -42,8 +42,8 @@ async def get_models_async(
 def _get_model_kwargs(
     *,
     model: str,
-    access_token: Optional[str] = None,
-) -> Dict[str, Any]:
+    access_token: str | None = None,
+) -> dict[str, Any]:
     headers = build_headers(access_token)
 
     return {
@@ -57,7 +57,7 @@ def get_model_sync(
     client: httpx.Client,
     *,
     model: str,
-    access_token: Optional[str] = None,
+    access_token: str | None = None,
 ) -> Model:
     """Return a description of a specific model."""
     kwargs = _get_model_kwargs(model=model, access_token=access_token)
@@ -68,7 +68,7 @@ async def get_model_async(
     client: httpx.AsyncClient,
     *,
     model: str,
-    access_token: Optional[str] = None,
+    access_token: str | None = None,
 ) -> Model:
     """Return a description of a specific model."""
     kwargs = _get_model_kwargs(model=model, access_token=access_token)

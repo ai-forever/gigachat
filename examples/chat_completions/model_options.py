@@ -1,6 +1,6 @@
 """Tune generation with nested options or normalized root-level shorthand."""
 
-from typing import Any, Dict
+from typing import Any
 
 from dotenv import load_dotenv
 
@@ -19,7 +19,7 @@ def request_with_models() -> ChatCompletionRequest:
     )
 
 
-def request_with_dict() -> Dict[str, Any]:
+def request_with_dict() -> dict[str, Any]:
     """Build convenience input which the SDK moves under model_options."""
     return {
         "messages": [{"role": "user", "content": PROMPT}],

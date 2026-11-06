@@ -1,7 +1,6 @@
 from copy import deepcopy
 
 import pytest
-from pytest_httpx import HTTPXMock
 
 from gigachat.client import GigaChatAsyncClient, GigaChatSyncClient
 from gigachat.models.threads import (
@@ -38,6 +37,7 @@ from tests.constants import (
     POST_THREADS_RUN,
     POST_THREADS_RUN_URL,
 )
+from tests.httpx_mock import HTTPXMock
 
 
 @pytest.mark.parametrize("identifier_key", ["id", "thread_id"])
@@ -110,7 +110,8 @@ def test_get_threads_run(httpx_mock: HTTPXMock) -> None:
         response = client.threads.get_run(thread_id="111")
 
     assert isinstance(response, ThreadRunResult)
-    assert len(response.messages) == 2  # type: ignore
+    assert response.messages is not None
+    assert len(response.messages) == 2
 
 
 async def test_aget_threads_run(httpx_mock: HTTPXMock) -> None:
@@ -119,7 +120,8 @@ async def test_aget_threads_run(httpx_mock: HTTPXMock) -> None:
         response = await client.a_threads.get_run(thread_id="111")
 
     assert isinstance(response, ThreadRunResult)
-    assert len(response.messages) == 2  # type: ignore
+    assert response.messages is not None
+    assert len(response.messages) == 2
 
 
 def test_post_thread_messages_rerun(httpx_mock: HTTPXMock) -> None:

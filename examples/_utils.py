@@ -1,6 +1,7 @@
 """Shared helpers for runnable examples."""
 
-from typing import Any, Iterable, List, Set, Tuple
+from collections.abc import Iterable
+from typing import Any
 
 
 def message_text(message: Any) -> str:
@@ -9,7 +10,7 @@ def message_text(message: Any) -> str:
     if content is None:
         return ""
 
-    parts: List[str] = []
+    parts: list[str] = []
     for part in content:
         text = part.get("text") if isinstance(part, dict) else part.text
         if text:
@@ -30,13 +31,13 @@ def print_stream_text(chunks: Iterable[Any]) -> None:
     print()
 
 
-def message_file_ids(message: Any) -> List[str]:
+def message_file_ids(message: Any) -> list[str]:
     """Return file IDs from generated or referenced content parts."""
     content = message.get("content") if isinstance(message, dict) else message.content
     if content is None:
         return []
 
-    file_ids: List[str] = []
+    file_ids: list[str] = []
     for part in content:
         files = part.get("files") if isinstance(part, dict) else part.files
         for file_ in files or []:
@@ -46,14 +47,14 @@ def message_file_ids(message: Any) -> List[str]:
     return file_ids
 
 
-def message_sources(message: Any) -> List[Tuple[str, str]]:
+def message_sources(message: Any) -> list[tuple[str, str]]:
     """Return unique sources from inline data."""
     content = message.get("content") if isinstance(message, dict) else message.content
     if content is None:
         return []
 
-    seen: Set[Tuple[str, str]] = set()
-    sources: List[Tuple[str, str]] = []
+    seen: set[tuple[str, str]] = set()
+    sources: list[tuple[str, str]] = []
     for part in content:
         inline_data = part.get("inline_data") if isinstance(part, dict) else part.inline_data
         inline_sources = None

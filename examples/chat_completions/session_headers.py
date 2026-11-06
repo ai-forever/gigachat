@@ -1,7 +1,6 @@
 """Set a default session header and temporarily override it for a request."""
 
 import os
-from typing import List
 from uuid import uuid4
 
 from dotenv import load_dotenv
@@ -10,7 +9,7 @@ from gigachat import GigaChat, session_id_cvar
 from gigachat.models import ChatCompletionResponse
 
 
-def run(client: GigaChat) -> List[ChatCompletionResponse]:
+def run(client: GigaChat) -> list[ChatCompletionResponse]:
     """Send with the default, overridden, and restored session identifiers."""
     request = {"messages": [{"role": "user", "content": "Say hello."}], "model_options": {"max_tokens": 32}}
     responses = [client.chat.create(request)]
@@ -28,7 +27,9 @@ def main() -> None:
     load_dotenv()
     session_id = os.getenv("GIGACHAT_SESSION_ID") or str(uuid4())
     with GigaChat(session_id=session_id) as client:
-        for label, response in zip(("Default session", "Temporary session", "Restored session"), run(client)):
+        for label, response in zip(
+            ("Default session", "Temporary session", "Restored session"), run(client), strict=True
+        ):
             print(f"\n{label}:")
             print("Response headers:", response.x_headers)
             if response.usage is not None:

@@ -1,4 +1,4 @@
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 from pydantic import BaseModel, Field
 
@@ -18,25 +18,23 @@ class Assistant(BaseModel):
 
     model: str = Field(description="ID of the model to be used.")
     assistant_id: str = Field(description="The ID of the assistant (UUIDv4).")
-    name: Optional[str] = Field(default=None, description="The name of the assistant.")
-    description: Optional[str] = Field(default=None, description="The description of the assistant.")
-    instructions: Optional[str] = Field(default=None, description="The system instructions that the assistant uses.")
+    name: str | None = Field(default=None, description="The name of the assistant.")
+    description: str | None = Field(default=None, description="The description of the assistant.")
+    instructions: str | None = Field(default=None, description="The system instructions that the assistant uses.")
     created_at: int = Field(description="The time at which the assistant was created (Unix timestamp).")
     updated_at: int = Field(description="The time at which the assistant was last updated (Unix timestamp).")
-    files: Optional[List[AssistantAttachment]] = Field(default=None, description="Files attached to the assistant.")
-    metadata: Optional[Dict[str, Any]] = Field(
+    files: list[AssistantAttachment] | None = Field(default=None, description="Files attached to the assistant.")
+    metadata: dict[str, Any] | None = Field(
         default=None, description="Set of 16 key-value pairs that can be attached to an object."
     )
-    threads_count: Optional[int] = Field(default=None, description="Number of threads interacting with this assistant.")
-    functions: Optional[List[Function]] = Field(
-        default=None, description="List of functions available to the assistant."
-    )
+    threads_count: int | None = Field(default=None, description="Number of threads interacting with this assistant.")
+    functions: list[Function] | None = Field(default=None, description="List of functions available to the assistant.")
 
 
 class Assistants(APIResponse):
     """List of assistants."""
 
-    data: List[Assistant] = Field(description="List of assistant objects.")
+    data: list[Assistant] = Field(description="List of assistant objects.")
 
 
 class AssistantDelete(APIResponse):
