@@ -1,4 +1,4 @@
-from typing import Any, Dict, List
+from typing import Any
 
 import pytest
 from examples.tools.parallel_function_calling import build_request, validate_parallel_calls
@@ -6,7 +6,7 @@ from examples.tools.parallel_function_calling import build_request, validate_par
 from gigachat.models import ChatCompletionResponse
 
 
-def response_with_calls(calls: List[Dict[str, Any]]) -> ChatCompletionResponse:
+def response_with_calls(calls: list[dict[str, Any]]) -> ChatCompletionResponse:
     return ChatCompletionResponse.model_validate(
         {
             "messages": [

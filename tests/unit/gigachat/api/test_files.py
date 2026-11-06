@@ -1,5 +1,4 @@
-import httpx
-from pytest_httpx import HTTPXMock
+import httpx2 as httpx
 
 from gigachat.api.files import (
     delete_file_async,
@@ -28,6 +27,7 @@ from tests.constants import (
     IMAGE,
     IMAGE_URL,
 )
+from tests.httpx_mock import HTTPXMock
 
 
 def test_get_file_sync(httpx_mock: HTTPXMock) -> None:

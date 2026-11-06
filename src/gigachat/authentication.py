@@ -1,6 +1,7 @@
 import functools
 import logging
-from typing import Any, AsyncIterator, Awaitable, Callable, Iterator, Protocol, TypeVar, runtime_checkable
+from collections.abc import AsyncIterator, Awaitable, Callable, Iterator
+from typing import Any, Protocol, TypeVar, runtime_checkable
 
 from gigachat.exceptions import AuthenticationError
 

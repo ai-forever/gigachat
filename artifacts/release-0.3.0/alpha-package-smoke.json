@@ -1,0 +1,13 @@
+{
+  "version": "0.3.0a1",
+  "development_status": "Alpha",
+  "runtime_identical_to_previous_candidate": true,
+  "base_wheel_smoke": [
+    "Python 3.10.19 passed",
+    "Python 3.15.0 passed"
+  ],
+  "artifacts": {
+    "dist/gigachat-0.3.0a1-py3-none-any.whl": "afd48d588f30787db487e947a57143acbeaa0207dcd7c87c8ff0b1a113e88cb7",
+    "dist/gigachat-0.3.0a1.tar.gz": "dcb74a7dce6624616c5a543d21acea388244ea3f60d241427a849c0584ec598f"
+  }
+}

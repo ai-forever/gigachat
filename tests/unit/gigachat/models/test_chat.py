@@ -1,7 +1,7 @@
 import json
 from copy import deepcopy
 from pathlib import Path
-from typing import Any, Dict, Type, Union, cast
+from typing import Any, cast
 
 import pytest
 from pydantic import ValidationError
@@ -65,7 +65,7 @@ def test_messages_function_call() -> None:
 
 def test_function_model_validator() -> None:
     # Test title -> name alias
-    data: Dict[str, Any] = {
+    data: dict[str, Any] = {
         "title": "my_func",
         "description": "desc",
         "parameters": {"type": "object"},
@@ -222,9 +222,9 @@ def test_function_parameter_property_preserves_extensions_and_union_type() -> No
     ],
 )
 def test_function_schema_null_keywords_respect_serialization_selection(
-    schema_type: Type[Union[FunctionParameters, FunctionParametersProperty]],
-    selection: Dict[str, Any],
-    expected: Dict[str, Any],
+    schema_type: type[FunctionParameters | FunctionParametersProperty],
+    selection: dict[str, Any],
+    expected: dict[str, Any],
 ) -> None:
     schema = schema_type.model_validate({"type": "object", "const": None, "default": None})
 

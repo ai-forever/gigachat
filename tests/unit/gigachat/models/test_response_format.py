@@ -1,4 +1,4 @@
-from typing import Any, Dict, List
+from typing import Any
 
 import pytest
 from pydantic import BaseModel, Field, ValidationError
@@ -6,7 +6,7 @@ from pydantic import BaseModel, Field, ValidationError
 from gigachat.models.chat import Chat, Messages, MessagesRole
 from gigachat.models.response_format import JsonSchemaResponseFormat
 
-SAMPLE_SCHEMA: Dict[str, Any] = {
+SAMPLE_SCHEMA: dict[str, Any] = {
     "type": "object",
     "properties": {
         "steps": {"type": "array", "items": {"type": "string"}},
@@ -126,7 +126,7 @@ def test_chat_validate_response_format_from_dict() -> None:
 
 
 class MathSolution(BaseModel):
-    steps: List[str] = Field(description="Solution steps.")
+    steps: list[str] = Field(description="Solution steps.")
     final_answer: str = Field(description="The final answer.")
 
 
@@ -172,7 +172,7 @@ def test_schema_invalid_class_rejected() -> None:
 
 def test_dict_schema_passthrough_no_normalization() -> None:
     """Dict schemas are NOT normalized — sent as-is."""
-    raw: Dict[str, Any] = {
+    raw: dict[str, Any] = {
         "type": "object",
         "properties": {"x": {"type": "string"}},
     }

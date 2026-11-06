@@ -1,5 +1,3 @@
-from pytest_httpx import HTTPXMock
-
 from gigachat.client import GigaChatAsyncClient, GigaChatSyncClient
 from gigachat.models import DeletedFile, Image, UploadedFile, UploadedFiles
 from tests.constants import (
@@ -16,6 +14,7 @@ from tests.constants import (
     IMAGE,
     IMAGE_URL,
 )
+from tests.httpx_mock import HTTPXMock
 
 
 def test_upload_file(httpx_mock: HTTPXMock) -> None:

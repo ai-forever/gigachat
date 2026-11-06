@@ -53,10 +53,33 @@ This library is part of [GigaChain](https://github.com/ai-forever/gigachain) and
 pip install gigachat
 ```
 
-**Requirements:** Python 3.8 — 3.13
+This branch prepares **0.3.0a1**, an alpha prerelease with substantial transport and lifecycle changes. APIs may change before stable 0.3.0. The alpha is not published yet; after publication, opt in explicitly with `pip install "gigachat==0.3.0a1"`. The unqualified installation command above selects a stable release by default.
+
+**Requirements:** Python 3.10+; native HTTPX2 transport. Python 3.8/3.9 applications should remain on a compatible 0.2.x release.
 
 > **Note:** In production, keep TLS verification enabled (default).
 > See [SSL Certificates](#ssl-certificates) for setup instructions.
+
+## HTTPX2, request options, and lifecycle (0.3.0a1)
+
+See the [migration guide](MIGRATION.md) for compatibility changes and [changelog](CHANGELOG.md) for candidate release notes. Import `httpx2` for injected HTTP clients, Timeout, and Limits; legacy HTTPX objects are separate types.
+
+```python
+from gigachat import GigaChat, RequestOptions
+
+with GigaChat(model="GigaChat-2") as client:
+    response = client.chat.create("Hello", request_options=RequestOptions(timeout=60.0))
+    with client.chat.stream("Tell me a story") as stream:
+        for chunk in stream:
+            print(chunk)
+            break
+```
+
+Use stream context managers or explicit close/aclose for early exits. Async streams support `async with client.achat.stream(...)`. The default maximum SSE event is 1 MiB; change `max_sse_event_size` if needed. Network retries remain disabled by default and never replay partial output.
+
+`client.chat.with_raw_response.create(...)` returns a fully read RawResponse with headers, status, request ID, URL, and synchronous `parse()`. The same parse method stays synchronous after an async request. For binary files, use `get_file_content` / `aget_file_content`, or bounded-memory `download_file` / `adownload_file`; `get_image` retains base64 output.
+
+Optional extras are `pip install 'gigachat[aiohttp]'`, `gigachat[http2]`, and `gigachat[socks]`. Select aiohttp explicitly with `async_backend="aiohttp"`; it supports asyncio and HTTP/1.1 and has documented timeout/pool limits. Installing an extra does not change the default backend. Borrowed HTTP clients and aiohttp sessions remain caller-owned. Hybrid `GigaChat.close()` closes its sync side; use `await client.aclose()` to close both sync and async resources. Async clients and views cannot be reused across event loops. See the migration guide's ownership rules and capability table before supplying advanced transport options.
 
 ## Quick Start
 
@@ -322,8 +345,8 @@ Examples for the updated contracts include:
 | `cert_file` | `str` | `None` | Path to client certificate (for mTLS) |
 | `key_file` | `str` | `None` | Path to client private key (for mTLS) |
 | `key_file_password` | `str` | `None` | Password for encrypted private key |
-| `timeout` | `float` | `30.0` | Request timeout in seconds |
-| `max_connections` | `int` | `None` | Maximum concurrent connections |
+| `timeout` | `float` or `httpx2.Timeout` | `30.0` | Network timeouts; constructor None inherits settings |
+| `max_connections` | `int` | `None` | Override the effective bounded transport default; None inherits |
 | `max_retries` | `int` | `0` | Maximum retry attempts for transient errors |
 | `retry_backoff_factor` | `float` | `0.5` | Exponential backoff multiplier |
 | `retry_on_status_codes` | `tuple` | `(429, 500, 502, 503, 504)` | HTTP status codes that trigger retry |
@@ -340,7 +363,7 @@ Examples for the updated contracts include:
 
 ### Environment Variables
 
-All parameters can be configured via environment variables with the `GIGACHAT_` prefix:
+Scalar settings can be configured via environment variables with the `GIGACHAT_` prefix. Pass SSLContext, HTTPX2 Timeout/Limits, and injected clients as Python objects:
 
 ```bash
 # Authentication

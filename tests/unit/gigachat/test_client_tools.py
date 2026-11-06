@@ -1,5 +1,3 @@
-from pytest_httpx import HTTPXMock
-
 from gigachat.client import GigaChatAsyncClient, GigaChatSyncClient
 from gigachat.models import AICheckResult, Balance, Function, OpenApiFunctions
 from gigachat.models.tools import BalanceValue
@@ -12,6 +10,7 @@ from tests.constants import (
     CONVERT_FUNCTIONS,
     CONVERT_FUNCTIONS_URL,
 )
+from tests.httpx_mock import HTTPXMock
 
 
 def test_get_balance(httpx_mock: HTTPXMock) -> None:

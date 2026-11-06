@@ -1,5 +1,7 @@
 # Migration Guide to `v2/chat/completions`
 
+For Python, HTTPX2, transport ownership, and request options in 0.3.0, see [MIGRATION.md](MIGRATION.md).
+
 This guide covers migration from the previous chat contract to the primary `v2/chat/completions` surface.
 
 In the codebase, `v2` is exposed through explicit resource methods. The previous contract is still available through root compatibility methods.

@@ -1,0 +1,10 @@
+{
+  "base-python3.10": "base wheel/canonical headers passed; no legacy HTTPX/aiohttp; HTTPX2=2.14.0",
+  "base-python3.15": "base wheel/canonical headers passed; no legacy HTTPX/aiohttp; HTTPX2=2.16.0",
+  "all-extras-python3.10": "aiohttp/http2/socks wheel extras passed; hidden auth rejected before network; aiohttp=3.14.5",
+  "legacy-boundary-python3.12": "legacy HTTPX0.28.1 coexistence boundary passed",
+  "artifacts": {
+    "dist/gigachat-0.3.0-py3-none-any.whl": "3b8cc523f0715f9a0350e407d430cd6bb6a303aa33d80baca4522300c80d2d5a",
+    "dist/gigachat-0.3.0.tar.gz": "aa3a86398258c4b6270db39cfb6070dd19cf6fe14295982e05d383166623c754"
+  }
+}

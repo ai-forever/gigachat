@@ -1,19 +1,19 @@
 import json
 from threading import Barrier
-from typing import Any, Dict
+from typing import Any
 
 import pytest
 from examples.tools.any_function_call import request_with_any
 from examples.tools.parallel_function_calling import build_request
 from examples.tools.parallel_function_calling_roundtrip import build_follow_up_request, run
-from pytest_httpx import HTTPXMock
+from tests.httpx_mock import HTTPXMock
 
 from gigachat import GigaChat
 from gigachat.models import ChatCompletionResponse, PrimaryChatFunctionCall
 
 BASE_URL = "https://example.test/v1"
 CHAT_URL = "https://example.test/v2/chat/completions"
-CALLS: Dict[str, Any] = {
+CALLS: dict[str, Any] = {
     "messages": [
         {"role": "reasoning", "content": [{"text": "Need two cities"}]},
         {
@@ -72,7 +72,7 @@ def test_full_loop_keeps_calls_results_state_and_reasoning(httpx_mock: HTTPXMock
 def test_functions_really_execute_concurrently(monkeypatch: pytest.MonkeyPatch) -> None:
     barrier = Barrier(2)
 
-    def execute(call: PrimaryChatFunctionCall) -> Dict[str, Any]:
+    def execute(call: PrimaryChatFunctionCall) -> dict[str, Any]:
         barrier.wait(timeout=5)
         return {"city": call.arguments["city"]}
 

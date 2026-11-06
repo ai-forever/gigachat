@@ -1,13 +1,10 @@
-from typing import IO, Mapping, Optional, Tuple, Union
+from collections.abc import Mapping
+from typing import IO
 
-FileContent = Union[IO[bytes], bytes, str]
-FileTypes = Union[
-    # file (or bytes)
-    FileContent,
-    # (filename, file (or bytes))
-    Tuple[Optional[str], FileContent],
-    # (filename, file (or bytes), content_type)
-    Tuple[Optional[str], FileContent, Optional[str]],
-    # (filename, file (or bytes), content_type, headers)
-    Tuple[Optional[str], FileContent, Optional[str], Mapping[str, str]],
-]
+FileContent = IO[bytes] | bytes | str
+FileTypes = (
+    FileContent
+    | tuple[str | None, FileContent]
+    | tuple[str | None, FileContent, str | None]
+    | tuple[str | None, FileContent, str | None, Mapping[str, str]]
+)

@@ -1,12 +1,10 @@
-from typing import Optional
-
 import pytest
-from pytest_httpx import HTTPXMock
 
 from gigachat.client import GigaChat, GigaChatAsyncClient, GigaChatSyncClient, _get_auth_kwargs
 from gigachat.context import custom_headers_cvar, session_id_cvar
 from gigachat.settings import Settings
 from tests.constants import BASE_URL, CHAT_COMPLETION, CHAT_URL
+from tests.httpx_mock import HTTPXMock
 
 
 @pytest.mark.parametrize("client_class", [GigaChat, GigaChatSyncClient, GigaChatAsyncClient])
@@ -28,10 +26,10 @@ def test_session_id_constructor_overrides_environment(client_class: type, monkey
 @pytest.mark.parametrize("primary", [False, True])
 async def test_session_id_headers_sync_and_async(
     httpx_mock: HTTPXMock,
-    session_id: Optional[str],
-    context_id: Optional[str],
-    custom_id: Optional[str],
-    expected: Optional[str],
+    session_id: str | None,
+    context_id: str | None,
+    custom_id: str | None,
+    expected: str | None,
     primary: bool,
 ) -> None:
     response = {"messages": [{"role": "assistant", "content": "ok"}]} if primary else CHAT_COMPLETION

@@ -1,9 +1,10 @@
 import json
 from http import HTTPStatus
-from typing import Any, Dict, List, Optional
+from typing import Any
 
-import httpx
+import httpx2 as httpx
 
+from gigachat._execution import request_async, request_sync
 from gigachat.api.utils import build_headers, execute_request_async, execute_request_sync
 from gigachat.exceptions import AuthenticationError, ResponseError
 from gigachat.models.tools import AICheckResult, Balance, OpenApiFunctions, TokensCount
@@ -11,10 +12,10 @@ from gigachat.models.tools import AICheckResult, Balance, OpenApiFunctions, Toke
 
 def _get_tokens_count_kwargs(
     *,
-    input_: List[str],
+    input_: list[str],
     model: str,
-    access_token: Optional[str] = None,
-) -> Dict[str, Any]:
+    access_token: str | None = None,
+) -> dict[str, Any]:
     headers = build_headers(access_token)
     headers["Content-Type"] = "application/json"
 
@@ -28,7 +29,7 @@ def _get_tokens_count_kwargs(
     }
 
 
-def _build_tokens_count_response(response: httpx.Response) -> List[TokensCount]:
+def _build_tokens_count_response(response: httpx.Response) -> list[TokensCount]:
     if response.status_code == HTTPStatus.OK:
         return [TokensCount(**row) for row in response.json()]
     elif response.status_code == HTTPStatus.UNAUTHORIZED:
@@ -40,34 +41,34 @@ def _build_tokens_count_response(response: httpx.Response) -> List[TokensCount]:
 def tokens_count_sync(
     client: httpx.Client,
     *,
-    input_: List[str],
+    input_: list[str],
     model: str,
-    access_token: Optional[str] = None,
-) -> List[TokensCount]:
+    access_token: str | None = None,
+) -> list[TokensCount]:
     """Count tokens in input text."""
     kwargs = _get_tokens_count_kwargs(input_=input_, model=model, access_token=access_token)
-    response = client.request(**kwargs)
+    response = request_sync(client, **kwargs)
     return _build_tokens_count_response(response)
 
 
 async def tokens_count_async(
     client: httpx.AsyncClient,
     *,
-    input_: List[str],
+    input_: list[str],
     model: str,
-    access_token: Optional[str] = None,
-) -> List[TokensCount]:
+    access_token: str | None = None,
+) -> list[TokensCount]:
     """Count tokens in input text."""
     kwargs = _get_tokens_count_kwargs(input_=input_, model=model, access_token=access_token)
-    response = await client.request(**kwargs)
+    response = await request_async(client, **kwargs)
     return _build_tokens_count_response(response)
 
 
 def _get_functions_convert_kwargs(
     *,
     openapi_function: str,
-    access_token: Optional[str] = None,
-) -> Dict[str, Any]:
+    access_token: str | None = None,
+) -> dict[str, Any]:
     headers = build_headers(access_token)
 
     return {
@@ -82,7 +83,7 @@ def functions_convert_sync(
     client: httpx.Client,
     *,
     openapi_function: str,
-    access_token: Optional[str] = None,
+    access_token: str | None = None,
 ) -> OpenApiFunctions:
     """Convert OpenAPI function definition to GigaChat format."""
     kwargs = _get_functions_convert_kwargs(openapi_function=openapi_function, access_token=access_token)
@@ -93,7 +94,7 @@ async def functions_convert_async(
     client: httpx.AsyncClient,
     *,
     openapi_function: str,
-    access_token: Optional[str] = None,
+    access_token: str | None = None,
 ) -> OpenApiFunctions:
     """Convert OpenAPI function definition to GigaChat format."""
     kwargs = _get_functions_convert_kwargs(openapi_function=openapi_function, access_token=access_token)
@@ -104,8 +105,8 @@ def _get_ai_check_kwargs(
     *,
     input_: str,
     model: str,
-    access_token: Optional[str] = None,
-) -> Dict[str, Any]:
+    access_token: str | None = None,
+) -> dict[str, Any]:
     headers = build_headers(access_token)
 
     return {
@@ -121,7 +122,7 @@ def ai_check_sync(
     *,
     input_: str,
     model: str,
-    access_token: Optional[str] = None,
+    access_token: str | None = None,
 ) -> AICheckResult:
     """Check text for AI-generated content."""
     kwargs = _get_ai_check_kwargs(input_=input_, model=model, access_token=access_token)
@@ -133,7 +134,7 @@ async def ai_check_async(
     *,
     input_: str,
     model: str,
-    access_token: Optional[str] = None,
+    access_token: str | None = None,
 ) -> AICheckResult:
     """Check text for AI-generated content."""
     kwargs = _get_ai_check_kwargs(input_=input_, model=model, access_token=access_token)
@@ -142,8 +143,8 @@ async def ai_check_async(
 
 def _get_balance_kwargs(
     *,
-    access_token: Optional[str] = None,
-) -> Dict[str, Any]:
+    access_token: str | None = None,
+) -> dict[str, Any]:
     """Return keyword arguments for get_balance request."""
     headers = build_headers(access_token)
 
@@ -157,7 +158,7 @@ def _get_balance_kwargs(
 def get_balance_sync(
     client: httpx.Client,
     *,
-    access_token: Optional[str] = None,
+    access_token: str | None = None,
 ) -> Balance:
     """
     Return the balance of available tokens.
@@ -171,7 +172,7 @@ def get_balance_sync(
 async def get_balance_async(
     client: httpx.AsyncClient,
     *,
-    access_token: Optional[str] = None,
+    access_token: str | None = None,
 ) -> Balance:
     """
     Return the balance of available tokens.

@@ -1,5 +1,4 @@
-import httpx
-from pytest_httpx import HTTPXMock
+import httpx2 as httpx
 
 from gigachat.api.assistants import (
     create_assistant_async,
@@ -33,6 +32,7 @@ from tests.constants import (
     POST_ASSISTANTS,
     POST_ASSISTANTS_URL,
 )
+from tests.httpx_mock import HTTPXMock
 
 
 def test_get_assistants_sync(httpx_mock: HTTPXMock) -> None:

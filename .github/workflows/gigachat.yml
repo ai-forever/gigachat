@@ -20,7 +20,7 @@ jobs:
       - name: Set up Python
         run: uv python install 3.12
       - name: Install dependencies
-        run: uv sync --all-extras --dev
+        run: uv sync --python 3.12 --frozen --all-extras --dev
       - name: Format
         run: uv run ruff format --check src tests
       - name: Lint
@@ -35,18 +35,12 @@ jobs:
       fail-fast: false
       matrix:
         python-version:
-          - "3.8"
-          - "3.9"
           - "3.10"
           - "3.11"
           - "3.12"
           - "3.13"
-        experimental: [false]
-        include:
-          - python-version: "3.14"
-            experimental: true
-
-    continue-on-error: ${{ matrix.experimental }}
+          - "3.14"
+          - "3.15"
 
     steps:
       - uses: actions/checkout@v4
@@ -61,7 +55,7 @@ jobs:
         run: uv python install ${{ matrix.python-version }}
 
       - name: Install dependencies
-        run: uv sync --all-extras --dev
+        run: uv sync --python ${{ matrix.python-version }} --frozen --all-extras --dev
 
       - name: Test
         run: uv run pytest --cov=src --cov-report=term-missing --cov-report=xml
@@ -82,7 +76,36 @@ jobs:
         run: uv python install 3.12
 
       - name: Install dependencies
-        run: uv sync --all-extras --dev
+        run: uv sync --python 3.12 --frozen --all-extras --dev
 
       - name: Integration Test
-        run: uv run pytest -m integration --record-mode=none
+        run: uv run pytest -m integration --record-mode=none tests/integration
+
+  minimum-dependencies:
+    name: Minimum dependencies on Python 3.10
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v5
+      - run: uv python install 3.10
+      - run: uv sync --python 3.10 --all-extras --dev --resolution lowest-direct
+      - run: uv run --no-sync pytest
+      - run: uv run --no-sync pytest -m integration --record-mode=none tests/integration
+
+  package:
+    name: Build wheel and source distribution
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v5
+      - run: uv python install 3.12
+      - run: uv sync --python 3.12 --frozen --dev
+      - run: uv build
+      - name: Build wheel from source distribution
+        run: uv build dist/*.tar.gz --out-dir dist/from-sdist
+      - name: Import base wheel without optional or legacy transports
+        run: >-
+          uv run --isolated --no-project --python 3.12 --with dist/*.whl python -c
+          "import importlib.util; import gigachat;
+          assert importlib.util.find_spec('httpx') is None;
+          assert importlib.util.find_spec('aiohttp') is None"

@@ -1,6 +1,5 @@
-import httpx
+import httpx2 as httpx
 import pytest
-from pytest_httpx import HTTPXMock
 
 from gigachat.api import models
 from gigachat.context import (
@@ -14,7 +13,7 @@ from gigachat.context import (
     session_id_cvar,
     trace_id_cvar,
 )
-from gigachat.exceptions import AuthenticationError, BadRequestError
+from gigachat.exceptions import APIResponseValidationError, AuthenticationError, BadRequestError
 from gigachat.models import Model, Models
 from tests.constants import (
     BASE_URL,
@@ -23,6 +22,7 @@ from tests.constants import (
     MODELS,
     MODELS_URL,
 )
+from tests.httpx_mock import HTTPXMock
 
 
 def test_get_model_kwargs_context_vars() -> None:
@@ -62,7 +62,7 @@ def test_get_model_sync_value_error(httpx_mock: HTTPXMock) -> None:
     httpx_mock.add_response(url=MODEL_URL, json={})
 
     with httpx.Client(base_url=BASE_URL) as client:
-        with pytest.raises(ValueError, match="3 validation errors for Model*"):
+        with pytest.raises(APIResponseValidationError, match="Invalid API response"):
             models.get_model_sync(client, model="model")
 
 
@@ -144,7 +144,7 @@ def test_get_models_sync_value_error(httpx_mock: HTTPXMock) -> None:
     httpx_mock.add_response(url=MODELS_URL, json={})
 
     with httpx.Client(base_url=BASE_URL) as client:
-        with pytest.raises(ValueError, match="2 validation errors for Models*"):
+        with pytest.raises(APIResponseValidationError, match="Invalid API response"):
             models.get_models_sync(client)
 
 

@@ -1,7 +1,8 @@
-from typing import Any, AsyncIterator, Iterator
+from collections.abc import AsyncIterator, Iterator
+from typing import Any
 from unittest.mock import AsyncMock, Mock, patch
 
-import httpx
+import httpx2 as httpx
 import pytest
 
 from gigachat.client import GigaChat
@@ -206,7 +207,7 @@ def test_sync_retry_non_retryable_error(mock_sleep: Any) -> None:
 
 @patch("gigachat.retry.time.sleep")
 def test_sync_retry_transport_error(mock_sleep: Any) -> None:
-    error = httpx.TransportError("Connection failed")
+    error = httpx.ConnectError("Connection failed")
 
     # We need a client that matches the expected interface or just reuse MockSyncClient
     # The original test used MockSyncClient but cast explicitly or implied it?
@@ -382,16 +383,12 @@ async def test_async_stream_retry_failure() -> None:
 
 
 def test_sync_retry_negative_max_retries() -> None:
-    """Negative max_retries should be treated as disabled (same as 0)."""
-    client = MockSyncClient(max_retries=-1)
-    result = client.request()
-    assert result == "success"
-    assert client.call_count == 1  # Called exactly once, no retry loop
+    """Reject invalid retry counts when settings are constructed."""
+    with pytest.raises(ValueError, match="greater than or equal to 0"):
+        MockSyncClient(max_retries=-1)
 
 
 async def test_async_retry_negative_max_retries() -> None:
-    """Negative max_retries should be treated as disabled (same as 0)."""
-    client = MockAsyncClient(max_retries=-1)
-    result = await client.request()
-    assert result == "success"
-    assert client.call_count == 1  # Called exactly once, no retry loop
+    """Reject invalid retry counts when settings are constructed."""
+    with pytest.raises(ValueError, match="greater than or equal to 0"):
+        MockAsyncClient(max_retries=-1)

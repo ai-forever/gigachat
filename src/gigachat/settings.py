@@ -1,6 +1,7 @@
 import ssl
-from typing import List, Optional, Tuple
+from typing import Literal
 
+import httpx2
 from pydantic import Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
@@ -20,7 +21,7 @@ class Settings(BaseSettings):
         default=AUTH_URL,
         description="Address for requesting OAuth 2.0 access token.",
     )
-    credentials: Optional[str] = Field(
+    credentials: str | None = Field(
         default=None,
         description="Authorization data.",
     )
@@ -28,33 +29,33 @@ class Settings(BaseSettings):
         default=SCOPE,
         description="API version to which access is provided.",
     )
-    access_token: Optional[str] = Field(
+    access_token: str | None = Field(
         default=None,
         description="JWE token.",
     )
-    model: Optional[str] = Field(
+    model: str | None = Field(
         default=None,
         description="Name of the model to receive a response from.",
     )
-    session_id: Optional[str] = Field(
+    session_id: str | None = Field(
         default=None,
         description="Default X-Session-ID header for API requests.",
     )
-    profanity_check: Optional[bool] = Field(
+    profanity_check: bool | None = Field(
         default=None,
         description="Censorship parameter.",
     )
 
-    user: Optional[str] = Field(
+    user: str | None = Field(
         default=None,
         description="Username for basic authentication.",
     )
-    password: Optional[str] = Field(
+    password: str | None = Field(
         default=None,
         description="Password for basic authentication.",
     )
 
-    timeout: float = Field(
+    timeout: float | httpx2.Timeout = Field(
         default=30.0,
         description="Request timeout in seconds.",
     )
@@ -63,44 +64,45 @@ class Settings(BaseSettings):
         description="Verify server TLS certificates.",
     )
 
-    ssl_context: Optional[ssl.SSLContext] = Field(
+    ssl_context: ssl.SSLContext | None = Field(
         default=None,
         description="Custom SSL context.",
     )
-    ca_bundle_file: Optional[str] = Field(
+    ca_bundle_file: str | None = Field(
         default=None,
         description="Path to CA bundle file for verifying TLS certificates.",
     )
-    cert_file: Optional[str] = Field(
+    cert_file: str | None = Field(
         default=None,
         description="Path to client certificate file.",
     )
-    key_file: Optional[str] = Field(
+    key_file: str | None = Field(
         default=None,
         description="Path to client private key file.",
     )
-    key_file_password: Optional[str] = Field(
+    key_file_password: str | None = Field(
         default=None,
         description="Password for encrypted client private key file.",
     )
-    flags: Optional[List[str]] = Field(
+    flags: list[str] | None = Field(
         default=None,
         description="Additional flags to control client behavior.",
     )
-    max_connections: Optional[int] = Field(
+    max_connections: int | None = Field(
         default=None,
         description="Maximum number of simultaneous connections to the GigaChat API.",
     )
 
     max_retries: int = Field(
         default=0,
+        ge=0,
         description="Maximum number of retries for transient errors. Default is 0 (disabled).",
     )
     retry_backoff_factor: float = Field(
         default=0.5,
         description="Backoff factor for retry delays.",
     )
-    retry_on_status_codes: Tuple[int, ...] = Field(
+    retry_on_status_codes: tuple[int, ...] = Field(
         default=(429, 500, 502, 503, 504),
         description="HTTP status codes that trigger a retry.",
     )
@@ -109,5 +111,14 @@ class Settings(BaseSettings):
         default=60000,
         description="Buffer time (ms) before token expiry to trigger refresh. Default is 60000 (60 seconds).",
     )
+
+    max_retry_time: float = Field(default=60.0, gt=0, allow_inf_nan=False)
+    max_sse_event_size: int = Field(default=1048576, gt=0)
+    trust_env: bool = True
+    proxy: str | None = None
+    http2: bool = False
+    limits: httpx2.Limits | None = None
+    async_backend: Literal["httpx2", "aiohttp"] = "httpx2"
+    auth_ssl_context: ssl.SSLContext | None = None
 
     model_config = SettingsConfigDict(env_prefix=ENV_PREFIX)

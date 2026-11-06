@@ -1,8 +1,10 @@
+from collections.abc import AsyncIterator, Iterator
 from http import HTTPStatus
-from typing import Any, AsyncIterator, Dict, Iterator, List, Optional
+from typing import Any
 
-import httpx
+import httpx2 as httpx
 
+from gigachat._execution import request_async, request_sync
 from gigachat.api.utils import (
     build_headers,
     execute_request_async,
@@ -27,13 +29,13 @@ from gigachat.models.threads import (
 
 def _get_threads_kwargs(
     *,
-    assistants_ids: Optional[List[str]] = None,
-    limit: Optional[int] = None,
-    before: Optional[int] = None,
-    access_token: Optional[str] = None,
-) -> Dict[str, Any]:
+    assistants_ids: list[str] | None = None,
+    limit: int | None = None,
+    before: int | None = None,
+    access_token: str | None = None,
+) -> dict[str, Any]:
     headers = build_headers(access_token)
-    params: Dict[str, Any] = {}
+    params: dict[str, Any] = {}
     if assistants_ids:
         params["assistants_ids"] = assistants_ids
     if limit:
@@ -51,10 +53,10 @@ def _get_threads_kwargs(
 def get_threads_sync(
     client: httpx.Client,
     *,
-    assistants_ids: Optional[List[str]] = None,
-    limit: Optional[int] = None,
-    before: Optional[int] = None,
-    access_token: Optional[str] = None,
+    assistants_ids: list[str] | None = None,
+    limit: int | None = None,
+    before: int | None = None,
+    access_token: str | None = None,
 ) -> Threads:
     """Get list of threads."""
     kwargs = _get_threads_kwargs(
@@ -69,10 +71,10 @@ def get_threads_sync(
 async def get_threads_async(
     client: httpx.AsyncClient,
     *,
-    assistants_ids: Optional[List[str]] = None,
-    limit: Optional[int] = None,
-    before: Optional[int] = None,
-    access_token: Optional[str] = None,
+    assistants_ids: list[str] | None = None,
+    limit: int | None = None,
+    before: int | None = None,
+    access_token: str | None = None,
 ) -> Threads:
     """Get list of threads."""
     kwargs = _get_threads_kwargs(
@@ -84,7 +86,7 @@ async def get_threads_async(
     return await execute_request_async(client, kwargs, Threads)
 
 
-def _post_thread_kwargs(*, access_token: Optional[str] = None) -> Dict[str, Any]:
+def _post_thread_kwargs(*, access_token: str | None = None) -> dict[str, Any]:
     headers = build_headers(access_token)
     return {
         "method": "POST",
@@ -97,7 +99,7 @@ def _post_thread_kwargs(*, access_token: Optional[str] = None) -> Dict[str, Any]
 def post_thread_sync(
     client: httpx.Client,
     *,
-    access_token: Optional[str] = None,
+    access_token: str | None = None,
 ) -> Thread:
     """Create thread."""
     kwargs = _post_thread_kwargs(access_token=access_token)
@@ -107,7 +109,7 @@ def post_thread_sync(
 async def post_thread_async(
     client: httpx.AsyncClient,
     *,
-    access_token: Optional[str] = None,
+    access_token: str | None = None,
 ) -> Thread:
     """Create thread."""
     kwargs = _post_thread_kwargs(access_token=access_token)
@@ -116,9 +118,9 @@ async def post_thread_async(
 
 def _retrieve_threads_kwargs(
     *,
-    threads_ids: List[str],
-    access_token: Optional[str] = None,
-) -> Dict[str, Any]:
+    threads_ids: list[str],
+    access_token: str | None = None,
+) -> dict[str, Any]:
     headers = build_headers(access_token)
     return {
         "method": "POST",
@@ -133,8 +135,8 @@ def _retrieve_threads_kwargs(
 def retrieve_threads_sync(
     client: httpx.Client,
     *,
-    threads_ids: List[str],
-    access_token: Optional[str] = None,
+    threads_ids: list[str],
+    access_token: str | None = None,
 ) -> Threads:
     """Retrieve threads by IDs."""
     kwargs = _retrieve_threads_kwargs(threads_ids=threads_ids, access_token=access_token)
@@ -144,8 +146,8 @@ def retrieve_threads_sync(
 async def retrieve_threads_async(
     client: httpx.AsyncClient,
     *,
-    threads_ids: List[str],
-    access_token: Optional[str] = None,
+    threads_ids: list[str],
+    access_token: str | None = None,
 ) -> Threads:
     """Retrieve threads by IDs."""
     kwargs = _retrieve_threads_kwargs(threads_ids=threads_ids, access_token=access_token)
@@ -155,8 +157,8 @@ async def retrieve_threads_async(
 def _delete_thread_kwargs(
     *,
     thread_id: str,
-    access_token: Optional[str] = None,
-) -> Dict[str, Any]:
+    access_token: str | None = None,
+) -> dict[str, Any]:
     headers = build_headers(access_token)
     return {
         "method": "POST",
@@ -181,11 +183,11 @@ def delete_thread_sync(
     client: httpx.Client,
     *,
     thread_id: str,
-    access_token: Optional[str] = None,
+    access_token: str | None = None,
 ) -> bool:
     """Delete thread."""
     kwargs = _delete_thread_kwargs(thread_id=thread_id, access_token=access_token)
-    response = client.request(**kwargs)
+    response = request_sync(client, **kwargs)
     return _build_delete_response(response)
 
 
@@ -193,19 +195,19 @@ async def delete_thread_async(
     client: httpx.AsyncClient,
     *,
     thread_id: str,
-    access_token: Optional[str] = None,
+    access_token: str | None = None,
 ) -> bool:
     """Delete thread."""
     kwargs = _delete_thread_kwargs(thread_id=thread_id, access_token=access_token)
-    response = await client.request(**kwargs)
+    response = await request_async(client, **kwargs)
     return _build_delete_response(response)
 
 
 def _get_thread_run_kwargs(
     *,
     thread_id: str,
-    access_token: Optional[str] = None,
-) -> Dict[str, Any]:
+    access_token: str | None = None,
+) -> dict[str, Any]:
     headers = build_headers(access_token)
     return {
         "method": "GET",
@@ -219,7 +221,7 @@ def get_thread_run_sync(
     client: httpx.Client,
     *,
     thread_id: str,
-    access_token: Optional[str] = None,
+    access_token: str | None = None,
 ) -> ThreadRunResult:
     """Get thread run status."""
     kwargs = _get_thread_run_kwargs(thread_id=thread_id, access_token=access_token)
@@ -230,7 +232,7 @@ async def get_thread_run_async(
     client: httpx.AsyncClient,
     *,
     thread_id: str,
-    access_token: Optional[str] = None,
+    access_token: str | None = None,
 ) -> ThreadRunResult:
     """Get thread run status."""
     kwargs = _get_thread_run_kwargs(thread_id=thread_id, access_token=access_token)
@@ -240,12 +242,12 @@ async def get_thread_run_async(
 def _get_thread_messages_kwargs(
     *,
     thread_id: str,
-    limit: Optional[int] = None,
-    before: Optional[int] = None,
-    access_token: Optional[str] = None,
-) -> Dict[str, Any]:
+    limit: int | None = None,
+    before: int | None = None,
+    access_token: str | None = None,
+) -> dict[str, Any]:
     headers = build_headers(access_token)
-    params: Dict[str, Any] = {"thread_id": thread_id}
+    params: dict[str, Any] = {"thread_id": thread_id}
     if limit:
         params["limit"] = limit
     if before:
@@ -262,9 +264,9 @@ def get_thread_messages_sync(
     client: httpx.Client,
     *,
     thread_id: str,
-    limit: Optional[int] = None,
-    before: Optional[int] = None,
-    access_token: Optional[str] = None,
+    limit: int | None = None,
+    before: int | None = None,
+    access_token: str | None = None,
 ) -> ThreadMessages:
     """Get thread messages."""
     kwargs = _get_thread_messages_kwargs(thread_id=thread_id, limit=limit, before=before, access_token=access_token)
@@ -275,9 +277,9 @@ async def get_thread_messages_async(
     client: httpx.AsyncClient,
     *,
     thread_id: str,
-    limit: Optional[int] = None,
-    before: Optional[int] = None,
-    access_token: Optional[str] = None,
+    limit: int | None = None,
+    before: int | None = None,
+    access_token: str | None = None,
 ) -> ThreadMessages:
     """Get thread messages."""
     kwargs = _get_thread_messages_kwargs(thread_id=thread_id, limit=limit, before=before, access_token=access_token)
@@ -287,10 +289,10 @@ async def get_thread_messages_async(
 def _run_thread_kwargs(
     *,
     thread_id: str,
-    assistant_id: Optional[str] = None,
-    thread_options: Optional[ThreadRunOptions] = None,
-    access_token: Optional[str] = None,
-) -> Dict[str, Any]:
+    assistant_id: str | None = None,
+    thread_options: ThreadRunOptions | None = None,
+    access_token: str | None = None,
+) -> dict[str, Any]:
     headers = build_headers(access_token)
     thread_options_dict = {}
     if thread_options:
@@ -307,9 +309,9 @@ def run_thread_sync(
     client: httpx.Client,
     *,
     thread_id: str,
-    assistant_id: Optional[str] = None,
-    thread_options: Optional[ThreadRunOptions] = None,
-    access_token: Optional[str] = None,
+    assistant_id: str | None = None,
+    thread_options: ThreadRunOptions | None = None,
+    access_token: str | None = None,
 ) -> ThreadRunResponse:
     """Run thread."""
     kwargs = _run_thread_kwargs(
@@ -325,9 +327,9 @@ async def run_thread_async(
     client: httpx.AsyncClient,
     *,
     thread_id: str,
-    assistant_id: Optional[str] = None,
-    thread_options: Optional[ThreadRunOptions] = None,
-    access_token: Optional[str] = None,
+    assistant_id: str | None = None,
+    thread_options: ThreadRunOptions | None = None,
+    access_token: str | None = None,
 ) -> ThreadRunResponse:
     """Run thread."""
     kwargs = _run_thread_kwargs(
@@ -342,10 +344,10 @@ async def run_thread_async(
 def _run_thread_stream_kwargs(
     *,
     thread_id: str,
-    assistant_id: Optional[str] = None,
-    thread_options: Optional[ThreadRunOptions] = None,
-    access_token: Optional[str] = None,
-) -> Dict[str, Any]:
+    assistant_id: str | None = None,
+    thread_options: ThreadRunOptions | None = None,
+    access_token: str | None = None,
+) -> dict[str, Any]:
     headers = build_headers(access_token)
     thread_options_dict = {}
     if thread_options:
@@ -365,9 +367,9 @@ def run_thread_stream_sync(
     client: httpx.Client,
     *,
     thread_id: str,
-    assistant_id: Optional[str] = None,
-    thread_options: Optional[ThreadRunOptions] = None,
-    access_token: Optional[str] = None,
+    assistant_id: str | None = None,
+    thread_options: ThreadRunOptions | None = None,
+    access_token: str | None = None,
 ) -> Iterator[ThreadCompletionChunk]:
     """Run thread with streaming."""
     kwargs = _run_thread_stream_kwargs(
@@ -383,9 +385,9 @@ def run_thread_stream_async(
     client: httpx.AsyncClient,
     *,
     thread_id: str,
-    assistant_id: Optional[str] = None,
-    thread_options: Optional[ThreadRunOptions] = None,
-    access_token: Optional[str] = None,
+    assistant_id: str | None = None,
+    thread_options: ThreadRunOptions | None = None,
+    access_token: str | None = None,
 ) -> AsyncIterator[ThreadCompletionChunk]:
     """Run thread with streaming."""
     kwargs = _run_thread_stream_kwargs(
@@ -399,12 +401,12 @@ def run_thread_stream_async(
 
 def _add_thread_messages_kwargs(
     *,
-    messages: List[Messages],
-    model: Optional[str] = None,
-    thread_id: Optional[str] = None,
-    assistant_id: Optional[str] = None,
-    access_token: Optional[str] = None,
-) -> Dict[str, Any]:
+    messages: list[Messages],
+    model: str | None = None,
+    thread_id: str | None = None,
+    assistant_id: str | None = None,
+    access_token: str | None = None,
+) -> dict[str, Any]:
     headers = build_headers(access_token)
     if thread_id is not None or assistant_id is not None:
         model = None
@@ -424,11 +426,11 @@ def _add_thread_messages_kwargs(
 def add_thread_messages_sync(
     client: httpx.Client,
     *,
-    messages: List[Messages],
-    model: Optional[str] = None,
-    thread_id: Optional[str] = None,
-    assistant_id: Optional[str] = None,
-    access_token: Optional[str] = None,
+    messages: list[Messages],
+    model: str | None = None,
+    thread_id: str | None = None,
+    assistant_id: str | None = None,
+    access_token: str | None = None,
 ) -> ThreadMessagesResponse:
     """Add messages to thread."""
     kwargs = _add_thread_messages_kwargs(
@@ -444,11 +446,11 @@ def add_thread_messages_sync(
 async def add_thread_messages_async(
     client: httpx.AsyncClient,
     *,
-    messages: List[Messages],
-    model: Optional[str] = None,
-    thread_id: Optional[str] = None,
-    assistant_id: Optional[str] = None,
-    access_token: Optional[str] = None,
+    messages: list[Messages],
+    model: str | None = None,
+    thread_id: str | None = None,
+    assistant_id: str | None = None,
+    access_token: str | None = None,
 ) -> ThreadMessagesResponse:
     """Add messages to thread."""
     kwargs = _add_thread_messages_kwargs(
@@ -463,13 +465,13 @@ async def add_thread_messages_async(
 
 def _run_thread_messages_kwargs(
     *,
-    messages: List[Messages],
-    thread_id: Optional[str] = None,
-    assistant_id: Optional[str] = None,
-    model: Optional[str] = None,
-    thread_options: Optional[ThreadRunOptions] = None,
-    access_token: Optional[str] = None,
-) -> Dict[str, Any]:
+    messages: list[Messages],
+    thread_id: str | None = None,
+    assistant_id: str | None = None,
+    model: str | None = None,
+    thread_options: ThreadRunOptions | None = None,
+    access_token: str | None = None,
+) -> dict[str, Any]:
     headers = build_headers(access_token)
     thread_options_dict = {}
     if thread_options:
@@ -495,12 +497,12 @@ def _run_thread_messages_kwargs(
 def run_thread_messages_sync(
     client: httpx.Client,
     *,
-    messages: List[Messages],
-    thread_id: Optional[str] = None,
-    assistant_id: Optional[str] = None,
-    model: Optional[str] = None,
-    thread_options: Optional[ThreadRunOptions] = None,
-    access_token: Optional[str] = None,
+    messages: list[Messages],
+    thread_id: str | None = None,
+    assistant_id: str | None = None,
+    model: str | None = None,
+    thread_options: ThreadRunOptions | None = None,
+    access_token: str | None = None,
 ) -> ThreadCompletion:
     """Add messages and run thread."""
     kwargs = _run_thread_messages_kwargs(
@@ -517,12 +519,12 @@ def run_thread_messages_sync(
 async def run_thread_messages_async(
     client: httpx.AsyncClient,
     *,
-    messages: List[Messages],
-    thread_id: Optional[str] = None,
-    assistant_id: Optional[str] = None,
-    model: Optional[str] = None,
-    thread_options: Optional[ThreadRunOptions] = None,
-    access_token: Optional[str] = None,
+    messages: list[Messages],
+    thread_id: str | None = None,
+    assistant_id: str | None = None,
+    model: str | None = None,
+    thread_options: ThreadRunOptions | None = None,
+    access_token: str | None = None,
 ) -> ThreadCompletion:
     """Add messages and run thread."""
     kwargs = _run_thread_messages_kwargs(
@@ -539,9 +541,9 @@ async def run_thread_messages_async(
 def _rerun_thread_messages_kwargs(
     *,
     thread_id: str,
-    thread_options: Optional[ThreadRunOptions] = None,
-    access_token: Optional[str] = None,
-) -> Dict[str, Any]:
+    thread_options: ThreadRunOptions | None = None,
+    access_token: str | None = None,
+) -> dict[str, Any]:
     headers = build_headers(access_token)
     thread_options_dict = {}
     if thread_options:
@@ -563,8 +565,8 @@ def rerun_thread_messages_sync(
     client: httpx.Client,
     *,
     thread_id: str,
-    thread_options: Optional[ThreadRunOptions] = None,
-    access_token: Optional[str] = None,
+    thread_options: ThreadRunOptions | None = None,
+    access_token: str | None = None,
 ) -> ThreadCompletion:
     """Rerun thread messages."""
     kwargs = _rerun_thread_messages_kwargs(
@@ -579,8 +581,8 @@ async def rerun_thread_messages_async(
     client: httpx.AsyncClient,
     *,
     thread_id: str,
-    thread_options: Optional[ThreadRunOptions] = None,
-    access_token: Optional[str] = None,
+    thread_options: ThreadRunOptions | None = None,
+    access_token: str | None = None,
 ) -> ThreadCompletion:
     """Rerun thread messages."""
     kwargs = _rerun_thread_messages_kwargs(
@@ -593,14 +595,14 @@ async def rerun_thread_messages_async(
 
 def _run_thread_messages_stream_kwargs(
     *,
-    messages: List[Messages],
-    thread_id: Optional[str] = None,
-    assistant_id: Optional[str] = None,
-    model: Optional[str] = None,
-    thread_options: Optional[ThreadRunOptions] = None,
-    update_interval: Optional[int] = None,
-    access_token: Optional[str] = None,
-) -> Dict[str, Any]:
+    messages: list[Messages],
+    thread_id: str | None = None,
+    assistant_id: str | None = None,
+    model: str | None = None,
+    thread_options: ThreadRunOptions | None = None,
+    update_interval: int | None = None,
+    access_token: str | None = None,
+) -> dict[str, Any]:
     headers = build_headers(access_token)
     thread_options_dict = {}
     if assistant_id is not None or thread_id is not None:
@@ -628,13 +630,13 @@ def _run_thread_messages_stream_kwargs(
 def run_thread_messages_stream_sync(
     client: httpx.Client,
     *,
-    messages: List[Messages],
-    thread_id: Optional[str] = None,
-    assistant_id: Optional[str] = None,
-    model: Optional[str] = None,
-    thread_options: Optional[ThreadRunOptions] = None,
-    update_interval: Optional[int] = None,
-    access_token: Optional[str] = None,
+    messages: list[Messages],
+    thread_id: str | None = None,
+    assistant_id: str | None = None,
+    model: str | None = None,
+    thread_options: ThreadRunOptions | None = None,
+    update_interval: int | None = None,
+    access_token: str | None = None,
 ) -> Iterator[ThreadCompletionChunk]:
     """Add messages and run thread with streaming."""
     kwargs = _run_thread_messages_stream_kwargs(
@@ -652,13 +654,13 @@ def run_thread_messages_stream_sync(
 def run_thread_messages_stream_async(
     client: httpx.AsyncClient,
     *,
-    messages: List[Messages],
-    thread_id: Optional[str] = None,
-    assistant_id: Optional[str] = None,
-    model: Optional[str] = None,
-    thread_options: Optional[ThreadRunOptions] = None,
-    update_interval: Optional[int] = None,
-    access_token: Optional[str] = None,
+    messages: list[Messages],
+    thread_id: str | None = None,
+    assistant_id: str | None = None,
+    model: str | None = None,
+    thread_options: ThreadRunOptions | None = None,
+    update_interval: int | None = None,
+    access_token: str | None = None,
 ) -> AsyncIterator[ThreadCompletionChunk]:
     """Add messages and run thread with streaming."""
     kwargs = _run_thread_messages_stream_kwargs(
@@ -676,10 +678,10 @@ def run_thread_messages_stream_async(
 def _rerun_thread_messages_stream_kwargs(
     *,
     thread_id: str,
-    thread_options: Optional[ThreadRunOptions] = None,
-    update_interval: Optional[int] = None,
-    access_token: Optional[str] = None,
-) -> Dict[str, Any]:
+    thread_options: ThreadRunOptions | None = None,
+    update_interval: int | None = None,
+    access_token: str | None = None,
+) -> dict[str, Any]:
     headers = build_headers(access_token)
     thread_options_dict = {}
     if thread_options:
@@ -703,9 +705,9 @@ def rerun_thread_messages_stream_sync(
     client: httpx.Client,
     *,
     thread_id: str,
-    thread_options: Optional[ThreadRunOptions] = None,
-    update_interval: Optional[int] = None,
-    access_token: Optional[str] = None,
+    thread_options: ThreadRunOptions | None = None,
+    update_interval: int | None = None,
+    access_token: str | None = None,
 ) -> Iterator[ThreadCompletionChunk]:
     """Rerun thread messages with streaming."""
     kwargs = _rerun_thread_messages_stream_kwargs(
@@ -721,9 +723,9 @@ def rerun_thread_messages_stream_async(
     client: httpx.AsyncClient,
     *,
     thread_id: str,
-    thread_options: Optional[ThreadRunOptions] = None,
-    update_interval: Optional[int] = None,
-    access_token: Optional[str] = None,
+    thread_options: ThreadRunOptions | None = None,
+    update_interval: int | None = None,
+    access_token: str | None = None,
 ) -> AsyncIterator[ThreadCompletionChunk]:
     """Rerun thread messages with streaming."""
     kwargs = _rerun_thread_messages_stream_kwargs(

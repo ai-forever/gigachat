@@ -1,8 +1,7 @@
 import json
 
-import httpx
+import httpx2 as httpx
 import pytest
-from pytest_httpx import HTTPXMock
 
 from gigachat.api import chat_completions
 from gigachat.context import chat_completions_url_cvar
@@ -17,6 +16,7 @@ from gigachat.models.chat_completions import (
     ChatTool,
 )
 from tests.constants import BASE_URL, HEADERS_STREAM, MOCK_URL
+from tests.httpx_mock import HTTPXMock
 
 
 @pytest.mark.parametrize("streaming", [False, True])
@@ -119,6 +119,7 @@ def test_get_stream_kwargs_sets_primary_stream_payload() -> None:
     assert kwargs["headers"]["Accept"] == "text/event-stream"
     assert kwargs["headers"]["Cache-Control"] == "no-store"
     assert kwargs["headers"]["Authorization"] == "Bearer access_token"
+    assert httpx.Headers(kwargs["headers"])["authorization"] == "Bearer access_token"
     assert request_content["stream"] is True
     assert request_content["messages"][0]["content"] == [{"text": "solve 2+2"}]
 

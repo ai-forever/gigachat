@@ -1,7 +1,6 @@
 from copy import deepcopy
 
 import pytest
-from pytest_httpx import HTTPXMock
 
 from gigachat.client import GigaChatAsyncClient, GigaChatSyncClient
 from gigachat.models.threads import (
@@ -38,6 +37,7 @@ from tests.constants import (
     POST_THREADS_RUN,
     POST_THREADS_RUN_URL,
 )
+from tests.httpx_mock import HTTPXMock
 
 
 @pytest.mark.parametrize("identifier_key", ["id", "thread_id"])

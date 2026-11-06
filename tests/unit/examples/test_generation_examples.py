@@ -2,7 +2,7 @@ import json
 
 import pytest
 from examples.chat_completions import model_options, reasoning, thread_storage
-from pytest_httpx import HTTPXMock
+from tests.httpx_mock import HTTPXMock
 
 from gigachat import GigaChat
 from gigachat.api import chat, chat_completions

@@ -1,4 +1,4 @@
-from typing import Any, Dict, List, Type, Union
+from typing import Any
 
 import pytest
 from pydantic import BaseModel, ValidationError
@@ -9,7 +9,7 @@ from gigachat.models.chat_completions import ChatCompletionChunk, ChatResponseFo
 
 class WeatherAnswer(BaseModel):
     answer: str
-    citations: List[str]
+    citations: list[str]
 
 
 def test_chat_completion_request_round_trip() -> None:
@@ -649,9 +649,9 @@ def test_chat_completion_request_nested_generation_options_take_precedence(typed
 
 @pytest.mark.parametrize("response_type", [ChatCompletionResponse, ChatCompletionChunk])
 def test_chat_completion_parses_content_logprobs_and_object_metadata(
-    response_type: Type[Union[ChatCompletionResponse, ChatCompletionChunk]],
+    response_type: type[ChatCompletionResponse | ChatCompletionChunk],
 ) -> None:
-    payload: Dict[str, Any] = {
+    payload: dict[str, Any] = {
         "messages": [
             {
                 "role": "assistant",

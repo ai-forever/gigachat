@@ -55,11 +55,11 @@ test:
 
 .PHONY: test-integration  ## Run integration tests
 test-integration:
-	uv run pytest -v -m integration tests/integration
+	uv run pytest -v -m integration --record-mode=none tests/integration
 
 .PHONY: test-integration-ci  ## Run integration tests in CI mode (replay only)
 test-integration-ci:
-	uv run pytest -v -m integration --record-mode=none
+	uv run pytest -v -m integration --record-mode=none tests/integration
 
 .PHONY: htmlcov  ## Generate html coverage report
 htmlcov:
@@ -80,3 +80,7 @@ update:
 .PHONY: pre  ## Run pre-commit on all the files in the repo
 pre:
 	pre-commit run --all-files
+
+.PHONY: build  ## Build source distribution and a wheel from that source distribution
+build:
+	uv build

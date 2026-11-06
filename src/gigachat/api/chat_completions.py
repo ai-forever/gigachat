@@ -1,7 +1,8 @@
 import json
-from typing import Any, AsyncIterator, Dict, Iterator, Optional, Union
+from collections.abc import AsyncIterator, Iterator
+from typing import Any
 
-import httpx
+import httpx2 as httpx
 
 from gigachat.api.utils import (
     EVENT_STREAM,
@@ -16,7 +17,7 @@ from gigachat.context import chat_completions_url_cvar
 from gigachat.models.chat_completions import ChatCompletionChunk, ChatCompletionRequest, ChatCompletionResponse
 
 
-def _build_request_json(chat: ChatCompletionRequest) -> Dict[str, Any]:
+def _build_request_json(chat: ChatCompletionRequest) -> dict[str, Any]:
     """Serialize *chat*, merging extra fields below explicit request fields."""
     json_data = chat.model_dump(exclude_none=True, by_alias=True, exclude={"stream"})
     fields = json_data.pop("additional_fields", None)
@@ -27,11 +28,11 @@ def _build_request_json(chat: ChatCompletionRequest) -> Dict[str, Any]:
 
 
 def _get_chat_kwargs(
-    client: Union[httpx.Client, httpx.AsyncClient],
+    client: httpx.Client | httpx.AsyncClient,
     *,
     chat: ChatCompletionRequest,
-    access_token: Optional[str] = None,
-) -> Dict[str, Any]:
+    access_token: str | None = None,
+) -> dict[str, Any]:
     headers = build_headers(access_token)
     headers["Content-Type"] = "application/json"
 
@@ -44,11 +45,11 @@ def _get_chat_kwargs(
 
 
 def _get_stream_kwargs(
-    client: Union[httpx.Client, httpx.AsyncClient],
+    client: httpx.Client | httpx.AsyncClient,
     *,
     chat: ChatCompletionRequest,
-    access_token: Optional[str] = None,
-) -> Dict[str, Any]:
+    access_token: str | None = None,
+) -> dict[str, Any]:
     headers = build_headers(access_token)
     headers["Accept"] = EVENT_STREAM
     headers["Cache-Control"] = "no-store"
@@ -69,7 +70,7 @@ def chat_sync(
     client: httpx.Client,
     *,
     chat: ChatCompletionRequest,
-    access_token: Optional[str] = None,
+    access_token: str | None = None,
 ) -> ChatCompletionResponse:
     """Return a primary chat completion based on the provided messages."""
     kwargs = _get_chat_kwargs(client, chat=chat, access_token=access_token)
@@ -80,7 +81,7 @@ async def chat_async(
     client: httpx.AsyncClient,
     *,
     chat: ChatCompletionRequest,
-    access_token: Optional[str] = None,
+    access_token: str | None = None,
 ) -> ChatCompletionResponse:
     """Return a primary chat completion based on the provided messages."""
     kwargs = _get_chat_kwargs(client, chat=chat, access_token=access_token)
@@ -91,23 +92,22 @@ def stream_sync(
     client: httpx.Client,
     *,
     chat: ChatCompletionRequest,
-    access_token: Optional[str] = None,
+    access_token: str | None = None,
 ) -> Iterator[ChatCompletionChunk]:
     """Return a primary chat completion stream based on the provided messages."""
     kwargs = _get_stream_kwargs(client, chat=chat, access_token=access_token)
     return execute_event_stream_sync(client, kwargs, ChatCompletionChunk)
 
 
-async def stream_async(
+def stream_async(
     client: httpx.AsyncClient,
     *,
     chat: ChatCompletionRequest,
-    access_token: Optional[str] = None,
+    access_token: str | None = None,
 ) -> AsyncIterator[ChatCompletionChunk]:
     """Return a primary chat completion stream based on the provided messages."""
     kwargs = _get_stream_kwargs(client, chat=chat, access_token=access_token)
-    async for chunk in execute_event_stream_async(client, kwargs, ChatCompletionChunk):
-        yield chunk
+    return execute_event_stream_async(client, kwargs, ChatCompletionChunk)
 
 
 __all__ = [

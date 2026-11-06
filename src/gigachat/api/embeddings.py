@@ -1,7 +1,7 @@
 import json
-from typing import Any, Dict, List, Optional
+from typing import Any
 
-import httpx
+import httpx2 as httpx
 
 from gigachat.api.utils import build_headers, execute_request_async, execute_request_sync
 from gigachat.models.embeddings import Embeddings
@@ -9,10 +9,10 @@ from gigachat.models.embeddings import Embeddings
 
 def _get_embeddings_kwargs(
     *,
-    input_: List[str],
+    input_: list[str],
     model: str,
-    access_token: Optional[str] = None,
-) -> Dict[str, Any]:
+    access_token: str | None = None,
+) -> dict[str, Any]:
     headers = build_headers(access_token)
     headers["Content-Type"] = "application/json"
 
@@ -27,9 +27,9 @@ def _get_embeddings_kwargs(
 def embeddings_sync(
     client: httpx.Client,
     *,
-    input_: List[str],
+    input_: list[str],
     model: str,
-    access_token: Optional[str] = None,
+    access_token: str | None = None,
 ) -> Embeddings:
     """Return embeddings."""
     kwargs = _get_embeddings_kwargs(input_=input_, model=model, access_token=access_token)
@@ -39,9 +39,9 @@ def embeddings_sync(
 async def embeddings_async(
     client: httpx.AsyncClient,
     *,
-    input_: List[str],
+    input_: list[str],
     model: str,
-    access_token: Optional[str] = None,
+    access_token: str | None = None,
 ) -> Embeddings:
     """Return embeddings."""
     kwargs = _get_embeddings_kwargs(input_=input_, model=model, access_token=access_token)

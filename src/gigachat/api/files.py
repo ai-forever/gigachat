@@ -1,9 +1,10 @@
 import base64
 from http import HTTPStatus
-from typing import Any, Dict, Literal, Optional
+from typing import Any, Literal
 
-import httpx
+import httpx2 as httpx
 
+from gigachat._execution import request_async, request_sync
 from gigachat._types import FileTypes
 from gigachat.api.utils import build_headers, build_x_headers, execute_request_async, execute_request_sync
 from gigachat.exceptions import AuthenticationError, ResponseError
@@ -13,8 +14,8 @@ from gigachat.models.files import DeletedFile, Image, UploadedFile, UploadedFile
 def _get_file_kwargs(
     *,
     file: str,
-    access_token: Optional[str] = None,
-) -> Dict[str, Any]:
+    access_token: str | None = None,
+) -> dict[str, Any]:
     headers = build_headers(access_token)
     return {
         "method": "GET",
@@ -27,7 +28,7 @@ def get_file_sync(
     client: httpx.Client,
     *,
     file: str,
-    access_token: Optional[str] = None,
+    access_token: str | None = None,
 ) -> UploadedFile:
     """Return information about a file."""
     kwargs = _get_file_kwargs(file=file, access_token=access_token)
@@ -38,7 +39,7 @@ async def get_file_async(
     client: httpx.AsyncClient,
     *,
     file: str,
-    access_token: Optional[str] = None,
+    access_token: str | None = None,
 ) -> UploadedFile:
     """Return information about a file."""
     kwargs = _get_file_kwargs(file=file, access_token=access_token)
@@ -47,8 +48,8 @@ async def get_file_async(
 
 def _get_files_kwargs(
     *,
-    access_token: Optional[str] = None,
-) -> Dict[str, Any]:
+    access_token: str | None = None,
+) -> dict[str, Any]:
     headers = build_headers(access_token)
     return {
         "method": "GET",
@@ -60,7 +61,7 @@ def _get_files_kwargs(
 def get_files_sync(
     client: httpx.Client,
     *,
-    access_token: Optional[str] = None,
+    access_token: str | None = None,
 ) -> UploadedFiles:
     """Return a list of uploaded files."""
     kwargs = _get_files_kwargs(access_token=access_token)
@@ -70,7 +71,7 @@ def get_files_sync(
 async def get_files_async(
     client: httpx.AsyncClient,
     *,
-    access_token: Optional[str] = None,
+    access_token: str | None = None,
 ) -> UploadedFiles:
     """Return a list of uploaded files."""
     kwargs = _get_files_kwargs(access_token=access_token)
@@ -81,8 +82,8 @@ def _upload_file_kwargs(
     *,
     file: FileTypes,
     purpose: Literal["general", "assistant"] = "general",
-    access_token: Optional[str] = None,
-) -> Dict[str, Any]:
+    access_token: str | None = None,
+) -> dict[str, Any]:
     headers = build_headers(access_token)
     return {
         "method": "POST",
@@ -98,7 +99,7 @@ def upload_file_sync(
     *,
     file: FileTypes,
     purpose: Literal["general", "assistant"] = "general",
-    access_token: Optional[str] = None,
+    access_token: str | None = None,
 ) -> UploadedFile:
     """Upload a file."""
     kwargs = _upload_file_kwargs(file=file, purpose=purpose, access_token=access_token)
@@ -110,7 +111,7 @@ async def upload_file_async(
     *,
     file: FileTypes,
     purpose: Literal["general", "assistant"] = "general",
-    access_token: Optional[str] = None,
+    access_token: str | None = None,
 ) -> UploadedFile:
     """Upload a file."""
     kwargs = _upload_file_kwargs(file=file, purpose=purpose, access_token=access_token)
@@ -120,8 +121,8 @@ async def upload_file_async(
 def _delete_file_kwargs(
     *,
     file: str,
-    access_token: Optional[str] = None,
-) -> Dict[str, Any]:
+    access_token: str | None = None,
+) -> dict[str, Any]:
     return {
         "method": "POST",
         "url": f"/files/{file}/delete",
@@ -135,7 +136,7 @@ def delete_file_sync(
     client: httpx.Client,
     *,
     file: str,
-    access_token: Optional[str] = None,
+    access_token: str | None = None,
 ) -> DeletedFile:
     """Delete a file."""
     kwargs = _delete_file_kwargs(file=file, access_token=access_token)
@@ -146,7 +147,7 @@ async def delete_file_async(
     client: httpx.AsyncClient,
     *,
     file: str,
-    access_token: Optional[str] = None,
+    access_token: str | None = None,
 ) -> DeletedFile:
     """Delete a file."""
     kwargs = _delete_file_kwargs(file=file, access_token=access_token)
@@ -156,8 +157,8 @@ async def delete_file_async(
 def _get_image_kwargs(
     *,
     file_id: str,
-    access_token: Optional[str] = None,
-) -> Dict[str, Any]:
+    access_token: str | None = None,
+) -> dict[str, Any]:
     headers = build_headers(access_token)
     headers["Accept"] = "application/jpg"
     return {
@@ -181,11 +182,11 @@ def get_image_sync(
     client: httpx.Client,
     *,
     file_id: str,
-    access_token: Optional[str] = None,
+    access_token: str | None = None,
 ) -> Image:
     """Return an image in base64 encoding."""
     kwargs = _get_image_kwargs(access_token=access_token, file_id=file_id)
-    response = client.request(**kwargs)
+    response = request_sync(client, **kwargs)
     return _build_image_response(response)
 
 
@@ -193,9 +194,9 @@ async def get_image_async(
     client: httpx.AsyncClient,
     *,
     file_id: str,
-    access_token: Optional[str] = None,
+    access_token: str | None = None,
 ) -> Image:
     """Return an image in base64 encoding."""
     kwargs = _get_image_kwargs(access_token=access_token, file_id=file_id)
-    response = await client.request(**kwargs)
+    response = await request_async(client, **kwargs)
     return _build_image_response(response)

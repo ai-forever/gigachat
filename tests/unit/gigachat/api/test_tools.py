@@ -1,5 +1,4 @@
-import httpx
-from pytest_httpx import HTTPXMock
+import httpx2 as httpx
 
 from gigachat.api.tools import (
     ai_check_async,
@@ -23,6 +22,7 @@ from tests.constants import (
     TOKENS_COUNT,
     TOKENS_COUNT_URL,
 )
+from tests.httpx_mock import HTTPXMock
 
 
 def test_tokens_count_sync(httpx_mock: HTTPXMock) -> None:

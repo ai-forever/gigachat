@@ -2,12 +2,11 @@ import asyncio
 import json
 import logging
 from copy import deepcopy
-from typing import Any, Dict, Optional
+from typing import Any
 
-import httpx
+import httpx2 as httpx
 import pytest
 from pydantic import BaseModel, ConfigDict
-from pytest_httpx import HTTPXMock
 
 from gigachat.api import chat
 from gigachat.api.utils import USER_AGENT
@@ -22,7 +21,7 @@ from gigachat.context import (
     session_id_cvar,
     trace_id_cvar,
 )
-from gigachat.exceptions import AuthenticationError, BadRequestError
+from gigachat.exceptions import APIResponseValidationError, AuthenticationError, BadRequestError
 from gigachat.models import Chat, ChatCompletion, ChatCompletionChunk
 from gigachat.models.chat import Function, Messages, MessagesRole
 from gigachat.models.response_format import JsonSchemaResponseFormat
@@ -35,6 +34,7 @@ from tests.constants import (
     MOCK_URL,
     X_CUSTOM_HEADER,
 )
+from tests.httpx_mock import HTTPXMock
 from tests.utils import get_json
 
 SAMPLE_SCHEMA = {
@@ -177,7 +177,7 @@ async def test_chat_preserves_flat_pydantic_function_schema(httpx_mock: HTTPXMoc
         """Look up the weather."""
 
         place: Place
-        units: Optional[str] = None
+        units: str | None = None
 
         model_config = ConfigDict(extra="forbid")
 
@@ -268,8 +268,9 @@ def test_chat_sync_value_error(httpx_mock: HTTPXMock) -> None:
     httpx_mock.add_response(url=MOCK_URL, json={})
 
     with httpx.Client(base_url=BASE_URL) as client:
-        with pytest.raises(ValueError, match="5 validation errors for ChatCompletion*"):
+        with pytest.raises(APIResponseValidationError, match="Invalid API response") as exc:
             chat.chat_sync(client, chat=CHAT)
+        assert isinstance(exc.value.__cause__, ValueError)
 
 
 def test_chat_sync_authentication_error(httpx_mock: HTTPXMock) -> None:
@@ -342,12 +343,14 @@ def test_headers_in_request(httpx_mock: HTTPXMock) -> None:
 
 
 async def test_headers_in_async_request(httpx_mock: HTTPXMock) -> None:
-    async def call_with_headers(client: httpx.AsyncClient, headers: Dict[str, str]) -> None:
+    async def call_with_headers(client: httpx.AsyncClient, headers: dict[str, str]) -> None:
         token_custom_headers_cvar = custom_headers_cvar.set(headers)
         await chat.chat_async(client, chat=CHAT)
         custom_headers_cvar.reset(token_custom_headers_cvar)
 
     httpx_mock.add_response(url=MOCK_URL, json=CHAT_COMPLETION)
+    httpx_mock.add_response(url=MOCK_URL, json=CHAT_COMPLETION)
+
     httpx_mock.add_response(url=MOCK_URL, json=CHAT_COMPLETION)
 
     async with httpx.AsyncClient(base_url=BASE_URL) as client:
@@ -398,7 +401,7 @@ def test_stream_sync_content_type_error(httpx_mock: HTTPXMock) -> None:
     httpx_mock.add_response(url=MOCK_URL, content=CHAT_COMPLETION_STREAM)
 
     with httpx.Client(base_url=BASE_URL) as client:
-        with pytest.raises(httpx.TransportError):
+        with pytest.raises(APIResponseValidationError, match="Expected response Content-Type"):
             list(chat.stream_sync(client, chat=CHAT))
 
 
@@ -408,10 +411,10 @@ def test_stream_sync_value_error(caplog: pytest.LogCaptureFixture, httpx_mock: H
     httpx_mock.add_response(url=MOCK_URL, content=b'data: {"error": 500}', headers=HEADERS_STREAM)
 
     with httpx.Client(base_url=BASE_URL) as client:
-        with pytest.raises(ValueError, match="4 validation errors for ChatCompletionChunk*"):
+        with pytest.raises(APIResponseValidationError, match="Invalid streaming response"):
             list(chat.stream_sync(client, chat=CHAT))
 
-    assert '"error": 500' in caplog.text
+    assert '"error": 500' not in caplog.text
 
 
 def test_stream_sync_authentication_error(httpx_mock: HTTPXMock) -> None:
@@ -481,7 +484,7 @@ async def test_stream_async_additional_fields(httpx_mock: HTTPXMock) -> None:
 async def test_chat_contract_fields_cross_http_boundary(
     httpx_mock: HTTPXMock, streaming: bool, asynchronous: bool
 ) -> None:
-    request_data: Dict[str, Any] = {
+    request_data: dict[str, Any] = {
         "assistant_id": "assistant-1",
         "messages": [
             {

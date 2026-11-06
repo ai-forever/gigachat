@@ -1,6 +1,9 @@
-from typing import TYPE_CHECKING, Optional, Union
+import math
+from datetime import datetime, timezone
+from email.utils import parsedate_to_datetime
+from typing import TYPE_CHECKING, Union
 
-import httpx
+import httpx2 as httpx
 
 if TYPE_CHECKING:
     from gigachat.models.chat import ChatCompletion
@@ -31,10 +34,10 @@ class ResponseError(GigaChatException):
 
     def __init__(
         self,
-        url: Union[httpx.URL, str],
+        url: httpx.URL | str,
         status_code: int,
-        content: Optional[bytes],
-        headers: Optional[httpx.Headers],
+        content: bytes | None,
+        headers: httpx.Headers | None,
     ) -> None:
         self.url = url
         self.status_code = status_code
@@ -45,6 +48,14 @@ class ResponseError(GigaChatException):
     def __str__(self) -> str:
         content = self.content.decode("utf-8", errors="replace") if self.content is not None else None
         return f"{self.status_code} {self.url}: {content!r}, {self.headers!r}"
+
+    @property
+    def request_id(self) -> str | None:
+        return self.headers.get("x-request-id") if self.headers else None
+
+    @property
+    def retry_after(self) -> float:
+        return parse_retry_after(self.headers.get("retry-after")) if self.headers else 0.0
 
 
 class BadRequestError(ResponseError):
@@ -74,18 +85,6 @@ class UnprocessableEntityError(ResponseError):
 class RateLimitError(ResponseError):
     """Exception raised for 429 Too Many Requests."""
 
-    @property
-    def retry_after(self) -> float:
-        """Return the number of seconds to wait before retrying."""
-        if self.headers:
-            retry_after = self.headers.get("retry-after")
-            if retry_after:
-                try:
-                    return float(retry_after)
-                except ValueError:
-                    pass
-        return 0.0
-
 
 class ServerError(ResponseError):
     """Exception raised for 5xx Server Errors."""
@@ -108,3 +107,50 @@ class ModelNotSpecifiedError(GigaChatException):
             "set `GigaChat(model=...)` or the GIGACHAT_MODEL environment variable. "
             "Use `get_models()` to list available models."
         )
+
+
+def parse_retry_after(value: str | None) -> float:
+    """Parse finite seconds or an HTTP date without shortening server waits."""
+    if not value:
+        return 0.0
+    try:
+        delay = float(value)
+    except ValueError:
+        try:
+            date = parsedate_to_datetime(value)
+            if date.tzinfo is None:
+                date = date.replace(tzinfo=timezone.utc)
+            delay = (date - datetime.now(timezone.utc)).total_seconds()
+        except (ValueError, TypeError, OverflowError):
+            return 0.0
+    return delay if math.isfinite(delay) and delay > 0 else 0.0
+
+
+class APIConnectionError(GigaChatException):
+    """Report an HTTP transport failure with its original exception as cause."""
+
+    def __init__(self, message: str = "Connection failed", *, request_id: str | None = None) -> None:
+        self.request_id = request_id
+        super().__init__(message)
+
+
+class APITimeoutError(APIConnectionError):
+    """Report a network timeout."""
+
+
+class APIResponseValidationError(GigaChatException):
+    """Report a server response that violates the expected schema."""
+
+    def __init__(self, message: str, *, request_id: str | None = None) -> None:
+        self.request_id = request_id
+        super().__init__(message)
+
+
+class StreamInterruptedError(APIConnectionError):
+    """Report an interrupted stream without replaying already delivered output."""
+
+    def __init__(
+        self, message: str = "Stream interrupted", *, request_id: str | None = None, partial_output: bool = False
+    ) -> None:
+        self.partial_output = partial_output
+        super().__init__(message, request_id=request_id)

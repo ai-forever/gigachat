@@ -1,6 +1,6 @@
-import httpx
+import httpx2 as httpx
 import pytest
-from pytest_httpx import HTTPXMock
+from pydantic import ValidationError
 
 from gigachat.api import auth
 from gigachat.context import (
@@ -12,7 +12,7 @@ from gigachat.context import (
     session_id_cvar,
     trace_id_cvar,
 )
-from gigachat.exceptions import AuthenticationError, BadRequestError
+from gigachat.exceptions import APIResponseValidationError, AuthenticationError, BadRequestError
 from gigachat.models import AccessToken, Token
 from tests.constants import (
     AUTH_URL,
@@ -22,6 +22,7 @@ from tests.constants import (
     PASSWORD_TOKEN_VALID,
     TOKEN_URL,
 )
+from tests.httpx_mock import HTTPXMock
 
 
 def test_auth_sync(httpx_mock: HTTPXMock) -> None:
@@ -44,11 +45,13 @@ def test_auth_sync_normalizes_seconds_in_tok_response(httpx_mock: HTTPXMock) -> 
 
 
 def test_auth_sync_value_error(httpx_mock: HTTPXMock) -> None:
-    httpx_mock.add_response(url=AUTH_URL, json={})
+    httpx_mock.add_response(url=AUTH_URL, json={}, headers={"X-Request-ID": "invalid-oauth"})
 
     with httpx.Client() as client:
-        with pytest.raises(ValueError, match="2 validation errors for AccessToken*"):
+        with pytest.raises(APIResponseValidationError) as error:
             auth.auth_sync(client, url=AUTH_URL, credentials="credentials", scope="scope")
+    assert isinstance(error.value.__cause__, ValidationError)
+    assert error.value.request_id == "invalid-oauth"
 
 
 def test_auth_sync_authentication_error(httpx_mock: HTTPXMock) -> None:
@@ -126,7 +129,7 @@ def test_token_sync_value_error(httpx_mock: HTTPXMock) -> None:
     httpx_mock.add_response(url=TOKEN_URL, json={})
 
     with httpx.Client(base_url=BASE_URL) as client:
-        with pytest.raises(ValueError, match="2 validation errors for Token*"):
+        with pytest.raises(APIResponseValidationError, match="Invalid API response"):
             auth.token_sync(client, user="user", password="password")
 
 

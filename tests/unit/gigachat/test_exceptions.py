@@ -1,6 +1,6 @@
-from typing import Optional, Type, cast
+from typing import cast
 
-import httpx
+import httpx2 as httpx
 import pytest
 
 from gigachat.api.utils import _raise_for_status
@@ -44,7 +44,7 @@ def test_response_error_init() -> None:
         (None, "None"),
     ],
 )
-def test_response_error_readable_body(content: Optional[bytes], expected_text: str) -> None:
+def test_response_error_readable_body(content: bytes | None, expected_text: str) -> None:
     exc = UnprocessableEntityError("https://example.com/chat", 422, content, None)
     assert expected_text in str(exc)
     assert exc.content is content
@@ -101,7 +101,7 @@ def test_length_finish_reason_error_message() -> None:
         (418, ResponseError),  # Default
     ],
 )
-def test_raise_for_status_mapping(status_code: int, expected_exception: Type[ResponseError]) -> None:
+def test_raise_for_status_mapping(status_code: int, expected_exception: type[ResponseError]) -> None:
     url = "http://example.com"
     content = b"error"
     headers = httpx.Headers()

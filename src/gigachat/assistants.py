@@ -1,7 +1,8 @@
-from typing import TYPE_CHECKING, Any, Dict, List, Optional
+from typing import TYPE_CHECKING, Any
 
+from gigachat._execution import request_scope
+from gigachat._request_options import RequestOptions
 from gigachat.api import assistants
-from gigachat.authentication import _awith_auth, _with_auth
 from gigachat.models.assistants import (
     Assistant,
     AssistantDelete,
@@ -10,7 +11,6 @@ from gigachat.models.assistants import (
     CreateAssistant,
 )
 from gigachat.models.chat import Function
-from gigachat.retry import _awith_retry, _with_retry
 
 if TYPE_CHECKING:
     from gigachat.client import GigaChatAsyncClient, GigaChatSyncClient
@@ -20,9 +20,8 @@ class AssistantsSyncClient:
     def __init__(self, base_client: "GigaChatSyncClient"):
         self._base_client = base_client
 
-    @_with_retry
-    @_with_auth
-    def get(self, assistant_id: Optional[str] = None) -> Assistants:
+    @request_scope
+    def get(self, assistant_id: str | None = None, *, request_options: RequestOptions | None = None) -> Assistants:
         """Return a list of available assistants."""
         return assistants.get_assistants_sync(
             self._base_client._client,
@@ -30,17 +29,18 @@ class AssistantsSyncClient:
             access_token=self._base_client.token,
         )
 
-    @_with_retry
-    @_with_auth
+    @request_scope
     def create(
         self,
         model: str,
         name: str,
-        instructions: Optional[str] = None,
-        description: Optional[str] = None,
-        file_ids: Optional[List[str]] = None,
-        functions: Optional[List[Function]] = None,
-        metadata: Optional[Dict[str, Any]] = None,
+        instructions: str | None = None,
+        description: str | None = None,
+        file_ids: list[str] | None = None,
+        functions: list[Function] | None = None,
+        metadata: dict[str, Any] | None = None,
+        *,
+        request_options: RequestOptions | None = None,
     ) -> CreateAssistant:
         """Create an assistant."""
         return assistants.create_assistant_sync(
@@ -55,17 +55,18 @@ class AssistantsSyncClient:
             access_token=self._base_client.token,
         )
 
-    @_with_retry
-    @_with_auth
+    @request_scope
     def update(
         self,
         assistant_id: str,
-        name: Optional[str] = None,
-        description: Optional[str] = None,
-        instructions: Optional[str] = None,
-        file_ids: Optional[List[str]] = None,
-        functions: Optional[List[Function]] = None,
-        metadata: Optional[Dict[str, Any]] = None,
+        name: str | None = None,
+        description: str | None = None,
+        instructions: str | None = None,
+        file_ids: list[str] | None = None,
+        functions: list[Function] | None = None,
+        metadata: dict[str, Any] | None = None,
+        *,
+        request_options: RequestOptions | None = None,
     ) -> Assistant:
         """Update an assistant."""
 
@@ -81,9 +82,10 @@ class AssistantsSyncClient:
             access_token=self._base_client.token,
         )
 
-    @_with_retry
-    @_with_auth
-    def delete_file(self, assistant_id: str, file_id: str) -> AssistantFileDelete:
+    @request_scope
+    def delete_file(
+        self, assistant_id: str, file_id: str, *, request_options: RequestOptions | None = None
+    ) -> AssistantFileDelete:
         """Delete an assistant file."""
         return assistants.delete_assistant_file_sync(
             self._base_client._client,
@@ -92,9 +94,8 @@ class AssistantsSyncClient:
             access_token=self._base_client.token,
         )
 
-    @_with_retry
-    @_with_auth
-    def delete(self, assistant_id: str) -> AssistantDelete:
+    @request_scope
+    def delete(self, assistant_id: str, *, request_options: RequestOptions | None = None) -> AssistantDelete:
         """Delete an assistant."""
         return assistants.delete_assistant_sync(
             self._base_client._client,
@@ -107,9 +108,10 @@ class AssistantsAsyncClient:
     def __init__(self, base_client: "GigaChatAsyncClient"):
         self._base_client = base_client
 
-    @_awith_retry
-    @_awith_auth
-    async def get(self, assistant_id: Optional[str] = None) -> Assistants:
+    @request_scope
+    async def get(
+        self, assistant_id: str | None = None, *, request_options: RequestOptions | None = None
+    ) -> Assistants:
         """Return a list of available assistants."""
 
         return await assistants.get_assistants_async(
@@ -118,17 +120,18 @@ class AssistantsAsyncClient:
             access_token=self._base_client.token,
         )
 
-    @_awith_retry
-    @_awith_auth
+    @request_scope
     async def create(
         self,
         model: str,
         name: str,
-        instructions: Optional[str] = None,
-        description: Optional[str] = None,
-        file_ids: Optional[List[str]] = None,
-        functions: Optional[List[Function]] = None,
-        metadata: Optional[Dict[str, Any]] = None,
+        instructions: str | None = None,
+        description: str | None = None,
+        file_ids: list[str] | None = None,
+        functions: list[Function] | None = None,
+        metadata: dict[str, Any] | None = None,
+        *,
+        request_options: RequestOptions | None = None,
     ) -> CreateAssistant:
         """Create an assistant."""
 
@@ -144,17 +147,18 @@ class AssistantsAsyncClient:
             access_token=self._base_client.token,
         )
 
-    @_awith_retry
-    @_awith_auth
+    @request_scope
     async def update(
         self,
         assistant_id: str,
-        name: Optional[str] = None,
-        description: Optional[str] = None,
-        instructions: Optional[str] = None,
-        file_ids: Optional[List[str]] = None,
-        functions: Optional[List[Function]] = None,
-        metadata: Optional[Dict[str, Any]] = None,
+        name: str | None = None,
+        description: str | None = None,
+        instructions: str | None = None,
+        file_ids: list[str] | None = None,
+        functions: list[Function] | None = None,
+        metadata: dict[str, Any] | None = None,
+        *,
+        request_options: RequestOptions | None = None,
     ) -> Assistant:
         """Update an assistant."""
 
@@ -170,9 +174,10 @@ class AssistantsAsyncClient:
             access_token=self._base_client.token,
         )
 
-    @_awith_retry
-    @_awith_auth
-    async def delete_file(self, assistant_id: str, file_id: str) -> AssistantFileDelete:
+    @request_scope
+    async def delete_file(
+        self, assistant_id: str, file_id: str, *, request_options: RequestOptions | None = None
+    ) -> AssistantFileDelete:
         """Delete an assistant file."""
 
         return await assistants.delete_assistant_file_async(
@@ -182,9 +187,8 @@ class AssistantsAsyncClient:
             access_token=self._base_client.token,
         )
 
-    @_awith_retry
-    @_awith_auth
-    async def delete(self, assistant_id: str) -> AssistantDelete:
+    @request_scope
+    async def delete(self, assistant_id: str, *, request_options: RequestOptions | None = None) -> AssistantDelete:
         """Delete an assistant."""
 
         return await assistants.delete_assistant_async(

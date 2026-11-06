@@ -3,11 +3,9 @@
 import copy
 import json
 import warnings
-from typing import List
 
 import pytest
 from pydantic import BaseModel, ValidationError
-from pytest_httpx import HTTPXMock
 
 from gigachat.client import (
     GigaChatAsyncClient,
@@ -20,17 +18,18 @@ from gigachat.exceptions import LengthFinishReasonError
 from gigachat.models import Chat, ChatCompletion, Messages, MessagesRole
 from gigachat.settings import Settings
 from tests.constants import ACCESS_TOKEN, BASE_URL, CHAT_URL
+from tests.httpx_mock import HTTPXMock
 from tests.utils import get_json
 
 CHAT_COMPLETION_JSON = get_json("chat_completion_json.json")
 
 
-def _assert_no_deprecation_warnings(caught: List[warnings.WarningMessage]) -> None:
+def _assert_no_deprecation_warnings(caught: list[warnings.WarningMessage]) -> None:
     assert not [warning for warning in caught if issubclass(warning.category, DeprecationWarning)]
 
 
 class MathResult(BaseModel):
-    steps: List[str]
+    steps: list[str]
     final_answer: str
 
 

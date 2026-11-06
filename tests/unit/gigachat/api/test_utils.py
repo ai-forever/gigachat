@@ -1,11 +1,11 @@
-from typing import Dict, Optional
+from contextvars import ContextVar
 
-import httpx
+import httpx2 as httpx
 import pytest
 from pydantic import BaseModel, ValidationError
-from pytest_httpx import HTTPXMock
 
 from gigachat.api.utils import (
+    USER_AGENT,
     build_headers,
     build_response,
     build_x_headers,
@@ -18,34 +18,46 @@ from gigachat.api.utils import (
     parse_chunk,
     parse_event_chunk,
 )
-from gigachat.context import authorization_cvar
+from gigachat.context import (
+    agent_id_cvar,
+    authorization_cvar,
+    client_id_cvar,
+    custom_headers_cvar,
+    operation_id_cvar,
+    request_id_cvar,
+    service_id_cvar,
+    session_id_cvar,
+    trace_id_cvar,
+)
 from gigachat.exceptions import AuthenticationError, ResponseError
 from tests.constants import BASE_URL
+from tests.httpx_mock import HTTPXMock
 
 
 class MockModel(BaseModel):
     """Mock model for testing."""
 
     value: str
-    x_headers: Optional[Dict[str, Optional[str]]] = None
+    x_headers: dict[str, str | None] | None = None
 
 
 class EventMockModel(MockModel):
     """Mock model for testing SSE events."""
 
-    event: Optional[str] = None
+    event: str | None = None
 
 
 def test_build_headers_empty() -> None:
     headers = build_headers()
     assert "Authorization" not in headers
-    assert "User-Agent" in headers
+    assert headers == {"User-Agent": USER_AGENT}
 
 
 def test_build_headers_with_token() -> None:
     token = "test_token"
     headers = build_headers(access_token=token)
     assert headers["Authorization"] == f"Bearer {token}"
+    assert "authorization" not in headers
 
 
 def test_build_headers_context_vars() -> None:
@@ -309,7 +321,7 @@ def test_execute_stream_sync_error(httpx_mock: HTTPXMock) -> None:
     ],
 )
 def test_execute_event_stream_sync_accepts_sse_variants(
-    httpx_mock: HTTPXMock, stream: bytes, expected_event: Optional[str]
+    httpx_mock: HTTPXMock, stream: bytes, expected_event: str | None
 ) -> None:
     httpx_mock.add_response(
         url=f"{BASE_URL}/stream",
@@ -337,7 +349,7 @@ def test_execute_event_stream_sync_accepts_sse_variants(
     ],
 )
 async def test_execute_event_stream_async_accepts_sse_variants(
-    httpx_mock: HTTPXMock, stream: bytes, expected_event: Optional[str]
+    httpx_mock: HTTPXMock, stream: bytes, expected_event: str | None
 ) -> None:
     httpx_mock.add_response(
         url=f"{BASE_URL}/stream",
@@ -355,3 +367,55 @@ async def test_execute_event_stream_async_accepts_sse_variants(
     assert chunks[0].event == expected_event
     assert chunks[0].x_headers is not None
     assert chunks[0].x_headers["x-request-id"] == "req-1"
+
+
+@pytest.mark.parametrize(
+    ("header", "variable"),
+    [
+        ("Authorization", authorization_cvar),
+        ("X-Session-ID", session_id_cvar),
+        ("X-Request-ID", request_id_cvar),
+        ("X-Service-ID", service_id_cvar),
+        ("X-Operation-ID", operation_id_cvar),
+        ("X-Client-ID", client_id_cvar),
+        ("X-Trace-ID", trace_id_cvar),
+        ("X-Agent-ID", agent_id_cvar),
+    ],
+)
+def test_build_headers_preserves_canonical_context_names(header: str, variable: ContextVar[str | None]) -> None:
+    token = variable.set("context-value")
+    try:
+        headers = build_headers()
+    finally:
+        variable.reset(token)
+    assert headers[header] == "context-value"
+    assert header.lower() not in headers
+    assert httpx.Headers(headers)[header.lower()] == "context-value"
+
+
+def test_build_headers_lowercase_custom_overrides_keep_canonical_names() -> None:
+    auth_token = authorization_cvar.set("Bearer context")
+    session_token = session_id_cvar.set("context-session")
+    custom_token = custom_headers_cvar.set(
+        {
+            "authorization": "Bearer custom",
+            "user-agent": "custom-agent",
+            "x-session-id": "custom-session",
+            "X-CuStOm": "raw-case-value",
+        }
+    )
+    try:
+        headers = build_headers(access_token="sdk-token")
+    finally:
+        custom_headers_cvar.reset(custom_token)
+        session_id_cvar.reset(session_token)
+        authorization_cvar.reset(auth_token)
+    assert headers == {
+        "Authorization": "Bearer custom",
+        "User-Agent": "custom-agent",
+        "X-Session-ID": "custom-session",
+        "X-CuStOm": "raw-case-value",
+    }
+    wire_headers = httpx.Headers(headers)
+    assert wire_headers.get_list("authorization") == ["Bearer custom"]
+    assert wire_headers.get_list("x-session-id") == ["custom-session"]
