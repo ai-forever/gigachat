@@ -58,7 +58,7 @@ class FunctionValidationResult(APIResponse):
     """Return validation findings, including unsuccessful HTTP 200 results."""
 
     model_config = ConfigDict(extra="allow")
-    status: str
+    status: int
     message: str
     json_ai_rules_version: str | None = None
     openapi_ai_rules_version: str | None = None

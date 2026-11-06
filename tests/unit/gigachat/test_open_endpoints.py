@@ -66,7 +66,7 @@ CASES = [
         "POST",
         {"name": "lookup", "parameters": {"type": "object"}},
         {
-            "status": "invalid",
+            "status": 200,
             "message": "Invalid schema",
             "errors": [{"description": "Missing description", "path": ["description"], "future": {"detail": 1}}],
             "warnings": [],
@@ -140,6 +140,60 @@ async def invoke(sdk: GigaChat, mode: str, method: str, kwargs: dict[str, Any]) 
     else:
         result = getattr(sdk, ("a" if mode == "async" else "") + method)(**kwargs)
     return await result if mode == "async" else result
+
+
+@pytest.mark.parametrize("mode", ["sync", "async"])
+@pytest.mark.parametrize("encoding", ["json", "yaml"])
+@pytest.mark.parametrize("findings", [None, "warnings", "errors"])
+async def test_function_validation_numeric_status_with_warnings(mode: str, encoding: str, findings: str | None) -> None:
+    payload = {
+        "status": 200,
+        "message": "Function is valid",
+        "json_ai_rules_version": "1.0.6",
+        "warnings": [
+            {
+                "description": "Value is null but should be object",
+                "schema_location": "#/properties/return_parameters",
+            },
+            {
+                "description": "Value is null but should be array",
+                "schema_location": "#/properties/few_shot_examples",
+            },
+        ],
+    }
+    warnings = payload.pop("warnings")
+    if findings is not None:
+        payload[findings] = warnings
+    payload["openapi_ai_rules_version"] = "1.0"
+    function = {
+        "name": "get_weather",
+        "description": "Get weather for a city.",
+        "parameters": {"type": "object", "properties": {"city": {"type": "string"}}, "required": ["city"]},
+    }
+
+    def handler(request: httpx2.Request) -> httpx2.Response:
+        if encoding == "json":
+            assert json.loads(request.content) == function
+        else:
+            assert request.content == b"openapi: 3.0.0\ninfo: {}\n"
+        return httpx2.Response(200, json=payload, headers={"X-Request-ID": "validation-with-warnings"})
+
+    with httpx2.Client(transport=httpx2.MockTransport(handler)) as sync:
+        async with httpx2.AsyncClient(transport=httpx2.MockTransport(handler)) as async_:
+            async with GigaChat(
+                base_url="https://example.test/v1", access_token="token", http_client=sync, async_http_client=async_
+            ) as sdk:
+                result = await invoke(
+                    sdk,
+                    mode,
+                    "functions_validate",
+                    {"function": function if encoding == "json" else b"openapi: 3.0.0\ninfo: {}\n"},
+                )
+
+    assert type(result.status) is int
+    assert result.status == 200
+    assert result.request_id == "validation-with-warnings"
+    assert result.model_dump(exclude_none=True, exclude={"x_headers"}) == payload
 
 
 @pytest.mark.parametrize("mode", ["sync", "async"])
@@ -250,13 +304,13 @@ async def test_validate_raw_yaml(mode: str) -> None:
     def handler(request: httpx2.Request) -> httpx2.Response:
         assert request.content == yaml
         assert request.headers["content-type"] == "application/x-yaml"
-        return httpx2.Response(200, json={"status": "valid", "message": "OK"})
+        return httpx2.Response(200, json={"status": 200, "message": "OK"})
 
     with httpx2.Client(transport=httpx2.MockTransport(handler)) as sync:
         async with httpx2.AsyncClient(transport=httpx2.MockTransport(handler)) as async_:
             sdk = GigaChat(base_url="https://example.org/v1", http_client=sync, async_http_client=async_)
             result = await invoke(sdk, mode, "functions_validate", {"function": yaml})
-            assert result.status == "valid"
+            assert result.status == 200
 
 
 @pytest.mark.parametrize("mode", ["sync", "async"])
