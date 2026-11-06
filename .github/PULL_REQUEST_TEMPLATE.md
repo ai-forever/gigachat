@@ -59,7 +59,7 @@ make test-integration
 - [ ] I have performed a self-review of my code
 - [ ] I have commented my code, particularly in hard-to-understand areas
 - [ ] My changes generate no new linter warnings (`make lint`)
-- [ ] Type checking passes (`make mypy`)
+- [ ] Type checking passes (`make ty`)
 - [ ] All tests pass (`make test`)
 
 ### Documentation

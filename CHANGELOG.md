@@ -17,4 +17,9 @@
 - Reject unexpected file-content statuses and JSON body overrides on YAML or binary endpoints.
 - Remove unused private auth/retry engines and one-off release reports; consolidate migration documentation and align example linting.
 
+- Treat enabled empty storage as stateful for retries, use one HTTPX2 cookie jar with aiohttp, and preserve SDK error metadata when non-200 file bodies fail.
+- Accept numeric function validation status, thread stream chunks without usage, and bare batch lists including empty responses.
+- Group private infrastructure in six `_core` modules, move endpoint behavior into resources, and share sync/async request builders while preserving public imports.
+- Align ContextVar precedence and trace semantics across documentation; replace mypy with ty in local and CI checks.
+
 See [MIGRATION.md](MIGRATION.md) for breaking changes, examples, ownership rules, downstream coordination, and limitations. This remains an alpha candidate; APIs and behavior may change before stable 0.3.0. Publication and live API validation are separate from preparation of this release.

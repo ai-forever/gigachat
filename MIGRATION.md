@@ -67,7 +67,9 @@ with GigaChat(model="GigaChat-2") as client:
     )
 ```
 
-Headers merge case-insensitively: client defaults, SDK headers, named ContextVars, `custom_headers_cvar`, view headers, then per-call headers. An explicit external `Authorization` overrides SDK authentication for that request and bypasses SDK token acquisition/refresh. Request options are not forwarded to OAuth.
+Headers merge case-insensitively: defaults on an injected HTTP client, SDK headers, named ContextVars, `custom_headers_cvar`, view headers, then per-call headers. An explicit external `Authorization` overrides SDK authentication for that request and bypasses SDK token acquisition/refresh. Request options are not forwarded to OAuth. The default session ID from settings is a fallback below explicit header sources.
+
+Request, trace, operation, and session IDs are independent opaque values. The SDK does not create distributed traces or promise that operation IDs are span IDs. Reset ContextVars with the token from `set()` in a `finally` block; see the [README example](README.md#context-variables). New asyncio tasks inherit the creating context's snapshot; arbitrary thread executors need explicit context propagation. `authorization_cvar` supplies the complete external authorization value. `chat_url_cvar` and `chat_completions_url_cvar` override endpoint URLs, not headers.
 
 Query values append in order and preserve repeated keys. JSON body precedence is `additional_fields` < typed payload < explicit `extra_body`; the final merge is shallow. `extra_body` cannot change the method's streaming mode and is rejected for multipart/binary/YAML requests. Inputs and option mappings are copied so subsequent caller mutations do not alter an in-flight request.
 
@@ -226,7 +228,7 @@ The SDK does not introduce typed wrappers for restricted endpoint families.
 existing stored conversation use `storage.thread_id`; v1 also requires
 `is_stateful=True`. `session_id` / `GIGACHAT_SESSION_ID` sets the default
 `X-Session-ID` header; `session_id_cvar` can override it, then
-`custom_headers_cvar`. A session header does not store history or guarantee
+`custom_headers_cvar`, view headers, and per-call headers. A session header does not store history or guarantee
 cache hits. Thread identifiers remain accessible as `thread.id_`.
 
 ## Existing 0.2.4 schema and authentication changes
@@ -259,7 +261,7 @@ Model metadata includes optional `type` and `features`; uploaded files include
 optional `modalities`. Thread states accept `frozen` and future string values.
 Thread metadata omission preserves server metadata, while `{}` clears it.
 `update_interval=0` on message run/rerun requests sends tokens immediately;
-this value is unrelated to network timeouts. Assistant updates preserve
+this value is unrelated to network timeouts. Thread stream `usage` is optional and normally arrives in the final chunk. Assistant updates preserve
 `functions=[]`. The SDK sends an explicit empty function list unchanged; the server applies
 its append/overwrite rules. Omitted fields remain omitted.
 
@@ -267,7 +269,7 @@ Document reranking, file access updates, function validation/generation/ranking,
 instruction generation, batch creation/listing, and thread sharing use the
 same RequestOptions and response metadata as existing methods. Function
 validation accepts the function object itself or raw YAML; HTTP 200 with
-validation errors is a normal result. Generated content remains text even
+validation errors is a normal result with numeric `status`. Generated content remains text even
 when the finish reason indicates an error. Function conversion sends raw
 YAML with `application/x-yaml`.
 
@@ -275,7 +277,7 @@ Batch creation sends raw JSONL bytes or a byte stream as
 `application/octet-stream`, with a `method` query parameter. Use an async byte
 stream for async uploads. Batch status is an open string (including `created`,
 `in_progress`, and `completed`); list/retrieve uses GET `/batches` with an optional
-`batch_id` query. Use `output_file_id` with the ordinary file download methods.
+`batch_id` query. Both a bare JSON array (including `[]`) and a `batches` object envelope produce a `Batches` model with request metadata. Use `output_file_id` with the ordinary file download methods.
 There is no scheduler, polling loop, cancellation, or pagination layer. A batch
 creation is not automatically replayed after an ambiguous network failure.
 Availability requires postpaid service and access to the requested models.
@@ -288,3 +290,9 @@ because its binary request and multipart response contract remains incomplete.
 Runnable chat, tools, schema, and metadata examples are indexed in
 [examples/README.md](examples/README.md). Run examples as modules from the
 repository root, with credentials and model settings in the environment.
+
+## Internal module layout and development checks
+
+Public imports remain available from `gigachat`, `gigachat.client`, `gigachat.assistants`, `gigachat.threads`, `gigachat.authentication`, and the existing API/model modules. The private 0.3 infrastructure now lives in six `_core` modules: `base_client`, `http_client`, `request`, `execution`, `response`, and `streaming`. Update private test imports or monkeypatch targets to their owning module; the old private root modules have no compatibility shims. Chat and file operations live in `resources`, with HTTP request builders in `api`.
+
+Development type checks use `make ty` (`uv run ty check src tests`) instead of mypy. Python 3.10 remains the typing target, and warnings fail the check. Notebook tooling is an optional development group: install it with `uv sync --group notebook`; it is not a runtime SDK dependency.

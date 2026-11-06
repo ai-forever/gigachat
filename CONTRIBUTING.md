@@ -8,12 +8,12 @@ Use Python 3.10 or newer and uv. Changes should preserve the supported public AP
 uv sync --group dev
 uv run pre-commit install
 make lint
-make mypy
+make ty
 make test
 make test-integration
 ```
 
-`make all` runs lint, strict mypy, and the unit suite. `make fmt` runs Ruff formatting and autofixes. `make test-integration` replays existing cassettes with network access blocked; it needs no live credentials. Install optional dependencies with `uv sync --group dev --extra aiohttp` when working on the aiohttp adapter. Other extras are `http2` and `socks` for native HTTPX2.
+`make all` runs lint, ty with warnings treated as errors, and the unit suite. `make fmt` runs Ruff formatting and autofixes. `make test-integration` replays existing cassettes with network access blocked; it needs no live credentials. Install optional dependencies with `uv sync --group dev --extra aiohttp` when working on the aiohttp adapter. Other extras are `http2` and `socks` for native HTTPX2. Install the live notebook tooling separately with `uv sync --group notebook`.
 
 Use `uv run pytest tests/unit/gigachat/test_streaming_030.py` for focused stream, raw response, and download tests. Local transport tests use loopback servers to check sockets, connection pools, cancellation, and TLS. These checks are different from mocked request-policy tests and live API execution.
 
@@ -21,9 +21,9 @@ Do not record over cassettes or issue live requests as a side effect of replay. 
 
 ## Style and architecture
 
-Use modern Python 3.10 type syntax (`dict[str, Any]`, `T | None`), native Pydantic V2, Ruff's configured 120-character line length, and strict mypy. Keep docstrings concise and imperative. Commit messages use conventional prefixes such as `fix:`, `feat:`, and `test:`. Pre-commit failures should be fixed before committing.
+Use modern Python 3.10 type syntax (`dict[str, Any]`, `T | None`), native Pydantic V2, Ruff's configured 120-character line length, and ty with warnings treated as errors. Keep docstrings concise and imperative. Commit messages use conventional prefixes such as `fix:`, `feat:`, and `test:`. Pre-commit failures should be fixed before committing.
 
-The API modules under `src/gigachat/api/` construct endpoint-specific requests and models. Shared request execution belongs in `_execution.py`; avoid adding endpoint-specific retry loops. `_request_options.py` defines immutable option snapshots. `_serialization.py` owns shared serialization/replay primitives. `_streaming.py` owns SSE decoding and response lifecycle; `_response.py` owns raw and byte-response wrappers. `_http_client.py`, `_tls.py`, and the attributed adapter under `_vendor/httpx_aiohttp/` own transport setup. Keep the transport boundary in HTTPX2 types and do not install a global HTTPX alias.
+The API modules under `src/gigachat/api/` own endpoint-specific request builders. Shared execution belongs in `_core/execution.py`; avoid endpoint-specific retry loops. `_core/request.py` owns immutable options, headers, replay primitives, and transport-neutral timeout conversion. `_core/response.py` owns status mapping, response parsing, and raw/byte wrappers; `_core/streaming.py` owns SSE decoding and stream lifecycle. `_core/http_client.py` owns HTTPX2 and TLS setup, with the optional adapter under `_vendor/httpx_aiohttp/`. `_core/base_client.py` owns configuration and owner/view state. Core modules never import API, resources, or public clients at runtime. Chat and file operations belong in `resources/`; the public client delegates to them. Keep HTTPX2 types at transport boundaries and never install a global HTTPX alias.
 
 Stateful clients and lightweight option views share ownership and token state. Closing a view invalidates only that view. A hybrid owner's close() closes its sync side; awaited aclose() closes both sides. Async clients/views must remain on their initial event loop. Preserve the constructor `None` compatibility rules, ContextVar precedence, and caller-owned client/session lifetime. Never retry after yielding partial output. Every intermediary async generator must explicitly close the iterator it owns on early exit. Do not log prompts, credentials, OAuth bodies, raw chunks, or file content.
 

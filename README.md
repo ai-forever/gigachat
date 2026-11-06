@@ -403,15 +403,9 @@ The library supports four authentication methods:
 
 ### Authentication priority (when multiple are configured)
 
-If multiple auth inputs are provided at the same time, the SDK applies this priority:
+Headers merge case-insensitively, from lowest to highest priority: defaults on an injected HTTP client → SDK headers → named ContextVars → `custom_headers_cvar` → `with_options()` view headers → per-call headers. The session default from settings is applied before these overrides.
 
-1. **`custom_headers_cvar["Authorization"]`** (if set) — overrides any other auth source.
-2. **`authorization_cvar`** (if set) — overrides any other auth source and **disables automatic token fetching/refresh** (you manage the header value and its lifecycle).
-3. **Explicit `access_token`** (constructor parameter / `GIGACHAT_ACCESS_TOKEN`) — used as-is. If it fails with 401 and OAuth credentials or user/password are also configured, the SDK will fall back to fetching a new token.
-4. **OAuth `credentials`** (constructor parameter / `GIGACHAT_CREDENTIALS`) — used to obtain/refresh a token.
-5. **Username/password** (`user` + `password`) — used to obtain/refresh a token from the `/token` endpoint.
-
-When both **OAuth `credentials`** and **username/password** are provided, OAuth credentials take precedence for token refresh.
+An external `Authorization` from any of these override sources disables SDK token acquisition and refresh for that request; the application owns that header's lifetime. Without an external override, an explicit `access_token` is used first. An authorized 401 can refresh it when OAuth credentials or username/password are configured. OAuth credentials take precedence over username/password for token acquisition and refresh.
 
 ### 1. Authorization Key (Recommended)
 
@@ -606,46 +600,49 @@ except GigaChatException as e:
 
 ### Context Variables
 
-Set a default session identifier on a client with `GigaChat(session_id="conversation-123")`
-or `GIGACHAT_SESSION_ID`. Reuse it for requests belonging to the same conversation.
-The SDK sends it as `X-Session-ID` on API requests; it does not guarantee a cache hit.
-`session_id_cvar` overrides the client default, and `custom_headers_cvar` has the highest priority.
+Set a default session identifier with `GigaChat(session_id="conversation-123")` or `GIGACHAT_SESSION_ID`. The SDK sends it as `X-Session-ID`; this groups requests but does not store conversation history or guarantee a cache hit.
 
-Track individual requests with context headers for logging and debugging:
+Headers merge **case-insensitively**, from lowest to highest priority:
+
+1. Defaults on an injected HTTP client.
+2. SDK headers.
+3. Named ContextVars.
+4. `custom_headers_cvar`.
+5. Headers on a `with_options()` view.
+6. Per-call `RequestOptions.extra_headers`.
+
+The session ID from settings is a fallback below explicit header sources. An external `Authorization` disables SDK token acquisition and refresh for that request. The SDK forwards request, trace, operation, and session IDs as independent opaque values. It does not create distributed traces, derive IDs from one another, or guarantee that an operation ID is a span ID. Applications may adopt that convention themselves.
+
+Use the token returned by `set()` to restore the prior value, including when a request fails:
 
 ```python
-from gigachat import GigaChat, session_id_cvar, request_id_cvar, custom_headers_cvar
-import uuid
+from gigachat import GigaChat, request_id_cvar
+from uuid import uuid4
 
-# Set session and request identifiers
-session_id_cvar.set("user-session-12345")
-request_id_cvar.set(str(uuid.uuid4()))
-
-# Or add custom headers
-custom_headers_cvar.set({"X-Custom-Header": "custom-value"})
-
-with GigaChat() as client:
-    response = client.chat.create("Hello!")
+# Supply authentication through GIGACHAT_* environment variables.
+with GigaChat(model="GigaChat-2") as client:
+    token = request_id_cvar.set(str(uuid4()))
+    try:
+        response = client.chat.create("Hello!")
+    finally:
+        request_id_cvar.reset(token)
 ```
 
-Available context variables:
+ContextVar values belong to the current execution context. An asyncio task inherits a snapshot of its creator's context when the task is created; subsequent changes do not propagate between those tasks. Arbitrary thread executors do not automatically inherit the calling context. Arrange explicit context propagation when using them.
 
-| Variable | Header | Description |
-|----------|--------|-------------|
-| `session_id_cvar` | `X-Session-ID` | Session identifier for grouping requests |
-| `request_id_cvar` | `X-Request-ID` | Unique request identifier |
-| `client_id_cvar` | `X-Client-ID` | Client identifier |
-| `service_id_cvar` | `X-Service-ID` | Service identifier |
-| `operation_id_cvar` | `X-Operation-ID` | Operation identifier |
-| `trace_id_cvar` | `X-Trace-ID` | Process instance identifier (main operation) |
-| `agent_id_cvar` | `X-Agent-ID` | Agent identifier |
-| `custom_headers_cvar` | (various) | Dictionary of additional headers |
+| Variable | Header | Purpose |
+|----------|--------|---------|
+| `session_id_cvar` | `X-Session-ID` | Group related requests |
+| `request_id_cvar` | `X-Request-ID` | Correlate an individual request |
+| `client_id_cvar` | `X-Client-ID` | Identify the calling client |
+| `service_id_cvar` | `X-Service-ID` | Identify the calling service |
+| `operation_id_cvar` | `X-Operation-ID` | Carry an application operation ID |
+| `trace_id_cvar` | `X-Trace-ID` | Carry an application trace ID |
+| `agent_id_cvar` | `X-Agent-ID` | Identify the calling agent |
+| `authorization_cvar` | `Authorization` | Supply the complete external authorization value |
+| `custom_headers_cvar` | (various) | Supply additional headers or override named ContextVars |
 
-**Header precedence (when multiple sources set the same header):**
-
-- **Explicit `access_token`** passed by the SDK (or your code) sets `Authorization: Bearer ...` first.
-- **`authorization_cvar`** overrides that `Authorization` header if it is set.
-- **`custom_headers_cvar`** is applied last and overrides both (including `Authorization`), as well as any other header.
+`chat_url_cvar` and `chat_completions_url_cvar` are endpoint URL overrides for legacy and primary chat respectively; they are not headers. See [MIGRATION.md](MIGRATION.md) for primary endpoint routing and request options, and [session_headers.py](examples/chat_completions/session_headers.py) for a session reset example.
 
 ### Retry Configuration
 
@@ -760,7 +757,7 @@ This project follows SemVer with additional clarity for pre-`1.0.0` releases:
 
 To ship a release marked **Production/Stable**, the following must be true:
 
-- **CI is green** on `main` (lint, mypy, unit tests, integration replay).
+- **CI is green** on `main` (lint, ty, unit tests, integration replay).
 - **Local checks are green** (`make all`).
 - **Packaging is sane**: sdist+wheel build and install from artifacts works (no missing files).
 - **Integration cassettes are current**: re-recorded with real credentials and reviewed for scrubbing.
