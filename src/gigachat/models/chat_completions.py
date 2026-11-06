@@ -1,8 +1,9 @@
+import builtins
 import inspect
 from typing import Any, Literal, Optional
 
-import pydantic
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
+from pydantic.json_schema import SkipJsonSchema
 
 from gigachat.models.base import APIResponse
 
@@ -194,28 +195,24 @@ class ChatResponseFormat(_ChatCompletionsModel):
     strict: bool | None = Field(default=None, description="Strict schema adherence.")
     regex: str | None = Field(default=None, description="Regular expression response format.")
 
-    @model_validator(mode="before")
+    @field_validator(
+        "schema_",
+        mode="before",
+        json_schema_input_type=dict[str, Any] | str | None | SkipJsonSchema[builtins.type[BaseModel] | BaseModel],
+    )
     @classmethod
-    def _validate_and_convert_schema(cls, values: Any) -> Any:
-        if not isinstance(values, dict):
-            return values
-
-        schema = values.get("schema")
+    def _validate_and_convert_schema(cls, schema: object) -> object:
         if schema is None:
-            return values
+            return schema
 
-        if inspect.isclass(schema) and issubclass(schema, pydantic.BaseModel):
-            values = dict(values)
-            values["schema"] = schema.model_json_schema()
-            return values
+        if inspect.isclass(schema) and issubclass(schema, BaseModel):
+            return schema.model_json_schema()
 
-        if isinstance(schema, pydantic.BaseModel):
-            values = dict(values)
-            values["schema"] = schema.__class__.model_json_schema()
-            return values
+        if isinstance(schema, BaseModel):
+            return schema.__class__.model_json_schema()
 
         if isinstance(schema, (dict, str)):
-            return values
+            return schema
 
         raise ValueError(
             "'schema' must be a dict, string, BaseModel instance, or pydantic.BaseModel subclass; "

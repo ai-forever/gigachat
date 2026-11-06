@@ -77,8 +77,7 @@ make test-integration
 
 ### Compatibility
 
-- [ ] Changes are compatible with Python 3.8-3.13
-- [ ] No use of `type[...]` syntax (use `Type[...]` for Python 3.8)
+- [ ] Changes are compatible with Python 3.10-3.15
 - [ ] Async/sync variants both work correctly (if applicable)
 
 ### Commits

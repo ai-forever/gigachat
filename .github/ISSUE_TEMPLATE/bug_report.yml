@@ -129,5 +129,5 @@ body:
           required: true
         - label: I have provided all requested information above
           required: true
-        - label: I am using a supported Python version (3.8-3.13)
+        - label: I am using a supported Python version (3.10-3.15)
           required: true
