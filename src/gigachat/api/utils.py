@@ -1,7 +1,7 @@
 import json
 import logging
 import re
-from collections.abc import AsyncIterable, AsyncIterator, Iterable, Iterator
+from collections.abc import AsyncIterator, Iterator
 from http import HTTPStatus
 from typing import (
     Any,
@@ -140,89 +140,6 @@ def parse_event_chunk(event: str | None, data: str, model_class: type[T]) -> T:
     return model_class.model_validate(payload)
 
 
-def _parse_sse_line(line: str) -> tuple[str, str] | None:
-    """Parse an SSE field line."""
-    if line.startswith(":"):
-        return None
-
-    name, separator, value = line.partition(":")
-    if not separator:
-        return None
-
-    if value.startswith(" "):
-        value = value[1:]
-
-    return name, value
-
-
-def _iter_event_chunks(lines: Iterable[str], model_class: type[T]) -> Iterator[T]:
-    """Yield parsed SSE events, including unnamed data events."""
-    event: str | None = None
-    data_lines: list[str] = []
-
-    def flush() -> Iterator[T]:
-        nonlocal event, data_lines
-
-        data = "\n".join(data_lines)
-        if data_lines and data.strip() != "[DONE]":
-            yield parse_event_chunk(event, data, model_class)
-
-        event = None
-        data_lines = []
-
-    for line in lines:
-        if not line:
-            yield from flush()
-            continue
-
-        parsed = _parse_sse_line(line)
-        if parsed is None:
-            continue
-
-        name, value = parsed
-        if name == "event":
-            event = value
-        elif name == "data":
-            data_lines.append(value)
-
-    yield from flush()
-
-
-async def _aiter_event_chunks(lines: AsyncIterable[str], model_class: type[T]) -> AsyncIterator[T]:
-    """Yield parsed async SSE events, including unnamed data events."""
-    event: str | None = None
-    data_lines: list[str] = []
-
-    async def flush() -> AsyncIterator[T]:
-        nonlocal event, data_lines
-
-        data = "\n".join(data_lines)
-        if data_lines and data.strip() != "[DONE]":
-            yield parse_event_chunk(event, data, model_class)
-
-        event = None
-        data_lines = []
-
-    async for line in lines:
-        if not line:
-            async for chunk in flush():
-                yield chunk
-            continue
-
-        parsed = _parse_sse_line(line)
-        if parsed is None:
-            continue
-
-        name, value = parsed
-        if name == "event":
-            event = value
-        elif name == "data":
-            data_lines.append(value)
-
-    async for chunk in flush():
-        yield chunk
-
-
 def build_x_headers(response: httpx.Response) -> dict[str, str | None]:
     """Extract X-Headers from response."""
     return {
@@ -351,19 +268,23 @@ async def execute_stream_async(
                 yield chunk
 
 
-def execute_event_stream_sync(client: httpx.Client, kwargs: dict[str, Any], model_class: type[T]) -> Iterator[T]:
+def execute_event_stream_sync(
+    client: httpx.Client, kwargs: dict[str, Any], model_class: type[T], *, terminal_event: str | None = None
+) -> Iterator[T]:
     """Execute an SSE request and yield parsed named or unnamed events."""
     from gigachat._execution import stream_sync
     from gigachat._streaming import Stream
 
     with stream_sync(client, **kwargs) as response:
         _check_response(response)
-        with Stream(response, model_class, event_mode=True, max_event_size=_max_event_size()) as stream:
+        with Stream(
+            response, model_class, event_mode=True, terminal_event=terminal_event, max_event_size=_max_event_size()
+        ) as stream:
             yield from stream
 
 
 async def execute_event_stream_async(
-    client: httpx.AsyncClient, kwargs: dict[str, Any], model_class: type[T]
+    client: httpx.AsyncClient, kwargs: dict[str, Any], model_class: type[T], *, terminal_event: str | None = None
 ) -> AsyncIterator[T]:
     """Execute an asynchronous SSE request and yield parsed events."""
     from gigachat._execution import stream_async
@@ -371,6 +292,8 @@ async def execute_event_stream_async(
 
     async with stream_async(client, **kwargs) as response:
         await _acheck_response(response)
-        async with AsyncStream(response, model_class, event_mode=True, max_event_size=_max_event_size()) as stream:
+        async with AsyncStream(
+            response, model_class, event_mode=True, terminal_event=terminal_event, max_event_size=_max_event_size()
+        ) as stream:
             async for chunk in stream:
                 yield chunk

@@ -9,6 +9,8 @@ from typing import Any
 import aiohttp
 import httpx2
 
+from gigachat._http_client import _aiohttp_timeout
+
 
 @contextlib.contextmanager
 def map_aiohttp_exceptions() -> Iterator[None]:
@@ -27,15 +29,6 @@ def map_aiohttp_exceptions() -> Iterator[None]:
         raise httpx2.ReadError(str(exc)) from exc
     except aiohttp.InvalidURL as exc:
         raise httpx2.UnsupportedProtocol(str(exc)) from exc
-
-
-def validate_borrowed_session(session: aiohttp.ClientSession) -> None:
-    """Reject hidden session credentials while preserving caller ownership."""
-    if session.auth is not None or "Authorization" in session.headers:
-        raise ValueError(
-            "Borrowed aiohttp sessions cannot define default auth or an Authorization header; "
-            "configure HTTPX2 client headers instead"
-        )
 
 
 class AiohttpResponseStream(httpx2.AsyncByteStream):
@@ -58,16 +51,15 @@ class AiohttpTransport(httpx2.AsyncBaseTransport):
         verify: ssl.SSLContext,
         limits: httpx2.Limits,
         proxy: httpx2.Proxy | None = None,
-        session: aiohttp.ClientSession | None = None,
     ) -> None:
         self.verify = verify
         self.limits = limits
         self.proxy = proxy
-        self.session = session
-        self.owns_session = session is None
+        self.session: aiohttp.ClientSession | None = None
         self._loop: asyncio.AbstractEventLoop | None = None
 
     async def handle_async_request(self, request: httpx2.Request) -> httpx2.Response:
+        timeout = _aiohttp_timeout(httpx2.Timeout(None, **request.extensions.get("timeout", {})))
         loop = asyncio.get_running_loop()
         if self._loop is not None and self._loop is not loop:
             raise RuntimeError("aiohttp transport cannot be used from a different event loop")
@@ -77,14 +69,9 @@ class AiohttpTransport(httpx2.AsyncBaseTransport):
                 limit=self.limits.max_connections or 0, keepalive_timeout=self.limits.keepalive_expiry, ssl=self.verify
             )
             self.session = aiohttp.ClientSession(connector=connector, auto_decompress=False, trust_env=False)
-        if not self.owns_session:
-            validate_borrowed_session(self.session)
-        timeout = request.extensions.get("timeout", {})
-        connect, pool, write = timeout.get("connect"), timeout.get("pool"), timeout.get("write")
-        if write is not None:
-            raise ValueError("aiohttp transport does not support a separate write timeout")
-        if pool is not None and connect is not None and pool != connect:
-            raise ValueError("aiohttp transport requires equal connect and pool timeouts when both are set")
+            # aiohttp has no public switch for its implicit idempotent retry.
+            # The SDK executor alone controls the network retry budget.
+            self.session._retry_connection = False
         try:
             data: Any = request.content or None
         except httpx2.RequestNotRead:
@@ -102,7 +89,7 @@ class AiohttpTransport(httpx2.AsyncBaseTransport):
                 auto_decompress=False,
                 ssl=self.verify,
                 timeout=aiohttp.ClientTimeout(
-                    total=None, connect=pool, sock_connect=connect, sock_read=timeout.get("read")
+                    total=None, connect=timeout.pool, sock_connect=timeout.connect, sock_read=timeout.read
                 ),
                 server_hostname=request.extensions.get("sni_hostname"),
                 proxy=str(self.proxy.url) if self.proxy else None,
@@ -118,5 +105,5 @@ class AiohttpTransport(httpx2.AsyncBaseTransport):
         )
 
     async def aclose(self) -> None:
-        if self.owns_session and self.session is not None:
+        if self.session is not None:
             await self.session.close()

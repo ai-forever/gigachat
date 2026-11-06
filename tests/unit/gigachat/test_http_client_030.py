@@ -1,12 +1,16 @@
 import asyncio
 import gzip
+import json
 from collections.abc import AsyncIterator
-from typing import Any, cast
+from typing import Any, Literal, cast
 
 import httpx2
 import pytest
 
+from gigachat import GigaChat, RequestOptions
 from gigachat._http_client import DefaultAioHttpClient, DefaultAsyncHttpxClient, DefaultHttpxClient
+from gigachat.exceptions import APIConnectionError
+from tests.constants import MODELS
 
 
 def test_native_defaults() -> None:
@@ -31,8 +35,8 @@ def test_aiohttp_rejects_unsupported_limits_and_timeouts() -> None:
         client.build_request("GET", "https://example.com", timeout=httpx2.Timeout(7))
 
 
-async def test_aiohttp_wire_stream_decompression_and_borrowed_session() -> None:
-    aiohttp = pytest.importorskip("aiohttp")
+async def test_aiohttp_wire_stream_decompression_and_owned_session() -> None:
+    pytest.importorskip("aiohttp")
     body = gzip.compress(b"hello world")
 
     async def serve(reader: asyncio.StreamReader, writer: asyncio.StreamWriter) -> None:
@@ -49,13 +53,18 @@ async def test_aiohttp_wire_stream_decompression_and_borrowed_session() -> None:
 
     server = await asyncio.start_server(serve, "127.0.0.1", 0)
     port = server.sockets[0].getsockname()[1]
-    async with aiohttp.ClientSession() as session:
-        async with DefaultAioHttpClient(session=session, trust_env=False) as client:
+    try:
+        async with DefaultAioHttpClient(trust_env=False) as client:
+            transport = cast(Any, client._transport)
+            assert transport.session is None
             response = await client.get(f"http://127.0.0.1:{port}/")
             assert response.content == b"hello world"
-        assert not session.closed
-    server.close()
-    await server.wait_closed()
+            session = cast(Any, transport.session)
+            assert not session.closed
+        assert session.closed
+    finally:
+        server.close()
+        await server.wait_closed()
 
 
 @pytest.mark.parametrize("backend", ["httpx2", "aiohttp"])
@@ -240,35 +249,86 @@ async def test_aiohttp_request_timeout_modes_on_wire() -> None:
         await server.wait_closed()
 
 
-async def test_borrowed_aiohttp_session_rejects_default_auth() -> None:
-    import warnings
-
-    aiohttp = pytest.importorskip("aiohttp")
-    with warnings.catch_warnings():
-        warnings.simplefilter("ignore", DeprecationWarning)
-        session = aiohttp.ClientSession(auth=aiohttp.BasicAuth("fixture-user", "fixture-secret"))
-    async with session:
-        with pytest.raises(ValueError, match="configure HTTPX2 client headers") as error:
-            DefaultAioHttpClient(session=session, trust_env=False)
-        assert "fixture-secret" not in str(error.value)
-        assert not session.closed
-
-
-async def test_borrowed_aiohttp_session_rejects_authorization_header() -> None:
-    aiohttp = pytest.importorskip("aiohttp")
-    async with aiohttp.ClientSession(headers={"aUtHoRiZaTiOn": "Bearer fixture-secret"}) as session:
-        with pytest.raises(ValueError, match="configure HTTPX2 client headers") as error:
-            DefaultAioHttpClient(session=session, trust_env=False)
-        assert "fixture-secret" not in str(error.value)
-        assert not session.closed
-
-
-async def test_borrowed_aiohttp_session_rechecks_mutated_headers() -> None:
+async def test_aiohttp_raw_session_injection_is_not_supported() -> None:
     aiohttp = pytest.importorskip("aiohttp")
     async with aiohttp.ClientSession() as session:
-        async with DefaultAioHttpClient(session=session, trust_env=False) as client:
-            session.headers["Authorization"] = "Bearer fixture-secret"
-            with pytest.raises(ValueError, match="configure HTTPX2 client headers") as error:
-                await client.get("http://example.invalid")
-            assert "fixture-secret" not in str(error.value)
+        with pytest.raises(TypeError, match="session"):
+            DefaultAioHttpClient(session=session, trust_env=False)
         assert not session.closed
+
+
+@pytest.mark.parametrize("value", [0, -1, float("nan"), float("inf"), -float("inf")])
+@pytest.mark.parametrize("field", [None, "connect", "read", "pool", "write"])
+async def test_aiohttp_rejects_invalid_timeout_before_sending(value: float, field: str | None) -> None:
+    pytest.importorskip("aiohttp")
+    timeout = value if field is None else httpx2.Timeout(None, **{field: value})
+    with pytest.raises(ValueError, match="finite and positive"):
+        DefaultAioHttpClient(timeout=timeout, trust_env=False)
+    async with DefaultAioHttpClient(trust_env=False) as transport:
+        async with GigaChat(async_http_client=transport, access_token="fixture", trust_env=False) as client:
+            with pytest.raises(ValueError, match="finite and positive"):
+                await client.aget_models(request_options=RequestOptions(timeout=timeout))
+        assert not transport.is_closed
+        # A caller can send a pre-built Request without invoking build_request.
+        extensions = {"timeout": httpx2.Timeout(timeout).as_dict()}
+        with pytest.raises(ValueError, match="finite and positive"):
+            await transport.send(httpx2.Request("GET", "http://example.invalid/", extensions=extensions))
+        assert cast(Any, transport._transport).session is None
+
+
+@pytest.mark.parametrize("timeout", [None, 1, httpx2.Timeout(connect=None, read=1, write=None, pool=None)])
+async def test_aiohttp_accepts_positive_and_disabled_timeouts(timeout: Any) -> None:
+    pytest.importorskip("aiohttp")
+    async with DefaultAioHttpClient(timeout=timeout, trust_env=False) as client:
+        request = client.build_request("GET", "http://example.invalid/", timeout=timeout)
+        assert request.extensions["timeout"]["write"] is None
+
+
+@pytest.mark.parametrize("backend", ["httpx2", "aiohttp"])
+@pytest.mark.parametrize("max_retries", [0, 1])
+@pytest.mark.parametrize("failures", [1, 2])
+async def test_wire_network_retries_follow_sdk_budget(
+    backend: Literal["httpx2", "aiohttp"], max_retries: int, failures: int
+) -> None:
+    if backend == "aiohttp":
+        pytest.importorskip("aiohttp")
+    requests = 0
+
+    async def serve(reader: asyncio.StreamReader, writer: asyncio.StreamWriter) -> None:
+        nonlocal requests
+        try:
+            await reader.readuntil(b"\r\n\r\n")
+            requests += 1
+            if requests > failures:
+                body = json.dumps(MODELS).encode()
+                writer.write(
+                    b"HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: "
+                    + str(len(body)).encode()
+                    + b"\r\nConnection: close\r\n\r\n"
+                    + body
+                )
+                await writer.drain()
+        finally:
+            writer.close()
+            await writer.wait_closed()
+
+    server = await asyncio.start_server(serve, "127.0.0.1", 0)
+    base_url = f"http://127.0.0.1:{server.sockets[0].getsockname()[1]}/v1"
+    try:
+        async with GigaChat(
+            base_url=base_url,
+            access_token="fixture",
+            async_backend=backend,
+            trust_env=False,
+            max_retries=max_retries,
+            retry_backoff_factor=0,
+        ) as client:
+            if max_retries < failures:
+                with pytest.raises(APIConnectionError):
+                    await client.aget_models()
+            else:
+                assert (await client.aget_models()).data
+        assert requests == max_retries + 1
+    finally:
+        server.close()
+        await server.wait_closed()

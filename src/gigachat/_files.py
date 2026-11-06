@@ -9,7 +9,7 @@ from urllib.parse import quote
 from gigachat._execution import request_scope, send_async, send_sync
 from gigachat._request_options import RequestOptions
 from gigachat._response import AsyncStreamingResponse, StreamingResponse
-from gigachat.api.utils import build_headers
+from gigachat.api.utils import _raise_for_status, build_headers
 
 if TYPE_CHECKING:
     from gigachat.client import GigaChatAsyncClient, GigaChatSyncClient
@@ -31,6 +31,11 @@ class SyncFilesMixin:
             url=f"/files/{quote(file_id, safe='')}/content",
             headers={**build_headers(client.token), "Accept": "application/octet-stream"},
         )
+        if response.status_code != 200:
+            try:
+                _raise_for_status(response.url, response.status_code, response.read(), response.headers)
+            finally:
+                response.close()
         return StreamingResponse(response, lambda result: result.content)
 
     def get_file_content(self, file_id: str, *, request_options: RequestOptions | None = None) -> bytes:
@@ -73,6 +78,11 @@ class AsyncFilesMixin:
             url=f"/files/{quote(file_id, safe='')}/content",
             headers={**build_headers(client.token), "Accept": "application/octet-stream"},
         )
+        if response.status_code != 200:
+            try:
+                _raise_for_status(response.url, response.status_code, await response.aread(), response.headers)
+            finally:
+                await response.aclose()
         return AsyncStreamingResponse(response, lambda result: result.content)
 
     async def aget_file_content(self, file_id: str, *, request_options: RequestOptions | None = None) -> bytes:

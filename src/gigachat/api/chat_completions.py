@@ -96,7 +96,7 @@ def stream_sync(
 ) -> Iterator[ChatCompletionChunk]:
     """Return a primary chat completion stream based on the provided messages."""
     kwargs = _get_stream_kwargs(client, chat=chat, access_token=access_token)
-    return execute_event_stream_sync(client, kwargs, ChatCompletionChunk)
+    return execute_event_stream_sync(client, kwargs, ChatCompletionChunk, terminal_event="response.message.done")
 
 
 def stream_async(
@@ -107,7 +107,7 @@ def stream_async(
 ) -> AsyncIterator[ChatCompletionChunk]:
     """Return a primary chat completion stream based on the provided messages."""
     kwargs = _get_stream_kwargs(client, chat=chat, access_token=access_token)
-    return execute_event_stream_async(client, kwargs, ChatCompletionChunk)
+    return execute_event_stream_async(client, kwargs, ChatCompletionChunk, terminal_event="response.message.done")
 
 
 __all__ = [

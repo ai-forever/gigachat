@@ -630,3 +630,174 @@ async def test_primary_async_stream_content_type_failure_is_not_retried() -> Non
             assert body.closed
             assert stream.is_closed
             assert not stream.completed
+
+
+@pytest.mark.parametrize("asynchronous", [False, True])
+@pytest.mark.parametrize("failure", [False, True])
+async def test_primary_terminal_stops_before_tail(asynchronous: bool, failure: bool) -> None:
+    from gigachat.client import GigaChat
+
+    content = (
+        b'event: response.tool.in_progress\ndata: {"message_id":"tool"}\n\n'
+        b'event: response.tool.completed\ndata: {"message_id":"tool"}\n\n'
+        b'event: response.message.done\ndata: {"message_id":"done","finish_reason":"error",'
+        b'"tools_state_id":"state","usage":{"total_tokens":7},'
+        b'"error_details":{"user_message":"Try again"}}\n\n'
+    )
+    body = Bytes(content + b': keepalive\n\ndata: {"message_id":"unexpected"}\n\n', failure=failure)
+    requests: list[httpx.Request] = []
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        requests.append(request)
+        return response(body)
+
+    if asynchronous:
+        async with httpx.AsyncClient(transport=httpx.MockTransport(handler)) as transport:
+            async with GigaChat(
+                async_http_client=transport, access_token="token", model="model", max_retries=3
+            ) as client:
+                stream = client.achat.stream("hello")
+                chunks = [chunk async for chunk in stream]
+    else:
+        with httpx.Client(transport=httpx.MockTransport(handler)) as sync_transport:
+            with GigaChat(http_client=sync_transport, access_token="token", model="model", max_retries=3) as client:
+                sync_stream = client.chat.stream("hello")
+                chunks = list(sync_stream)
+                assert sync_stream.completed
+                assert sync_stream.is_closed
+    if asynchronous:
+        assert stream.completed
+        assert stream.is_closed
+    assert [chunk.event for chunk in chunks] == [
+        "response.tool.in_progress",
+        "response.tool.completed",
+        "response.message.done",
+    ]
+    terminal = chunks[-1]
+    assert terminal.finish_reason == "error"
+    assert terminal.tools_state_id == "state"
+    assert terminal.usage is not None
+    assert terminal.usage.total_tokens == 7
+    assert terminal.error_details is not None
+    assert terminal.error_details["user_message"] == "Try again"
+    assert terminal.x_headers is not None
+    assert terminal.x_headers["x-request-id"] == "test-request"
+    assert len(requests) == 1
+    assert body.closed
+    assert body.reads == len(content)
+
+
+@pytest.mark.parametrize("asynchronous", [False, True])
+async def test_terminal_closes_immediately_after_delivery(asynchronous: bool) -> None:
+    body = Bytes(b'event: response.message.done\ndata: {"finish_reason":"stop"}\n\n', failure=True)
+    if asynchronous:
+        stream = AsyncStream(
+            response(body), ChatCompletionChunk, event_mode=True, terminal_event="response.message.done"
+        )
+        assert (await stream.__anext__()).finish_reason == "stop"
+        assert stream.completed
+        assert stream.is_closed
+        assert [chunk async for chunk in stream] == []
+    else:
+        sync_stream = Stream(
+            response(body), ChatCompletionChunk, event_mode=True, terminal_event="response.message.done"
+        )
+        assert next(sync_stream).finish_reason == "stop"
+        assert sync_stream.completed
+        assert sync_stream.is_closed
+        assert list(sync_stream) == []
+    assert body.closed
+
+
+@pytest.mark.parametrize("asynchronous", [False, True])
+@pytest.mark.parametrize("partial", [False, True])
+@pytest.mark.parametrize("ending", [b"", b"data: [DONE]\n\n", b"event: response.message.done\ndata: {}"])
+async def test_primary_requires_terminal_event(asynchronous: bool, partial: bool, ending: bytes) -> None:
+    from gigachat.client import GigaChat
+
+    body = Bytes((b'event: response.message.delta\ndata: {"message_id":"first"}\n\n' if partial else b"") + ending)
+    requests: list[httpx.Request] = []
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        requests.append(request)
+        return response(body)
+
+    if asynchronous:
+        async with httpx.AsyncClient(transport=httpx.MockTransport(handler)) as transport:
+            async with GigaChat(
+                async_http_client=transport, access_token="token", model="model", max_retries=3
+            ) as client:
+                stream = client.achat.stream("hello")
+                with pytest.raises(StreamInterruptedError, match="before response.message.done") as caught:
+                    _ = [chunk async for chunk in stream]
+                assert not stream.completed
+    else:
+        with httpx.Client(transport=httpx.MockTransport(handler)) as sync_transport:
+            with GigaChat(http_client=sync_transport, access_token="token", model="model", max_retries=3) as client:
+                sync_stream = client.chat.stream("hello")
+                with pytest.raises(StreamInterruptedError, match="before response.message.done") as caught:
+                    list(sync_stream)
+                assert not sync_stream.completed
+    assert caught.value.partial_output is partial
+    assert caught.value.request_id == "test-request"
+    assert len(requests) == 1
+    assert body.closed
+
+
+@pytest.mark.parametrize("asynchronous", [False, True])
+@pytest.mark.parametrize("status", [204, 206, 302])
+@pytest.mark.parametrize("download", [False, True])
+async def test_file_unexpected_status_never_becomes_content(
+    tmp_path: Path, asynchronous: bool, status: int, download: bool
+) -> None:
+    from gigachat.client import GigaChat
+    from gigachat.exceptions import ResponseError
+
+    body = Bytes(b"redirect HTML")
+    target = tmp_path / "download.bin"
+    target.write_bytes(b"original")
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        return httpx.Response(
+            status, stream=body, headers={"location": "https://example.test/other", "x-request-id": "file-request"}
+        )
+
+    if asynchronous:
+        async with httpx.AsyncClient(transport=httpx.MockTransport(handler)) as transport:
+            async with GigaChat(async_http_client=transport, access_token="token") as client:
+                operation = client.adownload_file("file", target) if download else client.aget_file_content("file")
+                with pytest.raises(ResponseError) as caught:
+                    await operation
+    else:
+        with httpx.Client(transport=httpx.MockTransport(handler)) as sync_transport:
+            with GigaChat(http_client=sync_transport, access_token="token") as client:
+                with pytest.raises(ResponseError) as caught:
+                    client.download_file("file", target) if download else client.get_file_content("file")
+    assert caught.value.status_code == status
+    assert caught.value.request_id == "file-request"
+    assert body.closed
+    assert target.read_bytes() == b"original"
+    assert list(tmp_path.iterdir()) == [target]
+
+
+@pytest.mark.parametrize("asynchronous", [False, True])
+async def test_primary_terminal_marks_high_level_complete_on_delivery(asynchronous: bool) -> None:
+    from gigachat.client import GigaChat
+
+    body = Bytes(b'event: response.message.done\ndata: {"finish_reason":"error"}\n\n', failure=True)
+    if asynchronous:
+        async with httpx.AsyncClient(transport=httpx.MockTransport(lambda request: response(body))) as transport:
+            async with GigaChat(async_http_client=transport, access_token="token", model="model") as client:
+                stream = client.achat.stream("hello")
+                assert (await stream.__anext__()).finish_reason == "error"
+                assert stream.completed
+                assert stream.is_closed
+                assert body.closed
+    else:
+        with httpx.Client(transport=httpx.MockTransport(lambda request: response(body))) as sync_transport:
+            with GigaChat(http_client=sync_transport, access_token="token", model="model") as client:
+                sync_stream = client.chat.stream("hello")
+                assert next(sync_stream).finish_reason == "error"
+                assert sync_stream.completed
+                assert sync_stream.is_closed
+                assert body.closed

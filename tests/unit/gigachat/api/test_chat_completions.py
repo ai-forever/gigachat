@@ -34,7 +34,7 @@ async def test_additional_fields_cross_http_boundary(
     payload = ChatCompletionRequest(messages=[], model="explicit-model", additional_fields=extras)
     if streaming:
         httpx_mock.add_response(
-            url=MOCK_URL, content=b'data: {"messages": []}\n\ndata: [DONE]\n\n', headers=HEADERS_STREAM
+            url=MOCK_URL, content=b'event: response.message.done\ndata: {"messages": []}\n\n', headers=HEADERS_STREAM
         )
     else:
         httpx_mock.add_response(url=MOCK_URL, json={"messages": []})

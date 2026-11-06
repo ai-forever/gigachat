@@ -1,5 +1,6 @@
 """HTTPX2 client defaults and the optional aiohttp transport."""
 
+import math
 import ssl
 from typing import Any
 
@@ -9,9 +10,12 @@ from ._tls import build_ssl_context
 
 
 def _aiohttp_timeout(value: Any) -> httpx2.Timeout:
-    if value is None or isinstance(value, (float, int)):
-        return httpx2.Timeout(value, write=None)
-    timeout = httpx2.Timeout(value)
+    timeout = (
+        httpx2.Timeout(value, write=None) if value is None or isinstance(value, (float, int)) else httpx2.Timeout(value)
+    )
+    for name, budget in timeout.as_dict().items():
+        if budget is not None and (not math.isfinite(budget) or budget <= 0):
+            raise ValueError(f"aiohttp {name} timeout must be finite and positive, or None to disable")
     if timeout.write is not None:
         raise ValueError("aiohttp transport does not support a separate write timeout")
     if timeout.connect is not None and timeout.pool is not None and timeout.connect != timeout.pool:
@@ -71,19 +75,13 @@ class DefaultAsyncHttpxClient(httpx2.AsyncClient):
 
 
 class DefaultAioHttpClient(httpx2.AsyncClient):
-    """HTTPX2-compatible async client using aiohttp; sessions are borrowed by default."""
+    """HTTPX2-compatible async client owning its lazy aiohttp sessions."""
 
-    def __init__(self, *, session: Any = None, **kwargs: Any) -> None:
+    def __init__(self, **kwargs: Any) -> None:
         try:
-            import aiohttp
+            __import__("aiohttp")
         except ImportError as exc:
             raise ImportError('Install the aiohttp extra with pip install "gigachat[aiohttp]"') from exc
-        if session is not None:
-            if not isinstance(session, aiohttp.ClientSession):
-                raise TypeError("session must be an aiohttp.ClientSession")
-            from ._vendor.httpx_aiohttp.transport import validate_borrowed_session
-
-            validate_borrowed_session(session)
         if kwargs.get("http2", False) or not kwargs.get("http1", True):
             raise ValueError("aiohttp transport supports HTTP/1.1 only")
         if kwargs.get("cert") is not None:
@@ -98,7 +96,6 @@ class DefaultAioHttpClient(httpx2.AsyncClient):
         if limits.keepalive_expiry is not None and limits.keepalive_expiry < 0:
             raise ValueError("keepalive_expiry must be non-negative")
         kwargs["timeout"] = _aiohttp_timeout(kwargs.get("timeout", 30.0))
-        self._aiohttp_session = session
         super().__init__(**kwargs)
 
     def build_request(self, *args: Any, **kwargs: Any) -> httpx2.Request:
@@ -122,7 +119,7 @@ class DefaultAioHttpClient(httpx2.AsyncClient):
         if limits is None:
             raise ValueError("limits must be configured")
         context = httpx2.create_ssl_context(verify=verify, trust_env=trust_env)
-        return AiohttpTransport(verify=context, limits=limits, session=self._aiohttp_session)
+        return AiohttpTransport(verify=context, limits=limits)
 
     def _init_proxy_transport(
         self,
@@ -142,4 +139,4 @@ class DefaultAioHttpClient(httpx2.AsyncClient):
         if proxy.url.scheme not in ("http", "https"):
             raise ValueError("aiohttp transport supports only HTTP and HTTPS proxies")
         context = httpx2.create_ssl_context(verify=verify, trust_env=trust_env)
-        return AiohttpTransport(verify=context, limits=limits, proxy=proxy, session=self._aiohttp_session)
+        return AiohttpTransport(verify=context, limits=limits, proxy=proxy)

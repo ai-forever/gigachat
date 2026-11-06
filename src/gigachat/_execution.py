@@ -265,7 +265,9 @@ class PreparedRequest:
                 self.kwargs["timeout"] = options.timeout
             if options.extra_body:
                 content = self.kwargs.get("content")
-                if self.kwargs.get("files") or (content is None and "json" not in self.kwargs):
+                content_type = httpx2.Headers(kwargs.get("headers", {})).get("content-type", "")
+                json_body = "json" in self.kwargs or content_type.split(";", 1)[0].strip().lower() == "application/json"
+                if self.kwargs.get("files") or not json_body or (content is None and "json" not in self.kwargs):
                     raise ValueError("extra_body is supported only for JSON endpoints")
                 body = (
                     copy.deepcopy(self.kwargs.get("json")) if "json" in self.kwargs else json.loads(cast(str, content))
@@ -275,8 +277,9 @@ class PreparedRequest:
                 if "stream" in options.extra_body and options.extra_body["stream"] != body.get("stream", False):
                     raise ValueError("extra_body.stream conflicts with the selected request method")
                 body.update(options.extra_body)
-                self.kwargs.pop("json", None)
-                self.kwargs["content"] = json.dumps(body, ensure_ascii=False)
+                self.kwargs.update(
+                    {"json": body} if "json" in self.kwargs else {"content": json.dumps(body, ensure_ascii=False)}
+                )
         self.replay = BodyReplay(self.kwargs)
         self.safe = self._safe_operation()
 

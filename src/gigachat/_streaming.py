@@ -15,32 +15,42 @@ DEFAULT_MAX_EVENT_SIZE = 1024 * 1024
 
 
 class _SyncEOFStream(httpx.SyncByteStream):
-    def __init__(self, response: httpx.Response) -> None:
+    def __init__(self, response: httpx.Response, *, flush_eof: bool) -> None:
         self.response = response
+        self.flush_eof = flush_eof
 
     def __iter__(self) -> Iterator[bytes]:
         yield from self.response.iter_bytes()
         # Preserve the legacy EOF flush, but never flush after a transport failure.
-        yield b"\n\n"
+        if self.flush_eof:
+            yield b"\n\n"
 
 
 class _AsyncEOFStream(httpx.AsyncByteStream):
-    def __init__(self, response: httpx.Response) -> None:
+    def __init__(self, response: httpx.Response, *, flush_eof: bool) -> None:
         self.response = response
+        self.flush_eof = flush_eof
 
     async def __aiter__(self) -> AsyncIterator[bytes]:
         async for chunk in self.response.aiter_bytes():
             yield chunk
-        yield b"\n\n"
+        if self.flush_eof:
+            yield b"\n\n"
 
 
-def _source(response: httpx.Response, max_event_size: int | None, *, asynchronous: bool) -> httpx.EventSource:
+def _source(
+    response: httpx.Response, max_event_size: int | None, *, asynchronous: bool, flush_eof: bool
+) -> httpx.EventSource:
     # Bytes have already been decompressed by the original response. Do not copy
     # Content-Encoding/Length, or the adapter would decode the stream twice.
     adapter = httpx.Response(
         response.status_code,
         headers={"content-type": response.headers.get("content-type", "")},
-        stream=_AsyncEOFStream(response) if asynchronous else _SyncEOFStream(response),
+        stream=(
+            _AsyncEOFStream(response, flush_eof=flush_eof)
+            if asynchronous
+            else _SyncEOFStream(response, flush_eof=flush_eof)
+        ),
         request=response.request,
     )
     return httpx.EventSource(adapter, max_event_size=max_event_size)
@@ -93,6 +103,8 @@ class _StreamMetadata:
 
     def _record(self, chunk: BaseModel) -> None:
         self._yielded = True
+        if self.response is not None and self.response.extensions.get("gigachat.stream_completed"):
+            self.completed = True
         if self.response is None:
             self._headers.update(
                 {key: value for key, value in (getattr(chunk, "x_headers", None) or {}).items() if value}
@@ -112,11 +124,12 @@ class Stream(_StreamMetadata, Iterator[T], Generic[T]):
         model_class: type[T],
         *,
         event_mode: bool = False,
+        terminal_event: str | None = None,
         max_event_size: int | None = DEFAULT_MAX_EVENT_SIZE,
     ) -> None:
         super().__init__(response)
         self._decodes_response = True
-        self._iterator = self._events(response, model_class, event_mode, max_event_size)
+        self._iterator = self._events(response, model_class, event_mode, max_event_size, terminal_event)
 
     @classmethod
     def from_iterator(
@@ -131,14 +144,31 @@ class Stream(_StreamMetadata, Iterator[T], Generic[T]):
         return stream
 
     def _events(
-        self, response: httpx.Response, model_class: type[T], event_mode: bool, max_event_size: int | None
+        self,
+        response: httpx.Response,
+        model_class: type[T],
+        event_mode: bool,
+        max_event_size: int | None,
+        terminal_event: str | None,
     ) -> Iterator[T]:
-        for event in _source(response, max_event_size, asynchronous=False):
+        for event in _source(response, max_event_size, asynchronous=False, flush_eof=terminal_event is None):
             if event.data.strip() == "[DONE]":
-                return
+                if terminal_event is None:
+                    return
+                break
             if not event.data.strip():
                 continue
-            yield _parse_event(event, model_class, event_mode, response)
+            chunk = _parse_event(event, model_class, event_mode, response)
+            if terminal_event is not None and getattr(chunk, "event", event.event) == terminal_event:
+                self.completed = True
+                response.extensions["gigachat.stream_completed"] = True
+                yield chunk
+                return
+            yield chunk
+        if terminal_event is not None:
+            raise StreamInterruptedError(
+                f"Stream ended before {terminal_event}", request_id=self.request_id, partial_output=self._yielded
+            )
 
     def __iter__(self) -> "Stream[T]":
         return self
@@ -164,6 +194,8 @@ class Stream(_StreamMetadata, Iterator[T], Generic[T]):
             self.close()
             raise
         self._record(chunk)
+        if self.completed:
+            self.close()
         return chunk
 
     def close(self) -> None:
@@ -197,11 +229,12 @@ class AsyncStream(_StreamMetadata, AsyncIterator[T], Generic[T]):
         model_class: type[T],
         *,
         event_mode: bool = False,
+        terminal_event: str | None = None,
         max_event_size: int | None = DEFAULT_MAX_EVENT_SIZE,
     ) -> None:
         super().__init__(response)
         self._decodes_response = True
-        self._iterator = self._events(response, model_class, event_mode, max_event_size)
+        self._iterator = self._events(response, model_class, event_mode, max_event_size, terminal_event)
 
     @classmethod
     def from_iterator(
@@ -216,14 +249,31 @@ class AsyncStream(_StreamMetadata, AsyncIterator[T], Generic[T]):
         return stream
 
     async def _events(
-        self, response: httpx.Response, model_class: type[T], event_mode: bool, max_event_size: int | None
+        self,
+        response: httpx.Response,
+        model_class: type[T],
+        event_mode: bool,
+        max_event_size: int | None,
+        terminal_event: str | None,
     ) -> AsyncIterator[T]:
-        async for event in _source(response, max_event_size, asynchronous=True):
+        async for event in _source(response, max_event_size, asynchronous=True, flush_eof=terminal_event is None):
             if event.data.strip() == "[DONE]":
-                return
+                if terminal_event is None:
+                    return
+                break
             if not event.data.strip():
                 continue
-            yield _parse_event(event, model_class, event_mode, response)
+            chunk = _parse_event(event, model_class, event_mode, response)
+            if terminal_event is not None and getattr(chunk, "event", event.event) == terminal_event:
+                self.completed = True
+                response.extensions["gigachat.stream_completed"] = True
+                yield chunk
+                return
+            yield chunk
+        if terminal_event is not None:
+            raise StreamInterruptedError(
+                f"Stream ended before {terminal_event}", request_id=self.request_id, partial_output=self._yielded
+            )
 
     def __aiter__(self) -> "AsyncStream[T]":
         return self
@@ -249,6 +299,8 @@ class AsyncStream(_StreamMetadata, AsyncIterator[T], Generic[T]):
             await self.aclose()
             raise
         self._record(chunk)
+        if self.completed:
+            await self.aclose()
         return chunk
 
     async def aclose(self) -> None:
