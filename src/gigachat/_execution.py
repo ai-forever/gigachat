@@ -294,7 +294,10 @@ class PreparedRequest:
             from gigachat.models.chat_completions import ChatCompletionRequest
 
             body = self.kwargs.get("json") or json.loads(self.kwargs.get("content") or "{}")
-            if any(body.get(k) for k in ("storage", "assistant_id", "thread_id", "run_id")):
+            storage = body.get("storage")
+            if isinstance(storage, dict) or storage is True:
+                return False
+            if any(body.get(k) for k in ("assistant_id", "thread_id", "run_id")):
                 return False
             known = {
                 field.alias or name

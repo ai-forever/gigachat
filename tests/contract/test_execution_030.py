@@ -16,8 +16,8 @@ from tests.constants import CHAT_COMPLETION_STREAM, MODELS, OAUTH_TOKEN_VALID
 from gigachat import GigaChat
 from gigachat._request_options import RequestOptions
 from gigachat.context import custom_headers_cvar
-from gigachat.exceptions import AuthenticationError, ResponseError, ServerError
-from gigachat.models import ChatCompletionRequest
+from gigachat.exceptions import APIConnectionError, AuthenticationError, ResponseError, ServerError
+from gigachat.models import ChatCompletionRequest, ChatStorage
 from gigachat.retry import _should_retry
 
 PRIMARY_CHAT_COMPLETION: dict[str, Any] = {"messages": []}
@@ -820,6 +820,110 @@ class _FirstChunkBody(httpx2.SyncByteStream, httpx2.AsyncByteStream):
 
     async def aclose(self) -> None:
         self.closed = True
+
+
+@pytest.mark.parametrize("asynchronous", [False, True])
+@pytest.mark.parametrize("failure", ["status", "read", "stream"])
+@pytest.mark.parametrize(
+    ("storage", "attempts"),
+    [(True, 1), ({}, 1), (ChatStorage(), 1), ({"limit": 10}, 1), (False, 2), (None, 2), ("omitted", 2)],
+    ids=["true", "empty-dict", "empty-model", "nonempty", "false", "none", "omitted"],
+)
+async def test_normalized_chat_storage_controls_ambiguous_retries(
+    asynchronous: bool, failure: str, storage: Any, attempts: int, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    seen: list[httpx2.Request] = []
+    bodies: list[_FirstChunkBody] = []
+    values: dict[str, Any] = {"model": "model", "messages": []}
+    if storage != "omitted":
+        values["storage"] = storage
+    payload = ChatCompletionRequest.model_validate(values)
+
+    def handler(request: httpx2.Request) -> httpx2.Response:
+        seen.append(request)
+        if failure == "status":
+            return httpx2.Response(503)
+        body = _FirstChunkBody(True)
+        bodies.append(body)
+        return httpx2.Response(200, stream=body, headers={"content-type": "text/event-stream"})
+
+    async def no_sleep(delay: float) -> None:
+        pass
+
+    monkeypatch.setattr("gigachat._execution.time.sleep", lambda delay: None)
+    monkeypatch.setattr("gigachat._execution.asyncio.sleep", no_sleep)
+    transport = httpx2.MockTransport(handler)
+    expected = ServerError if failure == "status" else APIConnectionError
+    if asynchronous:
+        async with httpx2.AsyncClient(transport=transport) as http:
+            async with GigaChat(base_url=BASE, async_http_client=http, max_retries=1) as sdk:
+                if failure == "stream":
+                    with pytest.raises(expected):
+                        _ = [chunk async for chunk in sdk.achat.stream(payload)]
+                else:
+                    with pytest.raises(expected):
+                        await sdk.achat.create(payload)
+    else:
+        with httpx2.Client(transport=transport) as sync_http:
+            with GigaChat(base_url=BASE, http_client=sync_http, max_retries=1) as sdk:
+                if failure == "stream":
+                    with pytest.raises(expected):
+                        list(sdk.chat.stream(payload))
+                else:
+                    with pytest.raises(expected):
+                        sdk.chat.create(payload)
+    assert len(seen) == attempts
+    assert all(body.closed for body in bodies)
+    if attempts == 1:
+        assert json.loads(seen[0].content)["storage"] == ({"limit": 10} if storage == {"limit": 10} else {})
+    else:
+        assert "storage" not in json.loads(seen[0].content)
+
+
+@pytest.mark.parametrize("asynchronous", [False, True])
+@pytest.mark.parametrize("failure", ["auth", "connect"])
+async def test_stored_chat_preserves_auth_and_presend_replay(
+    asynchronous: bool, failure: str, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    seen: list[httpx2.Request] = []
+    auth: list[httpx2.Request] = []
+
+    def handler(request: httpx2.Request) -> httpx2.Response:
+        if request.url.host == "auth.test":
+            auth.append(request)
+            return httpx2.Response(200, json=OAUTH_TOKEN_VALID)
+        seen.append(request)
+        if len(seen) == 1:
+            if failure == "auth":
+                return httpx2.Response(401)
+            raise httpx2.ConnectError("connection not established")
+        return httpx2.Response(200, json=PRIMARY_CHAT_COMPLETION)
+
+    async def no_sleep(delay: float) -> None:
+        pass
+
+    monkeypatch.setattr("gigachat._execution.time.sleep", lambda delay: None)
+    monkeypatch.setattr("gigachat._execution.asyncio.sleep", no_sleep)
+    transport = httpx2.MockTransport(handler)
+    options: dict[str, Any] = {
+        "base_url": BASE,
+        "auth_url": AUTH,
+        "access_token": "old",
+        "credentials": "dummy",
+        "max_retries": 1,
+    }
+    payload = ChatCompletionRequest(model="model", messages=[], storage=True)
+    if asynchronous:
+        async with httpx2.AsyncClient(transport=transport) as http:
+            async with GigaChat(async_http_client=http, auth_async_http_client=http, **options) as sdk:
+                await sdk.achat.create(payload)
+    else:
+        with httpx2.Client(transport=transport) as sync_http:
+            with GigaChat(http_client=sync_http, auth_http_client=sync_http, **options) as sdk:
+                sdk.chat.create(payload)
+    assert len(seen) == 2
+    assert len(auth) == (1 if failure == "auth" else 0)
+    assert all(json.loads(request.content)["storage"] == {} for request in seen)
 
 
 @pytest.mark.parametrize("asynchronous", [False, True])
