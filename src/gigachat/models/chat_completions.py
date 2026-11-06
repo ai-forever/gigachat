@@ -173,6 +173,7 @@ class ChatReasoning(_ChatCompletionsModel):
 class ChatModelOptions(_ChatCompletionsModel):
     """Model generation options."""
 
+    unnormalized_history: bool | None = None
     parallel_tool_calls: bool | None = Field(default=None, description="Allow parallel function calls.")
     temperature: float | None = Field(default=None, description="Sampling temperature.")
     top_p: float | None = Field(default=None, description="Nucleus sampling parameter.")
@@ -256,6 +257,8 @@ class ChatStorage(_ChatCompletionsModel):
 class ChatRankerOptions(_ChatCompletionsModel):
     """Tool or function ranking settings."""
 
+    mode: str | None = None
+    ignored_functions: list[str] | None = None
     enabled: bool | None = Field(default=None, description="Whether ranking is enabled.")
     top_n: int | None = Field(default=None, description="Number of ranked tools to keep.")
     embeddings_model: str | None = Field(default=None, description="Embeddings model alias.")
@@ -303,25 +306,9 @@ class ChatFunctionSpecification(_ChatCompletionsModel):
             if values.get("name") in (None, "") and values.get("title"):
                 values["name"] = values.pop("title", None)
 
-            if values.get("parameters") in (None, "", {}) and "properties" in values:
-                parameter_keys = (
-                    "type",
-                    "properties",
-                    "required",
-                    "additionalProperties",
-                    "$defs",
-                    "definitions",
-                    "dependentRequired",
-                    "dependentSchemas",
-                    "patternProperties",
-                    "propertyNames",
-                    "minProperties",
-                    "maxProperties",
-                )
-                parameters = {}
-                for key in parameter_keys:
-                    if key in values:
-                        parameters[key] = values.pop(key)
+            if "parameters" not in values and "properties" in values:
+                metadata = {"name", "description", "few_shot_examples", "return_parameters"}
+                parameters = {key: values.pop(key) for key in list(values) if key not in metadata}
                 parameters.setdefault("type", "object")
                 values["parameters"] = parameters
 
@@ -404,6 +391,7 @@ class ChatCompletionRequest(_ChatCompletionsModel):
     messages: list[ChatMessage] = Field(description="Chat messages.")
     assistant_id: str | None = Field(default=None, description="Assistant identifier.")
     tools_state_id: str | None = Field(default=None, description="Tool execution state identifier.")
+    ranker_options: ChatRankerOptions | None = None
     model_options: ChatModelOptions | None = Field(default=None, description="Model generation options.")
     additional_fields: dict[str, Any] | None = Field(
         default=None, description="Additional fields to merge into the API request body."

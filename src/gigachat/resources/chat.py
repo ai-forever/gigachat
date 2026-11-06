@@ -29,7 +29,7 @@ class RawChatNamespace:
     def create(
         self, payload: PrimaryPayload, *, request_options: RequestOptions | None = None
     ) -> RawResponse[ChatCompletionResponse]:
-        from gigachat.client import _parse_chat_completion
+        from gigachat._serialization import _parse_chat_completion
 
         client = self._base_client
         chat = _parse_chat_completion(payload, client._settings)
@@ -49,7 +49,7 @@ class AsyncRawChatNamespace:
     async def create(
         self, payload: PrimaryPayload, *, request_options: RequestOptions | None = None
     ) -> RawResponse[ChatCompletionResponse]:
-        from gigachat.client import _parse_chat_completion
+        from gigachat._serialization import _parse_chat_completion
 
         client = self._base_client
         chat = _parse_chat_completion(payload, client._settings)

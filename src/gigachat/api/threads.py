@@ -15,6 +15,7 @@ from gigachat.api.utils import (
 from gigachat.exceptions import AuthenticationError, ResponseError
 from gigachat.models.chat import Messages
 from gigachat.models.threads import (
+    SharedThread,
     Thread,
     ThreadCompletion,
     ThreadCompletionChunk,
@@ -405,6 +406,7 @@ def _add_thread_messages_kwargs(
     model: str | None = None,
     thread_id: str | None = None,
     assistant_id: str | None = None,
+    metadata: dict[str, Any] | None = None,
     access_token: str | None = None,
 ) -> dict[str, Any]:
     headers = build_headers(access_token)
@@ -414,6 +416,7 @@ def _add_thread_messages_kwargs(
         "method": "POST",
         "url": "/threads/messages",
         "json": {
+            **({"metadata": metadata} if metadata is not None else {}),
             "thread_id": thread_id,
             "model": model,
             "assistant_id": assistant_id,
@@ -430,6 +433,7 @@ def add_thread_messages_sync(
     model: str | None = None,
     thread_id: str | None = None,
     assistant_id: str | None = None,
+    metadata: dict[str, Any] | None = None,
     access_token: str | None = None,
 ) -> ThreadMessagesResponse:
     """Add messages to thread."""
@@ -438,6 +442,7 @@ def add_thread_messages_sync(
         model=model,
         thread_id=thread_id,
         assistant_id=assistant_id,
+        metadata=metadata,
         access_token=access_token,
     )
     return execute_request_sync(client, kwargs, ThreadMessagesResponse)
@@ -450,6 +455,7 @@ async def add_thread_messages_async(
     model: str | None = None,
     thread_id: str | None = None,
     assistant_id: str | None = None,
+    metadata: dict[str, Any] | None = None,
     access_token: str | None = None,
 ) -> ThreadMessagesResponse:
     """Add messages to thread."""
@@ -458,6 +464,7 @@ async def add_thread_messages_async(
         model=model,
         thread_id=thread_id,
         assistant_id=assistant_id,
+        metadata=metadata,
         access_token=access_token,
     )
     return await execute_request_async(client, kwargs, ThreadMessagesResponse)
@@ -470,6 +477,8 @@ def _run_thread_messages_kwargs(
     assistant_id: str | None = None,
     model: str | None = None,
     thread_options: ThreadRunOptions | None = None,
+    metadata: dict[str, Any] | None = None,
+    update_interval: float | None = None,
     access_token: str | None = None,
 ) -> dict[str, Any]:
     headers = build_headers(access_token)
@@ -483,6 +492,8 @@ def _run_thread_messages_kwargs(
         "url": "/threads/messages/run",
         "headers": headers,
         "json": {
+            **({"update_interval": update_interval} if update_interval is not None else {}),
+            **({"metadata": metadata} if metadata is not None else {}),
             **thread_options_dict,
             **{
                 "thread_id": thread_id,
@@ -502,6 +513,8 @@ def run_thread_messages_sync(
     assistant_id: str | None = None,
     model: str | None = None,
     thread_options: ThreadRunOptions | None = None,
+    metadata: dict[str, Any] | None = None,
+    update_interval: float | None = None,
     access_token: str | None = None,
 ) -> ThreadCompletion:
     """Add messages and run thread."""
@@ -511,6 +524,8 @@ def run_thread_messages_sync(
         assistant_id=assistant_id,
         model=model,
         thread_options=thread_options,
+        metadata=metadata,
+        update_interval=update_interval,
         access_token=access_token,
     )
     return execute_request_sync(client, kwargs, ThreadCompletion)
@@ -524,6 +539,8 @@ async def run_thread_messages_async(
     assistant_id: str | None = None,
     model: str | None = None,
     thread_options: ThreadRunOptions | None = None,
+    metadata: dict[str, Any] | None = None,
+    update_interval: float | None = None,
     access_token: str | None = None,
 ) -> ThreadCompletion:
     """Add messages and run thread."""
@@ -533,6 +550,8 @@ async def run_thread_messages_async(
         assistant_id=assistant_id,
         model=model,
         thread_options=thread_options,
+        metadata=metadata,
+        update_interval=update_interval,
         access_token=access_token,
     )
     return await execute_request_async(client, kwargs, ThreadCompletion)
@@ -542,6 +561,7 @@ def _rerun_thread_messages_kwargs(
     *,
     thread_id: str,
     thread_options: ThreadRunOptions | None = None,
+    update_interval: float | None = None,
     access_token: str | None = None,
 ) -> dict[str, Any]:
     headers = build_headers(access_token)
@@ -553,6 +573,7 @@ def _rerun_thread_messages_kwargs(
         "url": "/threads/messages/rerun",
         "headers": headers,
         "json": {
+            **({"update_interval": update_interval} if update_interval is not None else {}),
             **thread_options_dict,
             **{
                 "thread_id": thread_id,
@@ -566,12 +587,14 @@ def rerun_thread_messages_sync(
     *,
     thread_id: str,
     thread_options: ThreadRunOptions | None = None,
+    update_interval: float | None = None,
     access_token: str | None = None,
 ) -> ThreadCompletion:
     """Rerun thread messages."""
     kwargs = _rerun_thread_messages_kwargs(
         thread_id=thread_id,
         thread_options=thread_options,
+        update_interval=update_interval,
         access_token=access_token,
     )
     return execute_request_sync(client, kwargs, ThreadCompletion)
@@ -582,12 +605,14 @@ async def rerun_thread_messages_async(
     *,
     thread_id: str,
     thread_options: ThreadRunOptions | None = None,
+    update_interval: float | None = None,
     access_token: str | None = None,
 ) -> ThreadCompletion:
     """Rerun thread messages."""
     kwargs = _rerun_thread_messages_kwargs(
         thread_id=thread_id,
         thread_options=thread_options,
+        update_interval=update_interval,
         access_token=access_token,
     )
     return await execute_request_async(client, kwargs, ThreadCompletion)
@@ -600,7 +625,8 @@ def _run_thread_messages_stream_kwargs(
     assistant_id: str | None = None,
     model: str | None = None,
     thread_options: ThreadRunOptions | None = None,
-    update_interval: int | None = None,
+    update_interval: float | None = None,
+    metadata: dict[str, Any] | None = None,
     access_token: str | None = None,
 ) -> dict[str, Any]:
     headers = build_headers(access_token)
@@ -614,6 +640,7 @@ def _run_thread_messages_stream_kwargs(
         "url": "/threads/messages/run",
         "headers": headers,
         "json": {
+            **({"metadata": metadata} if metadata is not None else {}),
             **thread_options_dict,
             **{
                 "thread_id": thread_id,
@@ -635,7 +662,8 @@ def run_thread_messages_stream_sync(
     assistant_id: str | None = None,
     model: str | None = None,
     thread_options: ThreadRunOptions | None = None,
-    update_interval: int | None = None,
+    update_interval: float | None = None,
+    metadata: dict[str, Any] | None = None,
     access_token: str | None = None,
 ) -> Iterator[ThreadCompletionChunk]:
     """Add messages and run thread with streaming."""
@@ -646,6 +674,7 @@ def run_thread_messages_stream_sync(
         model=model,
         thread_options=thread_options,
         update_interval=update_interval,
+        metadata=metadata,
         access_token=access_token,
     )
     return execute_stream_sync(client, kwargs, ThreadCompletionChunk)
@@ -659,7 +688,8 @@ def run_thread_messages_stream_async(
     assistant_id: str | None = None,
     model: str | None = None,
     thread_options: ThreadRunOptions | None = None,
-    update_interval: int | None = None,
+    update_interval: float | None = None,
+    metadata: dict[str, Any] | None = None,
     access_token: str | None = None,
 ) -> AsyncIterator[ThreadCompletionChunk]:
     """Add messages and run thread with streaming."""
@@ -670,6 +700,7 @@ def run_thread_messages_stream_async(
         model=model,
         thread_options=thread_options,
         update_interval=update_interval,
+        metadata=metadata,
         access_token=access_token,
     )
     return execute_stream_async(client, kwargs, ThreadCompletionChunk)
@@ -679,7 +710,7 @@ def _rerun_thread_messages_stream_kwargs(
     *,
     thread_id: str,
     thread_options: ThreadRunOptions | None = None,
-    update_interval: int | None = None,
+    update_interval: float | None = None,
     access_token: str | None = None,
 ) -> dict[str, Any]:
     headers = build_headers(access_token)
@@ -706,7 +737,7 @@ def rerun_thread_messages_stream_sync(
     *,
     thread_id: str,
     thread_options: ThreadRunOptions | None = None,
-    update_interval: int | None = None,
+    update_interval: float | None = None,
     access_token: str | None = None,
 ) -> Iterator[ThreadCompletionChunk]:
     """Rerun thread messages with streaming."""
@@ -724,7 +755,7 @@ def rerun_thread_messages_stream_async(
     *,
     thread_id: str,
     thread_options: ThreadRunOptions | None = None,
-    update_interval: int | None = None,
+    update_interval: float | None = None,
     access_token: str | None = None,
 ) -> AsyncIterator[ThreadCompletionChunk]:
     """Rerun thread messages with streaming."""
@@ -735,3 +766,27 @@ def rerun_thread_messages_stream_async(
         access_token=access_token,
     )
     return execute_stream_async(client, kwargs, ThreadCompletionChunk)
+
+
+def share_thread_sync(client: httpx.Client, *, thread_id: str, access_token: str | None = None) -> SharedThread:
+    """Create a read-only shared copy of a thread."""
+    kwargs = {
+        "method": "POST",
+        "url": "/threads/share",
+        "headers": build_headers(access_token),
+        "json": {"thread_id": thread_id},
+    }
+    return execute_request_sync(client, kwargs, SharedThread)
+
+
+async def share_thread_async(
+    client: httpx.AsyncClient, *, thread_id: str, access_token: str | None = None
+) -> SharedThread:
+    """Create a read-only shared copy of a thread."""
+    kwargs = {
+        "method": "POST",
+        "url": "/threads/share",
+        "headers": build_headers(access_token),
+        "json": {"thread_id": thread_id},
+    }
+    return await execute_request_async(client, kwargs, SharedThread)

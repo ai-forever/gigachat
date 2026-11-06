@@ -595,10 +595,10 @@ def test_chat_completion_request_exposes_common_contract_fields() -> None:
 def test_advanced_controls_remain_extra_fields() -> None:
     from gigachat.models.chat_completions import ChatModelOptions, ChatTool
 
-    advanced = {"memory_id", "function_registry", "filter_config", "ranker_options"}
+    advanced = {"memory_id", "function_registry", "filter_config"}
     assert advanced.isdisjoint(ChatCompletionRequest.model_fields)
     assert {"memory", "web_search"}.isdisjoint(ChatTool.model_fields)
-    assert {"preset", "top_logprobs", "unnormalized_history"}.isdisjoint(ChatModelOptions.model_fields)
+    assert {"preset", "top_logprobs"}.isdisjoint(ChatModelOptions.model_fields)
     request = ChatCompletionRequest.model_validate(
         {
             "messages": [],

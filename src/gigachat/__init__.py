@@ -25,6 +25,8 @@ from gigachat.exceptions import (
     UnprocessableEntityError,
 )
 from gigachat.models import (
+    Batch,
+    Batches,
     Chat,
     ChatCompletion,
     ChatCompletionChunk,
@@ -33,15 +35,27 @@ from gigachat.models import (
     Function,
     FunctionCall,
     FunctionParameters,
+    FunctionValidationResult,
+    GeneratedContent,
     Image,
     Messages,
     MessagesRole,
     Model,
     Models,
+    RankedFunctions,
+    RerankResponse,
+    SharedThread,
     Usage,
 )
 
 __all__ = [
+    "Batch",
+    "Batches",
+    "FunctionValidationResult",
+    "GeneratedContent",
+    "RankedFunctions",
+    "RerankResponse",
+    "SharedThread",
     "RequestOptions",
     "DefaultHttpxClient",
     "DefaultAsyncHttpxClient",

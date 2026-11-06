@@ -7,12 +7,8 @@ import warnings
 import pytest
 from pydantic import BaseModel, ValidationError
 
-from gigachat.client import (
-    GigaChatAsyncClient,
-    GigaChatSyncClient,
-    _parse_completion,
-    _prepare_chat_for_parse,
-)
+from gigachat._serialization import _parse_completion, _prepare_chat_for_parse
+from gigachat.client import GigaChatAsyncClient, GigaChatSyncClient
 from gigachat.context import chat_completions_url_cvar, chat_url_cvar
 from gigachat.exceptions import LengthFinishReasonError
 from gigachat.models import Chat, ChatCompletion, Messages, MessagesRole

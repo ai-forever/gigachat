@@ -158,12 +158,18 @@ class ChatFunctionCall(BaseModel):
 class FunctionRanker(BaseModel):
     """Function/tool ranking settings."""
 
+    mode: str | None = None
+
     enabled: bool | None = Field(default=None, description="Enable function ranking.")
     top_n: int | None = Field(default=None, description="Number of ranked functions to pass to the model.")
 
 
 class Messages(BaseModel):
     """Message in a chat conversation."""
+
+    model: str | None = None
+    notasearch_sources: Any = None
+    additional_data: Any = None
 
     role: MessagesRole = Field(description="Role of the message author.")
     content: str = Field(default="", description="Text content of the message.")
@@ -233,6 +239,7 @@ class Chat(BaseModel):
     storage: Storage | None = Field(default=None, description="Context storage settings.")
     function_ranker: FunctionRanker | None = Field(default=None, description="Function/tool ranking settings.")
     response_format: ResponseFormat | None = Field(default=None, description="Response format (e.g. JSON Schema).")
+    unnormalized_history: bool | None = None
     additional_fields: dict[str, Any] | None = Field(default=None, description="Additional fields to pass to the API.")
     reasoning_effort: str | None = Field(default=None, description="Reasoning effort level.")
 

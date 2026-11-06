@@ -200,3 +200,29 @@ async def get_image_async(
     kwargs = _get_image_kwargs(access_token=access_token, file_id=file_id)
     response = await request_async(client, **kwargs)
     return _build_image_response(response)
+
+
+def update_file_access_sync(
+    client: httpx.Client, *, file_ids: list[str], access_policy: str, access_token: str | None = None
+) -> UploadedFiles:
+    """Update the access policy of uploaded files."""
+    kwargs = {
+        "method": "POST",
+        "url": "/files/access",
+        "headers": build_headers(access_token),
+        "json": {"file_ids": file_ids, "access_policy": access_policy},
+    }
+    return execute_request_sync(client, kwargs, UploadedFiles)
+
+
+async def update_file_access_async(
+    client: httpx.AsyncClient, *, file_ids: list[str], access_policy: str, access_token: str | None = None
+) -> UploadedFiles:
+    """Update the access policy of uploaded files."""
+    kwargs = {
+        "method": "POST",
+        "url": "/files/access",
+        "headers": build_headers(access_token),
+        "json": {"file_ids": file_ids, "access_policy": access_policy},
+    }
+    return await execute_request_async(client, kwargs, UploadedFiles)

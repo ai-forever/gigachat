@@ -15,6 +15,7 @@ from gigachat.models.chat import (
     MessagesRole,
 )
 from gigachat.models.threads import (
+    SharedThread,
     ThreadCompletion,
     ThreadCompletionChunk,
     ThreadMessages,
@@ -108,7 +109,12 @@ class ThreadsSyncClient:
 
     @request_scope
     def add_message(
-        self, thread_id: str, message: Messages | str | dict[str, Any], *, request_options: RequestOptions | None = None
+        self,
+        thread_id: str,
+        message: Messages | str | dict[str, Any],
+        *,
+        metadata: dict[str, Any] | None = None,
+        request_options: RequestOptions | None = None,
     ) -> ThreadMessagesResponse:
         """Add a message to a thread."""
         message_ = _parse_message(message)
@@ -116,6 +122,7 @@ class ThreadsSyncClient:
             self._base_client._client,
             thread_id=thread_id,
             messages=[message_],
+            metadata=metadata,
             access_token=self._base_client.token,
         )
 
@@ -125,6 +132,7 @@ class ThreadsSyncClient:
         thread_id: str | None = None,
         messages: builtins.list[Messages | str | dict[str, Any]] | None = None,
         *,
+        metadata: dict[str, Any] | None = None,
         request_options: RequestOptions | None = None,
     ) -> ThreadMessagesResponse:
         """Add multiple messages to a thread."""
@@ -135,6 +143,7 @@ class ThreadsSyncClient:
             self._base_client._client,
             thread_id=thread_id,
             messages=messages_,
+            metadata=metadata,
             access_token=self._base_client.token,
         )
 
@@ -200,6 +209,8 @@ class ThreadsSyncClient:
         model: str | None = None,
         thread_options: ThreadRunOptions | None = None,
         *,
+        metadata: dict[str, Any] | None = None,
+        update_interval: float | None = None,
         request_options: RequestOptions | None = None,
     ) -> ThreadCompletion:
         """Run messages."""
@@ -211,6 +222,8 @@ class ThreadsSyncClient:
             assistant_id=assistant_id,
             model=model,
             thread_options=thread_options,
+            metadata=metadata,
+            update_interval=update_interval,
             access_token=self._base_client.token,
         )
 
@@ -220,6 +233,7 @@ class ThreadsSyncClient:
         thread_id: str,
         thread_options: ThreadRunOptions | None = None,
         *,
+        update_interval: float | None = None,
         request_options: RequestOptions | None = None,
     ) -> ThreadCompletion:
         """Regenerate messages."""
@@ -227,6 +241,7 @@ class ThreadsSyncClient:
             self._base_client._client,
             thread_id=thread_id,
             thread_options=thread_options,
+            update_interval=update_interval,
             access_token=self._base_client.token,
         )
 
@@ -238,8 +253,9 @@ class ThreadsSyncClient:
         assistant_id: str | None = None,
         model: str | None = None,
         thread_options: ThreadRunOptions | None = None,
-        update_interval: int | None = None,
+        update_interval: float | None = None,
         *,
+        metadata: dict[str, Any] | None = None,
         request_options: RequestOptions | None = None,
     ) -> Iterator[ThreadCompletionChunk]:
         """Run messages with streaming response."""
@@ -252,6 +268,7 @@ class ThreadsSyncClient:
             model=model,
             thread_options=thread_options,
             update_interval=update_interval,
+            metadata=metadata,
             access_token=self._base_client.token,
         )
 
@@ -260,7 +277,7 @@ class ThreadsSyncClient:
         self,
         thread_id: str,
         thread_options: ThreadRunOptions | None = None,
-        update_interval: int | None = None,
+        update_interval: float | None = None,
         *,
         request_options: RequestOptions | None = None,
     ) -> Iterator[ThreadCompletionChunk]:
@@ -271,6 +288,13 @@ class ThreadsSyncClient:
             thread_options=thread_options,
             update_interval=update_interval,
             access_token=self._base_client.token,
+        )
+
+    @request_scope
+    def share(self, thread_id: str, *, request_options: RequestOptions | None = None) -> SharedThread:
+        """Create a read-only shared copy of a thread."""
+        return threads.share_thread_sync(
+            self._base_client._client, thread_id=thread_id, access_token=self._base_client.token
         )
 
 
@@ -353,7 +377,12 @@ class ThreadsAsyncClient:
 
     @request_scope
     async def add_message(
-        self, thread_id: str, message: Messages | str | dict[str, Any], *, request_options: RequestOptions | None = None
+        self,
+        thread_id: str,
+        message: Messages | str | dict[str, Any],
+        *,
+        metadata: dict[str, Any] | None = None,
+        request_options: RequestOptions | None = None,
     ) -> ThreadMessagesResponse:
         """Add a message to a thread."""
         message_ = _parse_message(message)
@@ -362,6 +391,7 @@ class ThreadsAsyncClient:
             self._base_client._aclient,
             thread_id=thread_id,
             messages=[message_],
+            metadata=metadata,
             access_token=self._base_client.token,
         )
 
@@ -371,6 +401,7 @@ class ThreadsAsyncClient:
         thread_id: str | None = None,
         messages: builtins.list[Messages | str | dict[str, Any]] | None = None,
         *,
+        metadata: dict[str, Any] | None = None,
         request_options: RequestOptions | None = None,
     ) -> ThreadMessagesResponse:
         """Add multiple messages to a thread."""
@@ -382,6 +413,7 @@ class ThreadsAsyncClient:
             self._base_client._aclient,
             thread_id=thread_id,
             messages=messages_,
+            metadata=metadata,
             access_token=self._base_client.token,
         )
 
@@ -453,6 +485,8 @@ class ThreadsAsyncClient:
         model: str | None = None,
         thread_options: ThreadRunOptions | None = None,
         *,
+        metadata: dict[str, Any] | None = None,
+        update_interval: float | None = None,
         request_options: RequestOptions | None = None,
     ) -> ThreadCompletion:
         """Run messages."""
@@ -465,6 +499,8 @@ class ThreadsAsyncClient:
             assistant_id=assistant_id,
             model=model,
             thread_options=thread_options,
+            metadata=metadata,
+            update_interval=update_interval,
             access_token=self._base_client.token,
         )
 
@@ -474,6 +510,7 @@ class ThreadsAsyncClient:
         thread_id: str,
         thread_options: ThreadRunOptions | None = None,
         *,
+        update_interval: float | None = None,
         request_options: RequestOptions | None = None,
     ) -> ThreadCompletion:
         """Regenerate messages."""
@@ -482,6 +519,7 @@ class ThreadsAsyncClient:
             self._base_client._aclient,
             thread_id=thread_id,
             thread_options=thread_options,
+            update_interval=update_interval,
             access_token=self._base_client.token,
         )
 
@@ -493,8 +531,9 @@ class ThreadsAsyncClient:
         assistant_id: str | None = None,
         model: str | None = None,
         thread_options: ThreadRunOptions | None = None,
-        update_interval: int | None = None,
+        update_interval: float | None = None,
         *,
+        metadata: dict[str, Any] | None = None,
         request_options: RequestOptions | None = None,
     ) -> AsyncIterator[ThreadCompletionChunk]:
         """Run messages with streaming response."""
@@ -508,6 +547,7 @@ class ThreadsAsyncClient:
             model=model,
             thread_options=thread_options,
             update_interval=update_interval,
+            metadata=metadata,
             access_token=self._base_client.token,
         )
         try:
@@ -521,7 +561,7 @@ class ThreadsAsyncClient:
         self,
         thread_id: str,
         thread_options: ThreadRunOptions | None = None,
-        update_interval: int | None = None,
+        update_interval: float | None = None,
         *,
         request_options: RequestOptions | None = None,
     ) -> AsyncIterator[ThreadCompletionChunk]:
@@ -539,3 +579,10 @@ class ThreadsAsyncClient:
                 yield chunk
         finally:
             await cast(Any, iterator).aclose()
+
+    @request_scope
+    async def share(self, thread_id: str, *, request_options: RequestOptions | None = None) -> SharedThread:
+        """Create a read-only shared copy of a thread."""
+        return await threads.share_thread_async(
+            self._base_client._aclient, thread_id=thread_id, access_token=self._base_client.token
+        )

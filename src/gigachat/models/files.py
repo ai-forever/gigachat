@@ -12,6 +12,7 @@ class UploadedFile(APIResponse):
     created_at: int = Field(description="Creation timestamp (Unix time).")
     filename: str = Field(description="Name of the file.")
     purpose: str = Field(description="Intended purpose of the file.")
+    modalities: list[str] | None = None
     access_policy: str | None = Field(default=None, description="Access policy.")
 
 

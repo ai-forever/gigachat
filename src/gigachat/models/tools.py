@@ -1,6 +1,6 @@
-from typing import Literal
+from typing import Any, Literal
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 
 from gigachat.models.base import APIResponse
 from gigachat.models.chat import Function
@@ -42,3 +42,69 @@ class OpenApiFunctions(APIResponse):
     """Functions converted from OpenAPI."""
 
     functions: list[Function] = Field(description="List of converted functions.")
+
+
+class FunctionValidationIssue(BaseModel):
+    """Describe a server-side function validation issue."""
+
+    model_config = ConfigDict(extra="allow")
+    description: str
+    schema_location: str | None = None
+    path: str | list[Any] | None = None
+    line: int | None = None
+
+
+class FunctionValidationResult(APIResponse):
+    """Return validation findings, including unsuccessful HTTP 200 results."""
+
+    model_config = ConfigDict(extra="allow")
+    status: str
+    message: str
+    json_ai_rules_version: str | None = None
+    openapi_ai_rules_version: str | None = None
+    errors: list[FunctionValidationIssue] | None = None
+    warnings: list[FunctionValidationIssue] | None = None
+
+
+class GeneratedContent(APIResponse):
+    """Generated function or instruction text."""
+
+    finish_reason: str
+    content: str
+
+
+class RankedFunction(BaseModel):
+    """Function selected by the embedder ranker."""
+
+    name: str
+
+
+class RankedFunctions(APIResponse):
+    """Ranked function names."""
+
+    functions: list[RankedFunction]
+
+
+class DocumentRanking(BaseModel):
+    """One document's position and optional score or text."""
+
+    doc_index: int
+    score: float | None = None
+    document: str | None = None
+
+
+class RerankItem(BaseModel):
+    """Ranking for one query and document set."""
+
+    object_: str = Field(alias="object")
+    index: int
+    usage: dict[str, int]
+    ranking: list[DocumentRanking]
+
+
+class RerankResponse(APIResponse):
+    """Document reranking response."""
+
+    object_: str = Field(alias="object")
+    model: str
+    data: list[RerankItem]

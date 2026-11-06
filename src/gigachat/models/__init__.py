@@ -9,6 +9,7 @@ from gigachat.models.assistants import (
 )
 from gigachat.models.auth import AccessToken, Token
 from gigachat.models.base import APIResponse
+from gigachat.models.batches import Batch, Batches, BatchRequestCounts
 from gigachat.models.chat import (
     Chat,
     ChatCompletion,
@@ -63,11 +64,12 @@ from gigachat.models.chat_completions import (
 from gigachat.models.chat_completions import (
     ChatFunctionCall as PrimaryChatFunctionCall,
 )
-from gigachat.models.embeddings import Embedding, Embeddings, EmbeddingsUsage
+from gigachat.models.embeddings import Embedding, EmbeddingError, Embeddings, EmbeddingsUsage
 from gigachat.models.files import DeletedFile, Image, UploadedFile, UploadedFiles
 from gigachat.models.models import Model, Models
 from gigachat.models.response_format import JsonSchemaResponseFormat, ResponseFormat
 from gigachat.models.threads import (
+    SharedThread,
     Thread,
     ThreadCompletion,
     ThreadCompletionChunk,
@@ -82,9 +84,35 @@ from gigachat.models.threads import (
     Threads,
     ThreadStatus,
 )
-from gigachat.models.tools import AICheckResult, Balance, OpenApiFunctions, TokensCount
+from gigachat.models.tools import (
+    AICheckResult,
+    Balance,
+    DocumentRanking,
+    FunctionValidationIssue,
+    FunctionValidationResult,
+    GeneratedContent,
+    OpenApiFunctions,
+    RankedFunction,
+    RankedFunctions,
+    RerankItem,
+    RerankResponse,
+    TokensCount,
+)
 
 __all__ = (
+    "Batch",
+    "Batches",
+    "BatchRequestCounts",
+    "EmbeddingError",
+    "SharedThread",
+    "FunctionValidationIssue",
+    "FunctionValidationResult",
+    "GeneratedContent",
+    "RankedFunction",
+    "RankedFunctions",
+    "DocumentRanking",
+    "RerankItem",
+    "RerankResponse",
     "AccessToken",
     "AICheckResult",
     "Assistant",

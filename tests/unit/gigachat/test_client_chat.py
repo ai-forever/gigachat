@@ -6,13 +6,9 @@ from typing import Any, cast
 import pytest
 from pydantic import BaseModel, ValidationError
 
+from gigachat._serialization import _parse_chat, _parse_chat_completion
 from gigachat.api import chat, chat_completions
-from gigachat.client import (
-    GigaChatAsyncClient,
-    GigaChatSyncClient,
-    _parse_chat,
-    _parse_chat_completion,
-)
+from gigachat.client import GigaChatAsyncClient, GigaChatSyncClient
 from gigachat.context import chat_completions_url_cvar, chat_url_cvar
 from gigachat.exceptions import AuthenticationError, LengthFinishReasonError, ModelNotSpecifiedError
 from gigachat.models import (
