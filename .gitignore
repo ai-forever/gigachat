@@ -140,7 +140,7 @@ venv.bak/
 # mkdocs documentation
 /site
 
-# mypy
+# Legacy type-checker caches
 .mypy_cache/
 .dmypy.json
 dmypy.json

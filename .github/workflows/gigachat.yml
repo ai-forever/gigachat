@@ -26,7 +26,7 @@ jobs:
       - name: Lint
         run: uv run ruff check src tests examples
       - name: Type Check
-        run: uv run mypy src tests
+        run: uv run ty check src tests
 
   test:
     name: Test on Python ${{ matrix.python-version }}
@@ -110,9 +110,15 @@ jobs:
       - run: uv build
       - name: Build wheel from source distribution
         run: uv build --wheel dist/*.tar.gz --out-dir dist/from-sdist
-      - name: Import base wheel without optional or legacy transports
-        run: >-
-          uv run --isolated --no-project --python ${{ matrix.python-version }} --with dist/*.whl python -c
-          "import importlib.util; import gigachat;
-          assert importlib.util.find_spec('httpx') is None;
-          assert importlib.util.find_spec('aiohttp') is None"
+      - name: Check installed wheel outside the checkout
+        shell: bash
+        run: |
+          wheel=("$GITHUB_WORKSPACE"/dist/from-sdist/*.whl)
+          smoke_dir=$(mktemp -d)
+          cp tests/package_smoke.py "$smoke_dir/package_smoke.py"
+          cd "$smoke_dir"
+          uv venv --python ${{ matrix.python-version }} .venv
+          uv pip install --python .venv/bin/python "${wheel[0]}"
+          .venv/bin/python package_smoke.py
+          uv pip install --python .venv/bin/python "${wheel[0]}[aiohttp]"
+          .venv/bin/python package_smoke.py --aiohttp

@@ -27,7 +27,6 @@ clean:
 	rm -f `find . -type f -name '*~'`
 	rm -rf .pytest_cache
 	rm -rf .ruff_cache
-	rm -rf .mypy_cache
 	rm -rf htmlcov
 	rm -f .coverage
 	rm -f .coverage.*
@@ -45,9 +44,9 @@ lint:
 	uv run ruff check src tests examples
 	uv run ruff format --check src tests examples
 
-.PHONY: mypy  ## Perform type-checking
-mypy:
-	uv run mypy src tests
+.PHONY: ty  ## Perform type-checking
+ty:
+	uv run ty check src tests
 
 .PHONY: test  ## Run tests and generate a coverage report
 test:
@@ -66,7 +65,7 @@ htmlcov:
 	uv run pytest -v --cov=src --cov-report=html
 
 .PHONY: all  ## Run the standard set of checks performed in CI
-all: lint mypy test
+all: lint ty test
 
 .PHONY: lock  ## Update lockfile
 lock:
