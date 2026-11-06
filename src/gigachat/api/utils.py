@@ -36,6 +36,7 @@ from gigachat.exceptions import (
     ServerError,
     UnprocessableEntityError,
 )
+from gigachat.models.base import APIResponse
 
 logger = logging.getLogger(__name__)
 
@@ -48,7 +49,7 @@ _VERSION_SUFFIX = re.compile(r"/v\d+$")
 
 
 def _base_url(client: httpx.Client | httpx.AsyncClient) -> str:
-    from gigachat._execution import current_request
+    from gigachat._core.execution import current_request
 
     state = current_request.get()
     return str(state.owner._settings.base_url if state is not None else client.base_url)
@@ -206,7 +207,10 @@ def build_response(response: httpx.Response, model_class: type[T]) -> T:
         payload = response.json()
         if isinstance(payload, dict):
             payload = {**payload, "x_headers": build_x_headers(response)}
-        return model_class.model_validate(payload)
+        result = model_class.model_validate(payload)
+        if isinstance(result, APIResponse):
+            result.x_headers = build_x_headers(response)
+        return result
     except (ValidationError, json.JSONDecodeError) as exc:
         raise APIResponseValidationError(
             "Invalid API response", request_id=response.headers.get("x-request-id")
@@ -215,7 +219,7 @@ def build_response(response: httpx.Response, model_class: type[T]) -> T:
 
 def execute_request_sync(client: httpx.Client, kwargs: dict[str, Any], model_class: type[T]) -> T:
     """Execute sync request and parse response."""
-    from gigachat._execution import request_sync
+    from gigachat._core.execution import request_sync
 
     response = request_sync(client, **kwargs)
     return build_response(response, model_class)
@@ -223,16 +227,16 @@ def execute_request_sync(client: httpx.Client, kwargs: dict[str, Any], model_cla
 
 async def execute_request_async(client: httpx.AsyncClient, kwargs: dict[str, Any], model_class: type[T]) -> T:
     """Execute async request and parse response."""
-    from gigachat._execution import request_async
+    from gigachat._core.execution import request_async
 
     response = await request_async(client, **kwargs)
     return build_response(response, model_class)
 
 
 def _max_event_size() -> int:
-    from gigachat._execution import current_request
-    from gigachat._request_options import NotGiven
-    from gigachat._streaming import DEFAULT_MAX_EVENT_SIZE
+    from gigachat._core.execution import current_request
+    from gigachat._core.request import NotGiven
+    from gigachat._core.streaming import DEFAULT_MAX_EVENT_SIZE
 
     state = current_request.get()
     if state is None:
@@ -245,8 +249,8 @@ def _max_event_size() -> int:
 
 def execute_stream_sync(client: httpx.Client, kwargs: dict[str, Any], model_class: type[T]) -> Iterator[T]:
     """Execute a streaming request and close its response on every exit."""
-    from gigachat._execution import stream_sync
-    from gigachat._streaming import Stream
+    from gigachat._core.execution import stream_sync
+    from gigachat._core.streaming import Stream
 
     with stream_sync(client, **kwargs) as response:
         _check_response(response)
@@ -258,8 +262,8 @@ async def execute_stream_async(
     client: httpx.AsyncClient, kwargs: dict[str, Any], model_class: type[T]
 ) -> AsyncIterator[T]:
     """Execute an asynchronous streaming request with explicit response ownership."""
-    from gigachat._execution import stream_async
-    from gigachat._streaming import AsyncStream
+    from gigachat._core.execution import stream_async
+    from gigachat._core.streaming import AsyncStream
 
     async with stream_async(client, **kwargs) as response:
         await _acheck_response(response)
@@ -272,8 +276,8 @@ def execute_event_stream_sync(
     client: httpx.Client, kwargs: dict[str, Any], model_class: type[T], *, terminal_event: str | None = None
 ) -> Iterator[T]:
     """Execute an SSE request and yield parsed named or unnamed events."""
-    from gigachat._execution import stream_sync
-    from gigachat._streaming import Stream
+    from gigachat._core.execution import stream_sync
+    from gigachat._core.streaming import Stream
 
     with stream_sync(client, **kwargs) as response:
         _check_response(response)
@@ -287,8 +291,8 @@ async def execute_event_stream_async(
     client: httpx.AsyncClient, kwargs: dict[str, Any], model_class: type[T], *, terminal_event: str | None = None
 ) -> AsyncIterator[T]:
     """Execute an asynchronous SSE request and yield parsed events."""
-    from gigachat._execution import stream_async
-    from gigachat._streaming import AsyncStream
+    from gigachat._core.execution import stream_async
+    from gigachat._core.streaming import AsyncStream
 
     async with stream_async(client, **kwargs) as response:
         await _acheck_response(response)

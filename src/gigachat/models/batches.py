@@ -1,4 +1,6 @@
-from pydantic import BaseModel, ConfigDict, Field
+from typing import Any
+
+from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 from gigachat.models.base import APIResponse
 
@@ -28,3 +30,10 @@ class Batches(APIResponse):
     """Batch query response."""
 
     batches: list[Batch]
+
+    @model_validator(mode="before")
+    @classmethod
+    def _normalize_list(cls, value: Any) -> Any:
+        if isinstance(value, list):
+            return {"batches": value}
+        return value

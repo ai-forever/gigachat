@@ -317,3 +317,27 @@ async def test_thread_stream_early_close_releases_response(
             assert next(stream).choices[0].delta.content == "hello"
     assert raw.closed
     assert len(requests) == 1
+
+
+@pytest.mark.parametrize("asynchronous", [False, True])
+async def test_thread_stream_usage_arrives_only_with_final_chunk(
+    wire: tuple[GigaChat, list[httpx2.Request], list[httpx2.Response]], asynchronous: bool
+) -> None:
+    client, requests, responses = wire
+    first = {key: value for key, value in CHUNK.items() if key != "usage"}
+    final = {**CHUNK, "choices": [{"delta": {"content": ""}, "index": 0, "finish_reason": "stop"}]}
+    response = httpx2.Response(
+        200,
+        headers={"Content-Type": "text/event-stream", "X-Request-ID": "thread-stream"},
+        content=(f"data: {json.dumps(first)}\n\ndata: {json.dumps(final)}\n\ndata: [DONE]\n\n").encode(),
+    )
+    responses.append(response)
+    chunks = await invoke(client, asynchronous, "run_messages_stream", thread_id="thread", messages=["hello"])
+    assert len(chunks) == 2
+    assert chunks[0].usage is None
+    assert chunks[0].choices[0].delta.content == "hello"
+    assert chunks[1].usage.total_tokens == 2
+    assert chunks[1].choices[0].finish_reason == "stop"
+    assert all(chunk.request_id == "thread-stream" for chunk in chunks)
+    assert len(requests) == 1
+    assert response.is_closed

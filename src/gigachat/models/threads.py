@@ -73,7 +73,7 @@ class ThreadCompletionChunk(APIResponse):
     thread_id: str = Field(description="Thread ID.")
     message_id: str = Field(description="Message ID.")
     created: int = Field(description="Creation timestamp (Unix time).")
-    usage: Usage = Field(description="Usage statistics.")
+    usage: Usage | None = Field(default=None, description="Usage statistics, usually sent in the final chunk.")
     choices: list[ChoicesChunk] = Field(description="List of completion choice chunks.")
 
 

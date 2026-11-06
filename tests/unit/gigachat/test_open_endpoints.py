@@ -351,3 +351,19 @@ async def test_invalid_endpoint_response_has_metadata(mode: str) -> None:
                 await invoke(sdk, mode, "get_batches", {})
             assert caught.value.request_id == "invalid-id"
             assert caught.value.__cause__ is not None
+
+
+@pytest.mark.parametrize("mode", ["sync", "async"])
+@pytest.mark.parametrize("payload", [[], [BATCH], {"batches": []}, {"batches": [BATCH]}])
+async def test_batch_list_response_shapes(mode: str, payload: Any) -> None:
+    def handler(request: httpx2.Request) -> httpx2.Response:
+        return httpx2.Response(200, json=payload, headers={"x-request-id": "batch-list"})
+
+    with httpx2.Client(transport=httpx2.MockTransport(handler)) as sync:
+        async with httpx2.AsyncClient(transport=httpx2.MockTransport(handler)) as asynchronous:
+            async with GigaChat(http_client=sync, async_http_client=asynchronous, access_token="token") as sdk:
+                result = await invoke(sdk, mode, "get_batches", {})
+    expected = payload if isinstance(payload, list) else payload["batches"]
+    assert len(result.batches) == len(expected)
+    assert [batch.id_ for batch in result.batches] == [batch["id"] for batch in expected]
+    assert result.request_id == "batch-list"
