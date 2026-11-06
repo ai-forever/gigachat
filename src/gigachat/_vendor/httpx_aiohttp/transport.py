@@ -68,7 +68,9 @@ class AiohttpTransport(httpx2.AsyncBaseTransport):
             connector = aiohttp.TCPConnector(
                 limit=self.limits.max_connections or 0, keepalive_timeout=self.limits.keepalive_expiry, ssl=self.verify
             )
-            self.session = aiohttp.ClientSession(connector=connector, auto_decompress=False, trust_env=False)
+            self.session = aiohttp.ClientSession(
+                connector=connector, cookie_jar=aiohttp.DummyCookieJar(), auto_decompress=False, trust_env=False
+            )
             # aiohttp has no public switch for its implicit idempotent retry.
             # The SDK executor alone controls the network retry budget.
             self.session._retry_connection = False

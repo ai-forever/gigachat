@@ -332,3 +332,55 @@ async def test_wire_network_retries_follow_sdk_budget(
     finally:
         server.close()
         await server.wait_closed()
+
+
+@pytest.mark.parametrize("backend", ["httpx2", "aiohttp"])
+async def test_wire_cookie_retry_snapshot_and_public_clear(backend: str) -> None:
+    if backend == "aiohttp":
+        pytest.importorskip("aiohttp")
+    seen: list[str | None] = []
+
+    async def serve(reader: asyncio.StreamReader, writer: asyncio.StreamWriter) -> None:
+        try:
+            raw = await reader.readuntil(b"\r\n\r\n")
+            headers = httpx2.Headers(
+                [
+                    (key, value.strip())
+                    for line in raw.split(b"\r\n")[1:]
+                    if b":" in line
+                    for key, value in [line.split(b":", 1)]
+                ]
+            )
+            seen.append(headers.get("cookie"))
+            body = json.dumps(MODELS).encode()
+            status = b"503 Service Unavailable" if len(seen) == 1 else b"200 OK"
+            cookie = b"Set-Cookie: server=late; Path=/\r\n" if len(seen) == 1 else b""
+            writer.write(
+                b"HTTP/1.1 "
+                + status
+                + b"\r\n"
+                + cookie
+                + b"Content-Type: application/json\r\nContent-Length: "
+                + str(len(body)).encode()
+                + b"\r\nConnection: close\r\n\r\n"
+                + body
+            )
+            await writer.drain()
+        finally:
+            writer.close()
+            await writer.wait_closed()
+
+    server = await asyncio.start_server(serve, "127.0.0.1", 0)
+    base_url = f"http://localhost:{server.sockets[0].getsockname()[1]}/v1"
+    cls = DefaultAioHttpClient if backend == "aiohttp" else DefaultAsyncHttpxClient
+    try:
+        async with cls(cookies={"session": "initial"}, trust_env=False) as http:
+            async with GigaChat(base_url=base_url, async_http_client=http, max_retries=1) as client:
+                await client.aget_models()
+                assert http.cookies.get("server") == "late"
+                http.cookies.clear()
+                await client.aget_models()
+        assert seen == ["session=initial", "session=initial", None]
+    finally:
+        server.close()
+        await server.wait_closed()
