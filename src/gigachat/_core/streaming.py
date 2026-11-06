@@ -3,7 +3,7 @@
 import json
 from collections.abc import AsyncIterator, Callable, Iterator
 from types import TracebackType
-from typing import Generic, TypeVar
+from typing import Any, Generic, TypeVar, cast
 
 import httpx2 as httpx
 from pydantic import BaseModel, ValidationError
@@ -62,7 +62,9 @@ def _parse_event(event: httpx.ServerSentEvent, model_class: type[T], event_mode:
         payload.setdefault("event", event.event)
     chunk = model_class.model_validate(payload)
     if hasattr(chunk, "x_headers"):
-        chunk.x_headers = {name: response.headers.get(name) for name in ("x-request-id", "x-session-id", "x-client-id")}
+        cast(Any, chunk).x_headers = {
+            name: response.headers.get(name) for name in ("x-request-id", "x-session-id", "x-client-id")
+        }
     return chunk
 
 

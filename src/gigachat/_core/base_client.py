@@ -11,8 +11,9 @@ from typing import Any, Literal
 import httpx2 as httpx
 from typing_extensions import Self
 
-from gigachat._http_client import DefaultAioHttpClient
-from gigachat._request_options import RequestOptions
+from gigachat._core.http_client import DefaultAioHttpClient
+from gigachat._core.request import RequestOptions
+from gigachat.exceptions import ModelNotSpecifiedError
 from gigachat.models.auth import AccessToken
 from gigachat.settings import Settings
 
@@ -196,3 +197,13 @@ class _BaseClient:
         for name in ("chat", "achat", "assistants", "threads", "a_assistants", "a_threads"):
             view.__dict__.pop(name, None)
         return view
+
+    def _resolve_model(self, model: str | None) -> str:
+        """Return the request or configured model, or raise if neither is set."""
+        if model is not None and model.strip():
+            return model
+
+        if self._settings.model is not None and self._settings.model.strip():
+            return self._settings.model
+
+        raise ModelNotSpecifiedError()

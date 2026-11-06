@@ -4,12 +4,11 @@ import os
 import tempfile
 from pathlib import Path
 from typing import TYPE_CHECKING, cast
-from urllib.parse import quote
 
-from gigachat._execution import request_scope, send_async, send_sync
-from gigachat._request_options import RequestOptions
-from gigachat._response import AsyncStreamingResponse, StreamingResponse
-from gigachat.api.utils import _raise_for_status, build_headers
+from gigachat._core.execution import request_scope
+from gigachat._core.request import RequestOptions
+from gigachat._core.response import AsyncStreamingResponse, StreamingResponse
+from gigachat.api import files
 
 if TYPE_CHECKING:
     from gigachat.client import GigaChatAsyncClient, GigaChatSyncClient
@@ -24,17 +23,7 @@ class SyncFilesMixin:
     ) -> StreamingResponse[bytes]:
         """Open a file byte stream; use with to guarantee response cleanup."""
         client = cast("GigaChatSyncClient", self)
-        response = send_sync(
-            client._client,
-            stream=True,
-            method="GET",
-            url=f"/files/{quote(file_id, safe='')}/content",
-            headers={**build_headers(client.token), "Accept": "application/octet-stream"},
-        )
-        wrapped = StreamingResponse(response, lambda result: result.content)
-        if response.status_code != 200:
-            _raise_for_status(response.url, response.status_code, wrapped.read(), response.headers)
-        return wrapped
+        return files.stream_file_content_sync(client._client, file_id=file_id, access_token=client.token)
 
     def get_file_content(self, file_id: str, *, request_options: RequestOptions | None = None) -> bytes:
         """Read a complete binary file into memory without base64 conversion."""
@@ -69,17 +58,7 @@ class AsyncFilesMixin:
     ) -> AsyncStreamingResponse[bytes]:
         """Open an async file byte stream; use async with after awaiting it."""
         client = cast("GigaChatAsyncClient", self)
-        response = await send_async(
-            client._aclient,
-            stream=True,
-            method="GET",
-            url=f"/files/{quote(file_id, safe='')}/content",
-            headers={**build_headers(client.token), "Accept": "application/octet-stream"},
-        )
-        wrapped = AsyncStreamingResponse(response, lambda result: result.content)
-        if response.status_code != 200:
-            _raise_for_status(response.url, response.status_code, await wrapped.read(), response.headers)
-        return wrapped
+        return await files.stream_file_content_async(client._aclient, file_id=file_id, access_token=client.token)
 
     async def aget_file_content(self, file_id: str, *, request_options: RequestOptions | None = None) -> bytes:
         """Read a complete binary file into memory without base64 conversion."""

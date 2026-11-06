@@ -110,7 +110,8 @@ def test_get_threads_run(httpx_mock: HTTPXMock) -> None:
         response = client.threads.get_run(thread_id="111")
 
     assert isinstance(response, ThreadRunResult)
-    assert len(response.messages) == 2  # type: ignore
+    assert response.messages is not None
+    assert len(response.messages) == 2
 
 
 async def test_aget_threads_run(httpx_mock: HTTPXMock) -> None:
@@ -119,7 +120,8 @@ async def test_aget_threads_run(httpx_mock: HTTPXMock) -> None:
         response = await client.a_threads.get_run(thread_id="111")
 
     assert isinstance(response, ThreadRunResult)
-    assert len(response.messages) == 2  # type: ignore
+    assert response.messages is not None
+    assert len(response.messages) == 2
 
 
 def test_post_thread_messages_rerun(httpx_mock: HTTPXMock) -> None:

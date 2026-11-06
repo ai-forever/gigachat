@@ -4,7 +4,7 @@ from typing import Any
 
 import httpx2 as httpx
 
-from gigachat._execution import request_async, request_sync
+from gigachat._core.execution import request_async, request_sync
 from gigachat.api.utils import (
     build_headers,
     execute_request_async,
@@ -770,12 +770,7 @@ def rerun_thread_messages_stream_async(
 
 def share_thread_sync(client: httpx.Client, *, thread_id: str, access_token: str | None = None) -> SharedThread:
     """Create a read-only shared copy of a thread."""
-    kwargs = {
-        "method": "POST",
-        "url": "/threads/share",
-        "headers": build_headers(access_token),
-        "json": {"thread_id": thread_id},
-    }
+    kwargs = _get_share_thread_kwargs(thread_id=thread_id, access_token=access_token)
     return execute_request_sync(client, kwargs, SharedThread)
 
 
@@ -783,10 +778,14 @@ async def share_thread_async(
     client: httpx.AsyncClient, *, thread_id: str, access_token: str | None = None
 ) -> SharedThread:
     """Create a read-only shared copy of a thread."""
-    kwargs = {
+    kwargs = _get_share_thread_kwargs(thread_id=thread_id, access_token=access_token)
+    return await execute_request_async(client, kwargs, SharedThread)
+
+
+def _get_share_thread_kwargs(*, thread_id: str, access_token: str | None) -> dict[str, Any]:
+    return {
         "method": "POST",
         "url": "/threads/share",
         "headers": build_headers(access_token),
         "json": {"thread_id": thread_id},
     }
-    return await execute_request_async(client, kwargs, SharedThread)

@@ -3,17 +3,17 @@
 import asyncio
 import contextlib
 import ssl
-from collections.abc import AsyncIterator, Iterator
+from collections.abc import AsyncIterator, Generator
 from typing import Any
 
 import aiohttp
 import httpx2
 
-from gigachat._http_client import _aiohttp_timeout
+from gigachat._core.request import _aiohttp_timeout
 
 
 @contextlib.contextmanager
-def map_aiohttp_exceptions() -> Iterator[None]:
+def map_aiohttp_exceptions() -> Generator[None, None, None]:
     """Translate only aiohttp transport failures to HTTPX2 errors."""
     try:
         yield

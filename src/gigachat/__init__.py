@@ -1,9 +1,9 @@
 import logging
 
-from gigachat._http_client import DefaultAioHttpClient, DefaultAsyncHttpxClient, DefaultHttpxClient
-from gigachat._request_options import RequestOptions
-from gigachat._response import AsyncStreamingResponse, RawResponse, StreamingResponse
-from gigachat._streaming import AsyncStream, Stream
+from gigachat._core.http_client import DefaultAioHttpClient, DefaultAsyncHttpxClient, DefaultHttpxClient
+from gigachat._core.request import RequestOptions
+from gigachat._core.response import AsyncStreamingResponse, RawResponse, StreamingResponse
+from gigachat._core.streaming import AsyncStream, Stream
 from gigachat.client import GigaChat, GigaChatAsyncClient, GigaChatSyncClient
 from gigachat.context import custom_headers_cvar, request_id_cvar, session_id_cvar
 from gigachat.exceptions import (

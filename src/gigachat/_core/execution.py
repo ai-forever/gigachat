@@ -8,8 +8,9 @@ import functools
 import inspect
 import json
 import random
+import ssl
 import time
-from collections.abc import AsyncIterator, Callable, Iterator
+from collections.abc import AsyncGenerator, AsyncIterator, Callable, Generator, Iterator
 from contextlib import asynccontextmanager, contextmanager
 from contextvars import ContextVar
 from dataclasses import dataclass
@@ -18,9 +19,9 @@ from typing import Any, ParamSpec, TypeVar, cast, overload
 import httpx2
 from pydantic import BaseModel
 
-from gigachat._request_options import NotGiven, RequestOptions
-from gigachat._serialization import BodyReplay
-from gigachat._streaming import AsyncStream, Stream
+from gigachat._core.request import BodyReplay, NotGiven, RequestOptions, build_headers
+from gigachat._core.response import _raise_for_status
+from gigachat._core.streaming import AsyncStream, Stream
 from gigachat.exceptions import APIConnectionError, APITimeoutError, ResponseError
 
 F = TypeVar("F", bound=Callable[..., Any])
@@ -42,8 +43,6 @@ current_request: ContextVar[RequestState | None] = ContextVar("gigachat_request"
 
 
 def _state(instance: Any, options: RequestOptions | None) -> RequestState:
-    from gigachat.api.utils import build_headers
-
     client = getattr(instance, "_base_client", instance)
     client._ensure_open()
     owner = getattr(client, "_owner", client)
@@ -70,7 +69,7 @@ def _stream_retry(state: RequestState, error: Exception, yielded: bool) -> float
 def _sync_stream_scope(func: F) -> F:
     @functools.wraps(func)
     def wrapped(self: Any, *args: Any, **kwargs: Any) -> Any:
-        from gigachat._streaming import Stream
+        from gigachat._core.streaming import Stream
 
         options = kwargs.pop("request_options", None)
         state: RequestState | None = None
@@ -111,7 +110,7 @@ def _sync_stream_scope(func: F) -> F:
 def _async_stream_scope(func: F) -> F:
     @functools.wraps(func)
     def wrapped(self: Any, *args: Any, **kwargs: Any) -> Any:
-        from gigachat._streaming import AsyncStream
+        from gigachat._core.streaming import AsyncStream
 
         options = kwargs.pop("request_options", None)
         state: RequestState | None = None
@@ -344,8 +343,6 @@ class PreparedRequest:
         )
 
     def retry_delay(self, error: Exception) -> float | None:
-        from gigachat.retry import _should_retry
-
         if self.retry_count >= self.max_retries or not self.replay.replayable or not _should_retry(error, self.codes):
             return None
         if not self.safe and not isinstance(error, httpx2.ConnectError):
@@ -390,8 +387,6 @@ def _network_error(error: Exception) -> None:
 
 def _status(response: httpx2.Response) -> None:
     if response.status_code >= 400:
-        from gigachat.api.utils import _raise_for_status
-
         _raise_for_status(response.url, response.status_code, response.content, response.headers)
 
 
@@ -424,7 +419,7 @@ async def _arefresh(prepared: PreparedRequest, *, invalidate: bool = False) -> N
 
 
 @contextmanager
-def _sending(state: RequestState | None) -> Iterator[None]:
+def _sending(state: RequestState | None) -> Generator[None, None, None]:
     if state:
         state.in_send = True
     try:
@@ -509,7 +504,7 @@ async def request_async(client: httpx2.AsyncClient, **kwargs: Any) -> httpx2.Res
 
 
 @contextmanager
-def stream_sync(client: httpx2.Client, **kwargs: Any) -> Iterator[httpx2.Response]:
+def stream_sync(client: httpx2.Client, **kwargs: Any) -> Generator[httpx2.Response, None, None]:
     response = send_sync(client, stream=True, **kwargs)
     try:
         yield response
@@ -518,9 +513,44 @@ def stream_sync(client: httpx2.Client, **kwargs: Any) -> Iterator[httpx2.Respons
 
 
 @asynccontextmanager
-async def stream_async(client: httpx2.AsyncClient, **kwargs: Any) -> AsyncIterator[httpx2.Response]:
+async def stream_async(client: httpx2.AsyncClient, **kwargs: Any) -> AsyncGenerator[httpx2.Response, None]:
     response = await send_async(client, stream=True, **kwargs)
     try:
         yield response
     finally:
         await response.aclose()
+
+
+def _certificate_failure(exception: BaseException) -> bool:
+    seen: set[int] = set()
+    pending = [exception]
+    while pending:
+        current = pending.pop()
+        if id(current) in seen:
+            continue
+        seen.add(id(current))
+        if isinstance(current, ssl.SSLCertVerificationError) or "CERTIFICATE_VERIFY_FAILED" in str(current):
+            return True
+        pending.extend(error for error in (current.__cause__, current.__context__) if error is not None)
+    return False
+
+
+def _should_retry(exception: Exception, retry_codes: tuple[int, ...]) -> bool:
+    """Retry explicit statuses and transient network failures before response delivery."""
+    if isinstance(exception, ResponseError):
+        return exception.status_code in retry_codes
+    if _certificate_failure(exception):
+        return False
+    return isinstance(
+        exception,
+        (
+            httpx2.ConnectError,
+            httpx2.ReadError,
+            httpx2.WriteError,
+            httpx2.CloseError,
+            httpx2.ConnectTimeout,
+            httpx2.ReadTimeout,
+            httpx2.WriteTimeout,
+            httpx2.RemoteProtocolError,
+        ),
+    )

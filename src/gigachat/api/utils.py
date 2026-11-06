@@ -1,47 +1,29 @@
-import json
 import logging
 import re
 from collections.abc import AsyncIterator, Iterator
-from http import HTTPStatus
 from typing import (
     Any,
-    NoReturn,
     TypeVar,
 )
 from urllib.parse import urlsplit, urlunsplit
 
 import httpx2 as httpx
-from pydantic import BaseModel, ValidationError
+from pydantic import BaseModel
 
-from gigachat.context import (
-    agent_id_cvar,
-    authorization_cvar,
-    client_id_cvar,
-    custom_headers_cvar,
-    operation_id_cvar,
-    request_id_cvar,
-    service_id_cvar,
-    session_id_cvar,
-    trace_id_cvar,
-)
-from gigachat.exceptions import (
-    APIResponseValidationError,
-    AuthenticationError,
-    BadRequestError,
-    ForbiddenError,
-    NotFoundError,
-    RateLimitError,
-    RequestEntityTooLargeError,
-    ResponseError,
-    ServerError,
-    UnprocessableEntityError,
-)
-from gigachat.models.base import APIResponse
+from gigachat._core.request import USER_AGENT as USER_AGENT
+from gigachat._core.request import build_headers as build_headers
+from gigachat._core.response import EVENT_STREAM as EVENT_STREAM
+from gigachat._core.response import _acheck_response as _acheck_response
+from gigachat._core.response import _check_content_type as _check_content_type
+from gigachat._core.response import _check_response as _check_response
+from gigachat._core.response import _raise_for_status as _raise_for_status
+from gigachat._core.response import build_response as build_response
+from gigachat._core.response import build_x_headers as build_x_headers
+from gigachat._core.response import parse_chunk as parse_chunk
+from gigachat._core.response import parse_data_chunk as parse_data_chunk
+from gigachat._core.response import parse_event_chunk as parse_event_chunk
 
 logger = logging.getLogger(__name__)
-
-USER_AGENT = "GigaChat-python-lib"
-EVENT_STREAM = "text/event-stream"
 
 
 _VERSIONED_PATH = re.compile(r"^/(api/)?v\d+(/|$)")
@@ -80,141 +62,7 @@ def resolve_primary_chat_url(client: httpx.Client | httpx.AsyncClient, override:
     return _at_origin(client, _VERSION_SUFFIX.sub("/v2/chat/completions", base_path))
 
 
-def build_headers(access_token: str | None = None) -> dict[str, str]:
-    """Build headers for the request."""
-    headers = httpx.Headers()
-
-    if access_token:
-        headers["Authorization"] = f"Bearer {access_token}"
-
-    headers["User-Agent"] = USER_AGENT
-
-    context_vars = {
-        "Authorization": authorization_cvar,
-        "X-Session-ID": session_id_cvar,
-        "X-Request-ID": request_id_cvar,
-        "X-Service-ID": service_id_cvar,
-        "X-Operation-ID": operation_id_cvar,
-        "X-Client-ID": client_id_cvar,
-        "X-Trace-ID": trace_id_cvar,
-        "X-Agent-ID": agent_id_cvar,
-    }
-
-    for header, cvar in context_vars.items():
-        value = cvar.get()
-        if value:
-            headers[header] = value
-
-    custom_headers = custom_headers_cvar.get()
-    if custom_headers:
-        headers.update(custom_headers)
-    canonical = {name.lower(): name for name in ("User-Agent", *context_vars)}
-    return {
-        canonical.get(key.decode().lower(), key.decode()): value.decode(headers.encoding) for key, value in headers.raw
-    }
-
-
 T = TypeVar("T", bound=BaseModel)
-
-
-def parse_data_chunk(line: str, model_class: type[T]) -> T | None:
-    """Parse an SSE data line."""
-    name, _, value = line.partition(":")
-    if name == "data":
-        value = value.lstrip()
-        if value == "[DONE]":
-            return None
-        return model_class.model_validate_json(value)
-    return None
-
-
-def parse_chunk(line: str, model_class: type[T]) -> T | None:
-    """Parse an SSE data line."""
-    return parse_data_chunk(line, model_class)
-
-
-def parse_event_chunk(event: str | None, data: str, model_class: type[T]) -> T:
-    """Parse an SSE event with an optional event name."""
-    payload = json.loads(data)
-    if event and isinstance(payload, dict):
-        payload.setdefault("event", event)
-    return model_class.model_validate(payload)
-
-
-def build_x_headers(response: httpx.Response) -> dict[str, str | None]:
-    """Extract X-Headers from response."""
-    return {
-        "x-request-id": response.headers.get("x-request-id"),
-        "x-session-id": response.headers.get("x-session-id"),
-        "x-client-id": response.headers.get("x-client-id"),
-    }
-
-
-def _check_content_type(response: httpx.Response) -> None:
-    content_type, _, _ = response.headers.get("content-type", "").partition(";")
-    if content_type.strip().lower() != EVENT_STREAM:
-        raise APIResponseValidationError(
-            f"Expected response Content-Type to be '{EVENT_STREAM}', got {content_type!r}",
-            request_id=response.headers.get("x-request-id"),
-        )
-
-
-def _raise_for_status(url: httpx.URL | str, status_code: int, content: bytes, headers: httpx.Headers) -> NoReturn:
-    if status_code == HTTPStatus.BAD_REQUEST:
-        raise BadRequestError(url, status_code, content, headers)
-    elif status_code == HTTPStatus.UNAUTHORIZED:
-        raise AuthenticationError(url, status_code, content, headers)
-    elif status_code == HTTPStatus.FORBIDDEN:
-        raise ForbiddenError(url, status_code, content, headers)
-    elif status_code == HTTPStatus.NOT_FOUND:
-        raise NotFoundError(url, status_code, content, headers)
-    elif status_code == HTTPStatus.REQUEST_ENTITY_TOO_LARGE:
-        raise RequestEntityTooLargeError(url, status_code, content, headers)
-    elif status_code == HTTPStatus.UNPROCESSABLE_ENTITY:
-        raise UnprocessableEntityError(url, status_code, content, headers)
-    elif status_code == HTTPStatus.TOO_MANY_REQUESTS:
-        if retry_after := headers.get("retry-after"):
-            logger.warning("Rate limit exceeded (429). Retry-After: %s", retry_after)
-        else:
-            logger.warning("Rate limit exceeded (429)")
-        raise RateLimitError(url, status_code, content, headers)
-    elif 500 <= status_code < 600:
-        logger.warning("Server error (%d)", status_code)
-        raise ServerError(url, status_code, content, headers)
-    else:
-        raise ResponseError(url, status_code, content, headers)
-
-
-def _check_response(response: httpx.Response) -> None:
-    if response.status_code == HTTPStatus.OK:
-        _check_content_type(response)
-    else:
-        _raise_for_status(response.url, response.status_code, response.read(), response.headers)
-
-
-async def _acheck_response(response: httpx.Response) -> None:
-    if response.status_code == HTTPStatus.OK:
-        _check_content_type(response)
-    else:
-        _raise_for_status(response.url, response.status_code, await response.aread(), response.headers)
-
-
-def build_response(response: httpx.Response, model_class: type[T]) -> T:
-    """Parse successful response into Pydantic model or raise error."""
-    if response.status_code != HTTPStatus.OK:
-        _raise_for_status(response.url, response.status_code, response.content, response.headers)
-    try:
-        payload = response.json()
-        if isinstance(payload, dict):
-            payload = {**payload, "x_headers": build_x_headers(response)}
-        result = model_class.model_validate(payload)
-        if isinstance(result, APIResponse):
-            result.x_headers = build_x_headers(response)
-        return result
-    except (ValidationError, json.JSONDecodeError) as exc:
-        raise APIResponseValidationError(
-            "Invalid API response", request_id=response.headers.get("x-request-id")
-        ) from exc
 
 
 def execute_request_sync(client: httpx.Client, kwargs: dict[str, Any], model_class: type[T]) -> T:

@@ -8,7 +8,7 @@ import httpx2
 import pytest
 
 from gigachat import GigaChat, RequestOptions
-from gigachat._http_client import DefaultAioHttpClient, DefaultAsyncHttpxClient, DefaultHttpxClient
+from gigachat._core.http_client import DefaultAioHttpClient, DefaultAsyncHttpxClient, DefaultHttpxClient
 from gigachat.exceptions import APIConnectionError
 from tests.constants import MODELS
 

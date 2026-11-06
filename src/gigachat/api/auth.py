@@ -9,7 +9,7 @@ from typing import Any
 import httpx2 as httpx
 from pydantic import ValidationError
 
-from gigachat._execution import request_async, request_sync
+from gigachat._core.execution import request_async, request_sync
 from gigachat.api.utils import (
     USER_AGENT,
     _raise_for_status,
@@ -118,3 +118,11 @@ async def token_async(
     """Return a token."""
     kwargs = _get_token_kwargs(user=user, password=password, url=url)
     return await execute_request_async(client, kwargs, Token)
+
+
+def _build_access_token(token: Token) -> AccessToken:
+    return AccessToken(
+        access_token=token.tok,
+        expires_at=token.exp * 1000 if 0 < token.exp < 100_000_000_000 else token.exp,
+        x_headers=token.x_headers,
+    )

@@ -1,11 +1,13 @@
 import base64
 from http import HTTPStatus
 from typing import Any, Literal
+from urllib.parse import quote
 
 import httpx2 as httpx
 
-from gigachat._execution import request_async, request_sync
-from gigachat._types import FileTypes
+from gigachat._core.execution import request_async, request_sync, send_async, send_sync
+from gigachat._core.request import FileTypes
+from gigachat._core.response import AsyncStreamingResponse, StreamingResponse, _raise_for_status
 from gigachat.api.utils import build_headers, build_x_headers, execute_request_async, execute_request_sync
 from gigachat.exceptions import AuthenticationError, ResponseError
 from gigachat.models.files import DeletedFile, Image, UploadedFile, UploadedFiles
@@ -206,12 +208,7 @@ def update_file_access_sync(
     client: httpx.Client, *, file_ids: list[str], access_policy: str, access_token: str | None = None
 ) -> UploadedFiles:
     """Update the access policy of uploaded files."""
-    kwargs = {
-        "method": "POST",
-        "url": "/files/access",
-        "headers": build_headers(access_token),
-        "json": {"file_ids": file_ids, "access_policy": access_policy},
-    }
+    kwargs = _get_update_file_access_kwargs(file_ids=file_ids, access_policy=access_policy, access_token=access_token)
     return execute_request_sync(client, kwargs, UploadedFiles)
 
 
@@ -219,10 +216,48 @@ async def update_file_access_async(
     client: httpx.AsyncClient, *, file_ids: list[str], access_policy: str, access_token: str | None = None
 ) -> UploadedFiles:
     """Update the access policy of uploaded files."""
-    kwargs = {
+    kwargs = _get_update_file_access_kwargs(file_ids=file_ids, access_policy=access_policy, access_token=access_token)
+    return await execute_request_async(client, kwargs, UploadedFiles)
+
+
+def _get_file_content_kwargs(*, file_id: str, access_token: str | None = None) -> dict[str, Any]:
+    return {
+        "method": "GET",
+        "url": f"/files/{quote(file_id, safe='')}/content",
+        "headers": {**build_headers(access_token), "Accept": "application/octet-stream"},
+    }
+
+
+def stream_file_content_sync(
+    client: httpx.Client, *, file_id: str, access_token: str | None = None
+) -> StreamingResponse[bytes]:
+    """Open and validate a binary file response."""
+    response = send_sync(client, stream=True, **_get_file_content_kwargs(file_id=file_id, access_token=access_token))
+    wrapped = StreamingResponse(response, lambda result: result.content)
+    if response.status_code != 200:
+        _raise_for_status(response.url, response.status_code, wrapped.read(), response.headers)
+    return wrapped
+
+
+async def stream_file_content_async(
+    client: httpx.AsyncClient, *, file_id: str, access_token: str | None = None
+) -> AsyncStreamingResponse[bytes]:
+    """Open and validate a binary file response."""
+    response = await send_async(
+        client, stream=True, **_get_file_content_kwargs(file_id=file_id, access_token=access_token)
+    )
+    wrapped = AsyncStreamingResponse(response, lambda result: result.content)
+    if response.status_code != 200:
+        _raise_for_status(response.url, response.status_code, await wrapped.read(), response.headers)
+    return wrapped
+
+
+def _get_update_file_access_kwargs(
+    *, file_ids: list[str], access_policy: str, access_token: str | None
+) -> dict[str, Any]:
+    return {
         "method": "POST",
         "url": "/files/access",
         "headers": build_headers(access_token),
         "json": {"file_ids": file_ids, "access_policy": access_policy},
     }
-    return await execute_request_async(client, kwargs, UploadedFiles)

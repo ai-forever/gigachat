@@ -34,7 +34,7 @@ def _make_ssl_context() -> ssl.SSLContext:
 def test__get_kwargs() -> None:
     settings = Settings(ca_bundle_file="ca.pem", cert_file="tls.pem", key_file="tls.key")
     context = _make_ssl_context()
-    with mock.patch("gigachat._http_client.build_ssl_context", return_value=context) as build_context:
+    with mock.patch("gigachat._core.http_client.build_ssl_context", return_value=context) as build_context:
         assert _get_kwargs(settings)["verify"] is context
     assert build_context.call_args.kwargs["ca_bundle_file"] == "ca.pem"
     assert build_context.call_args.kwargs["cert_file"] == "tls.pem"
@@ -51,7 +51,7 @@ def test__get_kwargs_ssl() -> None:
 def test__get_auth_kwargs() -> None:
     settings = Settings(ca_bundle_file="ca.pem", cert_file="tls.pem", key_file="tls.key")
     context = _make_ssl_context()
-    with mock.patch("gigachat._http_client.build_ssl_context", return_value=context) as build_context:
+    with mock.patch("gigachat._core.http_client.build_ssl_context", return_value=context) as build_context:
         assert _get_auth_kwargs(settings)["verify"] is context
     assert build_context.call_args.kwargs["ca_bundle_file"] == "ca.pem"
     assert build_context.call_args.kwargs["cert_file"] == "tls.pem"

@@ -6,7 +6,6 @@ from typing import Any, cast
 import pytest
 from pydantic import BaseModel, ValidationError
 
-from gigachat._serialization import _parse_chat, _parse_chat_completion
 from gigachat.api import chat, chat_completions
 from gigachat.client import GigaChatAsyncClient, GigaChatSyncClient
 from gigachat.context import chat_completions_url_cvar, chat_url_cvar
@@ -23,7 +22,7 @@ from gigachat.models import (
     MessagesRole,
 )
 from gigachat.models.chat_completions import ChatCompletionChunk as PrimaryChatCompletionChunk
-from gigachat.settings import Settings
+from gigachat.resources.chat import _parse_chat, _parse_chat_completion
 from tests.constants import (
     ACCESS_TOKEN,
     AUTH_URL,
@@ -92,7 +91,7 @@ class MathResult(BaseModel):
     ],
 )
 def test__parse_chat_model(payload_value: str | None, setting_value: str | None, expected: str) -> None:
-    actual = _parse_chat(Chat(messages=[], model=payload_value), Settings(model=setting_value))
+    actual = _parse_chat(Chat(messages=[], model=payload_value), GigaChatSyncClient(model=setting_value))
     assert actual.model is expected
 
 
@@ -100,7 +99,7 @@ def test__parse_chat_model(payload_value: str | None, setting_value: str | None,
 @pytest.mark.parametrize("setting_value", [None, "", "  "])
 def test__parse_chat_model_not_specified(payload_value: str | None, setting_value: str | None) -> None:
     with pytest.raises(ModelNotSpecifiedError):
-        _parse_chat(Chat(messages=[], model=payload_value), Settings(model=setting_value))
+        _parse_chat(Chat(messages=[], model=payload_value), GigaChatSyncClient(model=setting_value))
 
 
 @pytest.mark.parametrize(
@@ -124,7 +123,7 @@ def test__parse_chat_profanity_check(
 ) -> None:
     actual = _parse_chat(
         Chat(messages=[], model="model", profanity_check=payload_value),
-        Settings(profanity_check=setting_value),
+        GigaChatSyncClient(profanity_check=setting_value),
     )
     assert actual.profanity_check is expected
 
@@ -154,7 +153,7 @@ def test__parse_chat_completion_profanity_check(
             model="model",
             profanity_check=payload_value,
         ),
-        Settings(profanity_check=setting_value),
+        GigaChatSyncClient(profanity_check=setting_value),
     )
     assert actual.disable_filter is expected
 
@@ -167,7 +166,7 @@ def test__parse_chat_completion_disable_filter_takes_precedence() -> None:
             disable_filter=False,
             profanity_check=False,
         ),
-        Settings(profanity_check=False),
+        GigaChatSyncClient(profanity_check=False),
     )
     assert actual.disable_filter is False
 
@@ -187,7 +186,7 @@ def test__parse_chat_completion_model(
 ) -> None:
     actual = _parse_chat_completion(
         ChatCompletionRequest(messages=[ChatMessage(role="user", content="text")], model=payload_value),
-        Settings(model=setting_value),
+        GigaChatSyncClient(model=setting_value),
     )
     assert actual.model == expected
 
@@ -198,7 +197,7 @@ def test__parse_chat_completion_model_not_specified(payload_value: str | None, s
     with pytest.raises(ModelNotSpecifiedError):
         _parse_chat_completion(
             ChatCompletionRequest(messages=[ChatMessage(role="user", content="text")], model=payload_value),
-            Settings(model=setting_value),
+            GigaChatSyncClient(model=setting_value),
         )
 
 
@@ -208,7 +207,7 @@ def test__parse_chat_completion_preserves_missing_model_for_assistant() -> None:
             "assistant_id": "assistant-1",
             "messages": [{"role": "user", "content": "text"}],
         },
-        Settings(model="setting_model"),
+        GigaChatSyncClient(model="setting_model"),
     )
 
     assert actual.model is None
@@ -221,7 +220,7 @@ def test__parse_chat_completion_normalizes_storage_bool() -> None:
             "messages": [{"role": "user", "content": "text"}],
             "storage": True,
         },
-        Settings(model="setting_model"),
+        GigaChatSyncClient(model="setting_model"),
     )
 
     assert isinstance(actual.storage, ChatStorage)
@@ -235,9 +234,10 @@ async def test_stored_chat_does_not_inject_configured_model(
 ) -> None:
     payload: dict[str, Any] = {"messages": [{"role": "user", "content": "continue"}]}
     if use_thread:
-        payload["storage"] = {"thread_id": "thread-1"}
+        storage: dict[str, Any] = {"thread_id": "thread-1"}
         if not primary:
-            payload["storage"]["is_stateful"] = True
+            storage["is_stateful"] = True
+        payload["storage"] = storage
     else:
         payload["assistant_id"] = "assistant-1"
     response = PRIMARY_CHAT_COMPLETION if primary else CHAT_COMPLETION
@@ -724,7 +724,7 @@ def test_chat_update_token_credentials(httpx_mock: HTTPXMock) -> None:
         assert client.token == ACCESS_TOKEN
         with pytest.raises(AuthenticationError):
             client.chat(CHAT)
-        assert client.token
+        assert len(client.token or "") > 0
         assert client.token != ACCESS_TOKEN
 
 
@@ -739,7 +739,7 @@ def test_chat_update_token_user_password(httpx_mock: HTTPXMock) -> None:
         assert client.token == ACCESS_TOKEN
         with pytest.raises(AuthenticationError):
             client.chat(CHAT)
-        assert client.token
+        assert len(client.token or "") > 0
         assert client.token != ACCESS_TOKEN
 
 
@@ -764,7 +764,7 @@ def test_chat_update_token_success(httpx_mock: HTTPXMock) -> None:
         assert client.token == ACCESS_TOKEN
         response = client.chat(CHAT)
 
-    assert client.token
+    assert len(client.token or "") > 0
     assert client.token != ACCESS_TOKEN
     assert isinstance(response, ChatCompletion)
 
@@ -781,7 +781,7 @@ def test_chat_update_token_error(httpx_mock: HTTPXMock) -> None:
         with pytest.raises(AuthenticationError):
             client.chat(CHAT)
 
-    assert client.token
+    assert len(client.token or "") > 0
     assert client.token != ACCESS_TOKEN
 
 
@@ -933,7 +933,7 @@ def test_stream_update_token_success(httpx_mock: HTTPXMock) -> None:
         assert client.token == ACCESS_TOKEN
         response = list(client.stream(CHAT))
 
-    assert client.token
+    assert len(client.token or "") > 0
     assert client.token != ACCESS_TOKEN
     assert len(response) == 3
     assert all(isinstance(chunk, ChatCompletionChunk) for chunk in response)
@@ -952,7 +952,7 @@ def test_stream_update_token_error(httpx_mock: HTTPXMock) -> None:
         with pytest.raises(AuthenticationError):
             list(client.stream(CHAT))
 
-    assert client.token
+    assert len(client.token or "") > 0
     assert client.token != ACCESS_TOKEN
 
 
@@ -1438,7 +1438,7 @@ async def test_achat_update_token_credentials(httpx_mock: HTTPXMock) -> None:
         assert client.token == ACCESS_TOKEN
         with pytest.raises(AuthenticationError):
             await client.achat(CHAT)
-        assert client.token
+        assert len(client.token or "") > 0
         assert client.token != ACCESS_TOKEN
 
 
@@ -1453,7 +1453,7 @@ async def test_achat_update_token_user_password(httpx_mock: HTTPXMock) -> None:
         assert client.token == ACCESS_TOKEN
         with pytest.raises(AuthenticationError):
             await client.achat(CHAT)
-        assert client.token
+        assert len(client.token or "") > 0
         assert client.token != ACCESS_TOKEN
 
 
@@ -1541,7 +1541,7 @@ async def test_astream_update_token_success(httpx_mock: HTTPXMock) -> None:
         assert client.token == ACCESS_TOKEN
         response = [chunk async for chunk in client.astream(CHAT)]
 
-    assert client.token
+    assert len(client.token or "") > 0
     assert client.token != ACCESS_TOKEN
     assert len(response) == 3
     assert all(isinstance(chunk, ChatCompletionChunk) for chunk in response)
@@ -1559,5 +1559,5 @@ async def test_astream_update_token_error(httpx_mock: HTTPXMock) -> None:
         assert client.token == ACCESS_TOKEN
         with pytest.raises(AuthenticationError):
             _ = [chunk async for chunk in client.astream(CHAT)]
-        assert client.token
+        assert len(client.token or "") > 0
         assert client.token != ACCESS_TOKEN

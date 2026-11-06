@@ -14,11 +14,11 @@ import pytest
 from tests.constants import CHAT_COMPLETION_STREAM, MODELS, OAUTH_TOKEN_VALID
 
 from gigachat import GigaChat
-from gigachat._request_options import RequestOptions
+from gigachat._core.execution import _should_retry
+from gigachat._core.request import RequestOptions
 from gigachat.context import custom_headers_cvar
 from gigachat.exceptions import APIConnectionError, AuthenticationError, ResponseError, ServerError
 from gigachat.models import ChatCompletionRequest, ChatStorage
-from gigachat.retry import _should_retry
 
 PRIMARY_CHAT_COMPLETION: dict[str, Any] = {"messages": []}
 BASE = "https://example.test/v1"
@@ -212,7 +212,7 @@ async def test_concurrent_views_do_not_share_request_state() -> None:
 def test_auth_replay_does_not_reset_status_retry_count(statuses: list[int], monkeypatch: pytest.MonkeyPatch) -> None:
     events: list[tuple[str, str | None]] = []
     statuses = list(statuses)
-    monkeypatch.setattr("gigachat._execution.time.sleep", lambda delay: None)
+    monkeypatch.setattr("gigachat._core.execution.time.sleep", lambda delay: None)
 
     def handler(request: httpx2.Request) -> httpx2.Response:
         events.append((request.url.host, request.headers.get("authorization")))
@@ -260,7 +260,7 @@ def test_empty_status_allowlist_disables_retries(status: int) -> None:
 def test_server_delay_exceeding_retry_budget_is_not_shortened(delay: str, monkeypatch: pytest.MonkeyPatch) -> None:
     calls = 0
     sleeps: list[float] = []
-    monkeypatch.setattr("gigachat._execution.time.sleep", sleeps.append)
+    monkeypatch.setattr("gigachat._core.execution.time.sleep", sleeps.append)
 
     def handler(request: httpx2.Request) -> httpx2.Response:
         nonlocal calls
@@ -345,7 +345,7 @@ async def test_async_auth_replay_keeps_total_status_retry_budget(
     async def no_sleep(delay: float) -> None:
         pass
 
-    monkeypatch.setattr("gigachat._execution.asyncio.sleep", no_sleep)
+    monkeypatch.setattr("gigachat._core.execution.asyncio.sleep", no_sleep)
 
     async def handler(request: httpx2.Request) -> httpx2.Response:
         events.append(request.url.host)
@@ -751,7 +751,7 @@ def test_retry_budget_expiry_during_oauth_keeps_fresh_token_without_resource_rep
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     clock = [0.0]
-    monkeypatch.setattr("gigachat._execution.time.monotonic", lambda: clock[0])
+    monkeypatch.setattr("gigachat._core.execution.time.monotonic", lambda: clock[0])
     hosts: list[str] = []
 
     def handler(request: httpx2.Request) -> httpx2.Response:
@@ -850,8 +850,8 @@ async def test_normalized_chat_storage_controls_ambiguous_retries(
     async def no_sleep(delay: float) -> None:
         pass
 
-    monkeypatch.setattr("gigachat._execution.time.sleep", lambda delay: None)
-    monkeypatch.setattr("gigachat._execution.asyncio.sleep", no_sleep)
+    monkeypatch.setattr("gigachat._core.execution.time.sleep", lambda delay: None)
+    monkeypatch.setattr("gigachat._core.execution.asyncio.sleep", no_sleep)
     transport = httpx2.MockTransport(handler)
     expected = ServerError if failure == "status" else APIConnectionError
     if asynchronous:
@@ -902,8 +902,8 @@ async def test_stored_chat_preserves_auth_and_presend_replay(
     async def no_sleep(delay: float) -> None:
         pass
 
-    monkeypatch.setattr("gigachat._execution.time.sleep", lambda delay: None)
-    monkeypatch.setattr("gigachat._execution.asyncio.sleep", no_sleep)
+    monkeypatch.setattr("gigachat._core.execution.time.sleep", lambda delay: None)
+    monkeypatch.setattr("gigachat._core.execution.asyncio.sleep", no_sleep)
     transport = httpx2.MockTransport(handler)
     options: dict[str, Any] = {
         "base_url": BASE,
@@ -938,8 +938,8 @@ async def test_stream_failure_before_first_chunk_can_retry(asynchronous: bool, m
     async def no_sleep(delay: float) -> None:
         pass
 
-    monkeypatch.setattr("gigachat._execution.time.sleep", lambda delay: None)
-    monkeypatch.setattr("gigachat._execution.asyncio.sleep", no_sleep)
+    monkeypatch.setattr("gigachat._core.execution.time.sleep", lambda delay: None)
+    monkeypatch.setattr("gigachat._core.execution.asyncio.sleep", no_sleep)
     transport = httpx2.MockTransport(handler)
     if asynchronous:
         async with httpx2.AsyncClient(transport=transport) as http:
@@ -958,7 +958,7 @@ async def test_async_retry_budget_expiry_during_oauth_keeps_fresh_token_without_
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     clock = [0.0]
-    monkeypatch.setattr("gigachat._execution.time.monotonic", lambda: clock[0])
+    monkeypatch.setattr("gigachat._core.execution.time.monotonic", lambda: clock[0])
     hosts: list[str] = []
 
     async def handler(request: httpx2.Request) -> httpx2.Response:
@@ -1133,7 +1133,7 @@ async def test_password_token_uses_sdk_url_instead_of_borrowed_client_url(asynch
 def test_retry_snapshots_borrowed_client_defaults_and_context(monkeypatch: pytest.MonkeyPatch) -> None:
     seen: list[httpx2.Request] = []
     context_token = custom_headers_cvar.set({"X-Context": "initial"})
-    monkeypatch.setattr("gigachat._execution.time.sleep", lambda delay: None)
+    monkeypatch.setattr("gigachat._core.execution.time.sleep", lambda delay: None)
 
     def handler(request: httpx2.Request) -> httpx2.Response:
         seen.append(request)
@@ -1253,8 +1253,8 @@ async def test_stream_retry_reuses_input_snapshot_from_first_iteration(
     async def no_sleep(delay: float) -> None:
         pass
 
-    monkeypatch.setattr("gigachat._execution.time.sleep", lambda delay: None)
-    monkeypatch.setattr("gigachat._execution.asyncio.sleep", no_sleep)
+    monkeypatch.setattr("gigachat._core.execution.time.sleep", lambda delay: None)
+    monkeypatch.setattr("gigachat._core.execution.asyncio.sleep", no_sleep)
     transport = httpx2.MockTransport(handler)
     if asynchronous:
         async with httpx2.AsyncClient(transport=transport) as http:

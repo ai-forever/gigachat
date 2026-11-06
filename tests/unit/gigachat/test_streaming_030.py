@@ -8,8 +8,8 @@ import httpx2 as httpx
 import pytest
 from pydantic import BaseModel, ValidationError
 
-from gigachat._response import AsyncStreamingResponse, RawResponse, StreamingResponse
-from gigachat._streaming import AsyncStream, Stream
+from gigachat._core.response import AsyncStreamingResponse, RawResponse, StreamingResponse
+from gigachat._core.streaming import AsyncStream, Stream
 from gigachat.api.utils import parse_chunk, parse_event_chunk
 from gigachat.exceptions import APIConnectionError, APIResponseValidationError, APITimeoutError, StreamInterruptedError
 from gigachat.models.chat_completions import ChatCompletionChunk
@@ -315,7 +315,7 @@ def test_lazy_metadata_uses_open_response() -> None:
 
 
 def test_raw_namespace_is_lazy_and_honors_request_options() -> None:
-    from gigachat._request_options import RequestOptions
+    from gigachat._core.request import RequestOptions
     from gigachat.client import GigaChatSyncClient
 
     requests: list[httpx.Request] = []
@@ -343,7 +343,7 @@ def test_raw_namespace_is_lazy_and_honors_request_options() -> None:
 
 
 async def test_async_raw_namespace_parse_is_sync_and_preserves_unknown_fields() -> None:
-    from gigachat._request_options import RequestOptions
+    from gigachat._core.request import RequestOptions
     from gigachat.client import GigaChatAsyncClient
 
     requests: list[httpx.Request] = []
@@ -476,7 +476,7 @@ def test_primary_stream_does_not_retry_partial_output() -> None:
 
 
 async def test_primary_async_stream_event_size_request_override() -> None:
-    from gigachat._request_options import RequestOptions
+    from gigachat._core.request import RequestOptions
     from gigachat.client import GigaChatAsyncClient
 
     body = Bytes(b'data: {"message_id":"long value"}\n\n')

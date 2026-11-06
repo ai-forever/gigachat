@@ -22,7 +22,7 @@ COMPLETION = {
     "message": {"role": "assistant", "content": "hello"},
     "finish_reason": "stop",
 }
-CHUNK = {key: value for key, value in COMPLETION.items() if key not in {"message", "finish_reason"}}
+CHUNK: dict[str, Any] = {key: value for key, value in COMPLETION.items() if key not in {"message", "finish_reason"}}
 CHUNK["choices"] = [{"index": 0, "delta": {"content": "hello"}}]
 
 

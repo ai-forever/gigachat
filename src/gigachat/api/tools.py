@@ -5,7 +5,7 @@ from typing import Any
 import httpx2 as httpx
 from pydantic import ValidationError
 
-from gigachat._execution import request_async, request_sync
+from gigachat._core.execution import request_async, request_sync
 from gigachat.api.utils import build_headers, build_x_headers, execute_request_async, execute_request_sync
 from gigachat.exceptions import APIResponseValidationError, AuthenticationError, ResponseError
 from gigachat.models.tools import (
@@ -232,12 +232,7 @@ def functions_generate_sync(
     client: httpx.Client, *, model: str, input_: str, access_token: str | None = None
 ) -> GeneratedContent:
     """Call /functions/generate."""
-    kwargs = {
-        "method": "POST",
-        "url": "/functions/generate",
-        "headers": build_headers(access_token),
-        "json": {"model": model, "input": input_},
-    }
+    kwargs = _get_functions_generate_kwargs(model=model, input_=input_, access_token=access_token)
     return execute_request_sync(client, kwargs, GeneratedContent)
 
 
@@ -245,12 +240,7 @@ async def functions_generate_async(
     client: httpx.AsyncClient, *, model: str, input_: str, access_token: str | None = None
 ) -> GeneratedContent:
     """Call /functions/generate."""
-    kwargs = {
-        "method": "POST",
-        "url": "/functions/generate",
-        "headers": build_headers(access_token),
-        "json": {"model": model, "input": input_},
-    }
+    kwargs = _get_functions_generate_kwargs(model=model, input_=input_, access_token=access_token)
     return await execute_request_async(client, kwargs, GeneratedContent)
 
 
@@ -258,12 +248,7 @@ def instructions_generate_sync(
     client: httpx.Client, *, model: str, input_: str, access_token: str | None = None
 ) -> GeneratedContent:
     """Call /instructions/generate."""
-    kwargs = {
-        "method": "POST",
-        "url": "/instructions/generate",
-        "headers": build_headers(access_token),
-        "json": {"model": model, "input": input_},
-    }
+    kwargs = _get_instructions_generate_kwargs(model=model, input_=input_, access_token=access_token)
     return execute_request_sync(client, kwargs, GeneratedContent)
 
 
@@ -271,12 +256,7 @@ async def instructions_generate_async(
     client: httpx.AsyncClient, *, model: str, input_: str, access_token: str | None = None
 ) -> GeneratedContent:
     """Call /instructions/generate."""
-    kwargs = {
-        "method": "POST",
-        "url": "/instructions/generate",
-        "headers": build_headers(access_token),
-        "json": {"model": model, "input": input_},
-    }
+    kwargs = _get_instructions_generate_kwargs(model=model, input_=input_, access_token=access_token)
     return await execute_request_async(client, kwargs, GeneratedContent)
 
 
@@ -289,12 +269,9 @@ def functions_rank_sync(
     access_token: str | None = None,
 ) -> RankedFunctions:
     """Call /functions/rank."""
-    kwargs = {
-        "method": "POST",
-        "url": "/functions/rank",
-        "headers": build_headers(access_token),
-        "json": {"messages": messages, "functions": functions, **({"options": options} if options is not None else {})},
-    }
+    kwargs = _get_functions_rank_kwargs(
+        messages=messages, functions=functions, options=options, access_token=access_token
+    )
     return execute_request_sync(client, kwargs, RankedFunctions)
 
 
@@ -307,12 +284,9 @@ async def functions_rank_async(
     access_token: str | None = None,
 ) -> RankedFunctions:
     """Call /functions/rank."""
-    kwargs = {
-        "method": "POST",
-        "url": "/functions/rank",
-        "headers": build_headers(access_token),
-        "json": {"messages": messages, "functions": functions, **({"options": options} if options is not None else {})},
-    }
+    kwargs = _get_functions_rank_kwargs(
+        messages=messages, functions=functions, options=options, access_token=access_token
+    )
     return await execute_request_async(client, kwargs, RankedFunctions)
 
 
@@ -326,17 +300,9 @@ def rerank_sync(
     access_token: str | None = None,
 ) -> RerankResponse:
     """Call /rerank."""
-    kwargs = {
-        "method": "POST",
-        "url": "/rerank",
-        "headers": build_headers(access_token),
-        "json": {
-            "model": model,
-            "input": input_,
-            **({"options": options} if options is not None else {}),
-            **({"include_documents": include_documents} if include_documents is not None else {}),
-        },
-    }
+    kwargs = _get_rerank_kwargs(
+        model=model, input_=input_, options=options, include_documents=include_documents, access_token=access_token
+    )
     return execute_request_sync(client, kwargs, RerankResponse)
 
 
@@ -350,7 +316,54 @@ async def rerank_async(
     access_token: str | None = None,
 ) -> RerankResponse:
     """Call /rerank."""
-    kwargs = {
+    kwargs = _get_rerank_kwargs(
+        model=model, input_=input_, options=options, include_documents=include_documents, access_token=access_token
+    )
+    return await execute_request_async(client, kwargs, RerankResponse)
+
+
+def _get_functions_generate_kwargs(*, model: str, input_: str, access_token: str | None) -> dict[str, Any]:
+    return {
+        "method": "POST",
+        "url": "/functions/generate",
+        "headers": build_headers(access_token),
+        "json": {"model": model, "input": input_},
+    }
+
+
+def _get_instructions_generate_kwargs(*, model: str, input_: str, access_token: str | None) -> dict[str, Any]:
+    return {
+        "method": "POST",
+        "url": "/instructions/generate",
+        "headers": build_headers(access_token),
+        "json": {"model": model, "input": input_},
+    }
+
+
+def _get_functions_rank_kwargs(
+    *,
+    messages: list[dict[str, Any]],
+    functions: list[dict[str, Any]],
+    options: dict[str, Any] | None,
+    access_token: str | None,
+) -> dict[str, Any]:
+    return {
+        "method": "POST",
+        "url": "/functions/rank",
+        "headers": build_headers(access_token),
+        "json": {"messages": messages, "functions": functions, **({"options": options} if options is not None else {})},
+    }
+
+
+def _get_rerank_kwargs(
+    *,
+    model: str,
+    input_: list[dict[str, Any]],
+    options: dict[str, Any] | None,
+    include_documents: bool | None,
+    access_token: str | None,
+) -> dict[str, Any]:
+    return {
         "method": "POST",
         "url": "/rerank",
         "headers": build_headers(access_token),
@@ -361,4 +374,3 @@ async def rerank_async(
             **({"include_documents": include_documents} if include_documents is not None else {}),
         },
     }
-    return await execute_request_async(client, kwargs, RerankResponse)

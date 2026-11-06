@@ -61,7 +61,7 @@ def test_json_schema_response_format_validate_from_dict() -> None:
 
 def test_json_schema_response_format_invalid_schema_type() -> None:
     with pytest.raises(ValidationError):
-        JsonSchemaResponseFormat(schema="not a dict")
+        JsonSchemaResponseFormat.model_validate({"schema": "not a dict"})
 
 
 def test_json_schema_response_format_missing_schema() -> None:
@@ -131,7 +131,7 @@ class MathSolution(BaseModel):
 
 
 def test_schema_from_basemodel() -> None:
-    response_format = JsonSchemaResponseFormat(schema=MathSolution)
+    response_format = JsonSchemaResponseFormat.model_validate({"schema": MathSolution})
     dumped = response_format.model_dump(exclude_none=True, by_alias=True)
     schema = dumped["schema"]
     assert schema["type"] == "object"
@@ -141,7 +141,7 @@ def test_schema_from_basemodel() -> None:
 
 
 def test_schema_from_basemodel_strict() -> None:
-    response_format = JsonSchemaResponseFormat(schema=MathSolution, strict=True)
+    response_format = JsonSchemaResponseFormat.model_validate({"schema": MathSolution, "strict": True})
     dumped = response_format.model_dump(exclude_none=True, by_alias=True)
     assert dumped["strict"] is True
     assert dumped["schema"]["type"] == "object"
@@ -151,7 +151,7 @@ def test_schema_from_basemodel_in_chat() -> None:
     chat = Chat(
         model="GigaChat-2-Max",
         messages=[Messages(role=MessagesRole.USER, content="hi")],
-        response_format=JsonSchemaResponseFormat(schema=MathSolution, strict=False),
+        response_format=JsonSchemaResponseFormat.model_validate({"schema": MathSolution, "strict": False}),
     )
     dumped = chat.model_dump(exclude_none=True, by_alias=True)
     response_format = dumped["response_format"]
@@ -162,12 +162,12 @@ def test_schema_from_basemodel_in_chat() -> None:
 
 def test_schema_invalid_type_rejected() -> None:
     with pytest.raises(ValidationError):
-        JsonSchemaResponseFormat(schema=42)
+        JsonSchemaResponseFormat.model_validate({"schema": 42})
 
 
 def test_schema_invalid_class_rejected() -> None:
     with pytest.raises(ValidationError):
-        JsonSchemaResponseFormat(schema=int)
+        JsonSchemaResponseFormat.model_validate({"schema": int})
 
 
 def test_dict_schema_passthrough_no_normalization() -> None:

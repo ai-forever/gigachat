@@ -32,7 +32,7 @@ class StructuredAnswer(BaseModel):
 PRIMARY_MODEL = os.getenv("GIGACHAT_PRIMARY_TEST_MODEL", "GigaChat-3-Ultra")
 
 
-ORDER_STATUS_FUNCTION = {
+ORDER_STATUS_FUNCTION: dict[str, Any] = {
     "name": "get_order_status",
     "description": "Get delivery status for an order.",
     "parameters": {

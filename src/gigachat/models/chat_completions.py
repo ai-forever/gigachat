@@ -2,7 +2,7 @@ import inspect
 from typing import Any, Literal, Optional
 
 import pydantic
-from pydantic import BaseModel, ConfigDict, Field, model_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
 from gigachat.models.base import APIResponse
 
@@ -366,10 +366,16 @@ class _ChatMessageBase(_ChatCompletionsModel):
 
         _normalize_tools_state_id(values)
 
-        if "content" in values:
-            values["content"] = _normalize_content_parts(values.get("content"))
-
         return values
+
+    @field_validator(
+        "content",
+        mode="before",
+        json_schema_input_type=str | dict[str, Any] | list[str | ChatContentPart | dict[str, Any]] | None,
+    )
+    @classmethod
+    def _normalize_content(cls, value: Any) -> Any:
+        return _normalize_content_parts(value)
 
 
 class ChatMessage(_ChatMessageBase):

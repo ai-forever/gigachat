@@ -7,12 +7,11 @@ import warnings
 import pytest
 from pydantic import BaseModel, ValidationError
 
-from gigachat._serialization import _parse_completion, _prepare_chat_for_parse
 from gigachat.client import GigaChatAsyncClient, GigaChatSyncClient
 from gigachat.context import chat_completions_url_cvar, chat_url_cvar
 from gigachat.exceptions import LengthFinishReasonError
 from gigachat.models import Chat, ChatCompletion, Messages, MessagesRole
-from gigachat.settings import Settings
+from gigachat.resources.chat import _parse_completion, _prepare_chat_for_parse
 from tests.constants import ACCESS_TOKEN, BASE_URL, CHAT_URL
 from tests.httpx_mock import HTTPXMock
 from tests.utils import get_json
@@ -37,7 +36,7 @@ class MathResult(BaseModel):
 def test_prepare_chat_for_parse_sets_response_format() -> None:
     from gigachat.models.response_format import JsonSchemaResponseFormat
 
-    settings = Settings(model="GigaChat")
+    settings = GigaChatSyncClient(model="GigaChat")
     chat_data = _prepare_chat_for_parse("Solve 2+2", settings, MathResult, strict=True)
     assert chat_data.response_format is not None
     assert isinstance(chat_data.response_format, JsonSchemaResponseFormat)
@@ -51,7 +50,7 @@ def test_prepare_chat_for_parse_sets_response_format() -> None:
 def test_prepare_chat_for_parse_strict_false() -> None:
     from gigachat.models.response_format import JsonSchemaResponseFormat
 
-    settings = Settings(model="GigaChat")
+    settings = GigaChatSyncClient(model="GigaChat")
     chat_data = _prepare_chat_for_parse("Solve 2+2", settings, MathResult, strict=False)
     assert chat_data.response_format is not None
     assert isinstance(chat_data.response_format, JsonSchemaResponseFormat)

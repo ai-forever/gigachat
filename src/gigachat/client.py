@@ -1,5 +1,5 @@
 import logging
-from collections.abc import AsyncIterable, AsyncIterator, Iterable, Iterator
+from collections.abc import AsyncIterable, Iterable
 from functools import cached_property
 from typing import (
     Any,
@@ -12,15 +12,17 @@ import httpx2 as httpx
 import pydantic
 from typing_extensions import Self
 
-from gigachat import _serialization
-from gigachat._base_client import _BaseClient
-from gigachat._execution import request_scope
-from gigachat._files import AsyncFilesMixin, SyncFilesMixin
-from gigachat._http_client import DefaultAioHttpClient, DefaultAsyncHttpxClient, DefaultHttpxClient, http_client_kwargs
-from gigachat._request_options import RequestOptions
-from gigachat._types import FileTypes
-from gigachat.api import auth, batches, chat, chat_completions, embeddings, files, models, tools
-from gigachat.assistants import AssistantsAsyncClient, AssistantsSyncClient
+from gigachat._core.base_client import _BaseClient
+from gigachat._core.execution import request_scope
+from gigachat._core.http_client import (
+    DefaultAioHttpClient,
+    DefaultAsyncHttpxClient,
+    DefaultHttpxClient,
+    http_client_kwargs,
+)
+from gigachat._core.request import FileTypes, RequestOptions
+from gigachat._core.streaming import AsyncStream, Stream
+from gigachat.api import auth, batches, embeddings, files, models, tools
 from gigachat.context import authorization_cvar
 from gigachat.models.auth import AccessToken
 from gigachat.models.batches import Batch, Batches
@@ -28,13 +30,6 @@ from gigachat.models.chat import (
     Chat,
     ChatCompletion,
     ChatCompletionChunk,
-)
-from gigachat.models.chat_completions import (
-    ChatCompletionChunk as PrimaryChatCompletionChunk,
-)
-from gigachat.models.chat_completions import (
-    ChatCompletionRequest,
-    ChatCompletionResponse,
 )
 from gigachat.models.embeddings import Embeddings
 from gigachat.models.files import DeletedFile, Image, UploadedFile, UploadedFiles
@@ -50,8 +45,10 @@ from gigachat.models.tools import (
     TokensCount,
 )
 from gigachat.resources import AsyncChatNamespace, ChatNamespace
+from gigachat.resources.assistants import AssistantsAsyncClient, AssistantsSyncClient
+from gigachat.resources.files import AsyncFilesMixin, SyncFilesMixin
+from gigachat.resources.threads import ThreadsAsyncClient, ThreadsSyncClient
 from gigachat.settings import Settings
-from gigachat.threads import ThreadsAsyncClient, ThreadsSyncClient
 
 ModelT = TypeVar("ModelT", bound=pydantic.BaseModel)
 
@@ -154,7 +151,7 @@ class GigaChatSyncClient(SyncFilesMixin, _BaseClient):
                 logger.debug("Token refreshed via OAuth")
             elif self._settings.user and self._settings.password:
                 self._set_token(
-                    _serialization._build_access_token(
+                    auth._build_access_token(
                         auth.token_sync(
                             self._client,
                             url=self._settings.base_url.rstrip("/") + "/token",
@@ -183,7 +180,7 @@ class GigaChatSyncClient(SyncFilesMixin, _BaseClient):
         self, input_: str | list[str], model: str | None = None, *, request_options: RequestOptions | None = None
     ) -> list[TokensCount]:
         """Return the number of tokens in a string."""
-        model = _serialization._resolve_model(model, self._settings)
+        model = self._resolve_model(model)
         return tools.tokens_count_sync(self._client, input_=input_, model=model, access_token=self.token)
 
     @request_scope
@@ -247,71 +244,6 @@ class GigaChatSyncClient(SyncFilesMixin, _BaseClient):
         """Delete a file."""
         return files.delete_file_sync(self._client, file=file, access_token=self.token)
 
-    @request_scope
-    def _chat_create(
-        self, payload: ChatCompletionRequest | dict[str, Any] | str, *, request_options: RequestOptions | None = None
-    ) -> ChatCompletionResponse:
-        """Return a primary chat completion based on the provided messages."""
-        chat_data = _serialization._parse_chat_completion(payload, self._settings)
-        return chat_completions.chat_sync(self._client, chat=chat_data, access_token=self.token)
-
-    @request_scope
-    def _chat_stream(
-        self, payload: ChatCompletionRequest | dict[str, Any] | str, *, request_options: RequestOptions | None = None
-    ) -> Iterator[PrimaryChatCompletionChunk]:
-        """Return a primary streaming chat completion based on the provided messages."""
-        chat_data = _serialization._parse_chat_completion(payload, self._settings)
-        yield from chat_completions.stream_sync(self._client, chat=chat_data, access_token=self.token)
-
-    @request_scope
-    def _chat_parse(
-        self,
-        payload: ChatCompletionRequest | dict[str, Any] | str,
-        *,
-        response_format: type[ModelT],
-        strict: bool = True,
-        request_options: RequestOptions | None = None,
-    ) -> tuple[ChatCompletionResponse, ModelT]:
-        """Send a primary chat request and parse the response into a structured object."""
-        chat_data = _serialization._prepare_chat_completion_for_parse(payload, self._settings, response_format, strict)
-        completion = self._chat_create(chat_data)
-        parsed = _serialization._parse_primary_completion(completion, response_format)
-        return completion, parsed
-
-    @request_scope
-    def _chat(
-        self, payload: Chat | dict[str, Any] | str, *, request_options: RequestOptions | None = None
-    ) -> ChatCompletion:
-        """Return a root chat completion based on the provided messages."""
-        _serialization._validate_response_format(payload)
-        chat_data = _serialization._parse_chat(payload, self._settings)
-        return chat.chat_sync(self._client, chat=chat_data, access_token=self.token)
-
-    @request_scope
-    def _stream(
-        self, payload: Chat | dict[str, Any] | str, *, request_options: RequestOptions | None = None
-    ) -> Iterator[ChatCompletionChunk]:
-        """Return a root streaming chat completion based on the provided messages."""
-        chat_data = _serialization._parse_chat(payload, self._settings)
-
-        yield from chat.stream_sync(self._client, chat=chat_data, access_token=self.token)
-
-    @request_scope
-    def _chat_parse_root(
-        self,
-        payload: Chat | dict[str, Any] | str,
-        *,
-        response_format: type[ModelT],
-        strict: bool = True,
-        request_options: RequestOptions | None = None,
-    ) -> tuple[ChatCompletion, ModelT]:
-        """Send a root chat request and parse the response into a structured object."""
-        chat_data = _serialization._prepare_chat_for_parse(payload, self._settings, response_format, strict)
-        completion = self._chat(chat_data)
-        parsed = _serialization._parse_completion(completion, response_format)
-        return completion, parsed
-
-    @request_scope
     def chat_parse(
         self,
         payload: Chat | dict[str, Any] | str,
@@ -331,7 +263,9 @@ class GigaChatSyncClient(SyncFilesMixin, _BaseClient):
         Raise :class:`~gigachat.exceptions.LengthFinishReasonError` if
         ``finish_reason`` is ``"length"`` (truncated response).
         """
-        return self._chat_parse_root(payload, response_format=response_format, strict=strict)
+        return self.chat._legacy_parse(
+            payload, response_format=response_format, strict=strict, request_options=request_options
+        )
 
     @request_scope
     def get_balance(self, *, request_options: RequestOptions | None = None) -> Balance:
@@ -354,12 +288,11 @@ class GigaChatSyncClient(SyncFilesMixin, _BaseClient):
         """Check the provided text for content generated by AI models."""
         return tools.ai_check_sync(self._client, input_=text, model=model, access_token=self.token)
 
-    @request_scope
     def stream(
         self, payload: Chat | dict[str, Any] | str, *, request_options: RequestOptions | None = None
-    ) -> Iterator[ChatCompletionChunk]:
+    ) -> Stream[ChatCompletionChunk]:
         """Stream via the root chat compatibility shim."""
-        yield from self._stream(payload)
+        return self.chat._legacy_stream(payload, request_options=request_options)
 
     @request_scope
     def rerank(
@@ -409,7 +342,7 @@ class GigaChatSyncClient(SyncFilesMixin, _BaseClient):
         return tools.functions_generate_sync(
             self._client,
             input_=input_,
-            model=_serialization._resolve_model(model, self._settings),
+            model=self._resolve_model(model),
             access_token=self.token,
         )
 
@@ -421,7 +354,7 @@ class GigaChatSyncClient(SyncFilesMixin, _BaseClient):
         return tools.instructions_generate_sync(
             self._client,
             input_=input_,
-            model=_serialization._resolve_model(model, self._settings),
+            model=self._resolve_model(model),
             access_token=self.token,
         )
 
@@ -534,7 +467,7 @@ class GigaChatAsyncClient(AsyncFilesMixin, _BaseClient):
                 logger.debug("Token refreshed via OAuth")
             elif self._settings.user and self._settings.password:
                 self._set_token(
-                    _serialization._build_access_token(
+                    auth._build_access_token(
                         await auth.token_async(
                             self._aclient,
                             url=self._settings.base_url.rstrip("/") + "/token",
@@ -563,7 +496,7 @@ class GigaChatAsyncClient(AsyncFilesMixin, _BaseClient):
         self, input_: str | list[str], model: str | None = None, *, request_options: RequestOptions | None = None
     ) -> list[TokensCount]:
         """Return the number of tokens in a string."""
-        model = _serialization._resolve_model(model, self._settings)
+        model = self._resolve_model(model)
 
         return await tools.tokens_count_async(self._aclient, input_=input_, model=model, access_token=self.token)
 
@@ -606,81 +539,6 @@ class GigaChatAsyncClient(AsyncFilesMixin, _BaseClient):
 
         return await models.get_model_async(self._aclient, model=model, access_token=self.token)
 
-    @request_scope
-    async def _achat(
-        self, payload: Chat | dict[str, Any] | str, *, request_options: RequestOptions | None = None
-    ) -> ChatCompletion:
-        """Return a root chat completion based on the provided messages."""
-        _serialization._validate_response_format(payload)
-        chat_data = _serialization._parse_chat(payload, self._settings)
-
-        return await chat.chat_async(self._aclient, chat=chat_data, access_token=self.token)
-
-    @request_scope
-    async def _achat_create(
-        self, payload: ChatCompletionRequest | dict[str, Any] | str, *, request_options: RequestOptions | None = None
-    ) -> ChatCompletionResponse:
-        """Return a primary chat completion based on the provided messages."""
-        chat_data = _serialization._parse_chat_completion(payload, self._settings)
-        return await chat_completions.chat_async(self._aclient, chat=chat_data, access_token=self.token)
-
-    @request_scope
-    async def _achat_stream(
-        self, payload: ChatCompletionRequest | dict[str, Any] | str, *, request_options: RequestOptions | None = None
-    ) -> AsyncIterator[PrimaryChatCompletionChunk]:
-        """Return a primary streaming chat completion based on the provided messages."""
-        chat_data = _serialization._parse_chat_completion(payload, self._settings)
-        iterator = chat_completions.stream_async(self._aclient, chat=chat_data, access_token=self.token)
-        try:
-            async for chunk in iterator:
-                yield chunk
-        finally:
-            await cast(Any, iterator).aclose()
-
-    @request_scope
-    async def _astream(
-        self, payload: Chat | dict[str, Any] | str, *, request_options: RequestOptions | None = None
-    ) -> AsyncIterator[ChatCompletionChunk]:
-        """Return a root streaming chat completion based on the provided messages."""
-        chat_data = _serialization._parse_chat(payload, self._settings)
-        iterator = chat.stream_async(self._aclient, chat=chat_data, access_token=self.token)
-        try:
-            async for chunk in iterator:
-                yield chunk
-        finally:
-            await cast(Any, iterator).aclose()
-
-    @request_scope
-    async def _achat_parse(
-        self,
-        payload: ChatCompletionRequest | dict[str, Any] | str,
-        *,
-        response_format: type[ModelT],
-        strict: bool = True,
-        request_options: RequestOptions | None = None,
-    ) -> tuple[ChatCompletionResponse, ModelT]:
-        """Send a primary chat request and parse the response into a structured object."""
-        chat_data = _serialization._prepare_chat_completion_for_parse(payload, self._settings, response_format, strict)
-        completion = await self._achat_create(chat_data)
-        parsed = _serialization._parse_primary_completion(completion, response_format)
-        return completion, parsed
-
-    @request_scope
-    async def _achat_parse_root(
-        self,
-        payload: Chat | dict[str, Any] | str,
-        *,
-        response_format: type[ModelT],
-        strict: bool = True,
-        request_options: RequestOptions | None = None,
-    ) -> tuple[ChatCompletion, ModelT]:
-        """Send a root chat request and parse the response into *response_format*."""
-        chat_data = _serialization._prepare_chat_for_parse(payload, self._settings, response_format, strict)
-        completion = await self._achat(chat_data)
-        parsed = _serialization._parse_completion(completion, response_format)
-        return completion, parsed
-
-    @request_scope
     async def achat_parse(
         self,
         payload: Chat | dict[str, Any] | str,
@@ -698,7 +556,9 @@ class GigaChatAsyncClient(AsyncFilesMixin, _BaseClient):
         Raise :class:`~gigachat.exceptions.LengthFinishReasonError` if
         ``finish_reason`` is ``"length"`` (truncated response).
         """
-        return await self._achat_parse_root(payload, response_format=response_format, strict=strict)
+        return await self.achat._legacy_parse(
+            payload, response_format=response_format, strict=strict, request_options=request_options
+        )
 
     @request_scope
     async def aupload_file(
@@ -756,17 +616,11 @@ class GigaChatAsyncClient(AsyncFilesMixin, _BaseClient):
 
         return await tools.ai_check_async(self._aclient, input_=text, model=model, access_token=self.token)
 
-    @request_scope
-    async def astream(
+    def astream(
         self, payload: Chat | dict[str, Any] | str, *, request_options: RequestOptions | None = None
-    ) -> AsyncIterator[ChatCompletionChunk]:
+    ) -> AsyncStream[ChatCompletionChunk]:
         """Stream via the root async chat compatibility shim."""
-        iterator = self._astream(payload)
-        try:
-            async for chunk in iterator:
-                yield chunk
-        finally:
-            await cast(Any, iterator).aclose()
+        return self.achat._legacy_stream(payload, request_options=request_options)
 
     @request_scope
     async def arerank(
@@ -816,7 +670,7 @@ class GigaChatAsyncClient(AsyncFilesMixin, _BaseClient):
         return await tools.functions_generate_async(
             self._aclient,
             input_=input_,
-            model=_serialization._resolve_model(model, self._settings),
+            model=self._resolve_model(model),
             access_token=self.token,
         )
 
@@ -828,7 +682,7 @@ class GigaChatAsyncClient(AsyncFilesMixin, _BaseClient):
         return await tools.instructions_generate_async(
             self._aclient,
             input_=input_,
-            model=_serialization._resolve_model(model, self._settings),
+            model=self._resolve_model(model),
             access_token=self.token,
         )
 

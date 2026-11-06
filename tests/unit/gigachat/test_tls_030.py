@@ -5,7 +5,7 @@ from unittest.mock import Mock
 
 import pytest
 
-from gigachat._tls import build_ssl_context
+from gigachat._core.http_client import build_ssl_context
 
 
 def test_explicit_context_is_returned_unchanged() -> None:
@@ -17,7 +17,7 @@ def test_explicit_context_is_returned_unchanged() -> None:
 
 def test_auth_does_not_load_api_client_certificate(monkeypatch: pytest.MonkeyPatch) -> None:
     context = Mock()
-    monkeypatch.setattr("gigachat._tls.httpx2.create_ssl_context", lambda **kwargs: context)
+    monkeypatch.setattr("gigachat._core.http_client.httpx2.create_ssl_context", lambda **kwargs: context)
     assert build_ssl_context(cert_file="cert.pem", key_file="key.pem", for_auth=True) is context
     context.load_cert_chain.assert_not_called()
     build_ssl_context(cert_file="cert.pem", key_file="key.pem", key_file_password="password")
@@ -91,14 +91,18 @@ def certificate_files(tmp_path_factory: pytest.TempPathFactory) -> Path:
 
 
 @pytest.mark.parametrize("backend", ["httpx2", "aiohttp"])
+@pytest.mark.parametrize("configuration", ["transport", "sdk-env"])
 async def test_tls_wire_custom_ca_environment_explicit_context_and_mtls(
-    backend: str, certificate_files: Path, monkeypatch: pytest.MonkeyPatch
+    backend: str, configuration: str, certificate_files: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     import asyncio
+    import json
 
     import httpx2
 
-    from gigachat._http_client import DefaultAioHttpClient, DefaultAsyncHttpxClient
+    from gigachat import GigaChatAsyncClient, GigaChatSyncClient
+    from gigachat._core.http_client import DefaultAioHttpClient, DefaultAsyncHttpxClient
+    from tests.constants import MODELS
 
     if backend == "aiohttp":
         pytest.importorskip("aiohttp")
@@ -108,10 +112,18 @@ async def test_tls_wire_custom_ca_environment_explicit_context_and_mtls(
     server_context.load_cert_chain(str(root / "ca.pem"), str(root / "ca.key"))
     server_context.load_verify_locations(cafile=str(root / "ca.pem"))
     server_context.verify_mode = ssl.CERT_REQUIRED
+    peers: list[bytes | None] = []
 
     async def handle(reader: asyncio.StreamReader, writer: asyncio.StreamWriter) -> None:
-        await reader.readuntil(b"\r\n\r\n")
-        writer.write(b"HTTP/1.1 200 OK\r\nContent-Length: 2\r\nConnection: close\r\n\r\nok")
+        request = await reader.readuntil(b"\r\n\r\n")
+        peers.append(writer.get_extra_info("ssl_object").getpeercert(binary_form=True))
+        body = json.dumps(MODELS).encode() if request.startswith(b"GET /models ") else b"ok"
+        writer.write(
+            b"HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: "
+            + str(len(body)).encode()
+            + b"\r\nConnection: close\r\n\r\n"
+            + body
+        )
         await writer.drain()
         writer.close()
         await writer.wait_closed()
@@ -119,6 +131,29 @@ async def test_tls_wire_custom_ca_environment_explicit_context_and_mtls(
     server = await asyncio.start_server(handle, "127.0.0.1", 0, ssl=server_context)
     url = f"https://127.0.0.1:{server.sockets[0].getsockname()[1]}/"
     try:
+        if configuration == "sdk-env":
+            for name, value in {
+                "BASE_URL": url,
+                "CA_BUNDLE_FILE": str(root / "ca.pem"),
+                "CERT_FILE": str(root / "client.pem"),
+                "KEY_FILE": str(root / "client.key"),
+                "KEY_FILE_PASSWORD": "wire-password",
+                "ASYNC_BACKEND": backend,
+                "TRUST_ENV": "false",
+            }.items():
+                monkeypatch.setenv("GIGACHAT_" + name, value)
+            async with GigaChatAsyncClient() as sdk:
+                assert (await sdk.aget_models()).data
+            if backend == "httpx2":
+
+                def sync_request() -> None:
+                    with GigaChatSyncClient() as sync_sdk:
+                        assert sync_sdk.get_models().data
+
+                await asyncio.to_thread(sync_request)
+            assert len(peers) == (2 if backend == "httpx2" else 1)
+            assert all(peers)
+            return
         monkeypatch.setenv("SSL_CERT_FILE", str(root / "ca.pem"))
 
         class CertificateParams(TypedDict):
@@ -148,6 +183,8 @@ async def test_tls_wire_custom_ca_environment_explicit_context_and_mtls(
         async with cls(verify=context, trust_env=False) as client:
             with pytest.raises(httpx2.TransportError):
                 await client.get(url)
+        assert len(peers) == 3
+        assert all(peers)
         # A CA supplied only via environment is ignored with trust_env=False.
         context = build_ssl_context(trust_env=False, **common)
         async with cls(verify=context, trust_env=False) as client:
