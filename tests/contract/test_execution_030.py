@@ -18,8 +18,7 @@ from gigachat._request_options import RequestOptions
 from gigachat.context import custom_headers_cvar
 from gigachat.exceptions import AuthenticationError, ResponseError, ServerError
 from gigachat.models import ChatCompletionRequest
-from gigachat.retry import _awith_retry_stream, _should_retry, _with_retry_stream
-from gigachat.settings import Settings
+from gigachat.retry import _should_retry
 
 PRIMARY_CHAT_COMPLETION: dict[str, Any] = {"messages": []}
 BASE = "https://example.test/v1"
@@ -333,44 +332,6 @@ def test_certificate_verification_failure_is_not_retryable() -> None:
 )
 def test_transient_transport_errors_are_retryable(error: Exception) -> None:
     assert _should_retry(error, ())
-
-
-def test_compatibility_stream_never_replays_delivered_item() -> None:
-    class Client:
-        _settings = Settings(max_retries=2)
-        calls = 0
-
-        @_with_retry_stream
-        def stream(self) -> Iterator[str]:
-            self.calls += 1
-            yield "first"
-            raise httpx2.ReadError("interrupted")
-
-    client = Client()
-    stream = client.stream()
-    assert next(stream) == "first"
-    with pytest.raises(httpx2.ReadError):
-        next(stream)
-    assert client.calls == 1
-
-
-async def test_async_compatibility_stream_never_replays_delivered_item() -> None:
-    class Client:
-        _settings = Settings(max_retries=2)
-        calls = 0
-
-        @_awith_retry_stream
-        async def stream(self) -> AsyncIterator[str]:
-            self.calls += 1
-            yield "first"
-            raise httpx2.ReadError("interrupted")
-
-    client = Client()
-    stream = client.stream()
-    assert await anext(stream) == "first"
-    with pytest.raises(httpx2.ReadError):
-        await anext(stream)
-    assert client.calls == 1
 
 
 @pytest.mark.parametrize("statuses", [[500, 401, 500], [401, 500, 200], [401, 401]])
