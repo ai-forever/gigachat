@@ -801,3 +801,48 @@ async def test_primary_terminal_marks_high_level_complete_on_delivery(asynchrono
                 assert sync_stream.completed
                 assert sync_stream.is_closed
                 assert body.closed
+
+
+@pytest.mark.parametrize("asynchronous", [False, True])
+@pytest.mark.parametrize("error_type", [httpx.ReadError, httpx.ReadTimeout])
+@pytest.mark.parametrize("download", [False, True])
+async def test_file_error_body_failure_preserves_metadata(
+    tmp_path: Path, asynchronous: bool, error_type: type[httpx.TransportError], download: bool
+) -> None:
+    from gigachat import GigaChat
+
+    error = error_type("error body interrupted")
+
+    class BrokenBody(Bytes):
+        def __iter__(self) -> Iterator[bytes]:
+            yield b"partial error"
+            raise error
+
+    body = BrokenBody(b"")
+    target = tmp_path / "download.bin"
+    target.write_bytes(b"original")
+    responses: list[httpx.Response] = []
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        result = httpx.Response(302, stream=body, headers={"x-request-id": "broken-file"})
+        responses.append(result)
+        return result
+
+    expected = APITimeoutError if error_type is httpx.ReadTimeout else APIConnectionError
+    if asynchronous:
+        async with httpx.AsyncClient(transport=httpx.MockTransport(handler)) as transport:
+            async with GigaChat(async_http_client=transport, access_token="token") as client:
+                operation = client.adownload_file("file", target) if download else client.aget_file_content("file")
+                with pytest.raises(expected) as caught:
+                    await operation
+    else:
+        with httpx.Client(transport=httpx.MockTransport(handler)) as sync_transport:
+            with GigaChat(http_client=sync_transport, access_token="token") as client:
+                with pytest.raises(expected) as caught:
+                    client.download_file("file", target) if download else client.get_file_content("file")
+    assert caught.value.request_id == "broken-file"
+    assert caught.value.__cause__ is error
+    assert body.closed
+    assert responses[0].is_closed
+    assert target.read_bytes() == b"original"
+    assert list(tmp_path.iterdir()) == [target]

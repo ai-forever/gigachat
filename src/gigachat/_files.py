@@ -31,12 +31,10 @@ class SyncFilesMixin:
             url=f"/files/{quote(file_id, safe='')}/content",
             headers={**build_headers(client.token), "Accept": "application/octet-stream"},
         )
+        wrapped = StreamingResponse(response, lambda result: result.content)
         if response.status_code != 200:
-            try:
-                _raise_for_status(response.url, response.status_code, response.read(), response.headers)
-            finally:
-                response.close()
-        return StreamingResponse(response, lambda result: result.content)
+            _raise_for_status(response.url, response.status_code, wrapped.read(), response.headers)
+        return wrapped
 
     def get_file_content(self, file_id: str, *, request_options: RequestOptions | None = None) -> bytes:
         """Read a complete binary file into memory without base64 conversion."""
@@ -78,12 +76,10 @@ class AsyncFilesMixin:
             url=f"/files/{quote(file_id, safe='')}/content",
             headers={**build_headers(client.token), "Accept": "application/octet-stream"},
         )
+        wrapped = AsyncStreamingResponse(response, lambda result: result.content)
         if response.status_code != 200:
-            try:
-                _raise_for_status(response.url, response.status_code, await response.aread(), response.headers)
-            finally:
-                await response.aclose()
-        return AsyncStreamingResponse(response, lambda result: result.content)
+            _raise_for_status(response.url, response.status_code, await wrapped.read(), response.headers)
+        return wrapped
 
     async def aget_file_content(self, file_id: str, *, request_options: RequestOptions | None = None) -> bytes:
         """Read a complete binary file into memory without base64 conversion."""
